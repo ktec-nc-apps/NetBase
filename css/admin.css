@@ -1,0 +1,49 @@
+/* NetBase — Nextcloud administration settings panel. */
+#netbase-admin { max-width: 900px; }
+#netbase-admin h3 { margin-top: 28px; font-weight: 600; }
+#netbase-admin .nb-tools { width: 100%; border-collapse: collapse; margin: 12px 0 4px; }
+#netbase-admin .nb-tools th {
+	text-align: left; font-size: 12px; text-transform: uppercase; letter-spacing: .04em;
+	color: var(--color-text-maxcontrast); font-weight: 600; padding: 6px 8px;
+	border-bottom: 1px solid var(--color-border);
+}
+#netbase-admin .nb-tools td { padding: 6px 8px; border-bottom: 1px solid var(--color-border); vertical-align: middle; }
+#netbase-admin .nb-tools td:first-child { width: 55%; }
+#netbase-admin .nb-tools select { width: 100%; max-width: 300px; margin: 0; }
+#netbase-admin .nb-pill { display: inline-block; padding: 1px 9px; border-radius: 999px; font-size: 12px; }
+/* Read against both themes: tint the background, keep the text at full
+   contrast rather than relying on --color-primary-text. */
+#netbase-admin .nb-pill.ok { background: var(--color-background-dark); color: var(--color-text-maxcontrast); }
+#netbase-admin .nb-pill.warn {
+	background: color-mix(in srgb, var(--color-warning, #c98600) 22%, transparent);
+	color: var(--color-warning-text, var(--color-main-text));
+	font-weight: 600;
+}
+#netbase-admin .nb-field { margin: 14px 0; }
+#netbase-admin .nb-field label { display: block; margin-bottom: 4px; color: var(--color-text-maxcontrast); font-size: 13px; }
+#netbase-admin .nb-field input[type='text'], #netbase-admin .nb-field input[type='number'] { width: 100%; max-width: 420px; }
+#netbase-admin .nb-narrow input { max-width: 180px; }
+#netbase-admin .nb-check { display: flex; align-items: center; gap: 8px; }
+#netbase-admin .nb-check label { margin: 0; }
+#netbase-admin .nb-actions { display: flex; align-items: center; gap: 8px; margin: 14px 0; }
+#netbase-admin .nb-status { font-size: 13px; color: var(--color-text-maxcontrast); }
+#netbase-admin .nb-status.ok { color: var(--color-success, #46ba61); }
+#netbase-admin .nb-status.err { color: var(--color-error, #e9322d); }
+#netbase-admin .nb-facts { list-style: none; padding: 0; line-height: 1.9; }
+#netbase-admin .nb-dim { color: var(--color-text-maxcontrast); font-size: 12px; }
+
+/* Optional components: state first, then what it buys, then how to get it. */
+#netbase-admin .nb-components { display: flex; flex-direction: column; gap: 10px; margin-top: 12px; }
+#netbase-admin .nb-component { border: 1px solid var(--color-border); border-radius: var(--border-radius-large, 12px); padding: 12px 14px; }
+#netbase-admin .nb-component.is-missing { border-color: color-mix(in srgb, var(--color-warning, #c98600) 40%, var(--color-border)); }
+#netbase-admin .nb-c-head { display: flex; align-items: center; gap: 10px; }
+#netbase-admin .nb-c-body { margin-top: 6px; font-size: 13.5px; }
+#netbase-admin .nb-c-body p { margin: 4px 0; }
+#netbase-admin .nb-c-enables { color: var(--color-main-text); }
+#netbase-admin .nb-cmd {
+	background: var(--color-background-dark); border-radius: 8px; padding: 8px 10px; margin: 6px 0 0;
+	font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12.5px;
+	white-space: pre-wrap; word-break: break-all; -webkit-user-select: text; user-select: text;
+}
+#netbase-admin .nb-after { color: var(--color-text-maxcontrast); }
+#netbase-admin .nb-after code { font-size: 12.5px; word-break: break-all; }
