@@ -12,16 +12,16 @@ Discovery needs no root, no agent and no extra packages. Nextcloud runs unprivil
 - **Offline vendor database** — the bundled IEEE MA-L / MA-M / MA-S registries cover more than 53,000 prefixes, so no MAC address is ever sent anywhere. Randomised (privacy) addresses are labelled as such rather than reported as unknown.
 - **Names from the devices themselves** — NetBIOS node status, mDNS reverse lookup, WS-Discovery, SSDP and reverse DNS. Devices that stay silent during the sweep are asked again, more slowly, once the network is quiet.
 - **Device inventory** — rename, classify, tag and annotate devices; first-seen and last-seen are tracked, and the list can be exported as CSV.
-- **DNS toolkit** — A / AAAA / CNAME / MX / NS / TXT / SOA / SRV / CAA, with SPF and DMARC picked out, plus reverse lookups.
+- **DNS toolkit** — any record type (including TLSA, DS, DNSKEY, SSHFP, CAA and SVCB) asked of any resolver, with the reply's flags; a side-by-side resolver comparison for propagation; a delegation trace from the root servers; and a zone-transfer test that tells you whether your name servers hand the whole zone to strangers.
 - **Whois** for domains and IP addresses, following IANA referrals to the registry and then the registrar. No `whois` binary required.
-- **Ping, traceroute, TCP port check** with banner grab, and Wake-on-LAN.
-- **TLS and HTTP inspector** — certificate subject, issuer, expiry, SANs and chain; redirect chain and security headers.
-- **Subnet calculator** for IPv4 and IPv6.
+- **Ping, traceroute, TCP port check** with banner grab and port ranges, plus a TCP ping for hosts that drop ICMP, path-MTU discovery, and Wake-on-LAN.
+- **TLS and HTTP inspector** — certificate subject, issuer, expiry, SANs and chain; which TLS versions the server still accepts; the redirect chain and a security-header assessment.
+- **Subnet calculator** for IPv4 and IPv6, splitting a network into smaller ones and combining scattered addresses into the fewest CIDR blocks.
 - **Server network information** — interfaces, addresses, routes, resolvers and listening sockets.
 - **nmap front end** — presets from host discovery to service detection, with results parsed from nmap's XML output. Available when nmap is installed.
 - **Mail server testing** — the DNS side of a domain (MX, SPF, DKIM, DMARC, MTA-STS, DANE, blocklists) and the servers themselves (SMTP, IMAP, POP3), ending in a plain-language list of what to fix.
 - **FTP and SFTP** — browse a remote server and move files between it and your own Nextcloud folders, with the connection details saved and encrypted.
-- **SSH and Telnet probes** — host key fingerprint, offered algorithms and sign-in methods, without signing in.
+- **SSH** — a credential-free probe (host key fingerprint, offered algorithms, sign-in methods) and, on a saved connection, running a command with a password or a private key.
 - **Benchmarks** — see below.
 - **Light or dark, per user** — NetBase follows the Nextcloud theme by default, and **Theme** at the bottom of the sidebar pins it to light or dark for that account alone. Nothing else in Nextcloud changes.
 - Available in English and Japanese.
@@ -55,6 +55,16 @@ Three views, in the order you actually need them.
 
 Every protocol here is spoken directly over a stream socket. `ext-imap` is neither needed nor used, which matters because it no longer ships with current PHP.
 
+## SSH: probe and command
+
+Two halves, deliberately separate.
+
+**The probe needs no credentials.** The identification string and the KEXINIT packet a server sends before anything is encrypted give the complete algorithm list, and the host key fingerprint comes from a key exchange. Findings call out what should no longer be offered — SHA-1 key exchange and MACs, CBC ciphers, RC4, DSA, RSA host keys under 2048 bits, protocol 1. Asking which sign-in methods are accepted is a separate checkbox, because it leaves one failed attempt in the other machine's log.
+
+**The command half signs in** to a saved connection with its password or private key and runs one command, returning the output and the exit status. Presets cover the questions asked most often — a system snapshot, disk usage, failed services and recent errors, network configuration, listening sockets, pending updates, who is logged in and who failed — and there is a free-form command box next to them.
+
+There is no terminal, and that is not an oversight: PHP-FPM ends every request, so a shell session cannot outlive one. A command that runs, finishes and returns its output is what can be done honestly here.
+
 ## Files: FTP and SFTP
 
 Choose a saved connection and browse it: directories, sizes, timestamps and permissions, with a path bar you can type into. Files move both ways — **to my files** copies a remote file into a folder of your Nextcloud files, and the upload field sends one of your Nextcloud files to the folder you are looking at. Folders can be created, renamed and deleted.
@@ -63,9 +73,7 @@ Transfers stream through a file handle in both directions, so a large file never
 
 FTP uses PHP's own `ext-ftp`, with or without TLS. SFTP uses the phpseclib copy Nextcloud already ships for its external-storage backends, so nothing extra is installed, and it signs in with either a password or a private key.
 
-## SSH, Telnet and the clock
-
-**SSH** is read straight off the wire. The identification string and the KEXINIT packet a server sends before anything is encrypted give the complete algorithm list, and the host key fingerprint (SHA256, in the format OpenSSH prints) comes from a key exchange. NetBase flags what should no longer be offered — SHA-1 key exchange and MACs, CBC ciphers, RC4, DSA, RSA host keys under 2048 bits, protocol 1. Asking which sign-in methods are accepted is a separate checkbox, because it leaves one failed attempt in the other machine's log.
+## Telnet and the clock
 
 **Telnet** answers the option negotiation politely and shows you the login screen, which is usually enough to tell which device it is — and the finding says what Telnet being open means.
 
@@ -137,16 +145,16 @@ Nextcloud 用のネットワーク総合ツールです。LAN上の機器を高�
 - **オフラインのベンダーデータベース** ― IEEE の MA-L / MA-M / MA-S 登録簿（53,000件超）を同梱しているため、MACアドレスを外部へ送信することは一切ありません。ランダム化（プライバシー）MACは「不明」ではなく、その旨を明示します。
 - **機器自身が名乗る名前** ― NetBIOS ノードステータス、mDNS逆引き、WS-Discovery、SSDP、逆引きDNS。掃引中に応答しなかった機器へは、通信が静まってからゆっくり再度問い合わせます。
 - **機器台帳** ― 名称変更・種別変更・タグ・メモに対応し、初回検出と最終検出を記録します。CSV書き出しも可能です。
-- **DNSツール** ― A / AAAA / CNAME / MX / NS / TXT / SOA / SRV / CAA に加え、SPF・DMARC を抽出。逆引きにも対応します。
+- **DNSツール** ― 任意のレコード種別（TLSA・DS・DNSKEY・SSHFP・CAA・SVCB を含む）を任意のDNSサーバーへ問い合わせ、応答フラグまで表示。主要な公開DNSとの一括比較（浸透確認）、ルートからの委任追跡、ゾーン転送の可否検査も行えます。
 - **whois** ― ドメインとIPアドレス。IANA から各レジストリ、さらにレジストラへと委譲先を自動で追跡します。`whois` コマンドは不要です。
-- **ping・traceroute・TCPポート確認**（バナー取得つき）と **Wake-on-LAN**。
-- **TLS・HTTP検査** ― 証明書のサブジェクト・発行者・有効期限・SAN・チェーン、リダイレクト連鎖とセキュリティヘッダー。
-- **サブネット計算**（IPv4／IPv6）。
+- **ping・traceroute・TCPポート確認**（バナー取得・ポート範囲指定）に加え、ICMPが通らない相手向けの **TCP ping**、**経路MTUの測定**、**Wake-on-LAN**。
+- **TLS・HTTP検査** ― 証明書のサブジェクト・発行者・有効期限・SAN・チェーンに加え、受け付けているTLSバージョンの一覧、リダイレクト連鎖とセキュリティヘッダーの評価。
+- **サブネット計算**（IPv4／IPv6）。ネットワークの分割、散らばったアドレスの最小CIDRへの集約にも対応します。
 - **サーバーのネットワーク情報** ― インターフェース・アドレス・経路・DNSサーバー・待受ソケット。
 - **nmap のフロントエンド** ― ホスト探索からサービス判定までのプリセットを用意し、結果は nmap の XML 出力を解析して表示します。nmap 導入時に利用できます。
 - **メールサーバー検査** ― ドメイン側の設定（MX・SPF・DKIM・DMARC・MTA-STS・DANE・ブロックリスト）とサーバー本体（SMTP・IMAP・POP3）を調べ、「何を直すべきか」を平易な文章で提示します。
 - **FTP・SFTP** ― リモートサーバーを閲覧し、Nextcloud内のフォルダーとの間でファイルを受け渡します。接続情報は暗号化して保存できます。
-- **SSH・Telnet調査** ― サインインせずに、ホスト鍵のフィンガープリント・提示アルゴリズム・認証方式を確認します。
+- **SSH** ― 資格情報なしの調査（ホスト鍵のフィンガープリント・提示アルゴリズム・認証方式）に加え、保存済み接続先に対しパスワードまたは秘密鍵でサインインしてコマンドを実行できます。
 - **ベンチマーク** ― 下記をご覧ください。
 - **ライト／ダークの個別切り替え** ― 既定では Nextcloud のテーマに追従します。サイドバー下部の「表示テーマ」から、利用者ごとに常時ライト／常時ダークへ固定できます。Nextcloud 全体の設定には影響しません。
 - 英語・日本語に対応。
@@ -180,6 +188,16 @@ Nextcloud 用のネットワーク総合ツールです。LAN上の機器を高�
 
 ここで扱うプロトコルは、すべてストリームソケットで直接会話しています。`ext-imap` は不要かつ未使用です。現在のPHPには同梱されなくなったため、この点は重要です。
 
+## SSH: 調査とコマンド実行
+
+意図して2つに分けています。
+
+**調査には資格情報が要りません。** 暗号化が始まる前にサーバーが送る識別文字列とKEXINITパケットから提示アルゴリズムの全容が分かり、ホスト鍵のフィンガープリントは鍵交換で取得します。もはや提示すべきでないもの（SHA-1の鍵交換とMAC、CBC系暗号、RC4、DSA、2048ビット未満のRSAホスト鍵、プロトコル1）は所見として提示します。受け付けられる認証方式の確認だけは別のチェックボックスです。相手のログに失敗記録が1件残るためです。
+
+**コマンド実行は**、保存済み接続先へパスワードまたは秘密鍵でサインインし、コマンドを1つ実行して出力と終了コードを返します。よく使う確認はプリセットにしてあります（システム概況・ディスク使用状況・失敗したサービスと直近のエラー・ネットワーク設定・待受ソケット・未適用の更新・ログイン状況）。自由入力の欄も併設しています。
+
+ターミナルは用意していません。これは手抜きではなく、PHP-FPMがリクエストごとに終了する以上、シェルセッションを維持できないためです。実行して終了し、出力を返すコマンド ― ここで誠実に提供できるのはその形です。
+
 ## ファイル: FTP・SFTP
 
 保存済みの接続先を選ぶと、そのサーバーを閲覧できます。ディレクトリ・サイズ・更新日時・権限を表示し、パス欄には直接入力もできます。ファイルは双方向に移動できます。**「自分のファイルへ」** はリモートのファイルをNextcloud内のフォルダーへ取り込み、アップロード欄はNextcloud内のファイルを、いま開いているフォルダーへ送ります。フォルダーの作成・名前変更・削除にも対応します。
@@ -188,9 +206,7 @@ Nextcloud 用のネットワーク総合ツールです。LAN上の機器を高�
 
 FTPはPHP標準の `ext-ftp` を使い、TLSの有無どちらにも対応します。SFTPは、Nextcloudが外部ストレージ用に同梱している phpseclib を利用するため追加導入は不要で、パスワードと秘密鍵のどちらでもサインインできます。
 
-## SSH・Telnet・時刻
-
-**SSH** は通信路から直接読み取ります。暗号化が始まる前にサーバーが送る識別文字列とKEXINITパケットから、提示アルゴリズムの全容が分かります。ホスト鍵のフィンガープリント（SHA256・OpenSSHと同じ表記）は鍵交換によって取得します。もはや提示すべきでないもの（SHA-1の鍵交換とMAC、CBC系暗号、RC4、DSA、2048ビット未満のRSAホスト鍵、プロトコル1）は警告として提示します。受け付けられる認証方式の確認だけは別のチェックボックスにしてあります。相手のログに失敗記録が1件残るためです。
+## Telnet と時刻
 
 **Telnet** はオプション交渉に穏当に応答し、ログイン画面を表示します。多くの場合それだけで機器を特定できます。あわせて、Telnetが開いていること自体の意味も提示します。
 

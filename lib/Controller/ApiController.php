@@ -9,10 +9,12 @@ use OCA\NetBase\Db\DeviceMapper;
 use OCA\NetBase\Db\ScanMapper;
 use OCA\NetBase\Service\BenchmarkService;
 use OCA\NetBase\Service\DiscoveryService;
+use OCA\NetBase\Service\DnsService;
 use OCA\NetBase\Service\EndpointService;
 use OCA\NetBase\Service\ExecService;
 use OCA\NetBase\Service\MailService;
 use OCA\NetBase\Service\ProbeService;
+use OCA\NetBase\Service\SshService;
 use OCA\NetBase\Service\TransferService;
 use OCA\NetBase\Service\NmapService;
 use OCA\NetBase\Service\OuiService;
@@ -42,6 +44,8 @@ class ApiController extends Controller {
 		private TransferService $transfer,
 		private MailService $mail,
 		private ProbeService $probe,
+		private SshService $ssh,
+		private DnsService $dnsService,
 		private OuiService $oui,
 		private ExecService $exec,
 		private PermissionService $permissions,
@@ -116,6 +120,8 @@ class ApiController extends Controller {
 			'neighbourCount' => $this->discovery->neighbourCount(),
 			'sockets' => extension_loaded('sockets'),
 			'procOpen' => function_exists('proc_open'),
+			'sshPresets' => SshService::PRESETS,
+			'transfer' => $this->transfer->capabilities(),
 		]);
 	}
 
@@ -235,8 +241,13 @@ class ApiController extends Controller {
 
 	#[NoAdminRequired]
 	#[UserRateLimit(limit: 60, period: 60)]
-	public function ports(string $host, array $ports = []): JSONResponse {
-		return $this->guard(fn () => $this->tools->portCheck($host, $ports !== [] ? $ports : DiscoveryService::FINGERPRINT_PORTS), 'ports');
+	public function ports(string $host, array $ports = [], string $spec = ''): JSONResponse {
+		return $this->guard(function () use ($host, $ports, $spec) {
+			// A typed range ("22,80,8000-8010") beats ticking boxes when someone
+			// already knows what they are looking for.
+			$list = $spec !== '' ? $this->tools->expandPorts($spec) : $ports;
+			return $this->tools->portCheck($host, $list !== [] ? $list : DiscoveryService::FINGERPRINT_PORTS);
+		}, 'ports');
 	}
 
 	#[NoAdminRequired]
@@ -247,8 +258,12 @@ class ApiController extends Controller {
 
 	#[NoAdminRequired]
 	#[UserRateLimit(limit: 60, period: 60)]
-	public function http(string $url): JSONResponse {
-		return $this->guard(fn () => $this->tools->http($url), 'tls');
+	public function http(string $url, int $maxRedirects = 5): JSONResponse {
+		return $this->guard(function () use ($url, $maxRedirects) {
+			$result = $this->tools->http($url, $maxRedirects);
+			$result['findings'] = $this->tools->httpFindings($result);
+			return $result;
+		}, 'tls');
 	}
 
 	#[NoAdminRequired]
@@ -428,6 +443,76 @@ class ApiController extends Controller {
 	#[UserRateLimit(limit: 30, period: 60)]
 	public function mailBlocklist(string $ip): JSONResponse {
 		return $this->guard(fn () => ['ip' => $ip, 'results' => $this->mail->blocklists($ip)], 'mail');
+	}
+
+	// ---------------------------------------------------------------- SSH commands
+
+	#[NoAdminRequired]
+	#[UserRateLimit(limit: 60, period: 60)]
+	public function sshRun(int $id, string $command): JSONResponse {
+		return $this->guard(fn () => $this->ssh->run($this->endpoints->get($id, $this->uid()), $command), 'sshexec');
+	}
+
+	#[NoAdminRequired]
+	#[UserRateLimit(limit: 60, period: 60)]
+	public function sshPreset(int $id, string $preset): JSONResponse {
+		return $this->guard(fn () => $this->ssh->preset($this->endpoints->get($id, $this->uid()), $preset), 'sshexec');
+	}
+
+	// ---------------------------------------------------------------- DNS in depth
+
+	#[NoAdminRequired]
+	#[UserRateLimit(limit: 120, period: 60)]
+	public function dnsQuery(string $host, string $type = 'A', string $server = '', bool $dnssec = false): JSONResponse {
+		return $this->guard(fn () => $this->dnsService->query($host, $type, $server, $dnssec), 'dns');
+	}
+
+	#[NoAdminRequired]
+	#[UserRateLimit(limit: 30, period: 60)]
+	public function dnsCompare(string $host, string $type = 'A', array $resolvers = []): JSONResponse {
+		return $this->guard(fn () => $this->dnsService->compare($host, $type, $resolvers), 'dns');
+	}
+
+	#[NoAdminRequired]
+	#[UserRateLimit(limit: 30, period: 60)]
+	public function dnsTrace(string $host, string $type = 'A'): JSONResponse {
+		return $this->guard(fn () => $this->dnsService->trace($host, $type), 'dns');
+	}
+
+	#[NoAdminRequired]
+	#[UserRateLimit(limit: 20, period: 300)]
+	public function dnsZoneTransfer(string $zone, string $nameserver = ''): JSONResponse {
+		return $this->guard(fn () => $this->dnsService->zoneTransfer($zone, $nameserver), 'dns');
+	}
+
+	// ---------------------------------------------------------------- deeper tool checks
+
+	#[NoAdminRequired]
+	#[UserRateLimit(limit: 30, period: 60)]
+	public function tlsVersions(string $host, int $port = 443): JSONResponse {
+		return $this->guard(fn () => $this->tools->tlsVersions($host, $port), 'tls');
+	}
+
+	#[NoAdminRequired]
+	#[UserRateLimit(limit: 60, period: 60)]
+	public function tcpPing(string $host, int $port = 443, int $count = 5): JSONResponse {
+		return $this->guard(fn () => $this->tools->tcpPing($host, $port, $count), 'ping');
+	}
+
+	#[NoAdminRequired]
+	#[UserRateLimit(limit: 20, period: 300)]
+	public function mtuDiscover(string $host): JSONResponse {
+		return $this->guard(fn () => $this->tools->mtuDiscover($host), 'ping');
+	}
+
+	#[NoAdminRequired]
+	public function subnetSplit(string $cidr, int $prefix): JSONResponse {
+		return $this->guard(fn () => $this->tools->subnetSplit($cidr, $prefix), 'subnet');
+	}
+
+	#[NoAdminRequired]
+	public function subnetAggregate(string $input): JSONResponse {
+		return $this->guard(fn () => $this->tools->subnetAggregate($input), 'subnet');
 	}
 
 	// ---------------------------------------------------------------- service probes

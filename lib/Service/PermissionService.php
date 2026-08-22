@@ -43,6 +43,7 @@ class PermissionService {
 		'mail' => ['default' => self::ADMIN, 'label' => 'Mail — domain policy audit, server tests and test messages', 'probes' => true],
 		'files' => ['default' => self::ADMIN, 'label' => 'FTP and SFTP — browse remote servers and move files', 'probes' => true],
 		'ssh' => ['default' => self::ALL, 'label' => 'SSH, Telnet and NTP — service probes without signing in', 'probes' => true],
+		'sshexec' => ['default' => self::ADMIN, 'label' => 'SSH commands — run commands on a saved connection', 'probes' => true],
 	];
 
 	public function __construct(

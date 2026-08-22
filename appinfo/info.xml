@@ -38,7 +38,7 @@ Features:
 - サーバーのネットワーク情報 ― インターフェース・アドレス・経路・待受ソケット・グローバルIP
 - nmapのフロントエンド ― プリセットと厳格な引数許可リスト（nmap導入時）
 - 英語・日本語に対応]]></description>
-	<version>0.1.40</version>
+	<version>0.1.43</version>
 	<licence>agpl</licence>
 	<author>KTEC</author>
 	<namespace>NetBase</namespace>
