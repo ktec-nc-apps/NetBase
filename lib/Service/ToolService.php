@@ -30,6 +30,7 @@ class ToolService {
 	public function __construct(
 		private ExecService $exec,
 		private DiscoveryService $discovery,
+		private L10nService $l,
 		private IConfig $config,
 		private LoggerInterface $logger,
 	) {
@@ -57,6 +58,27 @@ class ToolService {
 			throw new \InvalidArgumentException('Not a valid host name: ' . $host);
 		}
 		return $idn;
+	}
+
+	/**
+	 * A name to look up in DNS, which is not the same thing as a host name:
+	 * service records live under labels like _25._tcp and _dmarc, and those
+	 * are perfectly valid to ask for.
+	 */
+	public function validateDnsName(string $name): string {
+		$name = trim($name, " \t\n\r\0\x0B.");
+		if ($name === '' || strlen($name) > 253) {
+			throw new \InvalidArgumentException('Empty or over-long name');
+		}
+		if (filter_var($name, FILTER_VALIDATE_IP) !== false) {
+			return $name;
+		}
+		foreach (explode('.', $name) as $label) {
+			if ($label === '' || strlen($label) > 63 || !preg_match('/^[*_a-z0-9]([-_a-z0-9]*[*_a-z0-9])?$/i', $label)) {
+				throw new \InvalidArgumentException('Not a valid DNS name: ' . $name);
+			}
+		}
+		return $name;
 	}
 
 	// ---------------------------------------------------------------- whois
@@ -607,5 +629,317 @@ class ToolService {
 			'listeners' => $listeners,
 			'neighbours' => count($this->discovery->neighbours()),
 		];
+	}
+	// ---------------------------------------------------------------- extras
+
+	/**
+	 * Which TLS versions a server will actually negotiate.
+	 *
+	 * A certificate that is valid says nothing about whether the server still
+	 * answers to TLS 1.0, which is what an auditor asks about.
+	 *
+	 * @return array<string, mixed>
+	 */
+	public function tlsVersions(string $host, int $port = 443, float $timeout = 5.0): array {
+		$host = $this->validateHost($host);
+		$port = max(1, min(65535, $port));
+		$versions = [
+			'TLSv1.0' => STREAM_CRYPTO_METHOD_TLSv1_0_CLIENT,
+			'TLSv1.1' => STREAM_CRYPTO_METHOD_TLSv1_1_CLIENT,
+			'TLSv1.2' => STREAM_CRYPTO_METHOD_TLSv1_2_CLIENT,
+		];
+		if (defined('STREAM_CRYPTO_METHOD_TLSv1_3_CLIENT')) {
+			$versions['TLSv1.3'] = STREAM_CRYPTO_METHOD_TLSv1_3_CLIENT;
+		}
+
+		$results = [];
+		foreach ($versions as $name => $method) {
+			$context = stream_context_create(['ssl' => [
+				'verify_peer' => false, 'verify_peer_name' => false, 'SNI_enabled' => true,
+				'peer_name' => $host, 'crypto_method' => $method, 'security_level' => 0,
+			]]);
+			$errno = 0;
+			$errstr = '';
+			$target = str_contains($host, ':') && filter_var($host, FILTER_VALIDATE_IP) !== false ? '[' . $host . ']' : $host;
+			$client = @stream_socket_client('tcp://' . $target . ':' . $port, $errno, $errstr, $timeout, STREAM_CLIENT_CONNECT, $context);
+			$supported = false;
+			$cipher = null;
+			if ($client !== false) {
+				stream_set_timeout($client, (int)$timeout);
+				if (@stream_socket_enable_crypto($client, true, $method) === true) {
+					$supported = true;
+					$meta = stream_get_meta_data($client);
+					$cipher = $meta['crypto']['cipher_name'] ?? null;
+				}
+				@fclose($client);
+			}
+			$results[$name] = ['supported' => $supported, 'cipher' => $cipher];
+		}
+
+		$findings = [];
+		foreach (['TLSv1.0', 'TLSv1.1'] as $old) {
+			if (($results[$old]['supported'] ?? false) === true) {
+				$findings[] = ['level' => 'warn', 'area' => 'TLS', 'text' => $this->l->t('%s is still accepted. Browsers and payment rules dropped it years ago.', [$old])];
+			}
+		}
+		if (($results['TLSv1.2']['supported'] ?? false) === false && ($results['TLSv1.3']['supported'] ?? false) === false) {
+			$findings[] = ['level' => 'bad', 'area' => 'TLS', 'text' => $this->l->t('Neither TLS 1.2 nor TLS 1.3 could be negotiated. Modern clients cannot connect.')];
+		} elseif ($findings === []) {
+			$findings[] = ['level' => 'ok', 'area' => 'TLS', 'text' => $this->l->t('Only current TLS versions are accepted.')];
+		}
+		return ['host' => $host, 'port' => $port, 'versions' => $results, 'findings' => $findings];
+	}
+
+	/**
+	 * Latency measured by opening a TCP connection, for the many hosts and
+	 * networks that drop ICMP but answer on a port.
+	 *
+	 * @return array<string, mixed>
+	 */
+	public function tcpPing(string $host, int $port = 443, int $count = 5, float $timeout = 3.0): array {
+		$host = $this->validateHost($host);
+		$port = max(1, min(65535, $port));
+		$count = max(1, min(20, $count));
+		$target = str_contains($host, ':') && filter_var($host, FILTER_VALIDATE_IP) !== false ? '[' . $host . ']' : $host;
+		$times = [];
+		$failures = 0;
+		for ($i = 0; $i < $count; $i++) {
+			$errno = 0;
+			$errstr = '';
+			$started = microtime(true);
+			$socket = @stream_socket_client('tcp://' . $target . ':' . $port, $errno, $errstr, $timeout);
+			if ($socket === false) {
+				$failures++;
+			} else {
+				$times[] = round((microtime(true) - $started) * 1000, 2);
+				@fclose($socket);
+			}
+			if ($i < $count - 1) {
+				usleep(200000);
+			}
+		}
+		sort($times);
+		$stats = [];
+		if ($times !== []) {
+			$sum = array_sum($times);
+			$stats = [
+				'min' => $times[0],
+				'max' => $times[count($times) - 1],
+				'avg' => round($sum / count($times), 2),
+				'median' => $times[intdiv(count($times), 2)],
+			];
+		}
+		return [
+			'host' => $host, 'port' => $port, 'sent' => $count, 'received' => count($times),
+			'loss' => round($failures / $count * 100, 1), 'times' => $times, 'stats' => $stats,
+			'service' => $this->serviceName($port),
+		];
+	}
+
+	/**
+	 * The largest packet that reaches a host without fragmentation.
+	 *
+	 * A path that silently drops big packets is the classic cause of "the page
+	 * starts loading and then stops", and nothing else finds it quickly.
+	 *
+	 * @return array<string, mixed>
+	 */
+	public function mtuDiscover(string $host, int $low = 1200, int $high = 1472): array {
+		$host = $this->validateHost($host);
+		if (!$this->exec->available('ping')) {
+			return ['host' => $host, 'available' => false, 'mtu' => null];
+		}
+		// 1472 bytes of payload plus 28 of header is the standard 1500-byte
+		// Ethernet MTU, which is the ceiling worth searching for.
+		$low = max(548, min(8972, $low));
+		$high = max($low, min(8972, $high));
+		$best = null;
+		// Binary search over the payload size; 28 bytes of IP and ICMP header
+		// sit on top of it.
+		while ($low <= $high) {
+			$middle = intdiv($low + $high, 2);
+			$result = $this->exec->run('ping', ['-c', '1', '-W', '2', '-M', 'do', '-s', (string)$middle, '-n', $host], 6.0);
+			$ok = $result['code'] === 0;
+			if ($ok) {
+				$best = $middle;
+				$low = $middle + 1;
+			} else {
+				$high = $middle - 1;
+			}
+		}
+		return [
+			'host' => $host,
+			'available' => true,
+			'payload' => $best,
+			'mtu' => $best !== null ? $best + 28 : null,
+			'findings' => [$best === null
+				? ['level' => 'warn', 'area' => 'MTU', 'text' => $this->l->t('No packet size in the range got through. The host may be dropping ICMP entirely.')]
+				: ($best + 28 < 1500
+					? ['level' => 'warn', 'area' => 'MTU', 'text' => $this->l->t('The path carries at most %d bytes, below the usual 1500. Tunnels and PPPoE links do this, and it breaks large transfers when routers stay quiet about it.', [$best + 28])]
+					: ['level' => 'ok', 'area' => 'MTU', 'text' => $this->l->t('The full 1500-byte path is clear.')])],
+		];
+	}
+
+	/**
+	 * Split a network into equal smaller ones — the everyday VLAN question.
+	 *
+	 * @return array<string, mixed>
+	 */
+	public function subnetSplit(string $cidr, int $newPrefix): array {
+		$base = $this->subnet($cidr);
+		if (($base['family'] ?? '') !== 'IPv4') {
+			throw new \InvalidArgumentException('Splitting is available for IPv4 networks');
+		}
+		$oldPrefix = (int)$base['cidr'];
+		if ($newPrefix <= $oldPrefix || $newPrefix > 32) {
+			throw new \InvalidArgumentException('The new prefix must be longer than /' . $oldPrefix . ' and at most /32');
+		}
+		$count = 2 ** ($newPrefix - $oldPrefix);
+		if ($count > 1024) {
+			throw new \InvalidArgumentException('That would make ' . $count . ' networks; split into 1024 or fewer');
+		}
+		$size = 2 ** (32 - $newPrefix);
+		$start = ip2long((string)$base['network']);
+		$out = [];
+		for ($i = 0; $i < $count; $i++) {
+			$networkLong = $start + $i * $size;
+			$broadcastLong = $networkLong + $size - 1;
+			$out[] = [
+				'cidr' => long2ip($networkLong) . '/' . $newPrefix,
+				'network' => long2ip($networkLong),
+				'firstHost' => $size > 2 ? long2ip($networkLong + 1) : long2ip($networkLong),
+				'lastHost' => $size > 2 ? long2ip($broadcastLong - 1) : long2ip($broadcastLong),
+				'broadcast' => long2ip($broadcastLong),
+				'hosts' => $size > 2 ? $size - 2 : $size,
+			];
+		}
+		return ['from' => $base['network'] . '/' . $oldPrefix, 'newPrefix' => $newPrefix, 'count' => $count, 'subnets' => $out];
+	}
+
+	/**
+	 * Turn a list of addresses, ranges and networks into the shortest set of
+	 * CIDR blocks that covers exactly the same addresses.
+	 *
+	 * @return array<string, mixed>
+	 */
+	public function subnetAggregate(string $input): array {
+		$ranges = [];
+		foreach (preg_split('/[\s,]+/', trim($input)) ?: [] as $entry) {
+			if ($entry === '') {
+				continue;
+			}
+			if (str_contains($entry, '/')) {
+				$parsed = $this->subnet($entry);
+				if (($parsed['family'] ?? '') !== 'IPv4') {
+					throw new \InvalidArgumentException('Aggregation is available for IPv4');
+				}
+				$ranges[] = [ip2long((string)$parsed['network']), ip2long((string)$parsed['broadcast'])];
+				continue;
+			}
+			if (str_contains($entry, '-')) {
+				[$from, $to] = array_map('trim', explode('-', $entry, 2));
+				if (filter_var($from, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) === false || filter_var($to, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) === false) {
+					throw new \InvalidArgumentException('Not an IPv4 range: ' . $entry);
+				}
+				$ranges[] = [min(ip2long($from), ip2long($to)), max(ip2long($from), ip2long($to))];
+				continue;
+			}
+			if (filter_var($entry, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) === false) {
+				throw new \InvalidArgumentException('Not an IPv4 address: ' . $entry);
+			}
+			$ranges[] = [ip2long($entry), ip2long($entry)];
+		}
+		if ($ranges === []) {
+			throw new \InvalidArgumentException('Nothing to aggregate');
+		}
+
+		sort($ranges);
+		$merged = [];
+		foreach ($ranges as $range) {
+			$last = count($merged) - 1;
+			if ($last >= 0 && $range[0] <= $merged[$last][1] + 1) {
+				$merged[$last][1] = max($merged[$last][1], $range[1]);
+				continue;
+			}
+			$merged[] = $range;
+		}
+
+		$blocks = [];
+		$total = 0;
+		foreach ($merged as [$start, $end]) {
+			$total += $end - $start + 1;
+			while ($start <= $end) {
+				// The biggest block that both starts here and fits.
+				$maxSize = $start === 0 ? 32 : 0;
+				while (($start % (2 ** ($maxSize + 1))) === 0 && (2 ** ($maxSize + 1)) <= ($end - $start + 1)) {
+					$maxSize++;
+				}
+				$blocks[] = long2ip($start) . '/' . (32 - $maxSize);
+				$start += 2 ** $maxSize;
+			}
+		}
+		return [
+			'input' => count($ranges), 'ranges' => array_map(static fn ($r) => long2ip($r[0]) . ' - ' . long2ip($r[1]), $merged),
+			'blocks' => $blocks, 'addresses' => $total,
+		];
+	}
+
+	/** "22,80,443,8000-8010" or "top" into a list of port numbers. */
+	public function expandPorts(string $input, int $limit = 1024): array {
+		$ports = [];
+		foreach (preg_split('/[\s,]+/', trim($input)) ?: [] as $part) {
+			if ($part === '') {
+				continue;
+			}
+			if (preg_match('/^(\d+)\s*-\s*(\d+)$/', $part, $m)) {
+				$from = max(1, (int)$m[1]);
+				$to = min(65535, (int)$m[2]);
+				for ($port = $from; $port <= $to && count($ports) < $limit; $port++) {
+					$ports[$port] = true;
+				}
+				continue;
+			}
+			$port = (int)$part;
+			if ($port > 0 && $port < 65536) {
+				$ports[$port] = true;
+			}
+			if (count($ports) >= $limit) {
+				break;
+			}
+		}
+		$list = array_keys($ports);
+		sort($list);
+		return array_slice($list, 0, $limit);
+	}
+
+	/** What the security headers of an HTTP response add up to. */
+	public function httpFindings(array $http): array {
+		$headers = $http['headers'] ?? [];
+		$security = $http['security'] ?? [];
+		$findings = [];
+		$final = end($http['chain']) ?: [];
+		$url = (string)($final['url'] ?? ($http['url'] ?? ''));
+		if (str_starts_with($url, 'https://')) {
+			if (empty($security['strict-transport-security'])) {
+				$findings[] = ['level' => 'warn', 'area' => 'HSTS', 'text' => $this->l->t('No Strict-Transport-Security header, so a first visit can still be pushed to plain HTTP.')];
+			} else {
+				$findings[] = ['level' => 'ok', 'area' => 'HSTS', 'text' => $this->l->t('Strict-Transport-Security is set: %s', [(string)$security['strict-transport-security']])];
+			}
+		}
+		if (empty($security['content-security-policy'])) {
+			$findings[] = ['level' => 'info', 'area' => 'CSP', 'text' => $this->l->t('No Content-Security-Policy header.')];
+		}
+		if (empty($security['x-content-type-options'])) {
+			$findings[] = ['level' => 'info', 'area' => 'Headers', 'text' => $this->l->t('No X-Content-Type-Options: nosniff header.')];
+		}
+		if (!empty($headers['server']) && preg_match('/\d+\.\d+/', (string)$headers['server'])) {
+			$findings[] = ['level' => 'info', 'area' => 'Server', 'text' => $this->l->t('The Server header gives the exact version: %s', [(string)$headers['server']])];
+		}
+		foreach ($http['chain'] ?? [] as $hop) {
+			if (str_starts_with((string)$hop['url'], 'http://') && count($http['chain']) === 1) {
+				$findings[] = ['level' => 'warn', 'area' => 'HTTP', 'text' => $this->l->t('This URL served content over plain HTTP without redirecting to HTTPS.')];
+			}
+		}
+		return $findings;
 	}
 }

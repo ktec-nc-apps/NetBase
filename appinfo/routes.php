@@ -68,6 +68,23 @@ return [
 		['name' => 'api#mailRelayTest', 'url' => '/api/mail/relay', 'verb' => 'POST'],
 		['name' => 'api#mailSend', 'url' => '/api/mail/send', 'verb' => 'POST'],
 
+		// SSH commands
+		['name' => 'api#sshRun', 'url' => '/api/ssh/run', 'verb' => 'POST'],
+		['name' => 'api#sshPreset', 'url' => '/api/ssh/preset', 'verb' => 'POST'],
+
+		// DNS in depth
+		['name' => 'api#dnsQuery', 'url' => '/api/dns/query', 'verb' => 'GET'],
+		['name' => 'api#dnsCompare', 'url' => '/api/dns/compare', 'verb' => 'GET'],
+		['name' => 'api#dnsTrace', 'url' => '/api/dns/trace', 'verb' => 'GET'],
+		['name' => 'api#dnsZoneTransfer', 'url' => '/api/dns/axfr', 'verb' => 'GET'],
+
+		// deeper checks on the existing tools
+		['name' => 'api#tlsVersions', 'url' => '/api/tools/tls-versions', 'verb' => 'GET'],
+		['name' => 'api#tcpPing', 'url' => '/api/tools/tcp-ping', 'verb' => 'GET'],
+		['name' => 'api#mtuDiscover', 'url' => '/api/tools/mtu', 'verb' => 'GET'],
+		['name' => 'api#subnetSplit', 'url' => '/api/tools/subnet-split', 'verb' => 'GET'],
+		['name' => 'api#subnetAggregate', 'url' => '/api/tools/subnet-aggregate', 'verb' => 'GET'],
+
 		// service probes
 		['name' => 'api#probeSsh', 'url' => '/api/probe/ssh', 'verb' => 'GET'],
 		['name' => 'api#probeTelnet', 'url' => '/api/probe/telnet', 'verb' => 'GET'],

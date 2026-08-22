@@ -184,25 +184,136 @@
         <!-- ============ dns ============ -->
         <section v-if="tab==='dns'">
           <div class="card tool-card">
-            <div class="tool-row">
-              <input v-model="dnsHost" :placeholder="t('example.com')" @keyup.enter="runDns">
-              <button class="btn primary" :disabled="busy.dns" @click="runDns">{{ t('Look up') }}</button>
-            </div>
-            <div class="chips">
-              <label v-for="ty in dnsTypes" :key="ty"><input type="checkbox" :value="ty" v-model="dnsWanted"> {{ ty }}</label>
+            <div class="seg">
+              <button v-for="v in dnsViews" :key="v.id" class="seg-btn" :class="{active: dnsView===v.id}" @click="dnsView=v.id">{{ t(v.label) }}</button>
             </div>
           </div>
-          <div class="card" v-if="dnsResult">
-            <table class="grid compact">
-              <thead><tr><th>{{ t('Type') }}</th><th>{{ t('TTL') }}</th><th>{{ t('Value') }}</th></tr></thead>
-              <tbody><tr v-for="(r,i) in dnsResult.records" :key="i"><td class="mono">{{ r.type }}</td><td class="dim mono">{{ r.ttl }}</td><td class="mono wrap">{{ r.value }}</td></tr></tbody>
-            </table>
-            <p v-if="!dnsResult.records.length" class="empty-hint">{{ t('No records returned.') }}</p>
-            <div class="kv" v-if="dnsResult.analysis && (dnsResult.analysis.spf || dnsResult.analysis.dmarc)">
-              <div v-if="dnsResult.analysis.spf"><span>SPF</span><code>{{ dnsResult.analysis.spf }}</code></div>
-              <div v-if="dnsResult.analysis.dmarc"><span>DMARC</span><code>{{ dnsResult.analysis.dmarc }}</code></div>
+
+          <template v-if="dnsView==='records'">
+            <div class="card tool-card">
+              <div class="tool-row">
+                <input v-model="dnsHost" :placeholder="t('example.com')" @keyup.enter="runDns">
+                <button class="btn primary" :disabled="busy.dns" @click="runDns">{{ t('Look up') }}</button>
+              </div>
+              <div class="chips">
+                <label v-for="ty in dnsTypes" :key="ty"><input type="checkbox" :value="ty" v-model="dnsWanted"> {{ ty }}</label>
+              </div>
             </div>
-          </div>
+            <div class="card" v-if="dnsResult">
+              <table class="grid compact">
+                <thead><tr><th>{{ t('Type') }}</th><th>{{ t('TTL') }}</th><th>{{ t('Value') }}</th></tr></thead>
+                <tbody><tr v-for="(r,i) in dnsResult.records" :key="i"><td class="mono">{{ r.type }}</td><td class="dim mono">{{ r.ttl }}</td><td class="mono wrap">{{ r.value }}</td></tr></tbody>
+              </table>
+              <p v-if="!dnsResult.records.length" class="empty-hint">{{ t('No records returned.') }}</p>
+              <div class="kv" v-if="dnsResult.analysis && (dnsResult.analysis.spf || dnsResult.analysis.dmarc)">
+                <div v-if="dnsResult.analysis.spf"><span>SPF</span><code>{{ dnsResult.analysis.spf }}</code></div>
+                <div v-if="dnsResult.analysis.dmarc"><span>DMARC</span><code>{{ dnsResult.analysis.dmarc }}</code></div>
+              </div>
+            </div>
+          </template>
+
+          <template v-if="dnsView==='advanced'">
+            <div class="card tool-card">
+              <div class="tool-row">
+                <input v-model="dnsHost" :placeholder="t('example.com')" @keyup.enter="runDnsQuery">
+                <select v-model="dnsType" class="tiny"><option v-for="ty in dnsAllTypes" :key="ty" :value="ty">{{ ty }}</option></select>
+                <input v-model="dnsServer" class="short" :placeholder="t('Resolver (blank = this server)')">
+                <button class="btn primary" :disabled="busy.dnsq" @click="runDnsQuery">{{ t('Ask') }}</button>
+              </div>
+              <label class="opt"><input type="checkbox" v-model="dnsDnssec"> {{ t('Ask the resolver to validate DNSSEC') }}</label>
+              <p class="dim">{{ t('Any record type, from any resolver — NetBase speaks DNS itself instead of going through PHP.') }}</p>
+            </div>
+            <div class="card" v-if="dnsQueryResult">
+              <div class="kv">
+                <div><span>{{ t('Status') }}</span><code :class="dnsQueryResult.status === 'NOERROR' ? 'good' : 'bad'">{{ dnsQueryResult.status }}</code></div>
+                <div><span>{{ t('Answered by') }}</span><code>{{ dnsQueryResult.server }} · {{ dnsQueryResult.ms }} ms</code></div>
+                <div><span>{{ t('Flags') }}</span><code>{{ dnsFlags(dnsQueryResult) }}</code></div>
+                <div v-if="dnsQueryResult.error"><span>{{ t('Error') }}</span><code class="bad">{{ dnsQueryResult.error }}</code></div>
+              </div>
+              <table class="grid compact" v-if="dnsQueryResult.answers.length">
+                <thead><tr><th>{{ t('Name') }}</th><th>{{ t('Type') }}</th><th>{{ t('TTL') }}</th><th>{{ t('Value') }}</th></tr></thead>
+                <tbody><tr v-for="(r,i) in dnsQueryResult.answers" :key="i"><td class="mono tiny">{{ r.name }}</td><td class="mono">{{ r.type }}</td><td class="dim mono">{{ r.ttl }}</td><td class="mono wrap tiny">{{ r.value }}</td></tr></tbody>
+              </table>
+              <p v-else class="empty-hint">{{ t('No records returned.') }}</p>
+              <details v-if="dnsQueryResult.authority.length"><summary>{{ t('Authority section') }}</summary>
+                <table class="grid compact"><tbody><tr v-for="(r,i) in dnsQueryResult.authority" :key="i"><td class="mono tiny">{{ r.name }}</td><td class="mono">{{ r.type }}</td><td class="mono wrap tiny">{{ r.value }}</td></tr></tbody></table>
+              </details>
+            </div>
+          </template>
+
+          <template v-if="dnsView==='compare'">
+            <div class="card tool-card">
+              <div class="tool-row">
+                <input v-model="dnsHost" :placeholder="t('example.com')" @keyup.enter="runDnsCompare">
+                <select v-model="dnsType" class="tiny"><option v-for="ty in dnsAllTypes" :key="ty" :value="ty">{{ ty }}</option></select>
+                <button class="btn primary" :disabled="busy.dnsc" @click="runDnsCompare">{{ t('Compare resolvers') }}</button>
+              </div>
+              <p class="dim">{{ t('Asks this server and the large public resolvers the same question, so you can see whether a change has spread yet.') }}</p>
+            </div>
+            <div class="card" v-if="dnsCompareResult">
+              <div v-for="(f,i) in dnsCompareResult.findings" :key="i" class="finding" :class="f.level">
+                <span class="pill" :class="f.level">{{ t(levelLabel(f.level)) }}</span><div><strong>{{ f.area }}</strong> · {{ f.text }}</div>
+              </div>
+              <table class="grid compact">
+                <thead><tr><th>{{ t('Resolver') }}</th><th>{{ t('Time') }}</th><th>{{ t('Status') }}</th><th>{{ t('Answer') }}</th></tr></thead>
+                <tbody>
+                  <tr v-for="(r,i) in dnsCompareResult.rows" :key="i">
+                    <td>{{ r.label }} <span class="dim mono tiny">{{ r.server }}</span></td>
+                    <td class="mono">{{ r.ms }} ms</td>
+                    <td class="mono">{{ r.status }}</td>
+                    <td class="mono wrap tiny">{{ r.values.join(', ') || '—' }} <span class="pill" :class="r.agrees ? 'ok' : 'warn'">{{ r.agrees ? t('same') : t('differs') }}</span></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </template>
+
+          <template v-if="dnsView==='trace'">
+            <div class="card tool-card">
+              <div class="tool-row">
+                <input v-model="dnsHost" :placeholder="t('example.com')" @keyup.enter="runDnsTrace">
+                <select v-model="dnsType" class="tiny"><option v-for="ty in dnsAllTypes" :key="ty" :value="ty">{{ ty }}</option></select>
+                <button class="btn primary" :disabled="busy.dnst" @click="runDnsTrace">{{ t('Trace from the root') }}</button>
+              </div>
+              <p class="dim">{{ t('Follows the delegation the way a resolver does, so a broken hand-off between zones is visible.') }}</p>
+            </div>
+            <div class="card" v-if="dnsTraceResult">
+              <div v-for="(s,i) in dnsTraceResult.steps" :key="i" class="trace-step">
+                <div class="ts-head"><span class="pill">{{ i + 1 }}</span> <strong class="mono">{{ s.serverName }}</strong> <span class="dim mono">{{ s.server }}</span> <span class="dim">{{ s.ms }} ms · {{ s.status }}</span></div>
+                <div class="mono tiny wrap" v-if="s.answers.length">→ {{ s.answers.map(a => a.type + ' ' + a.value).join(', ') }}</div>
+                <div class="dim mono tiny wrap" v-else>{{ t('delegates to') }} {{ s.authority.filter(a => a.type === 'NS').map(a => a.value).join(', ') || '—' }}</div>
+              </div>
+            </div>
+          </template>
+
+          <template v-if="dnsView==='axfr'">
+            <div class="card tool-card">
+              <div class="tool-row">
+                <input v-model="axfrZone" :placeholder="t('example.com')" @keyup.enter="runAxfr">
+                <input v-model="axfrServer" class="short" :placeholder="t('Name server (blank = all of them)')">
+                <button class="btn primary" :disabled="busy.axfr" @click="runAxfr">{{ t('Test zone transfer') }}</button>
+              </div>
+              <p class="dim">{{ t('A name server that hands its whole zone to a stranger gives away every host name it knows. This checks whether yours refuses.') }}</p>
+            </div>
+            <div class="card" v-if="axfrResult">
+              <div v-for="(f,i) in axfrResult.findings" :key="i" class="finding" :class="f.level">
+                <span class="pill" :class="f.level">{{ t(levelLabel(f.level)) }}</span><div><strong>{{ f.area }}</strong> · {{ f.text }}</div>
+              </div>
+              <table class="grid compact">
+                <thead><tr><th>{{ t('Name server') }}</th><th>{{ t('Result') }}</th><th>{{ t('Records') }}</th></tr></thead>
+                <tbody>
+                  <tr v-for="(r,i) in axfrResult.results" :key="i">
+                    <td class="mono">{{ r.server }} <span class="dim tiny">{{ r.address }}</span></td>
+                    <td><span class="pill" :class="r.allowed ? 'bad' : 'ok'">{{ r.allowed ? t('transfer allowed') : t('refused') }}</span> <span class="dim tiny">{{ r.error || '' }}</span></td>
+                    <td class="mono">{{ r.records || '' }}</td>
+                  </tr>
+                </tbody>
+              </table>
+              <template v-for="(r,i) in axfrResult.results" :key="'s'+i">
+                <details v-if="r.sample && r.sample.length"><summary>{{ r.server }}</summary><pre class="raw">{{ r.sample.join('\n') }}</pre></details>
+              </template>
+            </div>
+          </template>
         </section>
 
         <!-- ============ whois ============ -->
@@ -232,6 +343,29 @@
               <button class="btn primary" :disabled="busy.ping" @click="runPing">{{ t('Ping') }}</button>
               <button class="btn" :disabled="busy.trace" @click="runTrace">{{ t('Traceroute') }}</button>
               <button class="btn" :disabled="busy.path" @click="runPath">{{ t('Path quality') }}</button>
+            </div>
+            <div class="tool-row">
+              <input v-model.number="tcpPingPort" type="number" class="tiny" min="1" max="65535">
+              <button class="btn" :disabled="busy.tcpping" @click="runTcpPing">{{ t('TCP ping (works without ICMP)') }}</button>
+              <button class="btn" :disabled="busy.mtu" @click="runMtu">{{ t('Find the path MTU') }}</button>
+            </div>
+          </div>
+          <div class="card" v-if="tcpPingResult">
+            <h3>{{ t('TCP ping') }}</h3>
+            <div class="kv">
+              <div><span>{{ t('Target') }}</span><code>{{ tcpPingResult.host }}:{{ tcpPingResult.port }} <span class="dim">{{ tcpPingResult.service }}</span></code></div>
+              <div><span>{{ t('Answered') }}</span><code>{{ tcpPingResult.received }} / {{ tcpPingResult.sent }} ({{ tcpPingResult.loss }}% {{ t('lost') }})</code></div>
+              <div v-if="tcpPingResult.stats.avg"><span>{{ t('Round trip') }}</span><code>{{ t('min') }} {{ tcpPingResult.stats.min }} · {{ t('avg') }} {{ tcpPingResult.stats.avg }} · {{ t('max') }} {{ tcpPingResult.stats.max }} ms</code></div>
+            </div>
+          </div>
+          <div class="card" v-if="mtuResult">
+            <h3>{{ t('Path MTU') }}</h3>
+            <div v-for="(f,i) in (mtuResult.findings || [])" :key="i" class="finding" :class="f.level">
+              <span class="pill" :class="f.level">{{ t(levelLabel(f.level)) }}</span><div><strong>{{ f.area }}</strong> · {{ f.text }}</div>
+            </div>
+            <div class="kv" v-if="mtuResult.mtu">
+              <div><span>MTU</span><code>{{ mtuResult.mtu }} {{ t('bytes') }}</code></div>
+              <div><span>{{ t('Largest payload') }}</span><code>{{ mtuResult.payload }} {{ t('bytes') }}</code></div>
             </div>
           </div>
           <div class="card" v-if="pingResult">
@@ -274,8 +408,11 @@
           <div class="card tool-card">
             <div class="tool-row">
               <input v-model="portHost" :placeholder="t('Host name or IP address')" @keyup.enter="runPorts">
-              <input v-model="portList" class="narrow" :placeholder="t('22,80,443 (blank = common ports)')">
+              <input v-model="portList" class="narrow" :placeholder="t('22,80,443,8000-8100 (blank = common ports)')">
               <button class="btn primary" :disabled="busy.ports" @click="runPorts">{{ t('Check') }}</button>
+            </div>
+            <div class="chips">
+              <button class="btn xs" v-for="p in portPresets" :key="p.label" @click="portList = p.ports; runPorts()">{{ t(p.label) }}</button>
             </div>
           </div>
           <div class="card" v-if="portResult">
@@ -302,7 +439,23 @@
               <input v-model.number="tlsPort" class="tiny" type="number">
               <button class="btn primary" :disabled="busy.tls" @click="runTls">{{ t('Inspect certificate') }}</button>
               <button class="btn" :disabled="busy.http" @click="runHttp">{{ t('HTTP headers') }}</button>
+              <button class="btn" :disabled="busy.tlsver" @click="runTlsVersions">{{ t('Which TLS versions?') }}</button>
             </div>
+          </div>
+          <div class="card" v-if="tlsVersionsResult">
+            <div v-for="(f,i) in tlsVersionsResult.findings" :key="i" class="finding" :class="f.level">
+              <span class="pill" :class="f.level">{{ t(levelLabel(f.level)) }}</span><div><strong>{{ f.area }}</strong> · {{ f.text }}</div>
+            </div>
+            <table class="grid compact">
+              <thead><tr><th>{{ t('Version') }}</th><th>{{ t('Accepted') }}</th><th>{{ t('Cipher') }}</th></tr></thead>
+              <tbody>
+                <tr v-for="(v,name) in tlsVersionsResult.versions" :key="name">
+                  <td class="mono">{{ name }}</td>
+                  <td><span class="pill" :class="v.supported ? (name === 'TLSv1.0' || name === 'TLSv1.1' ? 'warn' : 'ok') : 'no'">{{ v.supported ? t('yes') : t('no') }}</span></td>
+                  <td class="mono dim tiny">{{ v.cipher || '' }}</td>
+                </tr>
+              </tbody>
+            </table>
           </div>
           <div class="card" v-if="tlsResult">
             <p v-if="!tlsResult.ok" class="empty-hint">⚠ {{ tlsResult.error }}</p>
@@ -321,6 +474,9 @@
               <thead><tr><th>{{ t('URL') }}</th><th>{{ t('Status') }}</th><th>{{ t('Time') }}</th><th>{{ t('Server') }}</th></tr></thead>
               <tbody><tr v-for="(h,i) in httpResult.chain" :key="i"><td class="mono wrap">{{ h.url }}</td><td class="mono">{{ h.status }}</td><td class="dim mono">{{ h.ms }} ms</td><td class="dim">{{ h.server }}</td></tr></tbody>
             </table>
+            <div v-for="(f,i) in (httpResult.findings || [])" :key="i" class="finding" :class="f.level">
+              <span class="pill" :class="f.level">{{ t(levelLabel(f.level)) }}</span><div><strong>{{ f.area }}</strong> · {{ f.text }}</div>
+            </div>
             <div class="kv">
               <div v-for="(v,k) in httpResult.security" :key="k"><span>{{ k }}</span><code :class="{dim: !v}">{{ v || t('not set') }}</code></div>
             </div>
@@ -456,6 +612,32 @@
               <div v-for="(v,k) in subnetResult" :key="k"><span>{{ t(fieldLabel(k)) }}</span><code>{{ v }}</code></div>
             </div>
           </div>
+          <div class="card tool-card">
+            <h3>{{ t('Split into smaller networks') }}</h3>
+            <div class="tool-row">
+              <input v-model="splitCidr" class="short" placeholder="192.168.0.0/16">
+              <select v-model.number="splitPrefix" class="tiny"><option v-for="p in splitPrefixes" :key="p" :value="p">/{{ p }}</option></select>
+              <button class="btn" :disabled="busy.split" @click="runSplit">{{ t('Split') }}</button>
+            </div>
+            <table class="grid compact" v-if="splitResult">
+              <thead><tr><th>{{ t('Network') }}</th><th>{{ t('First host') }}</th><th>{{ t('Last host') }}</th><th>{{ t('Broadcast') }}</th><th>{{ t('Hosts') }}</th></tr></thead>
+              <tbody><tr v-for="(n,i) in splitResult.subnets" :key="i"><td class="mono">{{ n.cidr }}</td><td class="mono dim">{{ n.firstHost }}</td><td class="mono dim">{{ n.lastHost }}</td><td class="mono dim">{{ n.broadcast }}</td><td class="mono">{{ n.hosts }}</td></tr></tbody>
+            </table>
+          </div>
+
+          <div class="card tool-card">
+            <h3>{{ t('Combine addresses into the fewest networks') }}</h3>
+            <textarea v-model="aggregateInput" rows="3" class="mono tiny" :placeholder="t('192.168.1.0/24, 192.168.2.0/24, 10.0.0.5, 10.0.0.8-10.0.0.20')"></textarea>
+            <div class="tool-row">
+              <button class="btn" :disabled="busy.aggregate" @click="runAggregate">{{ t('Combine') }}</button>
+            </div>
+            <div class="kv" v-if="aggregateResult">
+              <div><span>{{ t('Blocks') }}</span><code class="wrap">{{ aggregateResult.blocks.join(', ') }}</code></div>
+              <div><span>{{ t('Ranges') }}</span><code class="wrap">{{ aggregateResult.ranges.join(', ') }}</code></div>
+              <div><span>{{ t('Addresses covered') }}</span><code>{{ aggregateResult.addresses }}</code></div>
+            </div>
+          </div>
+
           <div class="card tool-card">
             <div class="tool-row">
               <input v-model="macQuery" :placeholder="t('MAC address, e.g. 00:1b:a9:3f:8d:fe')" @keyup.enter="runMac">
@@ -836,6 +1018,38 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
             <pre class="raw" v-if="telnetResult.banner">{{ telnetResult.banner }}</pre>
           </div>
 
+          <div class="card tool-card" v-if="allowed('sshexec')">
+            <h3>{{ t('Run a command over SSH') }}</h3>
+            <p class="dim">{{ t('Signs in to a saved SSH connection with its password or private key and runs one command. There is no terminal: PHP ends every request, so a shell session cannot outlive one.') }}</p>
+            <div class="tool-row">
+              <select v-model.number="sshConn" class="grow">
+                <option :value="0">{{ t('Choose a saved SSH connection…') }}</option>
+                <option v-for="c in sshConnections" :key="c.id" :value="c.id">{{ c.name }} — {{ c.username }}@{{ c.host }}</option>
+              </select>
+              <button class="btn sm" @click="openConn(null,'ssh')">{{ t('+ Add connection') }}</button>
+              <button class="btn sm" v-if="sshConn" @click="openConn(connById(sshConn))">{{ t('Edit') }}</button>
+            </div>
+            <div class="tool-row">
+              <select v-model="sshPreset" class="grow">
+                <option value="">{{ t('Or type a command below…') }}</option>
+                <option v-for="(p,id) in sshPresets" :key="id" :value="id">{{ t(p.label) }}</option>
+              </select>
+              <button class="btn primary" :disabled="busy.sshrun || !sshConn || !sshPreset" @click="runSshPreset">{{ t('Run') }}</button>
+            </div>
+            <div class="tool-row">
+              <input v-model="sshCommand" class="mono" :placeholder="t('uptime')" @keyup.enter="runSshCommand">
+              <button class="btn" :disabled="busy.sshrun || !sshConn || !sshCommand" @click="runSshCommand">{{ t('Run command') }}</button>
+            </div>
+            <div v-if="sshRunResult">
+              <div class="kv">
+                <div><span>{{ t('Command') }}</span><code class="wrap">{{ sshRunResult.command }}</code></div>
+                <div><span>{{ t('Exit status') }}</span><code :class="sshRunResult.exitStatus ? 'bad' : 'good'">{{ sshRunResult.exitStatus === null ? '—' : sshRunResult.exitStatus }}</code></div>
+                <div><span>{{ t('Time taken') }}</span><code>{{ sshRunResult.seconds }} s</code></div>
+              </div>
+              <pre class="raw">{{ sshRunResult.output || t('(no output)') }}</pre>
+            </div>
+          </div>
+
           <div class="card tool-card">
             <h3>{{ t('Clock check (NTP)') }}</h3>
             <p class="dim">{{ t('A clock that has drifted is behind more certificate and sign-in failures than anything else.') }}</p>
@@ -1045,7 +1259,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
 
   const TABS = [
     { id: 'devices', icon: '🛰️', label: 'Devices', hint: 'Everything answering on the local network' },
-    { id: 'dns', icon: '🌐', label: 'DNS', hint: 'Records, SPF and DMARC' },
+    { id: 'dns', icon: '🌐', label: 'DNS', hint: 'Records of any type, resolver comparison, delegation and zone transfer' },
     { id: 'whois', icon: '📇', label: 'Whois', hint: 'Domain and address registration' },
     { id: 'ping', icon: '📡', label: 'Ping & traceroute', hint: 'Reachability and the path there' },
     { id: 'ports', icon: '🔌', label: 'Ports', hint: 'TCP connect check with banners' },
@@ -1054,9 +1268,27 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
     { id: 'bench', icon: '⏱️', label: 'Benchmarks', hint: 'Throughput, latency and where the time goes' },
     { id: 'mail', icon: '📧', label: 'Mail', hint: 'Domain policy, server tests and a real test message' },
     { id: 'files', icon: '📁', label: 'FTP & SFTP', hint: 'Browse a remote server and move files' },
-    { id: 'ssh', icon: '🔐', label: 'SSH & Telnet', hint: 'What a service offers, without signing in' },
+    { id: 'ssh', icon: '🔐', label: 'SSH & Telnet', hint: 'What a service offers, and commands on the servers you keep' },
     { id: 'server', icon: '🖥️', label: 'This server', hint: 'Interfaces, routes and listening sockets' },
     { id: 'nmap', icon: '🗺️', label: 'nmap', hint: 'Presets over the nmap scanner' },
+  ];
+
+  const DNS_VIEWS = [
+    { id: 'records', label: 'Records' },
+    { id: 'advanced', label: 'Any type, any resolver' },
+    { id: 'compare', label: 'Resolver comparison' },
+    { id: 'trace', label: 'Delegation trace' },
+    { id: 'axfr', label: 'Zone transfer' },
+  ];
+  const DNS_ALL_TYPES = ['A', 'AAAA', 'CNAME', 'MX', 'NS', 'TXT', 'SOA', 'SRV', 'CAA', 'PTR', 'TLSA', 'DS', 'DNSKEY', 'SSHFP', 'NAPTR', 'HTTPS', 'SVCB', 'ANY'];
+  const SPLIT_PREFIXES = [22, 23, 24, 25, 26, 27, 28, 29, 30];
+  const PORT_PRESETS = [
+    { label: 'Common', ports: '21,22,23,25,53,80,110,139,143,443,445,587,993,995,3389,8080' },
+    { label: 'Web', ports: '80,443,8000,8008,8080,8443,8888' },
+    { label: 'Mail', ports: '25,110,143,465,587,993,995' },
+    { label: 'Databases', ports: '1433,1521,3306,5432,6379,9200,27017' },
+    { label: 'Remote access', ports: '22,23,3389,5900,5901' },
+    { label: 'Printers and NAS', ports: '139,445,515,631,5000,5001,9100' },
   ];
 
   const MAIL_VIEWS = [
@@ -1104,6 +1336,15 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         selected: null, editLabel: '', editTags: '', editNotes: '', editType: 'unknown',
         busy: {},
         dnsHost: '', dnsWanted: ['A', 'AAAA', 'MX', 'NS', 'TXT'], dnsResult: null,
+        dnsView: 'records', dnsViews: DNS_VIEWS, dnsAllTypes: DNS_ALL_TYPES,
+        dnsType: 'A', dnsServer: '', dnsDnssec: false, dnsQueryResult: null,
+        dnsCompareResult: null, dnsTraceResult: null,
+        axfrZone: '', axfrServer: '', axfrResult: null,
+        tlsVersionsResult: null, tcpPingPort: 443, tcpPingResult: null, mtuResult: null,
+        splitCidr: '', splitPrefix: 26, splitPrefixes: SPLIT_PREFIXES, splitResult: null,
+        aggregateInput: '', aggregateResult: null,
+        portPresets: PORT_PRESETS,
+        sshConn: 0, sshPreset: '', sshCommand: '', sshRunResult: null,
         dnsTypes: ['A', 'AAAA', 'CNAME', 'MX', 'NS', 'TXT', 'SOA', 'SRV', 'CAA'],
         whoisQuery: '', whoisResult: null,
         pingHost: '', pingResult: null, traceResult: null,
@@ -1148,6 +1389,8 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
       onlineCount() { return this.devices.filter((d) => d.online).length; },
       speedEndpoint() { return (this.speedResult && this.speedResult.endpoint) || 'speed.cloudflare.com'; },
       fileConnections() { return this.connections.filter((c) => c.kind === 'ftp' || c.kind === 'sftp'); },
+      sshConnections() { return this.connections.filter((c) => c.kind === 'ssh' || c.kind === 'sftp'); },
+      sshPresets() { return this.status.sshPresets || {}; },
       smtpConnections() { return this.connections.filter((c) => c.kind === 'smtp'); },
       mailboxConnections() { return this.connections.filter((c) => c.kind === 'imap' || c.kind === 'pop3'); },
       connModes() { return (this.connKinds[this.connForm.kind] || {}).modes || []; },
@@ -1502,13 +1745,34 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
       async runTelnet() { this.telnetResult = await this.guarded('telnet', () => api('probe/telnet?' + qs({ host: this.sshHost, port: 23 }))); },
       async runNtp() { this.ntpResult = await this.guarded('ntp', () => api('probe/ntp?' + qs({ host: this.ntpHost }))); },
 
+      dnsFlags(answer) {
+        const flags = [];
+        if (answer.authoritative) flags.push('AA');
+        if (answer.truncated) flags.push('TC');
+        if (answer.recursionAvailable) flags.push('RA');
+        if (answer.authenticated) flags.push('AD');
+        return flags.join(' ') || '—';
+      },
+      async runDnsQuery() { this.dnsQueryResult = await this.guarded('dnsq', () => api('dns/query?' + qs({ host: this.dnsHost, type: this.dnsType, server: this.dnsServer, dnssec: this.dnsDnssec ? 1 : 0 }))); },
+      async runDnsCompare() { this.dnsCompareResult = await this.guarded('dnsc', () => api('dns/compare?' + qs({ host: this.dnsHost, type: this.dnsType }))); },
+      async runDnsTrace() { this.dnsTraceResult = await this.guarded('dnst', () => api('dns/trace?' + qs({ host: this.dnsHost, type: this.dnsType }))); },
+      async runAxfr() { this.axfrResult = await this.guarded('axfr', () => api('dns/axfr?' + qs({ zone: this.axfrZone, nameserver: this.axfrServer }))); },
+      async runTlsVersions() { this.tlsVersionsResult = await this.guarded('tlsver', () => api('tools/tls-versions?' + qs({ host: this.tlsHost, port: this.tlsPort }))); },
+      async runTcpPing() { this.tcpPingResult = await this.guarded('tcpping', () => api('tools/tcp-ping?' + qs({ host: this.pingHost, port: this.tcpPingPort || 443 }))); },
+      async runMtu() { this.mtuResult = await this.guarded('mtu', () => api('tools/mtu?' + qs({ host: this.pingHost }))); },
+      async runSplit() { this.splitResult = await this.guarded('split', () => api('tools/subnet-split?' + qs({ cidr: this.splitCidr || this.subnetInput, prefix: this.splitPrefix }))); },
+      async runAggregate() { this.aggregateResult = await this.guarded('aggregate', () => api('tools/subnet-aggregate?' + qs({ input: this.aggregateInput }))); },
+      async runSshPreset() { this.sshRunResult = await this.guarded('sshrun', () => api('ssh/preset', { method: 'POST', body: JSON.stringify({ id: this.sshConn, preset: this.sshPreset }) })); },
+      async runSshCommand() { this.sshRunResult = await this.guarded('sshrun', () => api('ssh/run', { method: 'POST', body: JSON.stringify({ id: this.sshConn, command: this.sshCommand }) })); },
+
       async runDns() { this.dnsResult = await this.guarded('dns', () => api('tools/dns?' + qs({ host: this.dnsHost, types: this.dnsWanted }))); },
       async runWhois() { this.whoisResult = await this.guarded('whois', () => api('tools/whois?' + qs({ query: this.whoisQuery }))); },
       async runPing() { this.pingResult = await this.guarded('ping', () => api('tools/ping?' + qs({ host: this.pingHost }))); },
       async runTrace() { this.traceResult = await this.guarded('trace', () => api('tools/traceroute?' + qs({ host: this.pingHost }))); },
       async runPorts() {
-        const ports = this.portList.split(/[\s,]+/).map((x) => parseInt(x, 10)).filter((x) => x > 0);
-        this.portResult = await this.guarded('ports', () => api('tools/ports?' + qs({ host: this.portHost, ports })));
+        // The server understands "22,80,8000-8100"; sending the text as typed
+        // keeps ranges intact.
+        this.portResult = await this.guarded('ports', () => api('tools/ports?' + qs({ host: this.portHost, spec: this.portList })));
       },
       async runTls() { this.tlsResult = await this.guarded('tls', () => api('tools/tls?' + qs({ host: this.tlsHost, port: this.tlsPort }))); },
       async runHttp() { this.httpResult = await this.guarded('http', () => api('tools/http?' + qs({ url: this.tlsHost }))); },
@@ -1618,7 +1882,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         if (value === 'server' && !this.serverResult) this.runServer();
         // Saved connections are shared by the mail and file tabs; fetch them the
         // first time either one is opened.
-        if ((value === 'files' || value === 'mail') && !this.connections.length) this.loadConnections();
+        if ((value === 'files' || value === 'mail' || value === 'ssh') && !this.connections.length) this.loadConnections();
         if (value === 'files' && this.filesConn && !this.filesData) this.browse('');
         // Polling counters from a tab nobody is looking at is just noise.
         if (value !== 'bench' && this.liveTimer) this.toggleLive();
