@@ -346,3 +346,15 @@
 #netbase-root table.grid tr.dir a:hover { text-decoration: underline; }
 #netbase-root table.grid td.row-actions { display: table-cell; white-space: nowrap; }
 #netbase-root table.grid td.row-actions .btn { margin-left: 6px; }
+
+/* ---------- clickable ports in the device list ---------- */
+#netbase-root .ports-cell a { color: var(--primary); text-decoration: none; border-bottom: 1px dotted currentColor; }
+#netbase-root .ports-cell a:hover { text-decoration: none; border-bottom-style: solid; }
+#netbase-root .drawer-body code a { color: var(--primary); text-decoration: none; border-bottom: 1px dotted currentColor; }
+#netbase-root .drawer-tools a.btn { text-decoration: none; display: inline-flex; align-items: center; }
+
+/* ---------- rendered page preview ---------- */
+#netbase-root .modal.wide { width: min(1180px, 96vw); }
+#netbase-root .preview-body { background: var(--surface-2); min-height: 320px; }
+#netbase-root .preview-shot { display: block; width: 100%; height: auto; border-radius: 8px; border: 1px solid var(--border); background: #fff; }
+#netbase-root .centred-text { text-align: center; padding: 40px 0; }

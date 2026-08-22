@@ -68,6 +68,9 @@ return [
 		['name' => 'api#mailRelayTest', 'url' => '/api/mail/relay', 'verb' => 'POST'],
 		['name' => 'api#mailSend', 'url' => '/api/mail/send', 'verb' => 'POST'],
 
+		// device web page preview
+		['name' => 'api#preview', 'url' => '/api/preview', 'verb' => 'GET'],
+
 		// SSH commands
 		['name' => 'api#sshRun', 'url' => '/api/ssh/run', 'verb' => 'POST'],
 		['name' => 'api#sshPreset', 'url' => '/api/ssh/preset', 'verb' => 'POST'],

@@ -12,6 +12,7 @@ Discovery needs no root, no agent and no extra packages. Nextcloud runs unprivil
 - **Offline vendor database** — the bundled IEEE MA-L / MA-M / MA-S registries cover more than 53,000 prefixes, so no MAC address is ever sent anywhere. Randomised (privacy) addresses are labelled as such rather than reported as unknown.
 - **Names from the devices themselves** — NetBIOS node status, mDNS reverse lookup, WS-Discovery, SSDP and reverse DNS. Devices that stay silent during the sweep are asked again, more slowly, once the network is quiet.
 - **Device inventory** — rename, classify, tag and annotate devices; first-seen and last-seen are tracked, and the list can be exported as CSV.
+- **Open ports are links** — a web port opens the device's own page in a new tab; an FTP, SSH or mail port opens the matching NetBase tool with the address already filled in. Where a headless Chromium is installed, **Show the page** renders that page on the server and displays it as a picture, so a device only the server can reach is still visible.
 - **DNS toolkit** — any record type (including TLSA, DS, DNSKEY, SSHFP, CAA and SVCB) asked of any resolver, with the reply's flags; a side-by-side resolver comparison for propagation; a delegation trace from the root servers; and a zone-transfer test that tells you whether your name servers hand the whole zone to strangers.
 - **Whois** for domains and IP addresses, following IANA referrals to the registry and then the registrar. No `whois` binary required.
 - **Ping, traceroute, TCP port check** with banner grab and port ranges, plus a TCP ping for hosts that drop ICMP, path-MTU discovery, and Wake-on-LAN.
@@ -100,6 +101,7 @@ You do not have to read this table to find out where you stand. **System informa
 | `ext-sockets` (PHP) | Multicast discovery (WS-Discovery, SSDP) and Wake-on-LAN | Devices are still found and named over NetBIOS, mDNS and reverse DNS |
 | `ext-curl` (PHP) | Internet speed test, HTTP timing breakdown | Those two features are unavailable; nothing else changes |
 | `ext-ftp` (PHP) | Browsing FTP servers and moving files | SFTP still works — it uses the library Nextcloud already ships |
+| `chromium` | **Show the page**: a device's web page rendered on the server as a picture | The web ports are still offered as links |
 | `iperf3` | LAN throughput measurement | Local link speed cannot be measured |
 | `nmap` | The nmap tab | NetBase still sweeps the LAN and checks common ports itself |
 | `mtr` | Per-hop packet loss and latency | Traceroute still shows the path, without loss statistics |
@@ -147,6 +149,7 @@ Nextcloud 用のネットワーク総合ツールです。LAN上の機器を高�
 - **オフラインのベンダーデータベース** ― IEEE の MA-L / MA-M / MA-S 登録簿（53,000件超）を同梱しているため、MACアドレスを外部へ送信することは一切ありません。ランダム化（プライバシー）MACは「不明」ではなく、その旨を明示します。
 - **機器自身が名乗る名前** ― NetBIOS ノードステータス、mDNS逆引き、WS-Discovery、SSDP、逆引きDNS。掃引中に応答しなかった機器へは、通信が静まってからゆっくり再度問い合わせます。
 - **機器台帳** ― 名称変更・種別変更・タグ・メモに対応し、初回検出と最終検出を記録します。CSV書き出しも可能です。
+- **開放ポートはリンク** ― Webポートは機器の管理画面を新しいタブで開き、FTP・SSH・メールのポートは対応するNetBaseのツールを（アドレス入力済みで）開きます。ヘッドレスChromiumを導入していれば、**「ページを表示」**でそのページをサーバー側で描画し、画像として表示できます。サーバーからしか届かない機器の画面も確認できます。
 - **DNSツール** ― 任意のレコード種別（TLSA・DS・DNSKEY・SSHFP・CAA・SVCB を含む）を任意のDNSサーバーへ問い合わせ、応答フラグまで表示。主要な公開DNSとの一括比較（浸透確認）、ルートからの委任追跡、ゾーン転送の可否検査も行えます。
 - **whois** ― ドメインとIPアドレス。IANA から各レジストリ、さらにレジストラへと委譲先を自動で追跡します。`whois` コマンドは不要です。
 - **ping・traceroute・TCPポート確認**（バナー取得・ポート範囲指定）に加え、ICMPが通らない相手向けの **TCP ping**、**経路MTUの測定**、**Wake-on-LAN**。
@@ -235,6 +238,7 @@ Nextcloud 30〜34、PHP 8.1 以降。**それ以外は不要です。** 機器�
 | `ext-sockets`（PHP） | マルチキャスト探索（WS-Discovery・SSDP）と Wake-on-LAN | NetBIOS・mDNS・逆引きによる検出と名前解決は引き続き行えます |
 | `ext-curl`（PHP） | インターネット速度テスト、HTTPの時間内訳 | この2機能のみ利用不可。他に影響はありません |
 | `ext-ftp`（PHP） | FTPサーバーの閲覧とファイル受け渡し | SFTPはNextcloud同梱のライブラリで動作します |
+| `chromium` | **ページを表示** ― 機器のWeb画面をサーバーで描画して画像表示 | Webポートはリンクとしては利用できます |
 | `iperf3` | LANスループット計測 | LAN内の実効速度を測れません |
 | `nmap` | nmapタブ | NetBase 自身による掃引と主要ポート確認は引き続き動作します |
 | `mtr` | ホップ毎のパケット損失と遅延 | traceroute で経路自体は確認できます（損失統計なし） |

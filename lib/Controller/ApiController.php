@@ -8,6 +8,7 @@ use OCA\NetBase\AppInfo\Application;
 use OCA\NetBase\Db\DeviceMapper;
 use OCA\NetBase\Db\ScanMapper;
 use OCA\NetBase\Service\BenchmarkService;
+use OCA\NetBase\Service\BrowserService;
 use OCA\NetBase\Service\DiscoveryService;
 use OCA\NetBase\Service\DnsService;
 use OCA\NetBase\Service\EndpointService;
@@ -24,6 +25,8 @@ use OCA\NetBase\Service\ScanService;
 use OCA\NetBase\Service\ToolService;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
+use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
+use OCP\AppFramework\Http\DataDisplayResponse;
 use OCP\AppFramework\Http\Attribute\UserRateLimit;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
@@ -46,6 +49,7 @@ class ApiController extends Controller {
 		private ProbeService $probe,
 		private SshService $ssh,
 		private DnsService $dnsService,
+		private BrowserService $browser,
 		private OuiService $oui,
 		private ExecService $exec,
 		private PermissionService $permissions,
@@ -121,6 +125,7 @@ class ApiController extends Controller {
 			'sockets' => extension_loaded('sockets'),
 			'procOpen' => function_exists('proc_open'),
 			'sshPresets' => SshService::PRESETS,
+			'preview' => $this->permissions->can('preview') && $this->browser->available(),
 			'transfer' => $this->transfer->capabilities(),
 		]);
 	}
@@ -457,6 +462,37 @@ class ApiController extends Controller {
 	#[UserRateLimit(limit: 30, period: 60)]
 	public function mailBlocklist(string $ip): JSONResponse {
 		return $this->guard(fn () => ['ip' => $ip, 'results' => $this->mail->blocklists($ip)], 'mail');
+	}
+
+	// ---------------------------------------------------------------- page preview
+
+	/**
+	 * A device's own web page, rendered on this server and returned as an
+	 * image. It is a picture, not a frame: nothing from the page runs in the
+	 * browser, and a page only this server can reach still shows up.
+	 */
+	#[NoAdminRequired]
+	#[NoCSRFRequired]
+	#[UserRateLimit(limit: 60, period: 60)]
+	public function preview(string $url, int $width = 1280, int $height = 900, int $wait = 4000, bool $full = false) {
+		try {
+			$this->permissions->require('preview');
+			$result = $this->browser->screenshot($url, $width, $height, $wait, $full);
+		} catch (\InvalidArgumentException $e) {
+			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_BAD_REQUEST);
+		} catch (\RuntimeException $e) {
+			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_FORBIDDEN);
+		} catch (\Throwable $e) {
+			$this->logger->error('NetBase: ' . $e->getMessage(), ['exception' => $e, 'app' => 'netbase']);
+			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_INTERNAL_SERVER_ERROR);
+		}
+		if (!$result['ok']) {
+			return new JSONResponse(['error' => $result['error']], Http::STATUS_BAD_GATEWAY);
+		}
+		$response = new DataDisplayResponse($result['image'], Http::STATUS_OK, ['Content-Type' => 'image/png']);
+		// A snapshot of a live device is worth nothing once it is stale.
+		$response->cacheFor(0);
+		return $response;
 	}
 
 	// ---------------------------------------------------------------- SSH commands
