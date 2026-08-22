@@ -71,7 +71,7 @@ Choose a saved connection and browse it: directories, sizes, timestamps and perm
 
 Transfers stream through a file handle in both directions, so a large file never lands in PHP's memory, and a download never overwrites: `report.csv` becomes `report (2).csv`.
 
-FTP uses PHP's own `ext-ftp`, with or without TLS. SFTP uses the phpseclib copy Nextcloud already ships for its external-storage backends, so nothing extra is installed, and it signs in with either a password or a private key.
+FTP uses PHP's own `ext-ftp`, with or without TLS. SFTP uses the phpseclib copy Nextcloud already ships for its external-storage backends, so nothing extra is installed, and it signs in with either a password or a private key — see **Saved connections** for where the key goes.
 
 ## Telnet and the clock
 
@@ -82,6 +82,8 @@ FTP uses PHP's own `ext-ftp`, with or without TLS. SFTP uses the phpseclib copy 
 ## Saved connections
 
 The mail and file tools work from saved connections: type, host, port, encryption mode, user name and credential. They belong to the account that created them — there is no shared pool, because a stored password is one person's credential, not the instance's.
+
+**Where the private key goes.** Choose *Private key* under **Sign in with** — it is offered for SSH and SFTP connections. Then either give the path of the key inside your own Nextcloud files (`Keys/id_ed25519`, the file without `.pub`), in which case the server reads it when you save and the key never passes through the browser at all, or paste the key into the box below that field. A passphrase, if the key has one, goes in the field next to the user name. OpenSSH and PEM formats are both accepted.
 
 The password (or private key, with its passphrase) is encrypted with Nextcloud's own `ICrypto` before it reaches the database, decrypted only for the length of one connection, and **never sent back to the browser**: the interface is told only that a credential exists. Saving a connection again without retyping the password keeps the stored one. Protocol conversations shown in the interface have their credential lines masked.
 
@@ -204,7 +206,7 @@ Nextcloud 用のネットワーク総合ツールです。LAN上の機器を高�
 
 転送は双方向ともファイルハンドル経由のストリーム処理です。大きなファイルでもPHPのメモリに載りません。またダウンロードが既存ファイルを上書きすることはなく、`report.csv` は `report (2).csv` になります。
 
-FTPはPHP標準の `ext-ftp` を使い、TLSの有無どちらにも対応します。SFTPは、Nextcloudが外部ストレージ用に同梱している phpseclib を利用するため追加導入は不要で、パスワードと秘密鍵のどちらでもサインインできます。
+FTPはPHP標準の `ext-ftp` を使い、TLSの有無どちらにも対応します。SFTPは、Nextcloudが外部ストレージ用に同梱している phpseclib を利用するため追加導入は不要で、パスワードと秘密鍵のどちらでもサインインできます（鍵の指定方法は「接続先の保存」をご覧ください）。
 
 ## Telnet と時刻
 
@@ -215,6 +217,8 @@ FTPはPHP標準の `ext-ftp` を使い、TLSの有無どちらにも対応しま
 ## 接続先の保存
 
 メールとファイルの各ツールは、保存した接続先（種別・ホスト・ポート・暗号化方式・ユーザー名・資格情報）から動作します。接続先は作成したアカウントに属し、共有プールはありません。保存されたパスワードは組織のものではなく、その人個人の資格情報だからです。
+
+**秘密鍵の指定方法**：接続先の編集画面で「認証方式」を**秘密鍵**にしてください（SSH・SFTPの接続先で選べます）。指定方法は2通りです。ひとつは、ご自身のNextcloud内にある鍵ファイルのパスを入力する方法（例 `Keys/id_ed25519`。`.pub` が付かない方のファイル）。この場合、保存時にサーバーがファイルを読むため、鍵がブラウザーを通ることはありません。もうひとつは、その下の欄に鍵の本文を貼り付ける方法です。パスフレーズ付きの鍵は、ユーザー名の隣の欄に入力してください。OpenSSH形式・PEM形式のどちらも利用できます。
 
 パスワード（および秘密鍵とそのパスフレーズ）は、データベースへ届く前にNextcloud標準の `ICrypto` で暗号化され、復号されるのは1回の接続の間だけです。そして**ブラウザーへ返されることはありません**。画面に伝えられるのは「資格情報が保存されている」という事実だけです。パスワードを入力し直さずに接続先を保存し直した場合、保存済みのものがそのまま維持されます。画面に表示されるプロトコルのやり取りでも、資格情報の行は伏せ字になります。
 

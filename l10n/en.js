@@ -644,7 +644,10 @@ OC.L10N.register(
         "transfer allowed": "transfer allowed",
         "uptime": "uptime",
         "Records of any type, resolver comparison, delegation and zone transfer": "Records of any type, resolver comparison, delegation and zone transfer",
-        "What a service offers, and commands on the servers you keep": "What a service offers, and commands on the servers you keep"
+        "What a service offers, and commands on the servers you keep": "What a service offers, and commands on the servers you keep",
+        "Key file in your Nextcloud files": "Key file in your Nextcloud files",
+        "Give the path of the private key inside your own Nextcloud files — the one without .pub. The server reads it when you save; the key itself never passes through the browser. Or paste it below instead.": "Give the path of the private key inside your own Nextcloud files — the one without .pub. The server reads it when you save; the key itself never passes through the browser. Or paste it below instead.",
+        "Private key (paste)": "Private key (paste)"
     },
     "nplurals=2; plural=(n != 1);"
 );
