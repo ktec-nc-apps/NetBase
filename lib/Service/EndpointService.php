@@ -6,6 +6,8 @@ namespace OCA\NetBase\Service;
 
 use OCA\NetBase\Db\EndpointEntity;
 use OCA\NetBase\Db\EndpointMapper;
+use OCP\Files\IRootFolder;
+use OCP\Files\NotFoundException;
 use OCP\Security\ICrypto;
 use Psr\Log\LoggerInterface;
 
@@ -31,6 +33,7 @@ class EndpointService {
 		private EndpointMapper $mapper,
 		private ICrypto $crypto,
 		private ToolService $tools,
+		private IRootFolder $rootFolder,
 		private LoggerInterface $logger,
 	) {
 	}
@@ -130,6 +133,14 @@ class EndpointService {
 				$touched = true;
 			}
 		}
+		// A key can also be named by its path in the user's own Nextcloud files,
+		// which is easier than pasting it and keeps it out of the browser
+		// entirely: the server reads the file, as that user, and stores it.
+		$keyPath = trim((string)($data['privateKeyPath'] ?? ''));
+		if ($keyPath !== '') {
+			$credentials['key'] = $this->readKeyFile($userId, $keyPath);
+			$touched = true;
+		}
 		if ($touched) {
 			$hasAny = implode('', $credentials) !== '';
 			$entity->setSecret($hasAny ? $this->crypto->encrypt(json_encode($credentials, JSON_UNESCAPED_SLASHES)) : null);
@@ -137,6 +148,23 @@ class EndpointService {
 
 		$saved = $id !== null ? $this->mapper->update($entity) : $this->mapper->insert($entity);
 		return $saved->jsonSerialize();
+	}
+
+	/** The contents of a private key stored in the user's Nextcloud files. */
+	public function readKeyFile(string $userId, string $path): string {
+		try {
+			$node = $this->rootFolder->getUserFolder($userId)->get(ltrim($path, '/'));
+		} catch (NotFoundException) {
+			throw new \InvalidArgumentException('No such file in your Nextcloud files: ' . $path);
+		}
+		if ($node->getSize() > 262144) {
+			throw new \InvalidArgumentException('That file is too large to be a private key');
+		}
+		$content = (string)$node->getContent();
+		if (!str_contains($content, 'PRIVATE KEY')) {
+			throw new \InvalidArgumentException('That file does not look like a private key. Use the file that has no .pub at the end.');
+		}
+		return $content;
 	}
 
 	public function delete(int $id, string $userId): void {

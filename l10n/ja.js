@@ -644,7 +644,10 @@ OC.L10N.register(
         "transfer allowed": "転送が可能",
         "uptime": "uptime",
         "Records of any type, resolver comparison, delegation and zone transfer": "任意種別のレコード照会・DNSサーバー比較・委任追跡・ゾーン転送検査",
-        "What a service offers, and commands on the servers you keep": "サービスの提供内容の確認と、管理下サーバーでのコマンド実行"
+        "What a service offers, and commands on the servers you keep": "サービスの提供内容の確認と、管理下サーバーでのコマンド実行",
+        "Key file in your Nextcloud files": "Nextcloud内の鍵ファイル",
+        "Give the path of the private key inside your own Nextcloud files — the one without .pub. The server reads it when you save; the key itself never passes through the browser. Or paste it below instead.": "ご自身のNextcloud内にある秘密鍵のパスを入力してください（.pub が付かない方です）。保存時にサーバーが読み取るため、鍵がブラウザーを経由することはありません。下の欄に直接貼り付けても構いません。",
+        "Private key (paste)": "秘密鍵（貼り付け）"
     },
     "nplurals=1; plural=0;"
 );

@@ -1175,7 +1175,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
               <option v-for="m in connModes" :key="m" :value="m">{{ t(modeLabel(m)) }}</option>
             </select>
           </label>
-          <label class="fl" v-if="connForm.kind==='sftp'"><span class="fl-label">{{ t('Sign in with') }}</span>
+          <label class="fl" v-if="connForm.kind==='sftp' || connForm.kind==='ssh'"><span class="fl-label">{{ t('Sign in with') }}</span>
             <select v-model="connForm.authType">
               <option value="password">{{ t('Password') }}</option>
               <option value="key">{{ t('Private key') }}</option>
@@ -1186,9 +1186,15 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
             <label class="fl grow" v-if="connForm.authType !== 'key'"><span class="fl-label">{{ connForm.id && connForm.hasSecret ? t('Password (leave blank to keep)') : t('Password') }}</span><input v-model="connForm.secret" type="password" autocomplete="new-password"></label>
             <label class="fl grow" v-else><span class="fl-label">{{ t('Key passphrase (if any)') }}</span><input v-model="connForm.passphrase" type="password" autocomplete="new-password"></label>
           </div>
-          <label class="fl" v-if="connForm.authType === 'key'"><span class="fl-label">{{ connForm.id && connForm.hasSecret ? t('Private key (leave blank to keep)') : t('Private key') }}</span>
-            <textarea v-model="connForm.privateKey" rows="4" class="mono tiny" placeholder="-----BEGIN OPENSSH PRIVATE KEY-----"></textarea>
-          </label>
+          <template v-if="connForm.authType === 'key'">
+            <label class="fl"><span class="fl-label">{{ t('Key file in your Nextcloud files') }}</span>
+              <input v-model="connForm.privateKeyPath" class="mono" placeholder="Keys/id_ed25519">
+            </label>
+            <p class="dim">{{ t('Give the path of the private key inside your own Nextcloud files — the one without .pub. The server reads it when you save; the key itself never passes through the browser. Or paste it below instead.') }}</p>
+            <label class="fl"><span class="fl-label">{{ connForm.id && connForm.hasSecret ? t('Private key (leave blank to keep)') : t('Private key (paste)') }}</span>
+              <textarea v-model="connForm.privateKey" rows="4" class="mono tiny" placeholder="-----BEGIN OPENSSH PRIVATE KEY-----"></textarea>
+            </label>
+          </template>
           <label class="fl" v-if="connForm.kind==='smtp'"><span class="fl-label">{{ t('Sender address') }}</span><input v-model="connForm.from" placeholder="notify@example.com"></label>
           <label class="fl" v-if="connForm.kind==='ftp' || connForm.kind==='sftp'"><span class="fl-label">{{ t('Start folder') }}</span><input v-model="connForm.path" class="mono" placeholder="/"></label>
           <label class="opt" v-if="connForm.kind==='ftp'"><input type="checkbox" v-model="connForm.passive"> {{ t('Passive mode (usually right)') }}</label>
@@ -1353,7 +1359,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         subnetInput: '', subnetResult: null, macQuery: '', macResult: null,
         // saved connections (FTP / SFTP / mail accounts)
         connections: [], connKinds: {}, connCaps: {}, connModal: false, connNote: '',
-        connForm: { id: 0, kind: 'sftp', name: '', host: '', port: 22, mode: 'ssh', username: '', secret: '', authType: 'password', privateKey: '', passphrase: '', from: '', path: '', passive: true, notes: '', hasSecret: false },
+        connForm: { id: 0, kind: 'sftp', name: '', host: '', port: 22, mode: 'ssh', username: '', secret: '', authType: 'password', privateKey: '', privateKeyPath: '', passphrase: '', from: '', path: '', passive: true, notes: '', hasSecret: false },
         // mail
         mailView: 'domain', mailViews: MAIL_VIEWS, mailPresets: MAIL_PRESETS,
         mailDomain: '', mailSelectors: '', mailBlocklists: true, mailAudit: null,
@@ -1637,7 +1643,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         } else {
           const use = kind || 'sftp';
           const def = this.connKinds[use] || { port: 22, modes: ['none'] };
-          this.connForm = { id: 0, kind: use, name: '', host: '', port: def.port, mode: def.modes[0], username: '', secret: '', authType: 'password', privateKey: '', passphrase: '', from: '', path: '', passive: true, notes: '', hasSecret: false };
+          this.connForm = { id: 0, kind: use, name: '', host: '', port: def.port, mode: def.modes[0], username: '', secret: '', authType: 'password', privateKey: '', privateKeyPath: '', passphrase: '', from: '', path: '', passive: true, notes: '', hasSecret: false };
         }
         this.connModal = true;
       },
@@ -1651,6 +1657,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         // An untouched credential field means "keep the stored one".
         if (this.connForm.id && this.connForm.secret === '') delete body.connection.secret;
         if (this.connForm.id && this.connForm.privateKey === '') delete body.connection.privateKey;
+        if (this.connForm.privateKeyPath === '') delete body.connection.privateKeyPath;
         if (this.connForm.id && this.connForm.passphrase === '') delete body.connection.passphrase;
         const saved = await this.guarded('conn', () => api(
           this.connForm.id ? 'connections/' + this.connForm.id : 'connections',
