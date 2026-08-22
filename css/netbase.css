@@ -1,0 +1,348 @@
+/* NetBase (Nextcloud native) — scoped to #netbase-root.
+   Same visual language as RegiBase and FormulaBase: a fixed sidebar, a topbar
+   with the current tool, and cards on a tinted background. */
+#netbase-root {
+  --bg: #f4f6fb;
+  --surface: #ffffff;
+  --surface-2: #f0f3f9;
+  --border: #e2e8f0;
+  --text: #1e293b;
+  --muted: #64748b;
+  --primary: #2563eb;
+  --primary-ink: #ffffff;
+  --accent: #0891b2;
+  --danger: #dc2626;
+  --ok: #059669;
+  --shadow: 0 1px 3px rgba(15, 23, 42, .08), 0 8px 24px rgba(15, 23, 42, .06);
+  --radius: 14px;
+  --sidebar-w: 268px;
+}
+@media (prefers-color-scheme: dark) {
+  #netbase-root:not([data-nbtheme]) {
+    --bg: #0b1220; --surface: #131c2e; --surface-2: #1b2740; --border: #263450;
+    --text: #e6edf7; --muted: #93a3bd; --primary: #4f8cff; --accent: #22d3ee; --ok: #10b981;
+    --shadow: 0 1px 3px rgba(0,0,0,.4), 0 10px 30px rgba(0,0,0,.35);
+  }
+}
+#netbase-root[data-nbtheme="light"] {
+  --bg: #f4f6fb; --surface: #ffffff; --surface-2: #f0f3f9; --border: #e2e8f0;
+  --text: #1e293b; --muted: #64748b; --primary: #2563eb; --accent: #0891b2; --ok: #059669;
+  color-scheme: light;
+}
+#netbase-root[data-nbtheme="dark"] {
+  --bg: #0b1220; --surface: #131c2e; --surface-2: #1b2740; --border: #263450;
+  --text: #e6edf7; --muted: #93a3bd; --primary: #4f8cff; --accent: #22d3ee; --ok: #10b981;
+  --shadow: 0 1px 3px rgba(0,0,0,.4), 0 10px 30px rgba(0,0,0,.35);
+  color-scheme: dark;
+}
+
+/* NC 32's #content is a flex row expecting an #app-content child to grow. */
+#content.app-netbase { display: flex; }
+#netbase, #netbase.app-netbase { flex: 1 1 auto; min-width: 0; width: 100%; height: calc(100dvh - var(--header-height, 50px)); }
+#netbase-root { width: 100%; height: 100%; color: var(--text); font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", "Segoe UI", Roboto, sans-serif; }
+#netbase-root, #netbase-root * { box-sizing: border-box; }
+#netbase-root button { font-family: inherit; cursor: pointer; margin: 0; }
+#netbase-root h1, #netbase-root h2, #netbase-root h3 { color: var(--text); margin: 0 0 12px; font-size: 16px; }
+#netbase-root input, #netbase-root select, #netbase-root textarea {
+  font-family: inherit; font-size: 15px; color: var(--text); background: var(--surface);
+  border: 1px solid var(--border); border-radius: 10px; padding: 9px 12px; min-height: 40px; width: 100%;
+}
+#netbase-root select { height: auto; }
+#netbase-root input:focus, #netbase-root select:focus, #netbase-root textarea:focus { outline: 2px solid var(--primary); outline-offset: -1px; }
+#netbase-root input[type='checkbox'] {
+  -webkit-appearance: none; appearance: none; width: 18px; height: 18px; min-width: 18px; min-height: 18px;
+  padding: 0; margin: 0; flex: 0 0 auto; position: relative; vertical-align: middle;
+  border: 2px solid var(--muted); border-radius: 4px; background: var(--surface-2); box-shadow: none;
+}
+#netbase-root input[type='checkbox']:checked { background: var(--primary); border-color: var(--primary); }
+#netbase-root input[type='checkbox']:checked::after {
+  content: ''; position: absolute; left: 4px; top: 0; width: 5px; height: 9px;
+  border: solid #fff; border-width: 0 2px 2px 0; transform: rotate(45deg);
+}
+#netbase-root { -webkit-user-select: none; user-select: none; }
+#netbase-root input, #netbase-root textarea, #netbase-root code, #netbase-root pre, #netbase-root .mono { -webkit-user-select: text; user-select: text; }
+
+/* ---------- layout ---------- */
+#netbase-root .layout { display: flex; width: 100%; height: 100%; overflow: hidden; background: var(--bg); }
+#netbase-root .sidebar {
+  width: var(--sidebar-w); flex: 0 0 var(--sidebar-w); background: var(--surface);
+  border-right: 1px solid var(--border); display: flex; flex-direction: column; min-height: 0;
+}
+#netbase-root .brand { display: flex; align-items: center; gap: 10px; padding: 18px 18px 12px; font-weight: 800; font-size: 20px; }
+#netbase-root .brand .logo { font-size: 22px; }
+#netbase-root .brand .tag { font-size: 11px; font-weight: 600; color: var(--muted); background: var(--surface-2); border-radius: 999px; padding: 2px 8px; }
+#netbase-root .nav-list { flex: 1 1 auto; overflow-y: auto; overflow-x: hidden; padding: 4px 10px; display: flex; flex-direction: column; gap: 2px; }
+#netbase-root .nav-item {
+  display: flex; align-items: center; gap: 10px; width: 100%; text-align: left;
+  background: none; border: 0; border-radius: 10px; padding: 9px 10px; color: var(--text); font-size: 14.5px;
+}
+#netbase-root .nav-item:hover { background: var(--surface-2); }
+#netbase-root .nav-item.active { background: color-mix(in srgb, var(--primary) 14%, transparent); color: var(--primary); font-weight: 600; }
+#netbase-root .nav-item .nm { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#netbase-root .nav-item .ct { font-size: 12px; color: var(--muted); background: var(--surface-2); border-radius: 999px; padding: 1px 8px; }
+#netbase-root .sidebar-foot { padding: 12px; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 8px; }
+
+#netbase-root .main { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; }
+#netbase-root .topbar {
+  display: flex; align-items: center; gap: 12px; padding: 14px 20px;
+  border-bottom: 1px solid var(--border); background: var(--surface); min-height: 62px;
+}
+#netbase-root .topbar .title { display: flex; align-items: baseline; gap: 10px; min-width: 0; }
+#netbase-root .topbar .title .nm { font-weight: 700; font-size: 17px; }
+#netbase-root .topbar .title .desc { color: var(--muted); font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#netbase-root .spacer { flex: 1 1 auto; }
+#netbase-root .topbar-actions { display: flex; align-items: center; gap: 8px; }
+#netbase-root .topbar-actions .filter { width: 260px; }
+#netbase-root .content { flex: 1 1 auto; overflow-y: auto; padding: 18px 20px 40px; }
+
+/* ---------- primitives ---------- */
+#netbase-root .btn {
+  border: 1px solid var(--border); background: var(--surface); color: var(--text);
+  border-radius: 10px; padding: 9px 14px; font-size: 14px; font-weight: 600; white-space: nowrap; margin: 0;
+}
+#netbase-root .btn:hover:not(:disabled) { border-color: var(--primary); color: var(--primary); }
+#netbase-root .btn:disabled { opacity: .5; cursor: not-allowed; }
+#netbase-root .btn.primary { background: var(--primary); border-color: var(--primary); color: var(--primary-ink); }
+#netbase-root .btn.primary:hover:not(:disabled) { color: var(--primary-ink); filter: brightness(1.08); }
+#netbase-root .btn.danger { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 40%, var(--border)); }
+#netbase-root .btn.active { border-color: var(--primary); color: var(--primary); }
+#netbase-root .btn.sm { padding: 7px 11px; font-size: 13px; }
+#netbase-root .btn.xs { padding: 4px 8px; font-size: 12px; }
+#netbase-root .btn.block { width: 100%; }
+#netbase-root .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); padding: 16px; margin-bottom: 16px; }
+#netbase-root .empty-hint { color: var(--muted); padding: 28px; text-align: center; }
+#netbase-root .hint { color: var(--muted); font-size: 13px; margin: 10px 0 0; line-height: 1.6; }
+#netbase-root .mono, #netbase-root code, #netbase-root pre { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+#netbase-root .dim { color: var(--muted); }
+#netbase-root .wrap { white-space: normal; word-break: break-all; }
+#netbase-root .danger { color: var(--danger); }
+#netbase-root .banner { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: 10px; margin-bottom: 14px; font-size: 14px; }
+#netbase-root .banner.info { background: color-mix(in srgb, var(--ok) 14%, transparent); color: var(--ok); }
+#netbase-root .banner.error { background: color-mix(in srgb, var(--danger) 12%, transparent); color: var(--danger); }
+#netbase-root .banner .btn { margin-left: auto; }
+#netbase-root .pill { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: 12px; font-weight: 600; }
+#netbase-root .pill.ok { background: color-mix(in srgb, var(--ok) 16%, transparent); color: var(--ok); }
+#netbase-root .pill.no { background: var(--surface-2); color: var(--muted); }
+#netbase-root .badge { font-size: 11px; color: var(--muted); background: var(--surface-2); border-radius: 999px; padding: 1px 8px; }
+#netbase-root pre.raw {
+  background: var(--surface-2); border-radius: 10px; padding: 12px; overflow-x: auto;
+  font-size: 12.5px; line-height: 1.6; margin: 10px 0 0; white-space: pre-wrap; word-break: break-word; max-height: 460px;
+}
+#netbase-root details { margin-top: 10px; }
+#netbase-root summary { cursor: pointer; color: var(--muted); font-size: 13px; }
+
+/* key/value grid */
+#netbase-root .kv { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 6px 20px; margin-bottom: 12px; }
+#netbase-root .kv > div { display: flex; gap: 10px; align-items: baseline; padding: 5px 0; border-bottom: 1px solid var(--border); min-width: 0; }
+#netbase-root .kv > div > span { color: var(--muted); font-size: 13px; flex: 0 0 40%; }
+#netbase-root .kv > div > code { font-size: 13px; min-width: 0; overflow-wrap: anywhere; }
+
+/* forms */
+#netbase-root .fl { display: flex; flex-direction: column; gap: 5px; margin-bottom: 12px; flex: 1 1 auto; min-width: 0; }
+#netbase-root .fl-label { font-size: 12.5px; color: var(--muted); font-weight: 600; }
+#netbase-root .fl.narrow { max-width: 200px; }
+#netbase-root .check { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; font-size: 14px; }
+
+/* ---------- scan card ---------- */
+#netbase-root .scan-row { display: flex; align-items: flex-end; gap: 10px; }
+#netbase-root .scan-row .btn { min-height: 40px; }
+#netbase-root .scan-opts { display: flex; flex-wrap: wrap; gap: 8px 20px; margin-top: 10px; }
+#netbase-root .scan-opts label { display: flex; align-items: center; gap: 7px; font-size: 13.5px; color: var(--muted); }
+#netbase-root .progress { margin-top: 14px; }
+#netbase-root .progress .bar { height: 6px; border-radius: 999px; background: var(--surface-2); overflow: hidden; }
+#netbase-root .progress .fill { height: 100%; background: var(--primary); transition: width .25s ease; }
+#netbase-root .progress-text { display: flex; font-size: 12.5px; color: var(--muted); margin-top: 6px; }
+#netbase-root .hint code { background: var(--surface-2); padding: 2px 6px; border-radius: 6px; display: inline-block; margin-top: 4px; }
+
+/* ---------- tables ---------- */
+#netbase-root table.grid { width: 100%; border-collapse: collapse; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); }
+#netbase-root table.grid th {
+  text-align: left; font-size: 12px; text-transform: uppercase; letter-spacing: .04em;
+  color: var(--muted); font-weight: 700; padding: 10px 12px; border-bottom: 1px solid var(--border);
+  background: var(--surface-2); white-space: nowrap; cursor: pointer;
+}
+#netbase-root table.grid th.sorted { color: var(--primary); }
+#netbase-root table.grid th.sorted.asc::after { content: ' ▲'; font-size: 9px; }
+#netbase-root table.grid th.sorted.desc::after { content: ' ▼'; font-size: 9px; }
+#netbase-root table.grid td { padding: 9px 12px; border-bottom: 1px solid var(--border); font-size: 14px; vertical-align: middle; }
+#netbase-root table.grid tbody tr { cursor: pointer; }
+#netbase-root table.grid tbody tr:hover { background: var(--surface-2); }
+#netbase-root table.grid tbody tr.offline td { opacity: .55; }
+#netbase-root table.grid.compact { box-shadow: none; }
+#netbase-root table.grid.compact th, #netbase-root table.grid.compact td { padding: 6px 10px; font-size: 13px; cursor: default; }
+#netbase-root table.grid .c-dot { width: 26px; padding-right: 0; }
+#netbase-root .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--border); }
+#netbase-root .dot.on { background: var(--ok); box-shadow: 0 0 0 3px color-mix(in srgb, var(--ok) 20%, transparent); }
+#netbase-root .c-name { display: flex; align-items: center; gap: 8px; }
+#netbase-root .c-name .nm { font-weight: 600; }
+
+#netbase-root .chips { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 10px; }
+#netbase-root .chips label { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); }
+#netbase-root .tool-row { display: flex; gap: 10px; align-items: center; margin-bottom: 8px; }
+#netbase-root .tool-row .narrow { max-width: 260px; }
+#netbase-root .tool-row .tiny { max-width: 96px; }
+#netbase-root .nmap-host { border-top: 1px solid var(--border); padding-top: 12px; margin-top: 12px; }
+#netbase-root .nh-head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; flex-wrap: wrap; }
+
+/* ---------- device drawer ---------- */
+#netbase-root .drawer-backdrop { position: fixed; inset: 0; background: rgba(15, 23, 42, .45); display: flex; justify-content: flex-end; z-index: 2000; }
+#netbase-root .drawer { width: min(520px, 100%); background: var(--surface); display: flex; flex-direction: column; box-shadow: var(--shadow); }
+#netbase-root .drawer-head { display: flex; align-items: center; gap: 12px; padding: 16px 18px; border-bottom: 1px solid var(--border); }
+#netbase-root .drawer-head .ic.big { font-size: 28px; }
+#netbase-root .drawer-head .dev-name { font-size: 17px; font-weight: 700; border: 0; padding: 2px 0; background: none; border-bottom: 1px dashed var(--border); border-radius: 0; min-height: 0; }
+#netbase-root .drawer-body { flex: 1 1 auto; overflow-y: auto; padding: 16px 18px; }
+#netbase-root .drawer-tools { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+#netbase-root .drawer-foot { display: flex; align-items: center; gap: 8px; padding: 14px 18px; border-top: 1px solid var(--border); }
+
+@media (max-width: 900px) {
+  #netbase-root .sidebar { display: none; }
+  #netbase-root .topbar-actions .filter { width: 150px; }
+}
+
+/* ---------- tool access matrix ---------- */
+#netbase-root table.tool-access td { vertical-align: middle; }
+#netbase-root table.tool-access td:first-child { width: 55%; }
+#netbase-root table.tool-access select { min-height: 34px; padding: 5px 8px; font-size: 13px; }
+#netbase-root .row-actions { display: flex; align-items: center; gap: 8px; margin-top: 12px; }
+
+/* The brand mark is inline SVG (outlined, so it needs no font installed) and
+   is sized by height with the width following, so the lockup keeps its
+   proportions the way the other apps in the family do. */
+#netbase-root .brand .logo { display: inline-flex; }
+#netbase-root .brand .logo svg { width: auto; height: 28px; display: block; }
+/* ---------- the first paint, before Vue mounts ----------
+   Without this the placeholder card sits unstyled in the top-left corner on a
+   hard reload. The card also waits a moment before it fades in: mounting
+   normally wins that race, so a quick load shows nothing rather than a flash. */
+#netbase-root .login-wrap {
+  display: flex; align-items: center; justify-content: center;
+  width: 100%; height: 100%; min-height: calc(100dvh - var(--header-height, 50px));
+  padding: 20px; background: var(--bg);
+}
+#netbase-root .login-card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 20px;
+  padding: 30px; width: 380px; max-width: 100%; box-shadow: var(--shadow); text-align: center;
+  opacity: 0; animation: netbase-fade-in .25s ease-out .4s forwards;
+}
+#netbase-root .login-wrap .logo svg { width: auto; height: 64px; display: block; margin: 0 auto; }
+#netbase-root .login-card p { color: var(--muted); margin: 14px 0 0; font-size: 13px; }
+@keyframes netbase-fade-in { to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) {
+  #netbase-root .login-card { animation-duration: .01s; }
+}
+
+/* ---------- benchmarks ---------- */
+#netbase-root .bench-head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+#netbase-root .bench-head h3 { margin: 0; }
+#netbase-root .bench-head select.narrow { max-width: 160px; }
+#netbase-root .inline-check { display: flex; align-items: center; gap: 7px; font-size: 13.5px; color: var(--muted); white-space: nowrap; }
+#netbase-root .bench-live { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; margin: 10px 0; }
+#netbase-root .bench-live .rate { display: flex; flex-direction: column; min-width: 130px; }
+#netbase-root .bench-live .lbl { font-size: 12px; color: var(--muted); }
+#netbase-root .bench-live .val { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; }
+#netbase-root .bench-live .rate.rx .val { color: var(--primary); }
+#netbase-root .bench-live .rate.tx .val { color: var(--accent); }
+#netbase-root .spark { flex: 1 1 240px; height: 60px; min-width: 200px; background: var(--surface-2); border-radius: 10px; }
+#netbase-root .spark.tall { width: 100%; margin-top: 12px; }
+#netbase-root .spark polyline { fill: none; stroke-width: 2; vector-effect: non-scaling-stroke; }
+#netbase-root .spark .sp-rx { stroke: var(--primary); }
+#netbase-root .spark .sp-tx { stroke: var(--accent); }
+#netbase-root .bench-results { display: flex; gap: 28px; flex-wrap: wrap; margin: 14px 0 4px; }
+#netbase-root .bench-results .big { display: flex; flex-direction: column; }
+#netbase-root .bench-results .lbl { font-size: 12px; color: var(--muted); }
+#netbase-root .bench-results .num { font-size: 30px; font-weight: 800; line-height: 1.1; font-variant-numeric: tabular-nums; }
+#netbase-root .bench-results .unit { font-size: 12px; color: var(--muted); }
+#netbase-root .missing { color: var(--muted); font-size: 14px; }
+#netbase-root table.grid tbody tr.winner { background: color-mix(in srgb, var(--ok) 12%, transparent); }
+#netbase-root .waterfall { margin-top: 12px; display: flex; flex-direction: column; gap: 6px; }
+#netbase-root .wf-row { display: flex; align-items: center; gap: 10px; font-size: 13px; }
+#netbase-root .wf-name { flex: 0 0 90px; color: var(--muted); }
+#netbase-root .wf-bar { flex: 1 1 auto; background: var(--surface-2); border-radius: 999px; height: 12px; overflow: hidden; }
+#netbase-root .wf-bar > span { display: block; height: 100%; background: var(--primary); border-radius: 999px; }
+#netbase-root .wf-ms { flex: 0 0 80px; text-align: right; color: var(--muted); }
+
+/* ---------- system information dialog ---------- */
+#netbase-root .drawer-backdrop.centred { align-items: center; justify-content: center; }
+#netbase-root .modal {
+  width: min(660px, 94vw); max-height: 88vh; background: var(--surface);
+  border-radius: var(--radius); display: flex; flex-direction: column; box-shadow: var(--shadow);
+}
+#netbase-root .modal .drawer-body h3 { margin: 18px 0 8px; font-size: 14px; }
+#netbase-root .modal .drawer-body h3:first-child { margin-top: 0; }
+#netbase-root .sys-row { display: flex; gap: 10px; align-items: flex-start; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 13.5px; }
+#netbase-root .sys-row:last-child { border-bottom: 0; }
+#netbase-root .sys-row .pill { flex: 0 0 auto; margin-top: 2px; }
+#netbase-root .sys-row pre.raw { margin-top: 6px; max-height: none; }
+
+/* ---------- appearance dialog ---------- */
+#netbase-root .modal.narrow { width: min(460px, 94vw); }
+#netbase-root .theme-picks { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; }
+#netbase-root .theme-pick {
+  position: relative; display: flex; flex-direction: column; align-items: flex-start; gap: 4px;
+  padding: 12px; border: 2px solid var(--border); border-radius: 12px; background: var(--surface);
+  color: var(--text); text-align: left; font-size: 13.5px;
+}
+#netbase-root .theme-pick:hover { border-color: color-mix(in srgb, var(--primary) 45%, var(--border)); }
+#netbase-root .theme-pick.active { border-color: var(--primary); background: color-mix(in srgb, var(--primary) 8%, var(--surface)); }
+#netbase-root .theme-pick .dim { font-size: 12px; line-height: 1.35; }
+#netbase-root .theme-pick .tick { position: absolute; top: 8px; right: 10px; color: var(--primary); font-weight: 800; }
+/* A miniature of the app: title bar, two text lines. 'auto' is split down the middle. */
+#netbase-root .theme-pick .swatch {
+  width: 100%; height: 46px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 4px;
+  padding: 6px; display: flex; flex-direction: column; gap: 4px; overflow: hidden; position: relative;
+}
+#netbase-root .theme-pick .swatch i { display: block; border-radius: 2px; }
+#netbase-root .theme-pick .swatch i.bar { height: 8px; width: 60%; }
+#netbase-root .theme-pick .swatch i.line { height: 5px; width: 100%; }
+#netbase-root .theme-pick .swatch i.line.short { width: 70%; }
+#netbase-root .theme-pick .swatch.light { background: #f4f6fb; }
+#netbase-root .theme-pick .swatch.light i.bar { background: #2563eb; }
+#netbase-root .theme-pick .swatch.light i.line { background: #cbd5e1; }
+#netbase-root .theme-pick .swatch.dark { background: #0b1220; }
+#netbase-root .theme-pick .swatch.dark i.bar { background: #4f8cff; }
+#netbase-root .theme-pick .swatch.dark i.line { background: #334565; }
+#netbase-root .theme-pick .swatch.auto { background: linear-gradient(105deg, #f4f6fb 0 50%, #0b1220 50% 100%); }
+#netbase-root .theme-pick .swatch.auto i.bar { background: linear-gradient(105deg, #2563eb 0 50%, #4f8cff 50% 100%); }
+#netbase-root .theme-pick .swatch.auto i.line { background: linear-gradient(105deg, #cbd5e1 0 50%, #334565 50% 100%); }
+
+/* ---------- findings, mail, transfer and probe views ---------- */
+#netbase-root .seg { display: flex; gap: 6px; flex-wrap: wrap; }
+#netbase-root .seg-btn {
+  border: 1px solid var(--border); background: var(--surface); color: var(--text);
+  border-radius: 999px; padding: 7px 16px; font-size: 13.5px; font-weight: 600;
+}
+#netbase-root .seg-btn:hover { border-color: color-mix(in srgb, var(--primary) 45%, var(--border)); }
+#netbase-root .seg-btn.active { background: var(--primary); border-color: var(--primary); color: var(--primary-ink); }
+
+/* A finding is one sentence about one thing, colour-keyed by how much it matters. */
+#netbase-root .finding {
+  display: flex; gap: 10px; align-items: flex-start; padding: 9px 0;
+  border-bottom: 1px solid var(--border); font-size: 13.5px; line-height: 1.5;
+}
+#netbase-root .finding:last-child { border-bottom: 0; }
+#netbase-root .finding .pill { flex: 0 0 auto; margin-top: 1px; }
+#netbase-root .pill.bad { background: color-mix(in srgb, var(--danger) 16%, transparent); color: var(--danger); }
+#netbase-root .pill.warn { background: color-mix(in srgb, #d97706 20%, transparent); color: #b45309; }
+#netbase-root[data-nbtheme="dark"] .pill.warn { color: #fbbf24; }
+#netbase-root .pill.info { background: var(--surface-2); color: var(--muted); }
+#netbase-root .score { display: flex; gap: 8px; margin-bottom: 10px; }
+#netbase-root code.good { color: var(--ok); }
+#netbase-root code.bad { color: var(--danger); }
+
+#netbase-root .opt { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); margin-top: 8px; }
+#netbase-root .tool-row .short { max-width: 220px; }
+#netbase-root .tool-row .grow { flex: 1 1 auto; }
+#netbase-root .fl-row { display: flex; gap: 12px; }
+#netbase-root .fl-row .fl.short { flex: 0 0 110px; }
+#netbase-root .note-line { margin: 10px 0 0; font-size: 13px; color: var(--ok); }
+#netbase-root .tiny { font-size: 12px; }
+#netbase-root .chips.result { gap: 6px; }
+#netbase-root .bl-group { margin-bottom: 12px; }
+
+#netbase-root .path-bar { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+#netbase-root .path-bar input { flex: 1 1 auto; }
+#netbase-root table.grid td .btn.xs { white-space: nowrap; }
+#netbase-root table.grid tr.dir a { color: var(--primary); text-decoration: none; font-weight: 600; }
+#netbase-root table.grid tr.dir a:hover { text-decoration: underline; }
+#netbase-root table.grid td.row-actions { display: table-cell; white-space: nowrap; }
+#netbase-root table.grid td.row-actions .btn { margin-left: 6px; }
