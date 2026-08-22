@@ -40,7 +40,8 @@ class ExecService {
 	 * @param list<string> $args
 	 * @return array{ok: bool, code: int, stdout: string, stderr: string, seconds: float, command: string}
 	 */
-	public function run(string $binary, array $args, float $timeout = 20.0, int $maxOutput = 1048576): array {
+	/** @param array<string, string> $extraEnv extra environment for this run */
+	public function run(string $binary, array $args, float $timeout = 20.0, int $maxOutput = 1048576, array $extraEnv = []): array {
 		$path = $this->which($binary);
 		$started = microtime(true);
 		if ($path === null) {
@@ -51,7 +52,7 @@ class ExecService {
 		}
 
 		$descriptors = [1 => ['pipe', 'w'], 2 => ['pipe', 'w']];
-		$env = ['PATH' => '/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin', 'LC_ALL' => 'C'];
+		$env = array_merge(['PATH' => '/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin', 'LC_ALL' => 'C'], $extraEnv);
 		$process = @proc_open(array_merge([$path], array_values($args)), $descriptors, $pipes, null, $env);
 		if (!is_resource($process)) {
 			return ['ok' => false, 'code' => 126, 'stdout' => '', 'stderr' => 'Could not start ' . $binary, 'seconds' => 0.0, 'command' => $binary];

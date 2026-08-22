@@ -174,7 +174,14 @@
                 <td class="mono dim">{{ d.mac || '—' }}</td>
                 <td>{{ vendorText(d) }}</td>
                 <td>{{ t(typeLabel(d.type)) }}</td>
-                <td class="mono dim">{{ d.ports.join(', ') || '—' }}</td>
+                <td class="mono dim ports-cell" @click.stop>
+                  <template v-for="(p,i) in d.ports" :key="p">
+                    <a v-if="portLink(d, p)" :href="portLink(d, p).href" :title="portLink(d, p).title" target="_blank" rel="noopener noreferrer">{{ p }}</a>
+                    <a v-else-if="portTool(d, p)" href="#" :title="portTool(d, p).title" @click.prevent="openPortTool(d, p)">{{ p }}</a>
+                    <span v-else>{{ p }}</span><span v-if="i < d.ports.length - 1">, </span>
+                  </template>
+                  <span v-if="!d.ports.length">—</span>
+                </td>
                 <td class="dim">{{ ago(d.lastSeen) }}</td>
               </tr>
             </tbody>
@@ -921,8 +928,8 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         <!-- ============ FTP / SFTP ============ -->
         <section v-if="tab==='files'">
           <div class="card tool-card">
-            <h3>{{ t('Connect now') }}</h3>
-            <p class="dim">{{ t('Nothing has to be saved first. Fill this in, connect, and save it afterwards only if you want it again.') }}</p>
+            <h3>{{ t('Enter the connection details') }}</h3>
+            <p class="dim">{{ t('Nothing has to be saved first. Fill this in and connect; save it to the list only if you want it again.') }}</p>
             <div class="tool-row">
               <select v-model="adhoc.kind" class="tiny" @change="adhocKindChanged">
                 <option value="sftp">SFTP</option>
@@ -945,6 +952,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
               <input v-else v-model="adhoc.secret" type="password" class="short" :placeholder="t('Password')" autocomplete="new-password">
               <input v-model="adhoc.path" class="short mono" :placeholder="t('Start folder (optional)')">
               <button class="btn primary" :disabled="busy.browse || !adhoc.host" @click="quickConnect">{{ t('Connect') }}</button>
+              <button class="btn" :disabled="!adhoc.host" @click="saveAdhoc">{{ t('Save to the list') }}</button>
             </div>
             <p class="dim" v-if="adhoc.kind==='ftp' && !adhoc.username">{{ t('Leave the user name blank to sign in anonymously.') }}</p>
           </div>
@@ -1185,6 +1193,33 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
       </div>
     </div>
 
+    <!-- ============ page preview ============ -->
+    <div v-if="preview.open" class="drawer-backdrop centred" @click.self="closePreview">
+      <div class="modal wide">
+        <div class="drawer-head">
+          <span class="ic big">🖼</span>
+          <div>
+            <strong>{{ t('Page preview') }}</strong>
+            <div class="dim mono tiny">{{ preview.url }}</div>
+          </div>
+          <span class="spacer"></span>
+          <a class="btn sm" :href="preview.url" target="_blank" rel="noopener noreferrer">{{ t('Open in a new tab') }}</a>
+          <button class="btn sm" :disabled="preview.loading" @click="reloadPreview">{{ t('Reload') }}</button>
+          <button class="btn xs" @click="closePreview">✕</button>
+        </div>
+        <div class="drawer-body preview-body">
+          <p v-if="preview.loading" class="dim centred-text">{{ t('Rendering the page on the server…') }}</p>
+          <p v-if="preview.error" class="empty-hint">⚠ {{ preview.error }}</p>
+          <img v-show="!preview.loading && !preview.error" :src="preview.src" class="preview-shot" @load="preview.loading=false" @error="previewFailed" :alt="t('Page preview')">
+        </div>
+        <div class="drawer-foot">
+          <label class="opt"><input type="checkbox" v-model="preview.full" @change="reloadPreview"> {{ t('Whole page, not just the first screen') }}</label>
+          <span class="spacer"></span>
+          <button class="btn primary" @click="closePreview">{{ t('Close') }}</button>
+        </div>
+      </div>
+    </div>
+
     <!-- ============ saved connection editor ============ -->
     <div v-if="connModal" class="drawer-backdrop centred" @click.self="connModal=false">
       <div class="modal narrow">
@@ -1262,7 +1297,14 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
             <div><span>{{ t('Vendor') }}</span><code>{{ vendorText(selected) }}</code></div>
             <div><span>{{ t('Reported name') }}</span><code>{{ selected.hostname || '—' }}</code></div>
             <div v-if="selected.workgroup"><span>{{ t('Workgroup') }}</span><code>{{ selected.workgroup }}</code></div>
-            <div><span>{{ t('Open ports') }}</span><code>{{ selected.ports.join(', ') || '—' }}</code></div>
+            <div><span>{{ t('Open ports') }}</span><code>
+              <template v-for="(p,i) in selected.ports" :key="p">
+                <a v-if="portLink(selected, p)" :href="portLink(selected, p).href" :title="portLink(selected, p).title" target="_blank" rel="noopener noreferrer">{{ p }}</a>
+                <a v-else-if="portTool(selected, p)" href="#" :title="portTool(selected, p).title" @click.prevent="openPortTool(selected, p)">{{ p }}</a>
+                <span v-else>{{ p }}</span><span v-if="i < selected.ports.length - 1">, </span>
+              </template>
+              <span v-if="!selected.ports.length">—</span>
+            </code></div>
             <div><span>{{ t('Found by') }}</span><code>{{ selected.sources.join(', ') }}</code></div>
             <div><span>{{ t('First seen') }}</span><code>{{ stamp(selected.firstSeen) }}</code></div>
             <div><span>{{ t('Last seen') }}</span><code>{{ stamp(selected.lastSeen) }}</code></div>
@@ -1282,6 +1324,10 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
             <div v-if="selected.notes"><span>{{ t('Notes') }}</span><code class="wrap">{{ selected.notes }}</code></div>
           </div>
           <div class="drawer-tools">
+            <template v-for="l in webLinks(selected)" :key="l.href">
+              <a class="btn sm" :href="l.href" target="_blank" rel="noopener noreferrer">🌐 {{ l.label }}</a>
+              <button class="btn sm" v-if="status.preview" @click="showPage(l.href)">🖼 {{ t('Show the page') }}</button>
+            </template>
             <button class="btn sm" v-if="allowed('ping')" @click="toolFor('ping')">📡 {{ t('Ping') }}</button>
             <button class="btn sm" v-if="allowed('ports')" @click="toolFor('ports')">🔌 {{ t('Ports') }}</button>
             <button class="btn sm" v-if="allowed('nmap') && status.nmap && status.nmap.available" @click="toolFor('nmap')">🗺️ nmap</button>
@@ -1331,6 +1377,26 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
     { label: 'Remote access', ports: '22,23,3389,5900,5901' },
     { label: 'Printers and NAS', ports: '139,445,515,631,5000,5001,9100' },
   ];
+
+  // Ports a browser can open directly, and what scheme to use.
+  const WEB_PORTS = {
+    80: 'http', 81: 'http', 591: 'http', 631: 'http', 2082: 'http', 3000: 'http', 5000: 'http',
+    7080: 'http', 8000: 'http', 8008: 'http', 8080: 'http', 8081: 'http', 8888: 'http', 9000: 'http', 9090: 'http',
+    443: 'https', 2083: 'https', 2087: 'https', 4443: 'https', 5001: 'https', 8006: 'https', 8443: 'https',
+    9443: 'https', 10000: 'https',
+  };
+  // Ports NetBase itself can act on, so the number opens the right tool.
+  const TOOL_PORTS = {
+    21: { tab: 'files', kind: 'ftp', label: 'Open in FTP' },
+    22: { tab: 'ssh', kind: 'sftp', label: 'Inspect SSH' },
+    23: { tab: 'ssh', kind: null, label: 'Try Telnet' },
+    25: { tab: 'mail', protocol: 'smtp', label: 'Test this mail server' },
+    143: { tab: 'mail', protocol: 'imap', label: 'Test this mail server' },
+    465: { tab: 'mail', protocol: 'smtp', label: 'Test this mail server' },
+    587: { tab: 'mail', protocol: 'smtp', label: 'Test this mail server' },
+    993: { tab: 'mail', protocol: 'imap', label: 'Test this mail server' },
+    995: { tab: 'mail', protocol: 'pop3', label: 'Test this mail server' },
+  };
 
   const MAIL_VIEWS = [
     { id: 'domain', label: 'Domain policy' },
@@ -1409,6 +1475,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         // service probes
         sshHost: '', sshPort: 22, sshAuthMethods: false, sshResult: null, telnetResult: null,
         ntpHost: 'pool.ntp.org', ntpResult: null,
+        preview: { open: false, url: '', src: '', loading: false, error: null, full: false },
         serverResult: null, requirements: null, sysInfo: false, themeBox: false,
         themeOptions: THEME_OPTIONS,
         adminUrl: (window.OC && OC.generateUrl) ? OC.generateUrl('/settings/admin/netbase') : '/settings/admin/netbase',
@@ -1638,6 +1705,79 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         this.busy[key] = true;
         try { return await fn(); } catch (e) { this.fail(e); return null; } finally { this.busy[key] = false; }
       },
+      /** A device's own web interface, when the port says it has one. */
+      portLink(device, port) {
+        const scheme = WEB_PORTS[port];
+        if (!scheme || !device.ip) return null;
+        const host = device.ip.includes(':') ? '[' + device.ip + ']' : device.ip;
+        const href = scheme + '://' + host + (port === 80 || port === 443 ? '' : ':' + port);
+        return { href, title: T('Open {url} in a new tab', { url: href }) };
+      },
+      /** Ports NetBase can act on itself, rather than hand to the browser. */
+      portTool(device, port) {
+        const tool = TOOL_PORTS[port];
+        if (!tool || !device.ip) return null;
+        if (!this.allowed(tool.tab === 'files' ? 'files' : tool.tab)) return null;
+        return { ...tool, title: T(tool.label) };
+      },
+      openPortTool(device, port) {
+        const tool = this.portTool(device, port);
+        if (!tool) return;
+        this.selected = null;
+        this.tab = tool.tab;
+        if (tool.tab === 'files') {
+          this.adhoc = { ...this.adhoc, kind: tool.kind, host: device.ip, port: port === 22 ? 22 : 21, mode: tool.kind === 'ftp' ? 'none' : 'ssh' };
+        } else if (tool.tab === 'ssh') {
+          this.sshHost = device.ip;
+          if (port === 23) { this.runTelnet(); } else { this.runSsh(); }
+        } else if (tool.tab === 'mail') {
+          this.mailView = 'server';
+          this.mailHost = device.ip;
+          this.mailProtocol = tool.protocol;
+          this.mailPort = port;
+          this.mailMode = 'auto';
+          this.runMailProbe();
+        }
+      },
+      showPage(url) {
+        this.preview = { open: true, url, src: '', loading: true, error: null, full: false };
+        this.reloadPreview();
+      },
+      reloadPreview() {
+        if (!this.preview.url) return;
+        this.preview.loading = true;
+        this.preview.error = null;
+        // The cache buster makes "reload" mean a fresh render, not a fresh copy
+        // of the same picture.
+        this.preview.src = BASE + 'api/preview?' + qs({
+          url: this.preview.url,
+          width: 1280,
+          height: 900,
+          full: this.preview.full ? 1 : 0,
+          t: Date.now(),
+        });
+      },
+      async previewFailed() {
+        this.preview.loading = false;
+        // The endpoint answers with JSON when it cannot render, so read it.
+        try {
+          const res = await fetch(this.preview.src, { credentials: 'same-origin' });
+          const body = await res.json();
+          this.preview.error = (body && body.error) || T('The page could not be rendered.');
+        } catch (e) {
+          this.preview.error = T('The page could not be rendered.');
+        }
+      },
+      closePreview() { this.preview = { open: false, url: '', src: '', loading: false, error: null, full: false }; },
+
+      /** Every web interface a device offers, for the buttons in its panel. */
+      webLinks(device) {
+        if (!device) return [];
+        return (device.ports || []).filter((p) => WEB_PORTS[p]).map((p) => ({
+          href: this.portLink(device, p).href,
+          label: WEB_PORTS[p] === 'https' ? T('Open (HTTPS {port})', { port: p }) : T('Open (HTTP {port})', { port: p }),
+        }));
+      },
       levelLabel(level) { return { bad: 'fix', warn: 'check', info: 'note', ok: 'ok' }[level] || level; },
       algoLabel(name) { return ALGO_LABELS[name] || ''; },
       modeLabel(mode) {
@@ -1704,6 +1844,13 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         await this.loadConnections();
         this.connModal = false;
         this.note(T('Connection saved'));
+        // The details were typed into the quick form: carry on with the saved
+        // connection instead, so the list and the browser agree.
+        if (this.adhocActive && (saved.connection.kind === 'ftp' || saved.connection.kind === 'sftp')) {
+          this.adhocActive = false;
+          this.filesConn = saved.connection.id;
+          this.browse(this.filesPath || '');
+        }
         if (!this.filesConn && (saved.connection.kind === 'ftp' || saved.connection.kind === 'sftp')) this.filesConn = saved.connection.id;
         if (!this.sendId && saved.connection.kind === 'smtp') this.sendId = saved.connection.id;
         if (!this.mailboxId && (saved.connection.kind === 'imap' || saved.connection.kind === 'pop3')) this.mailboxId = saved.connection.id;

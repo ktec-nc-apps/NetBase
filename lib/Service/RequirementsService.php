@@ -65,9 +65,11 @@ class RequirementsService {
 
 		$components = [];
 		foreach ($this->components() as $component) {
+			// A binary probe may name alternatives ("chromium|google-chrome"):
+			// any one of them counts as present.
 			$component['present'] = $component['kind'] === 'php'
 				? extension_loaded($component['probe'])
-				: $this->exec->available($component['probe']);
+				: (bool)array_filter(explode('|', $component['probe']), fn (string $binary) => $this->exec->available($binary));
 			$component['install'] = $this->installCommand($component, $manager);
 			$component['allInstall'] = $this->allInstallCommands($component);
 			$components[] = $component;
@@ -127,6 +129,16 @@ class RequirementsService {
 				'without' => 'Local link speed cannot be measured. An internet speed test measures the internet, not the LAN.',
 				'packages' => ['apt-get' => 'iperf3', 'dnf' => 'iperf3', 'yum' => 'iperf3', 'zypper' => 'iperf3', 'pacman' => 'iperf3', 'apk' => 'iperf3', 'brew' => 'iperf3'],
 				'after' => 'The other machine has to run a server: iperf3 -s',
+			],
+			[
+				'id' => 'chromium',
+				'kind' => 'binary',
+				'probe' => 'chromium|chromium-browser|google-chrome|google-chrome-stable',
+				'name' => 'Headless Chromium',
+				'enables' => 'Showing a device\'s own web page as a picture, rendered on this server',
+				'without' => 'The web ports of a device are still offered as links to open in your browser.',
+				'packages' => ['apt-get' => 'chromium-browser', 'dnf' => 'chromium', 'yum' => 'chromium', 'zypper' => 'chromium', 'pacman' => 'chromium', 'apk' => 'chromium', 'brew' => 'chromium'],
+				'after' => 'It is a large package. NetBase runs it with a throwaway profile and deletes it after every page.',
 			],
 			[
 				'id' => 'nmap',
