@@ -647,7 +647,15 @@ OC.L10N.register(
         "What a service offers, and commands on the servers you keep": "What a service offers, and commands on the servers you keep",
         "Key file in your Nextcloud files": "Key file in your Nextcloud files",
         "Give the path of the private key inside your own Nextcloud files — the one without .pub. The server reads it when you save; the key itself never passes through the browser. Or paste it below instead.": "Give the path of the private key inside your own Nextcloud files — the one without .pub. The server reads it when you save; the key itself never passes through the browser. Or paste it below instead.",
-        "Private key (paste)": "Private key (paste)"
+        "Private key (paste)": "Private key (paste)",
+        "Connect now": "Connect now",
+        "Nothing has to be saved first. Fill this in, connect, and save it afterwards only if you want it again.": "Nothing has to be saved first. Fill this in, connect, and save it afterwards only if you want it again.",
+        "Connect": "Connect",
+        "Start folder (optional)": "Start folder (optional)",
+        "Leave the user name blank to sign in anonymously.": "Leave the user name blank to sign in anonymously.",
+        "Save this connection": "Save this connection",
+        "Disconnect": "Disconnect",
+        "anonymous": "anonymous"
     },
     "nplurals=2; plural=(n != 1);"
 );

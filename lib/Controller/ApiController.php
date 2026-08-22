@@ -389,29 +389,43 @@ class ApiController extends Controller {
 
 	// ---------------------------------------------------------------- file transfer
 
+	/**
+	 * A saved connection when an id is given, or a one-off one built from the
+	 * details in the request — so a server can be opened without saving
+	 * anything first.
+	 *
+	 * @param array<string, mixed> $connection
+	 */
+	private function endpointFor(int $id, array $connection): \OCA\NetBase\Db\EndpointEntity {
+		return $id > 0
+			? $this->endpoints->get($id, $this->uid())
+			: $this->endpoints->transient($this->uid(), $connection);
+	}
+
 	#[NoAdminRequired]
 	#[UserRateLimit(limit: 120, period: 60)]
-	public function filesList(int $id, string $path = ''): JSONResponse {
-		return $this->guard(fn () => $this->transfer->listDirectory($this->endpoints->get($id, $this->uid()), $path), 'files');
+	public function filesList(int $id = 0, string $path = '', array $connection = []): JSONResponse {
+		return $this->guard(fn () => $this->transfer->listDirectory($this->endpointFor($id, $connection), $path), 'files');
 	}
 
 	#[NoAdminRequired]
 	#[UserRateLimit(limit: 60, period: 60)]
-	public function filesDownload(int $id, string $path, string $target = 'NetBase'): JSONResponse {
-		return $this->guard(fn () => $this->transfer->download($this->endpoints->get($id, $this->uid()), $this->uid(), $path, $target), 'files');
+	public function filesDownload(string $path, int $id = 0, string $target = 'NetBase', array $connection = []): JSONResponse {
+		return $this->guard(fn () => $this->transfer->download($this->endpointFor($id, $connection), $this->uid(), $path, $target), 'files');
 	}
 
 	#[NoAdminRequired]
 	#[UserRateLimit(limit: 60, period: 60)]
-	public function filesUpload(int $id, string $source, string $remoteDir = ''): JSONResponse {
-		return $this->guard(fn () => $this->transfer->upload($this->endpoints->get($id, $this->uid()), $this->uid(), $source, $remoteDir), 'files');
+	public function filesUpload(string $source, int $id = 0, string $remoteDir = '', array $connection = []): JSONResponse {
+		return $this->guard(fn () => $this->transfer->upload($this->endpointFor($id, $connection), $this->uid(), $source, $remoteDir), 'files');
 	}
 
 	#[NoAdminRequired]
 	#[UserRateLimit(limit: 60, period: 60)]
-	public function filesManage(int $id, string $action, string $path, string $extra = ''): JSONResponse {
-		return $this->guard(fn () => $this->transfer->manage($this->endpoints->get($id, $this->uid()), $action, $path, $extra), 'files');
+	public function filesManage(string $action, string $path, int $id = 0, string $extra = '', array $connection = []): JSONResponse {
+		return $this->guard(fn () => $this->transfer->manage($this->endpointFor($id, $connection), $action, $path, $extra), 'files');
 	}
+
 
 	// ---------------------------------------------------------------- mail
 

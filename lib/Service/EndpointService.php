@@ -171,8 +171,58 @@ class EndpointService {
 		$this->mapper->delete($this->get($id, $userId));
 	}
 
+	/**
+	 * A connection that is used once and never stored — the details typed into
+	 * the form for a server someone just wants to look at.
+	 *
+	 * It is a real entity so everything downstream treats it identically, but
+	 * it has no id, so it is never written to the database.
+	 *
+	 * @param array<string, mixed> $data
+	 */
+	public function transient(string $userId, array $data): EndpointEntity {
+		$kind = (string)($data['kind'] ?? '');
+		if (!isset(self::KINDS[$kind])) {
+			throw new \InvalidArgumentException('Unknown connection type');
+		}
+		$entity = new EndpointEntity();
+		$entity->setUserId($userId);
+		$entity->setKind($kind);
+		$entity->setHost($this->tools->validateHost((string)($data['host'] ?? '')));
+		$port = (int)($data['port'] ?? 0);
+		$entity->setPort($port > 0 && $port < 65536 ? $port : self::KINDS[$kind]['port']);
+		$entity->setUsername(mb_substr(trim((string)($data['username'] ?? '')), 0, 255));
+		$mode = (string)($data['mode'] ?? self::KINDS[$kind]['modes'][0]);
+		$entity->setOptions(json_encode([
+			'mode' => in_array($mode, self::KINDS[$kind]['modes'], true) ? $mode : self::KINDS[$kind]['modes'][0],
+			'passive' => (bool)($data['passive'] ?? true),
+			'path' => mb_substr(trim((string)($data['path'] ?? '')), 0, 512),
+			'from' => mb_substr(trim((string)($data['from'] ?? '')), 0, 320),
+			'authType' => ($data['authType'] ?? 'password') === 'key' ? 'key' : 'password',
+		], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
+
+		$key = (string)($data['privateKey'] ?? '');
+		$keyPath = trim((string)($data['privateKeyPath'] ?? ''));
+		if ($keyPath !== '') {
+			$key = $this->readKeyFile($userId, $keyPath);
+		}
+		$credentials = [
+			'password' => (string)($data['secret'] ?? ''),
+			'key' => $key,
+			'passphrase' => (string)($data['passphrase'] ?? ''),
+		];
+		if (implode('', $credentials) !== '') {
+			$entity->setSecret($this->crypto->encrypt(json_encode($credentials, JSON_UNESCAPED_SLASHES)));
+		}
+		return $entity;
+	}
+
 	/** Records the outcome of the last connection, for the list view. */
 	public function touch(EndpointEntity $endpoint, string $result): void {
+		if ($endpoint->getId() === null) {
+			// A one-off connection has nothing to record against.
+			return;
+		}
 		$endpoint->setLastUsed(time());
 		$endpoint->setLastResult(mb_substr($result, 0, 255));
 		try {

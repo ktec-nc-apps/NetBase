@@ -921,8 +921,37 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         <!-- ============ FTP / SFTP ============ -->
         <section v-if="tab==='files'">
           <div class="card tool-card">
+            <h3>{{ t('Connect now') }}</h3>
+            <p class="dim">{{ t('Nothing has to be saved first. Fill this in, connect, and save it afterwards only if you want it again.') }}</p>
             <div class="tool-row">
-              <select v-model.number="filesConn" class="grow" @change="browse('')">
+              <select v-model="adhoc.kind" class="tiny" @change="adhocKindChanged">
+                <option value="sftp">SFTP</option>
+                <option value="ftp">FTP</option>
+              </select>
+              <input v-model="adhoc.host" class="grow" placeholder="server.example.com" @keyup.enter="quickConnect">
+              <input v-model.number="adhoc.port" type="number" class="tiny" min="1" max="65535">
+              <input v-model="adhoc.username" class="short" :placeholder="t('User name')" autocomplete="off">
+            </div>
+            <div class="tool-row">
+              <select v-model="adhoc.authType" class="tiny" v-if="adhoc.kind==='sftp'">
+                <option value="password">{{ t('Password') }}</option>
+                <option value="key">{{ t('Private key') }}</option>
+              </select>
+              <select v-model="adhoc.mode" class="tiny" v-if="adhoc.kind==='ftp'">
+                <option value="none">{{ t('No encryption') }}</option>
+                <option value="tls">{{ t('TLS from the start') }}</option>
+              </select>
+              <input v-if="adhoc.authType==='key' && adhoc.kind==='sftp'" v-model="adhoc.privateKeyPath" class="grow mono" :placeholder="t('Key file in your Nextcloud files')">
+              <input v-else v-model="adhoc.secret" type="password" class="short" :placeholder="t('Password')" autocomplete="new-password">
+              <input v-model="adhoc.path" class="short mono" :placeholder="t('Start folder (optional)')">
+              <button class="btn primary" :disabled="busy.browse || !adhoc.host" @click="quickConnect">{{ t('Connect') }}</button>
+            </div>
+            <p class="dim" v-if="adhoc.kind==='ftp' && !adhoc.username">{{ t('Leave the user name blank to sign in anonymously.') }}</p>
+          </div>
+
+          <div class="card tool-card">
+            <div class="tool-row">
+              <select v-model.number="filesConn" class="grow" @change="useSaved">
                 <option :value="0">{{ t('Choose a saved FTP or SFTP connection…') }}</option>
                 <option v-for="c in fileConnections" :key="c.id" :value="c.id">{{ c.name }} — {{ c.kind.toUpperCase() }} {{ c.host }}</option>
               </select>
@@ -933,7 +962,13 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
             <p class="dim" v-if="!connCaps.sftp && !connCaps.ftp">{{ t('Neither FTP nor SFTP is available in this PHP build.') }}</p>
           </div>
 
-          <div class="card" v-if="filesConn">
+          <div class="card" v-if="filesConn || adhocActive">
+            <div class="tool-row" v-if="adhocActive">
+              <strong class="mono">{{ adhoc.kind.toUpperCase() }} {{ adhoc.username || t('anonymous') }}@{{ adhoc.host }}</strong>
+              <span class="spacer"></span>
+              <button class="btn sm" @click="saveAdhoc">{{ t('Save this connection') }}</button>
+              <button class="btn sm" @click="disconnect">{{ t('Disconnect') }}</button>
+            </div>
             <div class="path-bar">
               <button class="btn xs" :disabled="!filesData || !filesData.parent" @click="browse(filesData ? filesData.parent : '')">↑ {{ t('Up') }}</button>
               <input v-model="filesPath" class="mono" @keyup.enter="browse(filesPath)">
@@ -963,7 +998,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
             <p v-if="filesData && !filesData.entries.length" class="empty-hint">{{ t('This folder is empty.') }}</p>
           </div>
 
-          <div class="card tool-card" v-if="filesConn">
+          <div class="card tool-card" v-if="filesConn || adhocActive">
             <h3>{{ t('Move files') }}</h3>
             <div class="tool-row">
               <input v-model="filesTarget" class="short" :placeholder="t('Nextcloud folder for downloads')">
@@ -1369,6 +1404,8 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         mailboxId: 0, mailboxResult: null,
         // file transfer
         filesConn: 0, filesPath: '', filesData: null, filesTarget: 'NetBase', filesSource: '', transferNote: '',
+        adhocActive: false,
+        adhoc: { kind: 'sftp', host: '', port: 22, username: '', secret: '', authType: 'password', privateKeyPath: '', passphrase: '', mode: 'ssh', passive: true, path: '' },
         // service probes
         sshHost: '', sshPort: 22, sshAuthMethods: false, sshResult: null, telnetResult: null,
         ntpHost: 'pool.ntp.org', ntpResult: null,
@@ -1714,19 +1751,45 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
       },
 
       // ---- FTP / SFTP ----
+      // Every call carries either the id of a saved connection or the details
+      // of the one-off one, so both work through the same endpoints.
+      fileTarget(extra) { return { id: this.filesConn, connection: this.filesConn ? {} : { ...this.adhoc }, ...extra }; },
+      adhocKindChanged() {
+        const ftp = this.adhoc.kind === 'ftp';
+        this.adhoc.port = ftp ? 21 : 22;
+        this.adhoc.mode = ftp ? 'none' : 'ssh';
+        this.adhoc.authType = 'password';
+      },
+      useSaved() { this.adhocActive = false; this.browse(''); },
+      async quickConnect() {
+        this.filesConn = 0;
+        this.adhocActive = true;
+        await this.browse(this.adhoc.path || '');
+        if (!this.filesData) this.adhocActive = false;
+      },
+      disconnect() { this.adhocActive = false; this.filesData = null; this.transferNote = ''; },
+      /** Hand the one-off details to the editor so they can be named and kept. */
+      saveAdhoc() {
+        this.openConn(null, this.adhoc.kind);
+        this.connForm = { ...this.connForm, ...this.adhoc, id: 0, name: this.adhoc.host, privateKey: '' };
+      },
       async browse(path) {
-        if (!this.filesConn) { this.filesData = null; return; }
-        const r = await this.guarded('browse', () => api('files/list?' + qs({ id: this.filesConn, path: path || '' })));
+        if (!this.filesConn && !this.adhocActive) { this.filesData = null; return; }
+        const query = this.filesConn
+          ? qs({ id: this.filesConn, path: path || '' })
+          // Booleans have to travel as 1/0: PHP reads the string "false" as true.
+          : qs({ id: 0, path: path || '', ...Object.fromEntries(Object.entries(this.adhoc).map(([k, v]) => ['connection[' + k + ']', typeof v === 'boolean' ? (v ? 1 : 0) : v])) });
+        const r = await this.guarded('browse', () => api('files/list?' + query));
         if (!r) return;
         this.filesData = r;
         this.filesPath = r.path;
       },
       async downloadFile(entry) {
-        const r = await this.guarded('dl', () => api('files/download', { method: 'POST', body: JSON.stringify({ id: this.filesConn, path: this.joinPath(this.filesData.path, entry.name), target: this.filesTarget }) }));
+        const r = await this.guarded('dl', () => api('files/download', { method: 'POST', body: JSON.stringify(this.fileTarget({ path: this.joinPath(this.filesData.path, entry.name), target: this.filesTarget })) }));
         if (r) this.transferNote = T('{name} saved to {folder} ({size})', { name: r.name, folder: this.filesTarget || '/', size: this.fmtBytes(r.bytes) });
       },
       async uploadFile() {
-        const r = await this.guarded('ul', () => api('files/upload', { method: 'POST', body: JSON.stringify({ id: this.filesConn, source: this.filesSource, remoteDir: this.filesData ? this.filesData.path : '' }) }));
+        const r = await this.guarded('ul', () => api('files/upload', { method: 'POST', body: JSON.stringify(this.fileTarget({ source: this.filesSource, remoteDir: this.filesData ? this.filesData.path : '' })) }));
         if (r) { this.transferNote = T('Uploaded to {path} ({size})', { path: r.remote, size: this.fmtBytes(r.bytes) }); this.browse(this.filesPath); }
       },
       async fileAction(action, entry) {
@@ -1743,7 +1806,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         } else if (!window.confirm(T('Delete {name} from the server?', { name: entry.name }))) {
           return;
         }
-        const r = await this.guarded('fileact', () => api('files/manage', { method: 'POST', body: JSON.stringify({ id: this.filesConn, action, path, extra }) }));
+        const r = await this.guarded('fileact', () => api('files/manage', { method: 'POST', body: JSON.stringify(this.fileTarget({ action, path, extra })) }));
         if (r) this.browse(this.filesData.path);
       },
 
