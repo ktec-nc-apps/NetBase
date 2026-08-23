@@ -112,6 +112,11 @@ class ProxyService {
 	 */
 	public function fetch(string $base, string $path, string $query, string $userId, string $prefix, array $post = [], string $authorization = ''): array {
 		$base = $this->validateBase($base);
+		if ($authorization === '') {
+			// A device that asked for a password earlier is answered without
+			// asking the person again.
+			$authorization = $this->recallAuth($base, $userId);
+		}
 		if (!$this->available()) {
 			throw new \RuntimeException('The PHP curl extension is not installed on this server');
 		}
@@ -166,6 +171,15 @@ class ProxyService {
 			$body = substr($body, 0, self::MAX_BYTES);
 		}
 
+		// A sandboxed window gets no sign-in box from the browser, so NetBase
+		// has to ask on the device's behalf.
+		$challenge = $headers['www-authenticate'] ?? '';
+		$needsPassword = $status === 401 && stripos($challenge, 'basic') !== false;
+		if ($needsPassword && $authorization !== '') {
+			// What was remembered is no longer accepted; ask again.
+			$this->forgetAuth($base, $userId);
+		}
+
 		$type = trim($headers['content-type'] ?? '');
 		if ($type === '') {
 			// Some device servers send no content type at all; a browser would
@@ -206,7 +220,14 @@ class ProxyService {
 		}
 		$out['content-type'] = $type;
 
-		return ['status' => $status, 'headers' => $out, 'body' => $body, 'html' => $isHtml];
+		return [
+			'status' => $status,
+			'headers' => $out,
+			'body' => $body,
+			'html' => $isHtml,
+			'needsPassword' => $needsPassword,
+			'realm' => $this->realm($challenge),
+		];
 	}
 
 	// ------------------------------------------------------------------ safety
@@ -251,12 +272,54 @@ class ProxyService {
 		return false;
 	}
 
+	// ------------------------------------------------------------------ passwords
+
+	/** Keep what the device asked for, for as long as the window may live. */
+	public function rememberAuth(string $base, string $userId, string $user, string $password): void {
+		$header = 'Basic ' . base64_encode($user . ':' . $password);
+		@file_put_contents($this->authFile($userId, $base), $this->crypto->encrypt($header), LOCK_EX);
+		@chmod($this->authFile($userId, $base), 0600);
+	}
+
+	public function forgetAuth(string $base, string $userId): void {
+		@unlink($this->authFile($userId, $base));
+	}
+
+	private function recallAuth(string $base, string $userId): string {
+		$file = $this->authFile($userId, $base);
+		if (!is_readable($file)) {
+			return '';
+		}
+		try {
+			return (string)$this->crypto->decrypt((string)file_get_contents($file));
+		} catch (\Throwable $e) {
+			@unlink($file);
+			return '';
+		}
+	}
+
+	private function authFile(string $userId, string $base): string {
+		return $this->stateDir() . '/' . sha1($userId . '|' . $base) . '.auth';
+	}
+
+	/** What the device calls the thing it is guarding. */
+	private function realm(string $challenge): string {
+		if (preg_match('#realm\s*=\s*"([^"]*)"#i', $challenge, $m) === 1) {
+			return mb_substr($m[1], 0, 120);
+		}
+		return '';
+	}
+
 	private function cookieJar(string $userId, string $base): string {
+		return $this->stateDir() . '/' . sha1($userId . '|' . $base) . '.cookies';
+	}
+
+	private function stateDir(): string {
 		$dir = sys_get_temp_dir() . '/netbase-proxy';
 		if (!is_dir($dir)) {
 			@mkdir($dir, 0700, true);
 		}
-		return $dir . '/' . sha1($userId . '|' . $base) . '.cookies';
+		return $dir;
 	}
 
 	// ------------------------------------------------------------------ rewriting
@@ -275,6 +338,13 @@ class ProxyService {
 		// Absolute URLs that point back at the same device.
 		$quoted = preg_quote($base, '#');
 		$body = preg_replace('#(["\'(])' . $quoted . '(/[^"\')]*)?#i', '$1' . $prefix . '$2', $body) ?? $body;
+
+		// A device page often aims its links at the whole browser window — the
+		// frameset habit of _top and _parent. Inside NetBase that means walking
+		// out of the app, so every such link is turned back on the window it
+		// already lives in.
+		$body = preg_replace('#\btarget\s*=\s*(["\'])\s*_(top|parent|blank)\s*\1#i', 'target="_self"', $body) ?? $body;
+		$body = preg_replace('#\btarget\s*=\s*_(top|parent|blank)(?=[\s>])#i', 'target=_self', $body) ?? $body;
 
 		// A page that forwards itself with a meta refresh is common on routers
 		// and printers, and the address inside it needs the same treatment.
@@ -321,6 +391,7 @@ class ProxyService {
 		if (u.lastIndexOf(P, 0) === 0) { return u; }
 		return P + u;
 	}
+	var escapes = { _top: 1, _parent: 1, _blank: 1 };
 	function fixMarkup(html) {
 		return String(html).replace(/(\b(?:src|href|action|data|poster)\s*=\s*["'])\/(?!\/)/gi, '$1' + P + '/');
 	}
@@ -342,6 +413,7 @@ class ProxyService {
 	window.open = function () {
 		var a = [].slice.call(arguments);
 		a[0] = fix(a[0]);
+		if (a[1] && escapes[String(a[1]).toLowerCase()]) { a[1] = '_self'; }
 		return ow.apply(this, a);
 	};
 	// Old device interfaces build themselves with document.write, and the
@@ -370,18 +442,25 @@ class ProxyService {
 			set: function (value) { descriptor.set.call(this, fix(value)); }
 		});
 	});
-	var attributes = ['src', 'href', 'action', 'data', 'poster'];
+	var attributes = ['src', 'href', 'action', 'data', 'poster', 'target'];
 	function scrub(node) {
 		if (!node || node.nodeType !== 1 || !node.getAttribute) { return; }
 		for (var i = 0; i < attributes.length; i++) {
-			var value = node.getAttribute(attributes[i]);
-			if (value && value !== fix(value)) { node.setAttribute(attributes[i], fix(value)); }
+			var name = attributes[i];
+			var value = node.getAttribute(name);
+			if (!value) { continue; }
+			if (name === 'target') {
+				// Anything aimed outside the window is aimed at the window.
+				if (escapes[value.toLowerCase()]) { node.setAttribute(name, '_self'); }
+				continue;
+			}
+			if (value !== fix(value)) { node.setAttribute(name, fix(value)); }
 		}
 	}
 	function sweep(root) {
 		scrub(root);
 		if (root.querySelectorAll) {
-			var found = root.querySelectorAll('[src],[href],[action],[data],[poster]');
+			var found = root.querySelectorAll('[src],[href],[action],[data],[poster],[target]');
 			for (var i = 0; i < found.length; i++) { scrub(found[i]); }
 		}
 	}
@@ -401,9 +480,14 @@ class ProxyService {
 	// origin of its own — the browser refuses, and there is no policy that
 	// permits it. NetBase is told, so it can offer the way round.
 	function tell() {
-		if (document.querySelector('frameset, frame')) {
-			try { window.parent.postMessage({ netbase: 'frames' }, '*'); } catch (e) {}
-		}
+		// Where the window is now, so NetBase can show it and come back to it.
+		try {
+			window.parent.postMessage({
+				netbase: document.querySelector('frameset, frame') ? 'frames' : 'here',
+				href: location.pathname + location.search,
+				title: document.title || ''
+			}, '*');
+		} catch (e) {}
 	}
 	if (document.readyState === 'loading') {
 		document.addEventListener('DOMContentLoaded', tell);

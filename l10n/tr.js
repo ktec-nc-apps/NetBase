@@ -705,7 +705,12 @@ OC.L10N.register(
         "%s%% of the packets went missing. On a wired network that points at a cable or a port; on Wi-Fi, at range or interference.": "Paketlerin %s%%'i kayboldu. Kablolu ağda bu kabloyu ya da bağlantı noktasını, Wi-Fi'de mesafeyi ya da paraziti gösterir.",
         "Every packet came back.": "Bütün paketler geri döndü.",
         "Round-trip times vary by %s ms. That much jitter is felt in calls and remote sessions.": "Gidiş-dönüş süreleri %s ms oynuyor. Bu kadar titreşim aramalarda ve uzak oturumlarda hissedilir.",
-        "An average of %s ms is high enough to be noticeable in anything interactive.": "%s ms'lik ortalama, etkileşimli her işte fark edilecek kadar yüksektir."
+        "An average of %s ms is high enough to be noticeable in anything interactive.": "%s ms'lik ortalama, etkileşimli her işte fark edilecek kadar yüksektir.",
+        "This device is asking for a user name and password": "Bu cihaz kullanıcı adı ve parola istiyor",
+        "It calls the protected part “%s”.": "Korunan bölüme “%s” diyor.",
+        "NetBase will remember it for you, for this device only.": "NetBase bunu yalnızca bu cihaz için sizin adınıza hatırlar.",
+        "Back": "Geri",
+        "Front page": "İlk sayfa"
     },
     "nplurals=2; plural=(n > 1);"
 );

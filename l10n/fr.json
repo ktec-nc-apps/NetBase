@@ -704,7 +704,12 @@
         "%s%% of the packets went missing. On a wired network that points at a cable or a port; on Wi-Fi, at range or interference.": "%s%% des paquets ont disparu. En filaire, cela désigne un câble ou un port ; en Wi-Fi, la portée ou des interférences.",
         "Every packet came back.": "Tous les paquets sont revenus.",
         "Round-trip times vary by %s ms. That much jitter is felt in calls and remote sessions.": "Les temps d'aller-retour varient de %s ms. Une telle gigue se ressent en appel et en session distante.",
-        "An average of %s ms is high enough to be noticeable in anything interactive.": "Une moyenne de %s ms se remarque dans tout usage interactif."
+        "An average of %s ms is high enough to be noticeable in anything interactive.": "Une moyenne de %s ms se remarque dans tout usage interactif.",
+        "This device is asking for a user name and password": "Cet appareil demande un identifiant et un mot de passe",
+        "It calls the protected part “%s”.": "Il appelle « %s » la partie protégée.",
+        "NetBase will remember it for you, for this device only.": "NetBase s'en souviendra pour vous, pour cet appareil seulement.",
+        "Back": "Retour",
+        "Front page": "Page d'accueil"
     },
     "pluralForm": "nplurals=2; plural=(n > 1);"
 }

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace OCA\NetBase\Controller;
 
 use OCA\NetBase\AppInfo\Application;
+use OCA\NetBase\Service\L10nService;
 use OCA\NetBase\Service\ProxyService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -12,6 +13,7 @@ use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\Attribute\PublicPage;
 use OCP\AppFramework\Http\EmptyContentSecurityPolicy;
 use OCP\AppFramework\Http\DataDisplayResponse;
+use OCP\AppFramework\Http\RedirectResponse;
 use OCP\IRequest;
 use OCP\IURLGenerator;
 use Psr\Log\LoggerInterface;
@@ -28,6 +30,7 @@ class ProxyController extends Controller {
 	public function __construct(
 		IRequest $request,
 		private ProxyService $proxy,
+		private L10nService $l,
 		private IURLGenerator $urls,
 		private LoggerInterface $logger,
 	) {
@@ -56,6 +59,15 @@ class ProxyController extends Controller {
 			$post = $this->request->getMethod() === 'POST' ? (array)$this->request->getParams() : [];
 			unset($post['token'], $post['path'], $post['_route']);
 
+			if (isset($post['__netbase_user'])) {
+				// The person answered the device's request for a password. It is
+				// kept for them alone, and the page is asked for again.
+				$this->proxy->rememberAuth($ticket['base'], $ticket['userId'], (string)$post['__netbase_user'], (string)($post['__netbase_pass'] ?? ''));
+				return new RedirectResponse(
+					rtrim($this->urls->linkToRoute('netbase.proxy.open', ['token' => $token, 'path' => $path]), '/') . ($path === '' ? '/' : ''),
+				);
+			}
+
 			$result = $this->proxy->fetch($ticket['base'], $path, $query, $ticket['userId'], $prefix, $post, (string)$this->request->getHeader('Authorization'));
 		} catch (\InvalidArgumentException $e) {
 			return $this->problem($e->getMessage(), Http::STATUS_BAD_REQUEST);
@@ -64,6 +76,10 @@ class ProxyController extends Controller {
 		} catch (\Throwable $e) {
 			$this->logger->error('NetBase proxy: ' . $e->getMessage(), ['exception' => $e, 'app' => 'netbase']);
 			return $this->problem($e->getMessage(), Http::STATUS_BAD_GATEWAY);
+		}
+
+		if (!empty($result['needsPassword'])) {
+			return $this->askForPassword($token, $path, (string)($result['realm'] ?? ''));
 		}
 
 		$headers = $result['headers'];
@@ -114,6 +130,47 @@ class ProxyController extends Controller {
 		return $policy;
 	}
 
+	/**
+	 * The device wants a password, and the browser will not ask for one.
+	 *
+	 * A window kept away from Nextcloud has no origin of its own, and browsers
+	 * refuse to show their sign-in box in one. So NetBase asks instead, and
+	 * keeps the answer for this person and this device only.
+	 */
+	private function askForPassword(string $token, string $path, string $realm): DataDisplayResponse {
+		$action = rtrim($this->urls->linkToRoute('netbase.proxy.open', ['token' => $token, 'path' => $path]), '/') . ($path === '' ? '/' : '');
+		$title = $this->l->t('This device is asking for a user name and password');
+		$hint = $realm !== ''
+			? $this->l->t('It calls the protected part “%s”.', [$realm])
+			: $this->l->t('NetBase will remember it for you, for this device only.');
+		$html = '<!doctype html><meta charset="utf-8"><title>' . htmlspecialchars($title, ENT_QUOTES) . '</title><style>'
+			. 'body{margin:0;display:flex;align-items:center;justify-content:center;height:100vh;'
+			. 'font:15px/1.6 -apple-system,BlinkMacSystemFont,"Noto Sans JP",sans-serif;background:#f4f6fb;color:#1e293b}'
+			. 'form{width:min(28em,90vw);padding:28px;background:#fff;border-radius:14px;box-shadow:0 1px 3px rgba(15,23,42,.1)}'
+			. 'b{display:block;font-size:1.05em;margin-bottom:4px}p{margin:0 0 18px;color:#64748b;font-size:.9em}'
+			. 'label{display:block;margin-bottom:12px}span{display:block;font-size:.85em;margin-bottom:4px}'
+			. 'input{width:100%;box-sizing:border-box;padding:9px 11px;border:1px solid #cbd5e1;border-radius:8px;font:inherit}'
+			. 'button{margin-top:6px;padding:9px 18px;border:0;border-radius:8px;background:#0f766e;color:#fff;font:inherit;cursor:pointer}'
+			. '</style><form method="post" action="' . htmlspecialchars($action, ENT_QUOTES) . '">'
+			. '<b>🔒 ' . htmlspecialchars($title, ENT_QUOTES) . '</b>'
+			. '<p>' . htmlspecialchars($hint, ENT_QUOTES) . '</p>'
+			. '<label><span>' . htmlspecialchars($this->l->t('User name'), ENT_QUOTES) . '</span>'
+			. '<input name="__netbase_user" autocomplete="username" autofocus></label>'
+			. '<label><span>' . htmlspecialchars($this->l->t('Password'), ENT_QUOTES) . '</span>'
+			. '<input name="__netbase_pass" type="password" autocomplete="current-password"></label>'
+			. '<button type="submit">' . htmlspecialchars($this->l->t('Sign in'), ENT_QUOTES) . '</button>'
+			. '</form>' . $this->locate();
+		$response = new DataDisplayResponse($html, Http::STATUS_OK, ['Content-Type' => 'text/html; charset=utf-8']);
+		$response->setContentSecurityPolicy($this->policy());
+		$response->cacheFor(0);
+		return $response;
+	}
+
+	/** NetBase's own pages report their place, so the window's address line is right. */
+	private function locate(): string {
+		return '<script>try{parent.postMessage({netbase:"here",href:location.pathname+location.search},"*")}catch(e){}</script>';
+	}
+
 	/** The window shows whatever comes back, so an error has to be readable. */
 	private function problem(string $message, int $status): DataDisplayResponse {
 		$html = '<!doctype html><meta charset="utf-8"><style>'
@@ -121,7 +178,7 @@ class ProxyController extends Controller {
 			. 'font:15px/1.6 -apple-system,BlinkMacSystemFont,"Noto Sans JP",sans-serif;background:#f4f6fb;color:#1e293b}'
 			. 'div{max-width:36em;padding:28px;background:#fff;border-radius:14px;box-shadow:0 1px 3px rgba(15,23,42,.1)}'
 			. 'b{display:block;margin-bottom:8px}</style><div><b>⚠</b>'
-			. htmlspecialchars($message, ENT_QUOTES) . '</div>';
+			. htmlspecialchars($message, ENT_QUOTES) . '</div>' . $this->locate();
 		$response = new DataDisplayResponse($html, $status, ['Content-Type' => 'text/html; charset=utf-8']);
 		$response->setContentSecurityPolicy($this->policy());
 		$response->cacheFor(0);

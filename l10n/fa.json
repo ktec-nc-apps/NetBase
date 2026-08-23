@@ -704,7 +704,12 @@
         "%s%% of the packets went missing. On a wired network that points at a cable or a port; on Wi-Fi, at range or interference.": "%s%% بسته‌ها گم شد. در شبکهٔ سیمی به کابل یا درگاه اشاره دارد و در وای‌فای به فاصله یا تداخل.",
         "Every packet came back.": "همهٔ بسته‌ها بازگشتند.",
         "Round-trip times vary by %s ms. That much jitter is felt in calls and remote sessions.": "زمان رفت‌وبرگشت %s میلی‌ثانیه نوسان دارد. این اندازه لرزش در تماس‌ها و نشست‌های دور حس می‌شود.",
-        "An average of %s ms is high enough to be noticeable in anything interactive.": "میانگین %s میلی‌ثانیه آن‌قدر بالاست که در هر کار تعاملی حس شود."
+        "An average of %s ms is high enough to be noticeable in anything interactive.": "میانگین %s میلی‌ثانیه آن‌قدر بالاست که در هر کار تعاملی حس شود.",
+        "This device is asking for a user name and password": "این دستگاه نام کاربری و گذرواژه می‌خواهد",
+        "It calls the protected part “%s”.": "بخش محافظت‌شده را «%s» می‌نامد.",
+        "NetBase will remember it for you, for this device only.": "نت‌بیس آن را تنها برای همین دستگاه به‌یاد می‌سپارد.",
+        "Back": "بازگشت",
+        "Front page": "صفحهٔ نخست"
     },
     "pluralForm": "nplurals=2; plural=(n > 1);"
 }

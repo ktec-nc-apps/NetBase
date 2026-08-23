@@ -704,7 +704,12 @@
         "%s%% of the packets went missing. On a wired network that points at a cable or a port; on Wi-Fi, at range or interference.": "丢失了 %s%% 的数据包。有线网络多为线缆或端口问题；无线则多因距离或干扰。",
         "Every packet came back.": "所有数据包均已返回。",
         "Round-trip times vary by %s ms. That much jitter is felt in calls and remote sessions.": "往返时间波动 %s 毫秒。这样的抖动在通话和远程操作中能感觉到。",
-        "An average of %s ms is high enough to be noticeable in anything interactive.": "平均 %s 毫秒，在任何交互操作中都能察觉。"
+        "An average of %s ms is high enough to be noticeable in anything interactive.": "平均 %s 毫秒，在任何交互操作中都能察觉。",
+        "This device is asking for a user name and password": "该设备要求输入用户名和密码",
+        "It calls the protected part “%s”.": "它把受保护的部分称为“%s”。",
+        "NetBase will remember it for you, for this device only.": "NetBase 会为你记住，仅限该设备。",
+        "Back": "返回",
+        "Front page": "首页"
     },
     "pluralForm": "nplurals=1; plural=0;"
 }

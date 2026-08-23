@@ -1281,6 +1281,8 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         <strong class="nm">{{ w.title }}</strong>
         <span class="dim mono tiny addr">{{ w.base }}{{ w.path ? '/' + w.path : '' }}</span>
         <span class="spacer"></span>
+        <button class="btn xs" :title="t('Back')" :disabled="w.trailAt < 1" @click.stop="backWindow(w)">←</button>
+        <button class="btn xs" :title="t('Front page')" @click.stop="homeWindow(w)">⌂</button>
         <button class="btn xs" :title="t('Reload')" @click.stop="reloadWindow(w)">⟳</button>
         <button class="btn xs" :title="t('Fill the screen')" @click.stop="toggleFull(w)">⤢</button>
         <button class="btn xs" :title="t('Close')" @click.stop="closeWindow(w)">✕</button>
@@ -1291,7 +1293,8 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
       </div>
       <div v-if="w.busy" class="devwin-note dim">{{ t('Connecting…') }}</div>
       <div v-else-if="w.error" class="devwin-note error">⚠ {{ w.error }}</div>
-      <iframe v-else-if="w.trusted" key="trusted" :src="w.src" class="devwin-frame" :title="w.title"></iframe>
+      <iframe v-else-if="w.trusted" key="trusted" :src="w.src" class="devwin-frame" :title="w.title"
+              sandbox="allow-scripts allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox allow-downloads allow-same-origin"></iframe>
       <iframe v-else key="sandboxed" :src="w.src" class="devwin-frame" :title="w.title"
               sandbox="allow-scripts allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox allow-downloads"></iframe>
       <div class="devwin-grip" @mousedown.prevent.stop="startResize(w, $event)"></div>
@@ -1897,7 +1900,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         const offset = (this.windows.length % 6) * 28;
         const w = {
           id: ++this.windowSeq, base, url: '', src: '', error: '', busy: true, full: false,
-          framed: false, trusted: false, z: ++this.windowTop,
+          framed: false, trusted: false, here: '', trail: [], trailAt: -1, rewinding: false, z: ++this.windowTop,
           title: (device.name || device.ip) + ' · ' + port,
           x: Math.max(20, Math.round(window.innerWidth / 2 - 520) + offset),
           y: 90 + offset, w: Math.min(1040, window.innerWidth - 60), h: Math.min(700, window.innerHeight - 140),
@@ -1926,14 +1929,46 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
       },
       onWindowMessage(event) {
         const data = event && event.data;
-        if (!data || data.netbase !== 'frames') return;
+        if (!data || (data.netbase !== 'frames' && data.netbase !== 'here')) return;
         const frame = [...document.querySelectorAll('.devwin-frame')].find((f) => f.contentWindow === event.source);
         if (!frame) return;
         const w = this.windows.find((x) => x.src === frame.getAttribute('src'));
-        if (w && !w.trusted) w.framed = true;
+        if (!w) return;
+        // The window says where it has got to, so the address line follows the
+        // page the way a browser's would, and a reload comes back to it.
+        // The cache-buster is ours, not the page's; it has no place in a trail.
+        const href = data.href ? data.href.replace(/([?&])_nb=\d+&?/, '$1').replace(/[?&]$/, '') : '';
+        if (href && w.url && href.startsWith(w.url.replace(/\/$/, ''))) {
+          w.here = href;
+          w.path = href.slice(w.url.length).replace(/\?.*$/, '');
+          // The window keeps its own trail, because a page held at arm's
+          // length cannot be asked to go back by the app around it.
+          if (w.rewinding) {
+            w.rewinding = false;
+          } else if (w.trail[w.trailAt] !== href) {
+            w.trail = w.trail.slice(0, w.trailAt + 1);
+            w.trail.push(href);
+            w.trailAt = w.trail.length - 1;
+          }
+        }
+        if (data.netbase === 'frames' && !w.trusted) w.framed = true;
       },
       closeWindow(w) { this.windows = this.windows.filter((x) => x.id !== w.id); },
-      reloadWindow(w) { if (w.url) w.src = w.url + '?_nb=' + Date.now(); },
+      backWindow(w) {
+        if (w.trailAt < 1) return;
+        w.trailAt -= 1;
+        w.rewinding = true;
+        const at = w.trail[w.trailAt];
+        w.src = at + (at.includes('?') ? '&' : '?') + '_nb=' + Date.now();
+      },
+      homeWindow(w) {
+        if (!w.url) return;
+        w.src = w.url + '?_nb=' + Date.now();
+      },
+      reloadWindow(w) {
+        const at = w.here || w.url;
+        if (at) w.src = at + (at.includes('?') ? '&' : '?') + '_nb=' + Date.now();
+      },
       toggleFull(w) {
         if (w.full) {
           Object.assign(w, w.full);

@@ -705,7 +705,12 @@ OC.L10N.register(
         "%s%% of the packets went missing. On a wired network that points at a cable or a port; on Wi-Fi, at range or interference.": "Perderam-se %s%% dos pacotes. Em rede com fios aponta a um cabo ou porta; em Wi-Fi, à distância ou a interferências.",
         "Every packet came back.": "Voltaram todos os pacotes.",
         "Round-trip times vary by %s ms. That much jitter is felt in calls and remote sessions.": "Os tempos de ida e volta variam %s ms. Esse jitter sente-se em chamadas e sessões remotas.",
-        "An average of %s ms is high enough to be noticeable in anything interactive.": "Uma média de %s ms já se nota em qualquer uso interativo."
+        "An average of %s ms is high enough to be noticeable in anything interactive.": "Uma média de %s ms já se nota em qualquer uso interativo.",
+        "This device is asking for a user name and password": "Este aparelho pede um utilizador e uma palavra-passe",
+        "It calls the protected part “%s”.": "Chama “%s” à parte protegida.",
+        "NetBase will remember it for you, for this device only.": "O NetBase guarda-o por si, só para este aparelho.",
+        "Back": "Retroceder",
+        "Front page": "Página inicial"
     },
     "nplurals=2; plural=(n > 1);"
 );

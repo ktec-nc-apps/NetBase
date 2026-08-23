@@ -704,7 +704,12 @@
         "%s%% of the packets went missing. On a wired network that points at a cable or a port; on Wi-Fi, at range or interference.": "%s%% of the packets went missing. On a wired network that points at a cable or a port; on Wi-Fi, at range or interference.",
         "Every packet came back.": "Every packet came back.",
         "Round-trip times vary by %s ms. That much jitter is felt in calls and remote sessions.": "Round-trip times vary by %s ms. That much jitter is felt in calls and remote sessions.",
-        "An average of %s ms is high enough to be noticeable in anything interactive.": "An average of %s ms is high enough to be noticeable in anything interactive."
+        "An average of %s ms is high enough to be noticeable in anything interactive.": "An average of %s ms is high enough to be noticeable in anything interactive.",
+        "This device is asking for a user name and password": "This device is asking for a user name and password",
+        "It calls the protected part “%s”.": "It calls the protected part “%s”.",
+        "NetBase will remember it for you, for this device only.": "NetBase will remember it for you, for this device only.",
+        "Back": "Back",
+        "Front page": "Front page"
     },
     "pluralForm": "nplurals=2; plural=(n != 1);"
 }

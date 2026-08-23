@@ -705,7 +705,12 @@ OC.L10N.register(
         "%s%% of the packets went missing. On a wired network that points at a cable or a port; on Wi-Fi, at range or interference.": "Ztratilo se %s%% paketů. V kabelové síti to ukazuje na kabel nebo port, u Wi-Fi na dosah či rušení.",
         "Every packet came back.": "Vrátily se všechny pakety.",
         "Round-trip times vary by %s ms. That much jitter is felt in calls and remote sessions.": "Doby odezvy kolísají o %s ms. Takový jitter je znát při hovorech a vzdálených relacích.",
-        "An average of %s ms is high enough to be noticeable in anything interactive.": "Průměr %s ms je dost vysoký, aby byl znát při interaktivní práci."
+        "An average of %s ms is high enough to be noticeable in anything interactive.": "Průměr %s ms je dost vysoký, aby byl znát při interaktivní práci.",
+        "This device is asking for a user name and password": "Toto zařízení žádá uživatelské jméno a heslo",
+        "It calls the protected part “%s”.": "Chráněnou část nazývá „%s“.",
+        "NetBase will remember it for you, for this device only.": "NetBase si je pro vás zapamatuje, jen pro toto zařízení.",
+        "Back": "Zpět",
+        "Front page": "Úvodní stránka"
     },
     "nplurals=4; plural=(n == 1 && n % 1 == 0) ? 0 : (n >= 2 && n <= 4 && n % 1 == 0) ? 1: (n % 1 != 0 ) ? 2 : 3;"
 );

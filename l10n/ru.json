@@ -704,7 +704,12 @@
         "%s%% of the packets went missing. On a wired network that points at a cable or a port; on Wi-Fi, at range or interference.": "Потеряно %s%% пакетов. В проводной сети это указывает на кабель или порт, в Wi-Fi — на расстояние или помехи.",
         "Every packet came back.": "Вернулись все пакеты.",
         "Round-trip times vary by %s ms. That much jitter is felt in calls and remote sessions.": "Время отклика колеблется на %s мс. Такой джиттер заметен в звонках и удалённых сеансах.",
-        "An average of %s ms is high enough to be noticeable in anything interactive.": "Среднее %s мс уже заметно в любой интерактивной работе."
+        "An average of %s ms is high enough to be noticeable in anything interactive.": "Среднее %s мс уже заметно в любой интерактивной работе.",
+        "This device is asking for a user name and password": "Устройство запрашивает имя пользователя и пароль",
+        "It calls the protected part “%s”.": "Защищённую часть оно называет «%s».",
+        "NetBase will remember it for you, for this device only.": "NetBase запомнит это для вас — только для этого устройства.",
+        "Back": "Назад",
+        "Front page": "Начальная страница"
     },
     "pluralForm": "nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);"
 }
