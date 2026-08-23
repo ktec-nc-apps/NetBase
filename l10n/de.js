@@ -483,7 +483,6 @@ OC.L10N.register(
         "SSH": "SSH",
         "Mail — domain policy audit, server tests and test messages": "E-Mail — Prüfung der Domain-Richtlinien, Servertests und Testnachrichten",
         "FTP and SFTP — browse remote servers and move files": "FTP und SFTP — entfernte Server durchsehen und Dateien verschieben",
-        "SSH, Telnet and NTP — service probes without signing in": "SSH, Telnet und NTP — Dienstprüfungen ohne Anmeldung",
         "Sign in with": "Anmelden mit",
         "Private key": "Privater Schlüssel",
         "Private key (leave blank to keep)": "Privater Schlüssel (leer lassen, um ihn zu behalten)",
@@ -612,7 +611,6 @@ OC.L10N.register(
         "Run command": "Befehl ausführen",
         "SSH commands — run commands on a saved connection": "SSH-Befehle — Befehle auf einer gespeicherten Verbindung ausführen",
         "Sign-in was refused for %s@%s. Check the user name and the password or key.": "Die Anmeldung für %s@%s wurde abgelehnt. Prüfen Sie Benutzernamen und Passwort bzw. Schlüssel.",
-        "Signs in to a saved SSH connection with its password or private key and runs one command. There is no terminal: PHP ends every request, so a shell session cannot outlive one.": "Meldet sich mit Passwort oder privatem Schlüssel an einer gespeicherten SSH-Verbindung an und führt einen Befehl aus. Es gibt kein Terminal: PHP beendet jede Anfrage, eine Shell-Sitzung kann sie also nicht überdauern.",
         "Split": "Aufteilen",
         "Split into smaller networks": "In kleinere Netze aufteilen",
         "Strict-Transport-Security is set: %s": "Strict-Transport-Security ist gesetzt: %s",
@@ -677,7 +675,18 @@ OC.L10N.register(
         "🎨 Appearance": "🎨 Aussehen",
         "Language": "Sprache",
         "Follow Nextcloud": "Nextcloud folgen",
-        "NetBase can speak a different language from the rest of Nextcloud — handy when the interface language and the language you think in are not the same.": "NetBase kann eine andere Sprache sprechen als der Rest von Nextcloud — praktisch, wenn die Sprache der Oberfläche und die Sprache, in der man denkt, nicht dieselbe ist."
+        "NetBase can speak a different language from the rest of Nextcloud — handy when the interface language and the language you think in are not the same.": "NetBase kann eine andere Sprache sprechen als der Rest von Nextcloud — praktisch, wenn die Sprache der Oberfläche und die Sprache, in der man denkt, nicht dieselbe ist.",
+        "Clock check": "Uhrzeitprüfung",
+        "How far the clock has drifted from a time server": "Wie weit die Uhr von einem Zeitserver abweicht",
+        "SSH and Telnet — service probes without signing in": "SSH und Telnet — Dienstprüfungen ohne Anmeldung",
+        "Clock check — compare this server's clock with a time server": "Uhrzeitprüfung — die Uhr dieses Servers mit einem Zeitserver vergleichen",
+        "Open a console": "Konsole öffnen",
+        "SSH console": "SSH-Konsole",
+        "Clear": "Leeren",
+        "Each line runs on its own connection and the working directory is carried over, so cd, ls and tail behave as expected. Programs that need a real terminal — vi, top, an interactive password prompt — cannot run here.": "Jede Zeile läuft über eine eigene Verbindung, das Arbeitsverzeichnis wird übernommen — cd, ls und tail verhalten sich wie gewohnt. Programme, die ein echtes Terminal brauchen (vi, top, eine interaktive Passwortabfrage), laufen hier nicht.",
+        "exit status {n}": "Beendigungscode {n}",
+        "The command could not be run.": "Der Befehl konnte nicht ausgeführt werden.",
+        "Signs in to a saved SSH connection with its password or private key. Run a single command, pick a preset, or open a console that keeps its working directory from one line to the next.": "Meldet sich mit Passwort oder privatem Schlüssel an einer gespeicherten SSH-Verbindung an. Führen Sie einen einzelnen Befehl aus, wählen Sie eine Voreinstellung, oder öffnen Sie eine Konsole, die das Arbeitsverzeichnis von Zeile zu Zeile behält."
     },
     "nplurals=2; plural=(n != 1);"
 );

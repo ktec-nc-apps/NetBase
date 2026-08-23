@@ -101,7 +101,7 @@
       </nav>
       <div class="sidebar-foot">
         <button class="btn primary block" v-if="status.canScan" :disabled="scanning" @click="startScan()">{{ scanning ? t('Scanning…') : t('🛰️ Scan the network') }}</button>
-        <button class="btn sm block" @click="sysInfo = true">{{ t('🖥 System information') }}</button>
+        <button class="btn sm block" v-if="status.isAdmin" @click="openSysInfo">{{ t('🖥 System information') }}</button>
         <button class="btn sm block" @click="themeBox = true">{{ t('🎨 Appearance') }}</button>
       </div>
     </aside>
@@ -664,29 +664,6 @@
         </section>
 
         <!-- ============ server ============ -->
-        <section v-if="tab==='server'">
-          <div class="card" v-if="serverResult">
-            <div class="kv">
-              <div><span>{{ t('Host name') }}</span><code>{{ serverResult.hostname }}</code></div>
-              <div><span>{{ t('Default gateway') }}</span><code>{{ serverResult.defaultRoute.gateway }} ({{ serverResult.defaultRoute.interface }})</code></div>
-              <div><span>{{ t('Resolvers') }}</span><code>{{ serverResult.resolvers.join(', ') }}</code></div>
-              <div><span>{{ t('Neighbour entries') }}</span><code>{{ serverResult.neighbours }}</code></div>
-            </div>
-            <table class="grid compact">
-              <thead><tr><th>{{ t('Interface') }}</th><th>{{ t('State') }}</th><th>{{ t('MAC address') }}</th><th>{{ t('Addresses') }}</th><th>MTU</th></tr></thead>
-              <tbody>
-                <tr v-for="i in serverResult.interfaces" :key="i.name">
-                  <td class="mono">{{ i.name }}</td>
-                  <td><span class="pill" :class="i.up ? 'ok' : 'no'">{{ i.up ? 'UP' : 'DOWN' }}</span></td>
-                  <td class="mono dim">{{ i.mac }}</td>
-                  <td class="mono">{{ i.addresses.map(a => a.ip + (a.family==='inet' ? '/'+a.cidr : '')).join(' ') }}</td>
-                  <td class="dim mono">{{ i.mtu }}</td>
-                </tr>
-              </tbody>
-            </table>
-            <details v-if="serverResult.listeners.length"><summary>{{ t('Listening sockets') }}</summary><pre class="raw">{{ serverResult.listeners.join('\n') }}</pre></details>
-          </div>
-        </section>
 
         <!-- ============ nmap ============ -->
         <section v-if="tab==='nmap'">
@@ -931,6 +908,29 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
           </template>
         </section>
 
+        <!-- ============ clock check ============ -->
+        <section v-if="tab==='ntp'">
+          <div class="card tool-card">
+            <h3>{{ t('Clock check (NTP)') }}</h3>
+            <p class="dim">{{ t('A clock that has drifted is behind more certificate and sign-in failures than anything else.') }}</p>
+            <div class="tool-row">
+              <input v-model="ntpHost" :placeholder="t('pool.ntp.org')" @keyup.enter="runNtp">
+              <button class="btn" :disabled="busy.ntp" @click="runNtp">{{ t('Compare clocks') }}</button>
+            </div>
+            <div v-if="ntpResult">
+              <div v-for="(f,i) in (ntpResult.findings||[])" :key="i" class="finding" :class="f.level">
+                <span class="pill" :class="f.level">{{ t(levelLabel(f.level)) }}</span><div><strong>{{ f.area }}</strong> · {{ f.text }}</div>
+              </div>
+              <div class="kv" v-if="ntpResult.ok">
+                <div><span>{{ t('Offset') }}</span><code>{{ ntpResult.offsetSeconds }} s</code></div>
+                <div><span>{{ t('Round trip') }}</span><code>{{ ntpResult.roundTripMs }} ms</code></div>
+                <div><span>{{ t('Stratum') }}</span><code>{{ ntpResult.stratum }}</code></div>
+              </div>
+              <p v-else class="empty-hint">⚠ {{ ntpResult.error }}</p>
+            </div>
+          </div>
+        </section>
+
         <!-- ============ FTP / SFTP ============ -->
         <section v-if="tab==='files'">
           <div class="card tool-card">
@@ -1069,7 +1069,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
 
           <div class="card tool-card" v-if="allowed('sshexec')">
             <h3>{{ t('Run a command over SSH') }}</h3>
-            <p class="dim">{{ t('Signs in to a saved SSH connection with its password or private key and runs one command. There is no terminal: PHP ends every request, so a shell session cannot outlive one.') }}</p>
+            <p class="dim">{{ t('Signs in to a saved SSH connection with its password or private key. Run a single command, pick a preset, or open a console that keeps its working directory from one line to the next.') }}</p>
             <div class="tool-row">
               <select v-model.number="sshConn" class="grow">
                 <option :value="0">{{ t('Choose a saved SSH connection…') }}</option>
@@ -1088,6 +1088,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
             <div class="tool-row">
               <input v-model="sshCommand" class="mono" :placeholder="t('uptime')" @keyup.enter="runSshCommand">
               <button class="btn" :disabled="busy.sshrun || !sshConn || !sshCommand" @click="runSshCommand">{{ t('Run command') }}</button>
+              <button class="btn" :disabled="!sshConn" @click="openConsole">🖳 {{ t('Open a console') }}</button>
             </div>
             <div v-if="sshRunResult">
               <div class="kv">
@@ -1099,25 +1100,6 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
             </div>
           </div>
 
-          <div class="card tool-card">
-            <h3>{{ t('Clock check (NTP)') }}</h3>
-            <p class="dim">{{ t('A clock that has drifted is behind more certificate and sign-in failures than anything else.') }}</p>
-            <div class="tool-row">
-              <input v-model="ntpHost" :placeholder="t('pool.ntp.org')" @keyup.enter="runNtp">
-              <button class="btn" :disabled="busy.ntp" @click="runNtp">{{ t('Compare clocks') }}</button>
-            </div>
-            <div v-if="ntpResult">
-              <div v-for="(f,i) in (ntpResult.findings||[])" :key="i" class="finding" :class="f.level">
-                <span class="pill" :class="f.level">{{ t(levelLabel(f.level)) }}</span><div><strong>{{ f.area }}</strong> · {{ f.text }}</div>
-              </div>
-              <div class="kv" v-if="ntpResult.ok">
-                <div><span>{{ t('Offset') }}</span><code>{{ ntpResult.offsetSeconds }} s</code></div>
-                <div><span>{{ t('Round trip') }}</span><code>{{ ntpResult.roundTripMs }} ms</code></div>
-                <div><span>{{ t('Stratum') }}</span><code>{{ ntpResult.stratum }}</code></div>
-              </div>
-              <p v-else class="empty-hint">⚠ {{ ntpResult.error }}</p>
-            </div>
-          </div>
         </section>
 
       </div>
@@ -1143,6 +1125,31 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
             <div v-if="status.defaultRoute && status.defaultRoute.gateway"><span>{{ t('Default gateway') }}</span><code>{{ status.defaultRoute.gateway }} ({{ status.defaultRoute.interface }})</code></div>
             <div v-for="tgt in (status.targets || [])" :key="tgt.cidr"><span>{{ t('Local network') }}</span><code>{{ tgt.cidr }} <span class="dim">{{ tgt.interface }}</span></code></div>
           </div>
+
+          <template v-if="allowed('server')">
+            <h3>{{ t('This server') }}</h3>
+            <div class="card" v-if="serverResult">
+              <div class="kv">
+                <div><span>{{ t('Host name') }}</span><code>{{ serverResult.hostname }}</code></div>
+                <div><span>{{ t('Default gateway') }}</span><code>{{ serverResult.defaultRoute.gateway }} ({{ serverResult.defaultRoute.interface }})</code></div>
+                <div><span>{{ t('Resolvers') }}</span><code>{{ serverResult.resolvers.join(', ') }}</code></div>
+                <div><span>{{ t('Neighbour entries') }}</span><code>{{ serverResult.neighbours }}</code></div>
+              </div>
+              <table class="grid compact">
+                <thead><tr><th>{{ t('Interface') }}</th><th>{{ t('State') }}</th><th>{{ t('MAC address') }}</th><th>{{ t('Addresses') }}</th><th>MTU</th></tr></thead>
+                <tbody>
+                  <tr v-for="i in serverResult.interfaces" :key="i.name">
+                    <td class="mono">{{ i.name }}</td>
+                    <td><span class="pill" :class="i.up ? 'ok' : 'no'">{{ i.up ? 'UP' : 'DOWN' }}</span></td>
+                    <td class="mono dim">{{ i.mac }}</td>
+                    <td class="mono">{{ i.addresses.map(a => a.ip + (a.family==='inet' ? '/'+a.cidr : '')).join(' ') }}</td>
+                    <td class="dim mono">{{ i.mtu }}</td>
+                  </tr>
+                </tbody>
+              </table>
+              <details v-if="serverResult.listeners.length"><summary>{{ t('Listening sockets') }}</summary><pre class="raw">{{ serverResult.listeners.join('\n') }}</pre></details>
+            </div>
+          </template>
 
           <h3>{{ t('Tools you can use now') }}</h3>
           <p v-if="!activeComponents.length" class="dim">{{ t('None of the optional components are installed yet.') }}</p>
@@ -1204,6 +1211,32 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         <div class="drawer-foot">
           <span class="spacer"></span>
           <button class="btn primary" @click="themeBox=false">{{ t('Close') }}</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ SSH console ============ -->
+    <div v-if="term.open" class="drawer-backdrop centred" @click.self="closeConsole">
+      <div class="modal wide term-modal">
+        <div class="drawer-head">
+          <span class="ic big">🖳</span>
+          <div>
+            <strong>{{ t('SSH console') }}</strong>
+            <div class="dim mono tiny">{{ term.user }}@{{ term.host }}:{{ term.cwd || '~' }}</div>
+          </div>
+          <span class="spacer"></span>
+          <button class="btn sm" @click="term.lines = []">{{ t('Clear') }}</button>
+          <button class="btn xs" @click="closeConsole">✕</button>
+        </div>
+        <div class="term-body" ref="termBody">
+          <p class="dim tiny">{{ t('Each line runs on its own connection and the working directory is carried over, so cd, ls and tail behave as expected. Programs that need a real terminal — vi, top, an interactive password prompt — cannot run here.') }}</p>
+          <div v-for="(l,i) in term.lines" :key="i" :class="'term-line ' + l.kind"><span v-if="l.kind==='cmd'" class="term-prompt">{{ l.prompt }}</span>{{ l.text }}</div>
+          <div v-if="busy.term" class="term-line dim">…</div>
+        </div>
+        <div class="term-input">
+          <span class="term-prompt mono">{{ term.user }}@{{ term.host }}:{{ term.cwd || '~' }}$</span>
+          <input ref="termInput" v-model="term.command" class="mono" autocomplete="off" spellcheck="false"
+                 @keydown.enter.prevent="sendConsole" @keydown.up.prevent="historyBack" @keydown.down.prevent="historyForward">
         </div>
       </div>
     </div>
@@ -1371,7 +1404,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
     { id: 'mail', icon: '📧', label: 'Mail', hint: 'Domain policy, server tests and a real test message' },
     { id: 'files', icon: '📁', label: 'FTP & SFTP', hint: 'Browse a remote server and move files' },
     { id: 'ssh', icon: '🔐', label: 'SSH & Telnet', hint: 'What a service offers, and commands on the servers you keep' },
-    { id: 'server', icon: '🖥️', label: 'This server', hint: 'Interfaces, routes and listening sockets' },
+    { id: 'ntp', icon: '🕒', label: 'Clock check', hint: 'How far the clock has drifted from a time server' },
     { id: 'nmap', icon: '🗺️', label: 'nmap', hint: 'Presets over the nmap scanner' },
   ];
 
@@ -1491,6 +1524,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         sshHost: '', sshPort: 22, sshAuthMethods: false, sshResult: null, telnetResult: null,
         ntpHost: 'pool.ntp.org', ntpResult: null,
         locale: 0,
+        term: { open: false, id: 0, host: '', user: '', cwd: '', command: '', lines: [], history: [], at: -1 },
         preview: { open: false, url: '', src: '', loading: false, error: null, full: false },
         serverResult: null, requirements: null, sysInfo: false, themeBox: false,
         themeOptions: THEME_OPTIONS,
@@ -2022,6 +2056,51 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
       async runMtu() { this.mtuResult = await this.guarded('mtu', () => api('tools/mtu?' + qs({ host: this.pingHost }))); },
       async runSplit() { this.splitResult = await this.guarded('split', () => api('tools/subnet-split?' + qs({ cidr: this.splitCidr || this.subnetInput, prefix: this.splitPrefix }))); },
       async runAggregate() { this.aggregateResult = await this.guarded('aggregate', () => api('tools/subnet-aggregate?' + qs({ input: this.aggregateInput }))); },
+      openConsole() {
+        const conn = this.connById(this.sshConn);
+        if (!conn) return;
+        this.term = {
+          open: true, id: conn.id, host: conn.host, user: conn.username || '',
+          cwd: (conn.options && conn.options.path) || '', command: '', lines: [], history: [], at: -1,
+        };
+        this.$nextTick(() => this.$refs.termInput && this.$refs.termInput.focus());
+      },
+      closeConsole() { this.term.open = false; },
+      historyBack() {
+        if (!this.term.history.length) return;
+        this.term.at = this.term.at < 0 ? this.term.history.length - 1 : Math.max(0, this.term.at - 1);
+        this.term.command = this.term.history[this.term.at];
+      },
+      historyForward() {
+        if (this.term.at < 0) return;
+        this.term.at++;
+        if (this.term.at >= this.term.history.length) { this.term.at = -1; this.term.command = ''; return; }
+        this.term.command = this.term.history[this.term.at];
+      },
+      async sendConsole() {
+        const command = this.term.command.trim();
+        if (!command || this.busy.term) return;
+        const prompt = (this.term.user || '') + '@' + this.term.host + ':' + (this.term.cwd || '~') + '$ ';
+        this.term.lines.push({ kind: 'cmd', prompt, text: command });
+        this.term.history.push(command);
+        this.term.at = -1;
+        this.term.command = '';
+        if (command === 'clear') { this.term.lines = []; return; }
+        if (command === 'exit') { this.closeConsole(); return; }
+        const r = await this.guarded('term', () => api('ssh/shell', { method: 'POST', body: JSON.stringify({ id: this.term.id, command, cwd: this.term.cwd }) }));
+        if (r) {
+          if (r.output !== '') this.term.lines.push({ kind: r.exitStatus ? 'err' : 'out', text: r.output });
+          if (r.exitStatus) this.term.lines.push({ kind: 'code', text: T('exit status {n}', { n: r.exitStatus }) });
+          this.term.cwd = r.cwd || this.term.cwd;
+        } else {
+          this.term.lines.push({ kind: 'err', text: (this.banner && this.banner.text) || T('The command could not be run.') });
+        }
+        this.$nextTick(() => {
+          const box = this.$refs.termBody;
+          if (box) box.scrollTop = box.scrollHeight;
+          if (this.$refs.termInput) this.$refs.termInput.focus();
+        });
+      },
       async runSshPreset() { this.sshRunResult = await this.guarded('sshrun', () => api('ssh/preset', { method: 'POST', body: JSON.stringify({ id: this.sshConn, preset: this.sshPreset }) })); },
       async runSshCommand() { this.sshRunResult = await this.guarded('sshrun', () => api('ssh/run', { method: 'POST', body: JSON.stringify({ id: this.sshConn, command: this.sshCommand }) })); },
 
@@ -2113,6 +2192,10 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
       async runDnsBench() { this.dnsBench = await this.guarded('dnsbench', () => api('bench/dns?' + qs({ rounds: 2 }))); },
       async runTiming() { this.timingResult = await this.guarded('timing', () => api('bench/http?' + qs({ url: this.timingUrl }))); },
       async runPath() { this.pathResult = await this.guarded('path', () => api('tools/path?' + qs({ host: this.pingHost }))); },
+      openSysInfo() {
+        this.sysInfo = true;
+        if (this.allowed('server') && !this.serverResult) this.runServer();
+      },
       async runServer() { this.serverResult = await this.guarded('server', () => api('tools/server')); },
       async runNmap() {
         const targets = this.nmapTargets.split(/[\s,]+/).filter(Boolean);
@@ -2139,7 +2222,6 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
     },
     watch: {
       tab(value) {
-        if (value === 'server' && !this.serverResult) this.runServer();
         // Saved connections are shared by the mail and file tabs; fetch them the
         // first time either one is opened.
         if ((value === 'files' || value === 'mail' || value === 'ssh') && !this.connections.length) this.loadConnections();

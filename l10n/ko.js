@@ -483,7 +483,6 @@ OC.L10N.register(
         "SSH": "SSH",
         "Mail — domain policy audit, server tests and test messages": "메일 — 도메인 정책 진단, 서버 점검, 시험 메일",
         "FTP and SFTP — browse remote servers and move files": "FTP와 SFTP — 원격 서버를 둘러보고 파일 옮기기",
-        "SSH, Telnet and NTP — service probes without signing in": "SSH, Telnet, NTP — 로그인 없는 서비스 점검",
         "Sign in with": "로그인 방법",
         "Private key": "개인 키",
         "Private key (leave blank to keep)": "개인 키(비워 두면 유지)",
@@ -612,7 +611,6 @@ OC.L10N.register(
         "Run command": "명령 실행",
         "SSH commands — run commands on a saved connection": "SSH 명령 — 저장된 연결에서 명령 실행",
         "Sign-in was refused for %s@%s. Check the user name and the password or key.": "%s@%s 로그인이 거부되었습니다. 사용자 이름과 비밀번호 또는 키를 확인하세요.",
-        "Signs in to a saved SSH connection with its password or private key and runs one command. There is no terminal: PHP ends every request, so a shell session cannot outlive one.": "저장된 SSH 연결에 비밀번호나 개인 키로 로그인하여 명령을 하나 실행합니다. 터미널은 없습니다. PHP는 요청마다 끝나므로 셸 세션이 이어질 수 없습니다.",
         "Split": "나누기",
         "Split into smaller networks": "더 작은 네트워크로 나누기",
         "Strict-Transport-Security is set: %s": "Strict-Transport-Security가 설정되어 있습니다: %s",
@@ -677,7 +675,18 @@ OC.L10N.register(
         "🎨 Appearance": "🎨 모양",
         "Language": "언어",
         "Follow Nextcloud": "Nextcloud를 따름",
-        "NetBase can speak a different language from the rest of Nextcloud — handy when the interface language and the language you think in are not the same.": "NetBase만 Nextcloud와 다른 언어로 표시할 수 있습니다. 화면의 언어와 생각하는 언어가 다를 때 편리합니다."
+        "NetBase can speak a different language from the rest of Nextcloud — handy when the interface language and the language you think in are not the same.": "NetBase만 Nextcloud와 다른 언어로 표시할 수 있습니다. 화면의 언어와 생각하는 언어가 다를 때 편리합니다.",
+        "Clock check": "시계 점검",
+        "How far the clock has drifted from a time server": "시계가 시간 서버와 얼마나 어긋났는지",
+        "SSH and Telnet — service probes without signing in": "SSH와 Telnet — 로그인 없는 서비스 점검",
+        "Clock check — compare this server's clock with a time server": "시계 점검 — 이 서버의 시계를 시간 서버와 비교",
+        "Open a console": "콘솔 열기",
+        "SSH console": "SSH 콘솔",
+        "Clear": "지우기",
+        "Each line runs on its own connection and the working directory is carried over, so cd, ls and tail behave as expected. Programs that need a real terminal — vi, top, an interactive password prompt — cannot run here.": "한 줄마다 새 연결로 실행하되 작업 디렉터리는 이어받습니다. 그래서 cd, ls, tail은 평소대로 동작합니다. 진짜 터미널이 필요한 프로그램(vi, top, 대화식 비밀번호 입력)은 여기서 실행할 수 없습니다.",
+        "exit status {n}": "종료 코드 {n}",
+        "The command could not be run.": "명령을 실행할 수 없었습니다.",
+        "Signs in to a saved SSH connection with its password or private key. Run a single command, pick a preset, or open a console that keeps its working directory from one line to the next.": "저장된 SSH 연결에 비밀번호나 개인 키로 로그인합니다. 명령을 하나 실행하거나, 프리셋을 고르거나, 줄과 줄 사이에 작업 디렉터리를 이어받는 콘솔을 열 수 있습니다."
     },
     "nplurals=1; plural=0;"
 );

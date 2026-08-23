@@ -77,6 +77,7 @@ return [
 		// SSH commands
 		['name' => 'api#sshRun', 'url' => '/api/ssh/run', 'verb' => 'POST'],
 		['name' => 'api#sshPreset', 'url' => '/api/ssh/preset', 'verb' => 'POST'],
+		['name' => 'api#sshShell', 'url' => '/api/ssh/shell', 'verb' => 'POST'],
 
 		// DNS in depth
 		['name' => 'api#dnsQuery', 'url' => '/api/dns/query', 'verb' => 'GET'],

@@ -483,7 +483,6 @@ OC.L10N.register(
         "SSH": "SSH",
         "Mail — domain policy audit, server tests and test messages": "Thư — rà soát chính sách tên miền, kiểm tra máy chủ và thư kiểm tra",
         "FTP and SFTP — browse remote servers and move files": "FTP và SFTP — duyệt máy chủ từ xa và chuyển tệp",
-        "SSH, Telnet and NTP — service probes without signing in": "SSH, Telnet và NTP — dò dịch vụ mà không đăng nhập",
         "Sign in with": "Đăng nhập bằng",
         "Private key": "Khóa riêng",
         "Private key (leave blank to keep)": "Khóa riêng (để trống để giữ nguyên)",
@@ -612,7 +611,6 @@ OC.L10N.register(
         "Run command": "Chạy lệnh",
         "SSH commands — run commands on a saved connection": "Lệnh SSH — chạy lệnh trên một kết nối đã lưu",
         "Sign-in was refused for %s@%s. Check the user name and the password or key.": "Đăng nhập bị từ chối cho %s@%s. Hãy kiểm tra tên người dùng và mật khẩu hoặc khóa.",
-        "Signs in to a saved SSH connection with its password or private key and runs one command. There is no terminal: PHP ends every request, so a shell session cannot outlive one.": "Đăng nhập vào một kết nối SSH đã lưu bằng mật khẩu hoặc khóa riêng của nó rồi chạy một lệnh. Không có terminal: PHP kết thúc mỗi yêu cầu, nên một phiên shell không thể sống lâu hơn thế.",
         "Split": "Chia",
         "Split into smaller networks": "Chia thành các mạng nhỏ hơn",
         "Strict-Transport-Security is set: %s": "Đã đặt Strict-Transport-Security: %s",
@@ -677,7 +675,18 @@ OC.L10N.register(
         "🎨 Appearance": "🎨 Giao diện",
         "Language": "Ngôn ngữ",
         "Follow Nextcloud": "Theo Nextcloud",
-        "NetBase can speak a different language from the rest of Nextcloud — handy when the interface language and the language you think in are not the same.": "NetBase có thể dùng ngôn ngữ khác với phần còn lại của Nextcloud — tiện khi ngôn ngữ giao diện và ngôn ngữ bạn nghĩ không giống nhau."
+        "NetBase can speak a different language from the rest of Nextcloud — handy when the interface language and the language you think in are not the same.": "NetBase có thể dùng ngôn ngữ khác với phần còn lại của Nextcloud — tiện khi ngôn ngữ giao diện và ngôn ngữ bạn nghĩ không giống nhau.",
+        "Clock check": "Kiểm tra đồng hồ",
+        "How far the clock has drifted from a time server": "Đồng hồ lệch bao nhiêu so với máy chủ thời gian",
+        "SSH and Telnet — service probes without signing in": "SSH và Telnet — dò dịch vụ mà không đăng nhập",
+        "Clock check — compare this server's clock with a time server": "Kiểm tra đồng hồ — so đồng hồ máy chủ này với máy chủ thời gian",
+        "Open a console": "Mở bảng điều khiển",
+        "SSH console": "Bảng điều khiển SSH",
+        "Clear": "Xóa",
+        "Each line runs on its own connection and the working directory is carried over, so cd, ls and tail behave as expected. Programs that need a real terminal — vi, top, an interactive password prompt — cannot run here.": "Mỗi dòng chạy trên kết nối riêng và thư mục làm việc được giữ lại, nên cd, ls và tail hoạt động như thường. Những chương trình cần terminal thật — vi, top, lời nhắc mật khẩu tương tác — không chạy được ở đây.",
+        "exit status {n}": "mã thoát {n}",
+        "The command could not be run.": "Không chạy được lệnh.",
+        "Signs in to a saved SSH connection with its password or private key. Run a single command, pick a preset, or open a console that keeps its working directory from one line to the next.": "Đăng nhập vào kết nối SSH đã lưu bằng mật khẩu hoặc khóa riêng. Chạy một lệnh, chọn bộ thiết lập sẵn, hoặc mở bảng điều khiển giữ nguyên thư mục làm việc từ dòng này sang dòng khác."
     },
     "nplurals=1; plural=0;"
 );

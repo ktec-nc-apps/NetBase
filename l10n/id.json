@@ -482,7 +482,6 @@
         "SSH": "SSH",
         "Mail — domain policy audit, server tests and test messages": "Surel — audit kebijakan domain, uji peladen dan pesan uji",
         "FTP and SFTP — browse remote servers and move files": "FTP dan SFTP — menjelajah peladen jauh dan memindahkan berkas",
-        "SSH, Telnet and NTP — service probes without signing in": "SSH, Telnet dan NTP — penyelidikan layanan tanpa masuk",
         "Sign in with": "Masuk dengan",
         "Private key": "Kunci privat",
         "Private key (leave blank to keep)": "Kunci privat (kosongkan untuk mempertahankan)",
@@ -611,7 +610,6 @@
         "Run command": "Jalankan perintah",
         "SSH commands — run commands on a saved connection": "Perintah SSH — menjalankan perintah pada sambungan tersimpan",
         "Sign-in was refused for %s@%s. Check the user name and the password or key.": "Masuk ditolak untuk %s@%s. Periksa nama pengguna dan kata sandi atau kuncinya.",
-        "Signs in to a saved SSH connection with its password or private key and runs one command. There is no terminal: PHP ends every request, so a shell session cannot outlive one.": "Masuk ke sambungan SSH tersimpan dengan kata sandi atau kunci privatnya lalu menjalankan satu perintah. Tidak ada terminal: PHP mengakhiri setiap permintaan, sehingga sesi shell tidak dapat bertahan lebih lama.",
         "Split": "Bagi",
         "Split into smaller networks": "Bagi menjadi jaringan lebih kecil",
         "Strict-Transport-Security is set: %s": "Strict-Transport-Security diatur: %s",
@@ -676,7 +674,18 @@
         "🎨 Appearance": "🎨 Tampilan",
         "Language": "Bahasa",
         "Follow Nextcloud": "Ikuti Nextcloud",
-        "NetBase can speak a different language from the rest of Nextcloud — handy when the interface language and the language you think in are not the same.": "NetBase dapat memakai bahasa yang berbeda dari Nextcloud selebihnya — berguna ketika bahasa antarmuka dan bahasa yang Anda pakai berpikir tidak sama."
+        "NetBase can speak a different language from the rest of Nextcloud — handy when the interface language and the language you think in are not the same.": "NetBase dapat memakai bahasa yang berbeda dari Nextcloud selebihnya — berguna ketika bahasa antarmuka dan bahasa yang Anda pakai berpikir tidak sama.",
+        "Clock check": "Pemeriksaan jam",
+        "How far the clock has drifted from a time server": "Seberapa jauh jam melenceng dari peladen waktu",
+        "SSH and Telnet — service probes without signing in": "SSH dan Telnet — penyelidikan layanan tanpa masuk",
+        "Clock check — compare this server's clock with a time server": "Pemeriksaan jam — membandingkan jam peladen ini dengan peladen waktu",
+        "Open a console": "Buka konsol",
+        "SSH console": "Konsol SSH",
+        "Clear": "Bersihkan",
+        "Each line runs on its own connection and the working directory is carried over, so cd, ls and tail behave as expected. Programs that need a real terminal — vi, top, an interactive password prompt — cannot run here.": "Setiap baris berjalan pada sambungannya sendiri dan direktori kerja dibawa serta, sehingga cd, ls dan tail berperilaku seperti biasa. Program yang memerlukan terminal sungguhan — vi, top, permintaan kata sandi interaktif — tidak dapat berjalan di sini.",
+        "exit status {n}": "kode keluar {n}",
+        "The command could not be run.": "Perintah tidak dapat dijalankan.",
+        "Signs in to a saved SSH connection with its password or private key. Run a single command, pick a preset, or open a console that keeps its working directory from one line to the next.": "Masuk ke sambungan SSH tersimpan dengan kata sandi atau kunci privatnya. Jalankan satu perintah, pilih prasetel, atau buka konsol yang mempertahankan direktori kerja dari satu baris ke baris berikutnya."
     },
     "pluralForm": "nplurals=1; plural=0;"
 }

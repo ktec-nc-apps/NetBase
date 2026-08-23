@@ -15,9 +15,9 @@ use Psr\Log\LoggerInterface;
  * key, both kept encrypted in the saved connection, and the library is the
  * phpseclib copy Nextcloud already ships.
  *
- * There is no terminal here on purpose. PHP-FPM ends every request, so a shell
- * session cannot outlive one; what is useful and honest instead is a command
- * that runs, finishes and returns its output.
+ * PHP-FPM ends every request, so a shell session cannot outlive one. The
+ * console therefore reconnects for each line and carries the working directory
+ * across, which behaves like a shell for everything that finishes on its own.
  */
 class SshService {
 	/** The questions people actually run on a server they are checking. */
@@ -123,6 +123,60 @@ class SshService {
 			'banner' => $banner,
 			'seconds' => round(microtime(true) - $started, 3),
 			'truncated' => strlen($output) > 200000,
+		];
+	}
+
+	/**
+	 * One line of an interactive-feeling session.
+	 *
+	 * PHP cannot hold a shell open between requests, so the illusion is built
+	 * the other way round: each line runs in its own connection, but it starts
+	 * by changing into the directory the last line ended in, and reports where
+	 * it finished. That gives a console that remembers where it is — cd, ls,
+	 * tail, systemctl all behave as expected. What it cannot do is run a
+	 * program that expects a terminal (vi, top, an interactive password
+	 * prompt), because there is nothing on the other end to type into.
+	 *
+	 * @return array<string, mixed>
+	 */
+	public function shell(EndpointEntity $endpoint, string $command, string $cwd = ''): array {
+		$cwd = trim($cwd);
+		$prefix = '';
+		if ($cwd !== '') {
+			if (str_contains($cwd, "\0") || str_contains($cwd, "\n")) {
+				throw new \InvalidArgumentException('Invalid working directory');
+			}
+			$prefix = 'cd ' . escapeshellarg($cwd) . ' 2>/dev/null; ';
+		}
+		// The marker travels on its own line so it can be split off cleanly even
+		// when the command's own output has no trailing newline.
+		$wrapped = $prefix . '{ ' . $command . ' ; } 2>&1; __nb=$?; printf "\n__NETBASE__%s|%s" "$__nb" "$(pwd)"';
+		$result = $this->run($endpoint, $wrapped);
+
+		$output = $result['output'];
+		$status = $result['exitStatus'];
+		$where = $cwd;
+		$at = strrpos($output, "\n__NETBASE__");
+		if ($at !== false) {
+			$tail = substr($output, $at + strlen("\n__NETBASE__"));
+			$output = substr($output, 0, $at);
+			[$code, $path] = array_pad(explode('|', trim($tail), 2), 2, '');
+			if ($code !== '' && ctype_digit($code)) {
+				$status = (int)$code;
+			}
+			if ($path !== '') {
+				$where = $path;
+			}
+		}
+
+		return [
+			'command' => $command,
+			'output' => $output,
+			'cwd' => $where,
+			'exitStatus' => $status,
+			'seconds' => $result['seconds'],
+			'user' => $result['user'],
+			'host' => $result['host'],
 		];
 	}
 
