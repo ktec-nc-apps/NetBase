@@ -15,7 +15,13 @@
   function i18nSubst(s, vars) {
     return vars ? String(s).replace(/\{(\w+)\}/g, (m, k) => (vars[k] != null ? vars[k] : m)) : s;
   }
+  // Set when the user picks a language inside NetBase rather than following
+  // Nextcloud's; it takes precedence over the bundle NC loaded for the page.
+  let i18nOverride = null;
   function T(text, vars) {
+    if (i18nOverride) {
+      return i18nSubst(i18nOverride[text] != null ? i18nOverride[text] : text, vars);
+    }
     try { if (typeof window.t === 'function') { return i18nSubst(window.t('netbase', text), vars); } } catch (e) { /* raw */ }
     return i18nSubst(text, vars);
   }
@@ -96,7 +102,7 @@
       <div class="sidebar-foot">
         <button class="btn primary block" v-if="status.canScan" :disabled="scanning" @click="startScan()">{{ scanning ? t('Scanning…') : t('🛰️ Scan the network') }}</button>
         <button class="btn sm block" @click="sysInfo = true">{{ t('🖥 System information') }}</button>
-        <button class="btn sm block" @click="themeBox = true">{{ t('🎨 Theme') }}</button>
+        <button class="btn sm block" @click="themeBox = true">{{ t('🎨 Appearance') }}</button>
       </div>
     </aside>
 
@@ -1171,7 +1177,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
       <div class="modal narrow">
         <div class="drawer-head">
           <span class="ic big">🎨</span>
-          <div><strong>{{ t('Theme') }}</strong><div class="dim">{{ t('Applies to NetBase only, for your account.') }}</div></div>
+          <div><strong>{{ t('Appearance and language') }}</strong><div class="dim">{{ t('Applies to NetBase only, for your account.') }}</div></div>
           <span class="spacer"></span>
           <button class="btn xs" @click="themeBox=false">✕</button>
         </div>
@@ -1185,6 +1191,15 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
             </button>
           </div>
           <p class="dim">{{ t('Saved to your account, so it follows you to every browser you sign in from.') }}</p>
+
+          <h3>{{ t('Language') }}</h3>
+          <label class="fl">
+            <select :value="settings.language || 'auto'" @change="setLanguage($event.target.value)">
+              <option value="auto">{{ t('Follow Nextcloud') }}</option>
+              <option v-for="l in (settings.languages || [])" :key="l.code" :value="l.code">{{ l.name }}</option>
+            </select>
+          </label>
+          <p class="dim">{{ t('NetBase can speak a different language from the rest of Nextcloud — handy when the interface language and the language you think in are not the same.') }}</p>
         </div>
         <div class="drawer-foot">
           <span class="spacer"></span>
@@ -1435,7 +1450,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
       return {
         version: '', tab: 'devices', banner: null, authenticated: true,
         status: { canScan: false, canLookup: false, isAdmin: false, binaries: {}, nmap: { available: false }, ouiEntries: 0, targets: [] },
-        settings: { language: 'auto', theme: 'auto' },
+        settings: { language: 'auto', theme: 'auto', languages: [] },
         devices: [], scan: null, scanning: false, advice: null,
         scanTargets: '', pace: 'fast',
         opts: { names: true, multicast: true, ports: true, rdns: true, arpOnly: false },
@@ -1475,6 +1490,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         // service probes
         sshHost: '', sshPort: 22, sshAuthMethods: false, sshResult: null, telnetResult: null,
         ntpHost: 'pool.ntp.org', ntpResult: null,
+        locale: 0,
         preview: { open: false, url: '', src: '', loading: false, error: null, full: false },
         serverResult: null, requirements: null, sysInfo: false, themeBox: false,
         themeOptions: THEME_OPTIONS,
@@ -1525,7 +1541,10 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
       },
     },
     methods: {
-      t: T, ago, stamp,
+      // Reading this.locale makes every t() call re-evaluate when the language
+      // changes, so switching redraws the whole interface.
+      t(text, vars) { return this.locale, T(text, vars); },
+      ago, stamp,
       progressText(scan) {
         const p = scan && scan.progress;
         if (!p) return scan ? (scan.message || scan.phase) : '';
@@ -1629,6 +1648,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
           const s = await api('settings');
           this.settings = { ...this.settings, ...s };
           this.applyTheme();
+          if (s.language && s.language !== 'auto') await this.applyLanguage(s.language);
           if (s.lastTargets) this.scanTargets = s.lastTargets;
         } catch (e) { this.fail(e); }
       },
@@ -1777,6 +1797,29 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
           href: this.portLink(device, p).href,
           label: WEB_PORTS[p] === 'https' ? T('Open (HTTPS {port})', { port: p }) : T('Open (HTTP {port})', { port: p }),
         }));
+      },
+      // reading this.locale makes every t() re-evaluate when the language changes
+      async applyLanguage(lang) {
+        if (!lang || lang === 'auto') {
+          i18nOverride = null;
+        } else {
+          try {
+            const r = await api('i18n/' + encodeURIComponent(lang));
+            i18nOverride = (r && r.translations) ? r.translations : {};
+          } catch (e) { i18nOverride = null; }
+        }
+        this.locale++;
+      },
+      async setLanguage(lang) {
+        this.settings.language = lang;
+        await this.applyLanguage(lang);
+        try {
+          await api('settings', { method: 'POST', body: JSON.stringify({ settings: { language: lang } }) });
+        } catch (e) { this.fail(e); }
+        // Findings and presets are written on the server in the chosen
+        // language, so anything already on screen is now stale.
+        this.requirements = await api('requirements').catch(() => this.requirements);
+        this.status = await api('status').catch(() => this.status);
       },
       levelLabel(level) { return { bad: 'fix', warn: 'check', info: 'note', ok: 'ok' }[level] || level; },
       algoLabel(name) { return ALGO_LABELS[name] || ''; },

@@ -11,6 +11,9 @@ return [
 		['name' => 'api#getSettings', 'url' => '/api/settings', 'verb' => 'GET'],
 		['name' => 'api#setSettings', 'url' => '/api/settings', 'verb' => 'POST'],
 
+		// languages
+		['name' => 'api#getI18n', 'url' => '/api/i18n/{lang}', 'verb' => 'GET'],
+
 		// device inventory
 		['name' => 'api#devices', 'url' => '/api/devices', 'verb' => 'GET'],
 		['name' => 'api#updateDevice', 'url' => '/api/devices/{id}', 'verb' => 'PATCH'],

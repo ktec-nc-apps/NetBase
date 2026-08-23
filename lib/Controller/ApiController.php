@@ -585,6 +585,49 @@ class ApiController extends Controller {
 		return $this->guard(fn () => $this->probe->ntp($host), 'ssh');
 	}
 
+	// ---------------------------------------------------------------- languages
+
+	/**
+	 * The languages NetBase ships, taken from the files themselves so a new
+	 * translation appears in the picker as soon as it is dropped in.
+	 *
+	 * @return list<array{code: string, name: string}>
+	 */
+	private function availableLanguages(): array {
+		$names = [
+			'ja' => '日本語', 'en' => 'English', 'zh' => '简体中文', 'es' => 'Español',
+			'fr' => 'Français', 'de' => 'Deutsch', 'ru' => 'Русский', 'pt' => 'Português',
+			'ar' => 'العربية', 'hi' => 'हिन्दी', 'ko' => '한국어', 'it' => 'Italiano',
+		];
+		$out = [];
+		foreach (glob(__DIR__ . '/../../l10n/*.json') ?: [] as $path) {
+			$code = basename($path, '.json');
+			$out[] = ['code' => $code, 'name' => $names[$code] ?? $code];
+		}
+		usort($out, static fn (array $a, array $b) => strcmp($a['code'], $b['code']));
+		return $out;
+	}
+
+	/** @return list<string> */
+	private function languageCodes(): array {
+		return array_map(static fn (array $l): string => $l['code'], $this->availableLanguages());
+	}
+
+	/** The dictionary for one language, for switching without reloading the page. */
+	#[NoAdminRequired]
+	public function getI18n(string $lang): JSONResponse {
+		if (!in_array($lang, $this->languageCodes(), true)) {
+			return new JSONResponse(['error' => 'Unknown language'], Http::STATUS_NOT_FOUND);
+		}
+		$path = realpath(__DIR__ . '/../../l10n/' . $lang . '.json');
+		$base = realpath(__DIR__ . '/../../l10n');
+		if ($path === false || $base === false || !str_starts_with($path, $base)) {
+			return new JSONResponse(['error' => 'Unknown language'], Http::STATUS_NOT_FOUND);
+		}
+		$data = json_decode((string)file_get_contents($path), true);
+		return new JSONResponse(['translations' => $data['translations'] ?? []]);
+	}
+
 	// ---------------------------------------------------------------- settings
 
 	#[NoAdminRequired]
@@ -592,6 +635,7 @@ class ApiController extends Controller {
 		$uid = $this->permissions->uid();
 		return new JSONResponse([
 			'language' => $uid ? $this->config->getUserValue($uid, 'netbase', 'language', 'auto') : 'auto',
+			'languages' => $this->availableLanguages(),
 			'theme' => $uid ? $this->config->getUserValue($uid, 'netbase', 'theme', 'auto') : 'auto',
 			'lastTargets' => $uid ? $this->config->getUserValue($uid, 'netbase', 'last_targets', '') : '',
 			'tools' => PermissionService::TOOLS,
@@ -611,9 +655,14 @@ class ApiController extends Controller {
 			return new JSONResponse(['error' => 'Not signed in'], Http::STATUS_UNAUTHORIZED);
 		}
 		foreach (['language' => 'language', 'theme' => 'theme', 'lastTargets' => 'last_targets'] as $key => $stored) {
-			if (isset($settings[$key])) {
-				$this->config->setUserValue($uid, 'netbase', $stored, mb_substr((string)$settings[$key], 0, 512));
+			if (!isset($settings[$key])) {
+				continue;
 			}
+			$value = mb_substr((string)$settings[$key], 0, 512);
+			if ($key === 'language' && $value !== 'auto' && !in_array($value, $this->languageCodes(), true)) {
+				continue;
+			}
+			$this->config->setUserValue($uid, 'netbase', $stored, $value);
 		}
 		if ($this->permissions->isAdmin() && isset($settings['admin']) && is_array($settings['admin'])) {
 			$admin = $settings['admin'];
