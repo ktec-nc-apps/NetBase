@@ -709,7 +709,11 @@
         "It calls the protected part “%s”.": "بخش محافظت‌شده را «%s» می‌نامد.",
         "NetBase will remember it for you, for this device only.": "نت‌بیس آن را تنها برای همین دستگاه به‌یاد می‌سپارد.",
         "Back": "بازگشت",
-        "Front page": "صفحهٔ نخست"
+        "Front page": "صفحهٔ نخست",
+        "Drag to put the tools in the order you want": "برای چیدن ابزارها به ترتیب دلخواه بکشید",
+        "The list of tools": "فهرست ابزارها",
+        "Drag the tools in the sidebar into the order you work in — or hold Alt and press the up and down arrows. The order is kept for your account.": "ابزارهای نوار کناری را به ترتیب کارتان بکشید — یا Alt را نگه دارید و کلیدهای بالا و پایین را بزنید. ترتیب برای حساب شما نگه داشته می‌شود.",
+        "Put them back in the original order": "بازگرداندن به ترتیب اصلی"
     },
     "pluralForm": "nplurals=2; plural=(n > 1);"
 }

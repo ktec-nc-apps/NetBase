@@ -710,7 +710,11 @@ OC.L10N.register(
         "It calls the protected part “%s”.": "保護された領域の名前は「%s」です。",
         "NetBase will remember it for you, for this device only.": "入力内容はこの機器の分だけ、あなた専用に保存されます。",
         "Back": "戻る",
-        "Front page": "最初のページ"
+        "Front page": "最初のページ",
+        "Drag to put the tools in the order you want": "ドラッグして好きな順序に並べ替えられます",
+        "The list of tools": "ツールの並び",
+        "Drag the tools in the sidebar into the order you work in — or hold Alt and press the up and down arrows. The order is kept for your account.": "左のツールをドラッグして、使う順に並べ替えられます。Altキーを押しながら上下矢印でも移動できます。並び順はアカウントごとに保存されます。",
+        "Put them back in the original order": "元の順序に戻す"
     },
     "nplurals=1; plural=0;"
 );

@@ -710,7 +710,11 @@ OC.L10N.register(
         "It calls the protected part “%s”.": "يسمّي الجزء المحمي «%s».",
         "NetBase will remember it for you, for this device only.": "سيتذكّرها نِت‌بيس من أجلك، لهذا الجهاز وحده.",
         "Back": "رجوع",
-        "Front page": "الصفحة الأولى"
+        "Front page": "الصفحة الأولى",
+        "Drag to put the tools in the order you want": "اسحب لترتيب الأدوات كما تشاء",
+        "The list of tools": "قائمة الأدوات",
+        "Drag the tools in the sidebar into the order you work in — or hold Alt and press the up and down arrows. The order is kept for your account.": "اسحب الأدوات في الشريط الجانبي إلى ترتيب عملك، أو اضغط Alt مع سهمي أعلى وأسفل. يُحفظ الترتيب لحسابك.",
+        "Put them back in the original order": "أعِدها إلى الترتيب الأصلي"
     },
     "nplurals=6; plural=(n==0 ? 0 : n==1 ? 1 : n==2 ? 2 : n%100>=3 && n%100<=10 ? 3 : n%100>=11 && n%100<=99 ? 4 : 5);"
 );

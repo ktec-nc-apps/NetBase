@@ -426,3 +426,27 @@
 /* While a window is being moved or resized the pointer must stay with the
    window, not disappear into the page it is showing. */
 .devwin.dragging .devwin-frame { pointer-events: none; }
+
+/* The tool list can be rearranged by dragging. */
+.nav-list .nav-item { position: relative; }
+.nav-list .nav-item .grip {
+  margin-left: auto;
+  padding-left: 6px;
+  opacity: 0;
+  cursor: grab;
+  color: var(--color-text-maxcontrast, #7a7a7a);
+  transition: opacity .15s ease;
+}
+.nav-list .nav-item:hover .grip,
+.nav-list .nav-item:focus-visible .grip { opacity: .7; }
+.nav-list .nav-item.dragged { opacity: .4; }
+.nav-list .nav-item.over::before {
+  content: "";
+  position: absolute;
+  left: 6px;
+  right: 6px;
+  top: -2px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--color-primary-element, #2970e2);
+}

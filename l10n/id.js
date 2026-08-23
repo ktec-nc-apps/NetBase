@@ -710,7 +710,11 @@ OC.L10N.register(
         "It calls the protected part “%s”.": "Bagian terlindungi itu disebutnya “%s”.",
         "NetBase will remember it for you, for this device only.": "NetBase akan mengingatnya untuk Anda, khusus perangkat ini.",
         "Back": "Kembali",
-        "Front page": "Halaman depan"
+        "Front page": "Halaman depan",
+        "Drag to put the tools in the order you want": "Seret untuk menyusun perkakas sesuai keinginan",
+        "The list of tools": "Daftar perkakas",
+        "Drag the tools in the sidebar into the order you work in — or hold Alt and press the up and down arrows. The order is kept for your account.": "Seret perkakas di bilah sisi ke urutan kerja Anda — atau tahan Alt lalu tekan panah atas-bawah. Urutan disimpan untuk akun Anda.",
+        "Put them back in the original order": "Kembalikan ke urutan semula"
     },
     "nplurals=1; plural=0;"
 );

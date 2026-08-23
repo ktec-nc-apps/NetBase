@@ -710,7 +710,11 @@ OC.L10N.register(
         "It calls the protected part “%s”.": "Захищену частину він називає «%s».",
         "NetBase will remember it for you, for this device only.": "NetBase запам’ятає це для вас — лише для цього пристрою.",
         "Back": "Назад",
-        "Front page": "Головна сторінка"
+        "Front page": "Головна сторінка",
+        "Drag to put the tools in the order you want": "Перетягніть, щоб розташувати інструменти у потрібному порядку",
+        "The list of tools": "Список інструментів",
+        "Drag the tools in the sidebar into the order you work in — or hold Alt and press the up and down arrows. The order is kept for your account.": "Перетягніть інструменти на бічній панелі у зручний порядок — або утримуйте Alt і натискайте стрілки вгору й униз. Порядок зберігається для вашого облікового запису.",
+        "Put them back in the original order": "Повернути початковий порядок"
     },
     "nplurals=4; plural=(n % 1 == 0 && n % 10 == 1 && n % 100 != 11 ? 0 : n % 1 == 0 && n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14) ? 1 : n % 1 == 0 && (n % 10 ==0 || (n % 10 >=5 && n % 10 <=9) || (n % 100 >=11 && n % 100 <=14 )) ? 2: 3);"
 );

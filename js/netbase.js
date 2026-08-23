@@ -93,10 +93,21 @@
   <div class="layout">
     <aside class="sidebar">
       <div class="brand"><span class="logo"><svg viewBox="333 400 1335 1030"><path d="M1040.38,1352.06c-3.65-4.48-4.91-9.8-3.78-15.97l115.97-542.87c1.12-6.16,4.33-11.48,9.66-15.97,5.32-4.48,11.06-6.72,17.23-6.72h262.19c37.53,0,69.33,7.14,95.38,21.43,26.05,14.29,45.51,33.06,58.4,56.3,12.88,23.25,19.33,47.77,19.33,73.53,0,12.33-1.13,22.98-3.36,31.93-5.61,28.02-15.27,50.57-28.99,67.65-13.73,17.1-27.31,30.12-40.76,39.08,25.21,20.73,37.82,47.62,37.82,80.67,0,12.89-1.68,27.46-5.04,43.7-7.85,35.29-19.05,65.42-33.61,90.34-14.57,24.93-37.12,45.1-67.65,60.5-30.54,15.42-71.01,23.11-121.43,23.11h-296.64c-6.17,0-11.07-2.23-14.71-6.72ZM1353.41,1228.53c19.04,0,35.15-6.16,48.32-18.49,13.16-12.32,19.75-27.17,19.75-44.54,0-11.76-4.2-21.28-12.6-28.57-8.4-7.27-19.62-10.92-33.61-10.92h-138.66l-21.85,102.52h138.66ZM1284.5,900.79l-20.17,95.8h130.25c16.81,0,30.53-4.2,41.18-12.61,10.64-8.4,17.36-20.17,20.17-35.29,1.12-6.72,1.68-11.2,1.68-13.45,0-11.2-3.65-19.75-10.92-25.63-7.29-5.88-17.94-8.82-31.93-8.82h-130.25Z" fill="none" stroke="#fff" stroke-width="100" stroke-linejoin="round" stroke-linecap="round"/><path d="M1040.38,1352.06c-3.65-4.48-4.91-9.8-3.78-15.97l115.97-542.87c1.12-6.16,4.33-11.48,9.66-15.97,5.32-4.48,11.06-6.72,17.23-6.72h262.19c37.53,0,69.33,7.14,95.38,21.43,26.05,14.29,45.51,33.06,58.4,56.3,12.88,23.25,19.33,47.77,19.33,73.53,0,12.33-1.13,22.98-3.36,31.93-5.61,28.02-15.27,50.57-28.99,67.65-13.73,17.1-27.31,30.12-40.76,39.08,25.21,20.73,37.82,47.62,37.82,80.67,0,12.89-1.68,27.46-5.04,43.7-7.85,35.29-19.05,65.42-33.61,90.34-14.57,24.93-37.12,45.1-67.65,60.5-30.54,15.42-71.01,23.11-121.43,23.11h-296.64c-6.17,0-11.07-2.23-14.71-6.72ZM1353.41,1228.53c19.04,0,35.15-6.16,48.32-18.49,13.16-12.32,19.75-27.17,19.75-44.54,0-11.76-4.2-21.28-12.6-28.57-8.4-7.27-19.62-10.92-33.61-10.92h-138.66l-21.85,102.52h138.66ZM1284.5,900.79l-20.17,95.8h130.25c16.81,0,30.53-4.2,41.18-12.61,10.64-8.4,17.36-20.17,20.17-35.29,1.12-6.72,1.68-11.2,1.68-13.45,0-11.2-3.65-19.75-10.92-25.63-7.29-5.88-17.94-8.82-31.93-8.82h-130.25Z" fill="#2e3192"/><path d="M902.67,1351.87c-6.55-6.05-12.12-13.83-16.73-23.34l-201.98-440.64-83.09,438.06c-1.55,9.5-5.97,17.72-13.28,24.62s-15.19,10.36-23.66,10.36h-151.2c-8.47,0-15.19-3.45-20.19-10.36s-6.73-15.12-5.2-24.62l159.28-837.22c1.53-9.5,5.95-17.72,13.27-24.62s15.2-10.38,23.67-10.38h96.95c19.22,0,33.08,9.94,41.55,29.81l204.28,443.23,83.11-438.05c1.53-9.5,5.95-17.72,13.27-24.62s15.19-10.38,23.66-10.38h151.2c8.45,0,15.19,3.47,20.19,10.38s6.73,15.12,5.2,24.62l-159.28,837.22c-1.55,9.5-5.97,17.72-13.28,24.62s-15.19,10.36-23.66,10.36h-96.94c-11.55,0-20.59-3.02-27.12-9.06Z" fill="none" stroke="#fff" stroke-width="100" stroke-linejoin="round" stroke-linecap="round"/><path d="M902.67,1351.87c-6.55-6.05-12.12-13.83-16.73-23.34l-201.98-440.64-83.09,438.06c-1.55,9.5-5.97,17.72-13.28,24.62s-15.19,10.36-23.66,10.36h-151.2c-8.47,0-15.19-3.45-20.19-10.36s-6.73-15.12-5.2-24.62l159.28-837.22c1.53-9.5,5.95-17.72,13.27-24.62s15.2-10.38,23.67-10.38h96.95c19.22,0,33.08,9.94,41.55,29.81l204.28,443.23,83.11-438.05c1.53-9.5,5.95-17.72,13.27-24.62s15.19-10.38,23.66-10.38h151.2c8.45,0,15.19,3.47,20.19,10.38s6.73,15.12,5.2,24.62l-159.28,837.22c-1.55,9.5-5.97,17.72-13.28,24.62s-15.19,10.36-23.66,10.36h-96.94c-11.55,0-20.59-3.02-27.12-9.06Z" fill="#2970e2"/></svg></span><span>NetBase</span><span class="tag" v-if="version">v{{ version }}</span></div>
-      <nav class="nav-list">
-        <button v-for="item in visibleTabs" :key="item.id" class="nav-item" :class="{active: tab===item.id}" @click="tab=item.id">
+      <nav class="nav-list" @dragover.prevent @drop.prevent="dropTab(null)">
+        <button v-for="item in visibleTabs" :key="item.id" class="nav-item"
+                :class="{active: tab===item.id, dragged: dragTab===item.id, over: overTab===item.id}"
+                draggable="true"
+                :title="t('Drag to put the tools in the order you want')"
+                @click="tab=item.id"
+                @keydown="moveTabByKey(item, $event)"
+                @dragstart="startTabDrag(item, $event)"
+                @dragend="endTabDrag"
+                @dragover.prevent="overTab = item.id"
+                @dragleave="overTab === item.id && (overTab = '')"
+                @drop.prevent.stop="dropTab(item)">
           <span class="ic">{{ item.icon }}</span><span class="nm">{{ t(item.label) }}</span>
           <span class="ct" v-if="item.id==='devices' && devices.length">{{ onlineCount }}</span>
+          <span class="grip" aria-hidden="true">⠿</span>
         </button>
       </nav>
       <div class="sidebar-foot">
@@ -1266,6 +1277,10 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
             </select>
           </label>
           <p class="dim">{{ t('NetBase can speak a different language from the rest of Nextcloud — handy when the interface language and the language you think in are not the same.') }}</p>
+
+          <h3>{{ t('The list of tools') }}</h3>
+          <p class="dim">{{ t('Drag the tools in the sidebar into the order you work in — or hold Alt and press the up and down arrows. The order is kept for your account.') }}</p>
+          <button class="btn sm" :disabled="!(settings.tabOrder || []).length" @click="resetTabOrder">{{ t('Put them back in the original order') }}</button>
         </div>
         <div class="drawer-foot">
           <span class="spacer"></span>
@@ -1609,7 +1624,8 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
       return {
         version: '', tab: 'devices', banner: null, authenticated: true,
         status: { canScan: false, canLookup: false, isAdmin: false, binaries: {}, nmap: { available: false }, ouiEntries: 0, targets: [] },
-        settings: { language: 'auto', theme: 'auto', languages: [] },
+        settings: { language: 'auto', theme: 'auto', languages: [], tabOrder: [] },
+        dragTab: '', overTab: '',
         devices: [], scan: null, scanning: false, advice: null,
         scanTargets: '', pace: 'fast',
         opts: { names: true, multicast: true, ports: true, rdns: true, arpOnly: false },
@@ -1674,7 +1690,13 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         // 'ping' covers traceroute too. Anyone allowed nothing at all never
         // reaches this page — the server answers 403 before it loads.
         const can = this.status.can || {};
-        return TABS.filter((x) => can[x.id]);
+        const allowed = TABS.filter((x) => can[x.id]);
+        const order = this.settings.tabOrder || [];
+        if (!order.length) return allowed;
+        // Anything the saved order does not mention — a tool added since, or
+        // one just granted — keeps its place at the end rather than vanishing.
+        const placed = order.map((id) => allowed.find((x) => x.id === id)).filter(Boolean);
+        return placed.concat(allowed.filter((x) => !order.includes(x.id)));
       },
       currentTab() { return TABS.find((x) => x.id === this.tab) || this.visibleTabs[0] || TABS[0]; },
       onlineCount() { return this.devices.filter((d) => d.online).length; },
@@ -1747,6 +1769,61 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
       note(text) { this.banner = { kind: 'info', text }; },
 
       allowed(tool) { return !!(this.status.can || {})[tool]; },
+
+      // ---- putting the tools in the order someone actually works in --------
+      startTabDrag(item, event) {
+        this.dragTab = item.id;
+        if (event.dataTransfer) {
+          event.dataTransfer.effectAllowed = 'move';
+          // Firefox refuses to start a drag with nothing on the clipboard.
+          event.dataTransfer.setData('text/plain', item.id);
+        }
+      },
+      endTabDrag() { this.dragTab = ''; this.overTab = ''; },
+      dropTab(target) {
+        const from = this.dragTab;
+        this.endTabDrag();
+        if (!from || (target && target.id === from)) return;
+        const ids = this.visibleTabs.map((x) => x.id);
+        const at = ids.indexOf(from);
+        if (at < 0) return;
+        ids.splice(at, 1);
+        // Dropped on the list itself rather than on an item: put it last.
+        const to = target ? ids.indexOf(target.id) : ids.length;
+        ids.splice(to < 0 ? ids.length : to, 0, from);
+        this.saveTabOrder(ids);
+      },
+      moveTabByKey(item, event) {
+        // The same rearranging without a mouse: hold Alt and use the arrows.
+        if (!event.altKey || (event.key !== 'ArrowUp' && event.key !== 'ArrowDown')) return;
+        event.preventDefault();
+        const ids = this.visibleTabs.map((x) => x.id);
+        const at = ids.indexOf(item.id);
+        const to = at + (event.key === 'ArrowUp' ? -1 : 1);
+        if (at < 0 || to < 0 || to >= ids.length) return;
+        ids.splice(to, 0, ids.splice(at, 1)[0]);
+        this.saveTabOrder(ids);
+        this.$nextTick(() => {
+          const el = document.querySelectorAll('.nav-list .nav-item')[to];
+          if (el) el.focus();
+        });
+      },
+      async saveTabOrder(ids) {
+        // Tools this account cannot see keep their remembered places, so a
+        // permission granted later does not land the tool in a strange spot.
+        const hidden = (this.settings.tabOrder || []).filter((id) => !ids.includes(id));
+        const order = ids.concat(hidden);
+        this.settings = { ...this.settings, tabOrder: order };
+        try {
+          await api('settings', { method: 'POST', body: JSON.stringify({ settings: { tabOrder: order } }) });
+        } catch (e) { this.fail(e); }
+      },
+      async resetTabOrder() {
+        this.settings = { ...this.settings, tabOrder: [] };
+        try {
+          await api('settings', { method: 'POST', body: JSON.stringify({ settings: { tabOrder: [] } }) });
+        } catch (e) { this.fail(e); }
+      },
 
       // ---- appearance (follow Nextcloud, or force light/dark) ----
       parseColor(v) {

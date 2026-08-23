@@ -710,7 +710,11 @@ OC.L10N.register(
         "It calls the protected part “%s”.": "Korunan bölüme “%s” diyor.",
         "NetBase will remember it for you, for this device only.": "NetBase bunu yalnızca bu cihaz için sizin adınıza hatırlar.",
         "Back": "Geri",
-        "Front page": "İlk sayfa"
+        "Front page": "İlk sayfa",
+        "Drag to put the tools in the order you want": "Araçları istediğiniz sıraya koymak için sürükleyin",
+        "The list of tools": "Araç listesi",
+        "Drag the tools in the sidebar into the order you work in — or hold Alt and press the up and down arrows. The order is kept for your account.": "Kenar çubuğundaki araçları çalıştığınız sıraya sürükleyin ya da Alt'a basılı tutup yön tuşlarını kullanın. Sıra hesabınız için saklanır.",
+        "Put them back in the original order": "Özgün sıraya geri döndür"
     },
     "nplurals=2; plural=(n > 1);"
 );

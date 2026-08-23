@@ -710,7 +710,11 @@ OC.L10N.register(
         "It calls the protected part “%s”.": "보호된 영역의 이름은 “%s”입니다.",
         "NetBase will remember it for you, for this device only.": "NetBase가 이 장치에 한해 기억해 둡니다.",
         "Back": "뒤로",
-        "Front page": "첫 페이지"
+        "Front page": "첫 페이지",
+        "Drag to put the tools in the order you want": "끌어서 원하는 순서로 도구를 배치할 수 있습니다",
+        "The list of tools": "도구 목록",
+        "Drag the tools in the sidebar into the order you work in — or hold Alt and press the up and down arrows. The order is kept for your account.": "사이드바의 도구를 작업 순서대로 끌어 놓거나, Alt를 누른 채 위아래 화살표로 옮기세요. 순서는 계정별로 저장됩니다.",
+        "Put them back in the original order": "원래 순서로 되돌리기"
     },
     "nplurals=1; plural=0;"
 );

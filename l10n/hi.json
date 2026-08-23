@@ -709,7 +709,11 @@
         "It calls the protected part “%s”.": "यह सुरक्षित भाग को “%s” कहता है।",
         "NetBase will remember it for you, for this device only.": "NetBase इसे आपके लिए, केवल इसी उपकरण हेतु याद रखेगा।",
         "Back": "पीछे",
-        "Front page": "पहला पृष्ठ"
+        "Front page": "पहला पृष्ठ",
+        "Drag to put the tools in the order you want": "औज़ारों को मनचाहे क्रम में लगाने हेतु खींचें",
+        "The list of tools": "औज़ारों की सूची",
+        "Drag the tools in the sidebar into the order you work in — or hold Alt and press the up and down arrows. The order is kept for your account.": "बग़ल की पट्टी में औज़ारों को अपने काम के क्रम में खींचें — या Alt दबाकर ऊपर-नीचे तीर दबाएँ। क्रम आपके खाते के लिए सहेजा जाता है।",
+        "Put them back in the original order": "मूल क्रम में लौटाएँ"
     },
     "pluralForm": "nplurals=2; plural=(n != 1);"
 }
