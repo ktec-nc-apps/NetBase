@@ -25,7 +25,7 @@ Discovery needs no root, no agent and no extra packages. Nextcloud runs unprivil
 - **SSH** — a credential-free probe (host key fingerprint, offered algorithms, sign-in methods) and, on a saved connection, running a command with a password or a private key.
 - **Benchmarks** — see below.
 - **Light or dark, per user** — NetBase follows the Nextcloud theme by default, and **Theme** at the bottom of the sidebar pins it to light or dark for that account alone. Nothing else in Nextcloud changes.
-- **Twelve languages** — English, Japanese, German, Spanish, French, Italian, Portuguese, Russian, Chinese, Korean, Arabic and Hindi, including the findings the server writes. NetBase can also be set to a different language from the rest of Nextcloud, per account.
+- **Twenty languages** — English, Japanese, German, Spanish, French, Italian, Portuguese, Russian, Chinese, Korean, Arabic, Hindi, Turkish, Indonesian, Vietnamese, Thai, Persian, Polish, Ukrainian and Czech, including the findings the server writes. NetBase can also be set to a different language from the rest of Nextcloud, per account.
 
 ## Benchmarks
 
@@ -162,7 +162,7 @@ Nextcloud 用のネットワーク総合ツールです。LAN上の機器を高�
 - **SSH** ― 資格情報なしの調査（ホスト鍵のフィンガープリント・提示アルゴリズム・認証方式）に加え、保存済み接続先に対しパスワードまたは秘密鍵でサインインしてコマンドを実行できます。
 - **ベンチマーク** ― 下記をご覧ください。
 - **ライト／ダークの個別切り替え** ― 既定では Nextcloud のテーマに追従します。サイドバー下部の「表示テーマ」から、利用者ごとに常時ライト／常時ダークへ固定できます。Nextcloud 全体の設定には影響しません。
-- **12言語に対応** ― 英語・日本語・ドイツ語・スペイン語・フランス語・イタリア語・ポルトガル語・ロシア語・中国語・韓国語・アラビア語・ヒンディー語。サーバー側で生成する診断結果も翻訳されます。NetBaseだけをNextcloud本体と別の言語に設定することもできます（利用者ごと）。
+- **20言語に対応** ― 英語・日本語・ドイツ語・スペイン語・フランス語・イタリア語・ポルトガル語・ロシア語・中国語・韓国語・アラビア語・ヒンディー語・トルコ語・インドネシア語・ベトナム語・タイ語・ペルシャ語・ポーランド語・ウクライナ語・チェコ語。サーバー側で生成する診断結果も翻訳されます。NetBaseだけをNextcloud本体と別の言語に設定することもできます（利用者ごと）。
 
 ## ベンチマーク
 
