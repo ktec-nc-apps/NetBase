@@ -2,6 +2,16 @@
 
 All notable changes to NetBase are documented here.
 
+## 0.2.0 — 2026-08-23
+
+### Added
+- **Device windows**: a web port in the device list opens that device's own interface in a window inside NetBase, fetched through the server. A link to a local address is useless from anywhere else; this is not a link but the page itself, delivered by the server that can reach it. Several windows can be open at once, and each can be moved, resized, reloaded or made to fill the screen.
+  - The window is authorised by a signed ticket that names the address, the person and an expiry, so the page needs no access to Nextcloud to be shown — and, kept at arm's length like that, cannot act as the signed-in user.
+  - Only addresses on this server's own networks, or hosts a scan has actually seen, can be opened. NetBase is a network tool, not an open proxy.
+  - Addresses inside the page — links, stylesheets, scripts, forms, redirects, meta refreshes and the ones its own scripts build while it runs — are pointed back through the server, and the page's character set is preserved, so Japanese device interfaces read correctly.
+  - A device interface built out of frames cannot load them while the window is held away from Nextcloud; NetBase says so plainly and offers to show it anyway, once, after explaining what that means.
+- The sidebar's appearance and language dialog is now simply **Settings**.
+
 ## 0.1.0 — 2026-08-22
 
 First working version.

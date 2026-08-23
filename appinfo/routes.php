@@ -6,6 +6,12 @@ return [
 	'routes' => [
 		['name' => 'page#index', 'url' => '/', 'verb' => 'GET'],
 
+		// a device's own web interface, served on this origin so it can be shown
+		// in a window; the path mirrors the device's so relative links work
+		['name' => 'api#proxyTicket', 'url' => '/api/proxy/ticket', 'verb' => 'POST'],
+		['name' => 'proxy#open', 'url' => '/proxy/{token}/{path}', 'verb' => 'GET', 'requirements' => ['path' => '.*'], 'defaults' => ['path' => '']],
+		['name' => 'proxy#open', 'url' => '/proxy/{token}/{path}', 'verb' => 'POST', 'postfix' => 'post', 'requirements' => ['path' => '.*'], 'defaults' => ['path' => '']],
+
 		// status & settings
 		['name' => 'api#status', 'url' => '/api/status', 'verb' => 'GET'],
 		['name' => 'api#getSettings', 'url' => '/api/settings', 'verb' => 'GET'],
@@ -58,6 +64,9 @@ return [
 		['name' => 'api#deleteConnection', 'url' => '/api/connections/{id}', 'verb' => 'DELETE'],
 		['name' => 'api#testConnection', 'url' => '/api/connections/{id}/test', 'verb' => 'POST'],
 
+		// the user's own Nextcloud files, for the picker
+		['name' => 'api#nextcloudFiles', 'url' => '/api/nc-files', 'verb' => 'GET'],
+
 		// file transfer
 		['name' => 'api#filesList', 'url' => '/api/files/list', 'verb' => 'GET'],
 		['name' => 'api#filesDownload', 'url' => '/api/files/download', 'verb' => 'POST'],
@@ -70,6 +79,7 @@ return [
 		['name' => 'api#mailBlocklist', 'url' => '/api/mail/blocklist', 'verb' => 'GET'],
 		['name' => 'api#mailRelayTest', 'url' => '/api/mail/relay', 'verb' => 'POST'],
 		['name' => 'api#mailSend', 'url' => '/api/mail/send', 'verb' => 'POST'],
+		['name' => 'api#mailLogin', 'url' => '/api/mail/login', 'verb' => 'POST'],
 
 		// device web page preview
 		['name' => 'api#preview', 'url' => '/api/preview', 'verb' => 'GET'],

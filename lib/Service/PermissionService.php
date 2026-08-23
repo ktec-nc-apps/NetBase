@@ -45,7 +45,7 @@ class PermissionService {
 		'ssh' => ['default' => self::ALL, 'label' => 'SSH and Telnet — service probes without signing in', 'probes' => true],
 		'ntp' => ['default' => self::ALL, 'label' => 'Clock check — compare this server\'s clock with a time server', 'probes' => true],
 		'sshexec' => ['default' => self::ADMIN, 'label' => 'SSH commands — run commands on a saved connection', 'probes' => true],
-		'preview' => ['default' => self::ADMIN, 'label' => 'Page preview — render a device web page on the server', 'probes' => true],
+		'preview' => ['default' => self::ADMIN, 'label' => 'Device web pages — open them in a window through this server, or as a picture', 'probes' => true],
 	];
 
 	public function __construct(

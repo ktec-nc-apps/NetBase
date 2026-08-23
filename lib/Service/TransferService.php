@@ -408,6 +408,58 @@ class TransferService {
 		}
 	}
 
+	/**
+	 * One folder of the user's own Nextcloud files, for the picker.
+	 *
+	 * Typing a path from memory is the kind of small friction that makes a
+	 * feature feel unfinished, so anywhere NetBase needs a file it can offer
+	 * this instead.
+	 *
+	 * @return array<string, mixed>
+	 */
+	public function browseNextcloud(string $userId, string $path = '', bool $foldersOnly = false): array {
+		$userFolder = $this->rootFolder->getUserFolder($userId);
+		$path = trim($path, '/');
+		$node = $path === '' ? $userFolder : null;
+		if ($node === null) {
+			try {
+				$node = $userFolder->get($path);
+			} catch (NotFoundException) {
+				throw new \InvalidArgumentException('No such folder in your Nextcloud files: ' . $path);
+			}
+		}
+		if (!$node instanceof Folder) {
+			throw new \InvalidArgumentException('That is a file, not a folder');
+		}
+
+		$entries = [];
+		foreach ($node->getDirectoryListing() as $child) {
+			$isFolder = $child instanceof Folder;
+			if ($foldersOnly && !$isFolder) {
+				continue;
+			}
+			$entries[] = [
+				'name' => $child->getName(),
+				'path' => trim($path . '/' . $child->getName(), '/'),
+				'directory' => $isFolder,
+				'size' => $isFolder ? null : $child->getSize(),
+				'modified' => $child->getMTime(),
+			];
+		}
+		usort($entries, static function (array $a, array $b) {
+			if ($a['directory'] !== $b['directory']) {
+				return $a['directory'] ? -1 : 1;
+			}
+			return strnatcasecmp($a['name'], $b['name']);
+		});
+
+		return [
+			'path' => $path,
+			'parent' => $path === '' ? null : trim(dirname($path), '.'),
+			'entries' => $entries,
+		];
+	}
+
 	// ------------------------------------------------------------------ helpers
 
 	private function userFolder(string $userId, string $path): Folder {

@@ -102,7 +102,7 @@
       <div class="sidebar-foot">
         <button class="btn primary block" v-if="status.canScan" :disabled="scanning" @click="startScan()">{{ scanning ? t('Scanning…') : t('🛰️ Scan the network') }}</button>
         <button class="btn sm block" v-if="status.isAdmin" @click="openSysInfo">{{ t('🖥 System information') }}</button>
-        <button class="btn sm block" @click="themeBox = true">{{ t('🎨 Appearance') }}</button>
+        <button class="btn sm block" @click="themeBox = true">{{ t('⚙ Settings') }}</button>
       </div>
     </aside>
 
@@ -182,7 +182,7 @@
                 <td>{{ t(typeLabel(d.type)) }}</td>
                 <td class="mono dim ports-cell" @click.stop>
                   <template v-for="(p,i) in d.ports" :key="p">
-                    <a v-if="portLink(d, p)" :href="portLink(d, p).href" :title="portLink(d, p).title" target="_blank" rel="noopener noreferrer">{{ p }}</a>
+                    <a v-if="portLink(d, p)" href="#" :title="portLink(d, p).title" @click.prevent="openDeviceWindow(d, p)">{{ p }}</a>
                     <a v-else-if="portTool(d, p)" href="#" :title="portTool(d, p).title" @click.prevent="openPortTool(d, p)">{{ p }}</a>
                     <span v-else>{{ p }}</span><span v-if="i < d.ports.length - 1">, </span>
                   </template>
@@ -867,10 +867,23 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
               <p class="dim">{{ t('Sends a real message through one of your saved SMTP connections — the honest way to prove that sending works.') }}</p>
               <div class="tool-row">
                 <select v-model.number="sendId" class="grow">
-                  <option :value="0">{{ t('Choose a saved SMTP connection…') }}</option>
+                  <option :value="0">{{ t('Type the details below') }}</option>
                   <option v-for="c in smtpConnections" :key="c.id" :value="c.id">{{ c.name }} ({{ c.host }})</option>
                 </select>
-                <button class="btn sm" @click="openConn(null,'smtp')">{{ t('+ Add') }}</button>
+                <button class="btn sm" v-if="!sendId" @click="saveMailAdhoc('smtp')">{{ t('Save to the list') }}</button>
+                <button class="btn sm" v-else @click="openConn(connById(sendId))">{{ t('Edit') }}</button>
+              </div>
+              <div class="tool-row" v-if="!sendId">
+                <input v-model="smtpAdhoc.host" class="grow" placeholder="smtp.example.com">
+                <input v-model.number="smtpAdhoc.port" type="number" class="tiny" min="1" max="65535">
+                <select v-model="smtpAdhoc.mode" class="tiny">
+                  <option value="starttls">STARTTLS</option>
+                  <option value="tls">{{ t('TLS from the start') }}</option>
+                  <option value="none">{{ t('No encryption') }}</option>
+                </select>
+                <input v-model="smtpAdhoc.username" class="short" :placeholder="t('User name')" autocomplete="off">
+                <input v-model="smtpAdhoc.secret" type="password" class="short" :placeholder="t('Password')" autocomplete="new-password">
+                <input v-model="smtpAdhoc.from" class="short" :placeholder="t('Sender address')">
               </div>
               <div class="tool-row">
                 <input v-model="sendTo" :placeholder="t('Recipient address')">
@@ -878,7 +891,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
               </div>
               <textarea v-model="sendBody" rows="3" :placeholder="t('Message (optional)')"></textarea>
               <div class="tool-row">
-                <button class="btn primary" :disabled="busy.send || !sendId || !sendTo" @click="runSend">{{ busy.send ? t('Sending…') : t('Send the test message') }}</button>
+                <button class="btn primary" :disabled="busy.send || !sendTo || (!sendId && !smtpAdhoc.host)" @click="runSend">{{ busy.send ? t('Sending…') : t('Send the test message') }}</button>
               </div>
               <div v-if="sendResult" class="kv">
                 <div><span>{{ t('Result') }}</span><code :class="sendResult.ok ? 'good' : 'bad'">{{ sendResult.ok ? t('Accepted by the server') : (sendResult.error || t('Failed')) }}</code></div>
@@ -892,11 +905,25 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
               <p class="dim">{{ t('Signs in to a saved IMAP or POP3 account and reports what is in the inbox.') }}</p>
               <div class="tool-row">
                 <select v-model.number="mailboxId" class="grow">
-                  <option :value="0">{{ t('Choose a saved mailbox…') }}</option>
+                  <option :value="0">{{ t('Type the details below') }}</option>
                   <option v-for="c in mailboxConnections" :key="c.id" :value="c.id">{{ c.name }} ({{ c.kind.toUpperCase() }})</option>
                 </select>
-                <button class="btn" :disabled="busy.mailbox || !mailboxId" @click="runMailbox">{{ t('Sign in') }}</button>
-                <button class="btn sm" @click="openConn(null,'imap')">{{ t('+ Add') }}</button>
+                <button class="btn" :disabled="busy.mailbox || (!mailboxId && !boxAdhoc.host)" @click="runMailbox">{{ t('Sign in') }}</button>
+                <button class="btn sm" v-if="!mailboxId" @click="saveMailAdhoc('box')">{{ t('Save to the list') }}</button>
+              </div>
+              <div class="tool-row" v-if="!mailboxId">
+                <select v-model="boxAdhoc.kind" class="tiny" @change="boxAdhoc.port = boxAdhoc.kind === 'imap' ? 993 : 995">
+                  <option value="imap">IMAP</option><option value="pop3">POP3</option>
+                </select>
+                <input v-model="boxAdhoc.host" class="grow" placeholder="imap.example.com">
+                <input v-model.number="boxAdhoc.port" type="number" class="tiny" min="1" max="65535">
+                <select v-model="boxAdhoc.mode" class="tiny">
+                  <option value="tls">{{ t('TLS from the start') }}</option>
+                  <option value="starttls">STARTTLS</option>
+                  <option value="none">{{ t('No encryption') }}</option>
+                </select>
+                <input v-model="boxAdhoc.username" class="short" :placeholder="t('User name')" autocomplete="off">
+                <input v-model="boxAdhoc.secret" type="password" class="short" :placeholder="t('Password')" autocomplete="new-password">
               </div>
               <div v-if="mailboxResult" class="kv">
                 <div><span>{{ t('Result') }}</span><code :class="mailboxResult.ok ? 'good' : 'bad'">{{ mailboxResult.ok ? t('Signed in') : (mailboxResult.error || t('Failed')) }}</code></div>
@@ -954,7 +981,10 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
                 <option value="none">{{ t('No encryption') }}</option>
                 <option value="tls">{{ t('TLS from the start') }}</option>
               </select>
-              <input v-if="adhoc.authType==='key' && adhoc.kind==='sftp'" v-model="adhoc.privateKeyPath" class="grow mono" :placeholder="t('Key file in your Nextcloud files')">
+              <template v-if="adhoc.authType==='key' && adhoc.kind==='sftp'">
+                <input v-model="adhoc.privateKeyPath" class="grow mono" :placeholder="t('Key file in your Nextcloud files')">
+                <button class="btn sm" @click="pickFile('Choose a key file', (p) => { adhoc.privateKeyPath = p; })">📂</button>
+              </template>
               <input v-else v-model="adhoc.secret" type="password" class="short" :placeholder="t('Password')" autocomplete="new-password">
               <input v-model="adhoc.path" class="short mono" :placeholder="t('Start folder (optional)')">
               <button class="btn primary" :disabled="busy.browse || !adhoc.host" @click="quickConnect">{{ t('Connect') }}</button>
@@ -1015,11 +1045,13 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
           <div class="card tool-card" v-if="filesConn || adhocActive">
             <h3>{{ t('Move files') }}</h3>
             <div class="tool-row">
-              <input v-model="filesTarget" class="short" :placeholder="t('Nextcloud folder for downloads')">
+              <input v-model="filesTarget" class="short mono" :placeholder="t('Nextcloud folder for downloads')">
+              <button class="btn sm" @click="pickFile('Choose a folder for downloads', (p) => { filesTarget = p; }, true)">📂 {{ t('Browse…') }}</button>
               <span class="dim">{{ t('Downloads land in this folder of your Nextcloud files.') }}</span>
             </div>
             <div class="tool-row">
-              <input v-model="filesSource" :placeholder="t('Path in your Nextcloud files, e.g. Documents/report.pdf')">
+              <input v-model="filesSource" class="mono" :placeholder="t('Path in your Nextcloud files, e.g. Documents/report.pdf')">
+              <button class="btn sm" @click="pickFile('Choose a file to upload', (p) => { filesSource = p; })">📂 {{ t('Browse…') }}</button>
               <button class="btn" :disabled="busy.ul || !filesSource" @click="uploadFile">⤒ {{ t('Upload to this folder') }}</button>
             </div>
             <p v-if="transferNote" class="note-line">{{ transferNote }}</p>
@@ -1065,6 +1097,30 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
             </div>
             <p v-if="telnetResult.error" class="empty-hint">⚠ {{ telnetResult.error }}</p>
             <pre class="raw" v-if="telnetResult.banner">{{ telnetResult.banner }}</pre>
+          </div>
+
+          <div class="card tool-card" v-if="allowed('sshexec')">
+            <h3>{{ t('Enter the connection details') }}</h3>
+            <p class="dim">{{ t('Nothing has to be saved first. Fill this in and connect; save it to the list only if you want it again.') }}</p>
+            <div class="tool-row">
+              <input v-model="sshAdhoc.host" class="grow" placeholder="server.example.com" @keyup.enter="quickConsole">
+              <input v-model.number="sshAdhoc.port" type="number" class="tiny" min="1" max="65535">
+              <input v-model="sshAdhoc.username" class="short" :placeholder="t('User name')" autocomplete="off">
+              <select v-model="sshAdhoc.authType" class="tiny">
+                <option value="password">{{ t('Password') }}</option>
+                <option value="key">{{ t('Private key') }}</option>
+              </select>
+            </div>
+            <div class="tool-row">
+              <template v-if="sshAdhoc.authType === 'key'">
+                <input v-model="sshAdhoc.privateKeyPath" class="grow mono" :placeholder="t('Key file in your Nextcloud files')">
+                <button class="btn sm" @click="pickFile('Choose a key file', (p) => { sshAdhoc.privateKeyPath = p; })">📂 {{ t('Browse…') }}</button>
+                <input v-model="sshAdhoc.passphrase" type="password" class="short" :placeholder="t('Key passphrase (if any)')" autocomplete="new-password">
+              </template>
+              <input v-else v-model="sshAdhoc.secret" type="password" class="short" :placeholder="t('Password')" autocomplete="new-password">
+              <button class="btn primary" :disabled="busy.term || !sshAdhoc.host || !sshAdhoc.username" @click="quickConsole">🖳 {{ t('Connect') }}</button>
+              <button class="btn" :disabled="!sshAdhoc.host" @click="saveSshAdhoc">{{ t('Save to the list') }}</button>
+            </div>
           </div>
 
           <div class="card tool-card" v-if="allowed('sshexec')">
@@ -1184,7 +1240,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
       <div class="modal narrow">
         <div class="drawer-head">
           <span class="ic big">🎨</span>
-          <div><strong>{{ t('Appearance and language') }}</strong><div class="dim">{{ t('Applies to NetBase only, for your account.') }}</div></div>
+          <div><strong>{{ t('Settings') }}</strong><div class="dim">{{ t('Applies to NetBase only, for your account.') }}</div></div>
           <span class="spacer"></span>
           <button class="btn xs" @click="themeBox=false">✕</button>
         </div>
@@ -1211,6 +1267,66 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         <div class="drawer-foot">
           <span class="spacer"></span>
           <button class="btn primary" @click="themeBox=false">{{ t('Close') }}</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ device windows (served through this server) ============ -->
+    <div v-for="w in windows" :key="w.id" class="devwin" :class="{ dragging: !!drag }" :style="{ left: w.x + 'px', top: w.y + 'px', width: w.w + 'px', height: w.h + 'px', zIndex: w.z }" @mousedown="focusWindow(w)">
+      <div class="devwin-head" @mousedown.prevent="startDrag(w, $event)">
+        <span class="ic">🖥</span>
+        <strong class="nm">{{ w.title }}</strong>
+        <span class="dim mono tiny addr">{{ w.base }}{{ w.path ? '/' + w.path : '' }}</span>
+        <span class="spacer"></span>
+        <button class="btn xs" :title="t('Reload')" @click.stop="reloadWindow(w)">⟳</button>
+        <button class="btn xs" :title="t('Fill the screen')" @click.stop="toggleFull(w)">⤢</button>
+        <button class="btn xs" :title="t('Close')" @click.stop="closeWindow(w)">✕</button>
+      </div>
+      <div v-if="w.framed && !w.trusted" class="devwin-bar">
+        <span>{{ t('This page is built from frames, which a window kept away from Nextcloud cannot load.') }}</span>
+        <button class="btn xs" @click.stop="trustWindow(w)">{{ t('Show it anyway') }}</button>
+      </div>
+      <div v-if="w.busy" class="devwin-note dim">{{ t('Connecting…') }}</div>
+      <div v-else-if="w.error" class="devwin-note error">⚠ {{ w.error }}</div>
+      <iframe v-else-if="w.trusted" key="trusted" :src="w.src" class="devwin-frame" :title="w.title"></iframe>
+      <iframe v-else key="sandboxed" :src="w.src" class="devwin-frame" :title="w.title"
+              sandbox="allow-scripts allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox allow-downloads"></iframe>
+      <div class="devwin-grip" @mousedown.prevent.stop="startResize(w, $event)"></div>
+    </div>
+
+    <!-- ============ Nextcloud file picker ============ -->
+    <div v-if="picker.open" class="drawer-backdrop centred" @click.self="picker.open=false">
+      <div class="modal">
+        <div class="drawer-head">
+          <span class="ic big">📂</span>
+          <div><strong>{{ t(picker.title) }}</strong><div class="dim tiny">{{ t('Your Nextcloud files') }}</div></div>
+          <span class="spacer"></span>
+          <button class="btn xs" @click="picker.open=false">✕</button>
+        </div>
+        <div class="drawer-body">
+          <div class="path-bar">
+            <button class="btn xs" :disabled="picker.path===''" @click="pickerOpen(picker.parent || '')">↑ {{ t('Up') }}</button>
+            <span class="mono dim">/{{ picker.path }}</span>
+          </div>
+          <table class="grid compact">
+            <tbody>
+              <tr v-for="e in picker.entries" :key="e.path" :class="{dir: e.directory}">
+                <td>
+                  <a v-if="e.directory" href="#" @click.prevent="pickerOpen(e.path)">📁 {{ e.name }}</a>
+                  <a v-else href="#" @click.prevent="pickerChoose(e.path)">📄 {{ e.name }}</a>
+                </td>
+                <td class="mono dim">{{ e.directory ? '' : fmtBytes(e.size) }}</td>
+                <td class="dim">{{ e.modified ? ago(e.modified) : '' }}</td>
+              </tr>
+            </tbody>
+          </table>
+          <p v-if="!picker.entries.length" class="empty-hint">{{ t('This folder is empty.') }}</p>
+        </div>
+        <div class="drawer-foot">
+          <span class="dim tiny">{{ picker.foldersOnly ? t('Choose the folder you are in, or open another.') : t('Click a file to choose it.') }}</span>
+          <span class="spacer"></span>
+          <button class="btn sm" @click="picker.open=false">{{ t('Cancel') }}</button>
+          <button class="btn primary" v-if="picker.foldersOnly" @click="pickerChoose(picker.path)">{{ t('Use this folder') }}</button>
         </div>
       </div>
     </div>
@@ -1306,7 +1422,10 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
           </div>
           <template v-if="connForm.authType === 'key'">
             <label class="fl"><span class="fl-label">{{ t('Key file in your Nextcloud files') }}</span>
-              <input v-model="connForm.privateKeyPath" class="mono" placeholder="Keys/id_ed25519">
+              <span class="with-button">
+                <input v-model="connForm.privateKeyPath" class="mono" placeholder="Keys/id_ed25519">
+                <button class="btn sm" @click="pickFile('Choose a key file', (p) => { connForm.privateKeyPath = p; })">📂 {{ t('Browse…') }}</button>
+              </span>
             </label>
             <p class="dim">{{ t('Give the path of the private key inside your own Nextcloud files — the one without .pub. The server reads it when you save; the key itself never passes through the browser. Or paste it below instead.') }}</p>
             <label class="fl"><span class="fl-label">{{ connForm.id && connForm.hasSecret ? t('Private key (leave blank to keep)') : t('Private key (paste)') }}</span>
@@ -1347,7 +1466,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
             <div v-if="selected.workgroup"><span>{{ t('Workgroup') }}</span><code>{{ selected.workgroup }}</code></div>
             <div><span>{{ t('Open ports') }}</span><code>
               <template v-for="(p,i) in selected.ports" :key="p">
-                <a v-if="portLink(selected, p)" :href="portLink(selected, p).href" :title="portLink(selected, p).title" target="_blank" rel="noopener noreferrer">{{ p }}</a>
+                <a v-if="portLink(selected, p)" href="#" :title="portLink(selected, p).title" @click.prevent="openDeviceWindow(selected, p)">{{ p }}</a>
                 <a v-else-if="portTool(selected, p)" href="#" :title="portTool(selected, p).title" @click.prevent="openPortTool(selected, p)">{{ p }}</a>
                 <span v-else>{{ p }}</span><span v-if="i < selected.ports.length - 1">, </span>
               </template>
@@ -1373,8 +1492,9 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
           </div>
           <div class="drawer-tools">
             <template v-for="l in webLinks(selected)" :key="l.href">
-              <a class="btn sm" :href="l.href" target="_blank" rel="noopener noreferrer">🌐 {{ l.label }}</a>
+              <button class="btn sm" @click="openDeviceWindow(selected, l.port)">🖥 {{ l.label }}</button>
               <button class="btn sm" v-if="status.preview" @click="showPage(l.href)">🖼 {{ t('Show the page') }}</button>
+              <a class="btn sm" :href="l.href" target="_blank" rel="noopener noreferrer" :title="t('Only works from inside that network')">↗</a>
             </template>
             <button class="btn sm" v-if="allowed('ping')" @click="toolFor('ping')">📡 {{ t('Ping') }}</button>
             <button class="btn sm" v-if="allowed('ports')" @click="toolFor('ports')">🔌 {{ t('Ports') }}</button>
@@ -1500,6 +1620,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         aggregateInput: '', aggregateResult: null,
         portPresets: PORT_PRESETS,
         sshConn: 0, sshPreset: '', sshCommand: '', sshRunResult: null,
+        sshAdhoc: { kind: 'ssh', host: '', port: 22, username: '', secret: '', authType: 'password', privateKeyPath: '', passphrase: '', mode: 'ssh' },
         dnsTypes: ['A', 'AAAA', 'CNAME', 'MX', 'NS', 'TXT', 'SOA', 'SRV', 'CAA'],
         whoisQuery: '', whoisResult: null,
         pingHost: '', pingResult: null, traceResult: null,
@@ -1515,6 +1636,8 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         mailHost: '', mailPort: 0, mailProtocol: 'smtp', mailMode: 'auto', mailProbeResult: null,
         relayHost: '', relayPort: 25, relayResult: null, blIp: '', blResult: null,
         sendId: 0, sendTo: '', sendSubject: '', sendBody: '', sendResult: null,
+        smtpAdhoc: { kind: 'smtp', host: '', port: 587, mode: 'starttls', username: '', secret: '', from: '' },
+        boxAdhoc: { kind: 'imap', host: '', port: 993, mode: 'tls', username: '', secret: '' },
         mailboxId: 0, mailboxResult: null,
         // file transfer
         filesConn: 0, filesPath: '', filesData: null, filesTarget: 'NetBase', filesSource: '', transferNote: '',
@@ -1524,6 +1647,8 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         sshHost: '', sshPort: 22, sshAuthMethods: false, sshResult: null, telnetResult: null,
         ntpHost: 'pool.ntp.org', ntpResult: null,
         locale: 0,
+        picker: { open: false, title: '', path: '', parent: null, entries: [], foldersOnly: false, onPick: null },
+        windows: [], windowSeq: 0, windowTop: 3000, drag: null,
         term: { open: false, id: 0, host: '', user: '', cwd: '', command: '', lines: [], history: [], at: -1 },
         preview: { open: false, url: '', src: '', loading: false, error: null, full: false },
         serverResult: null, requirements: null, sysInfo: false, themeBox: false,
@@ -1759,13 +1884,103 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         this.busy[key] = true;
         try { return await fn(); } catch (e) { this.fail(e); return null; } finally { this.busy[key] = false; }
       },
+      // ---- device windows: the page comes through this server, so it works
+      // from outside the LAN and several can be open at once ----
+      async openDeviceWindow(device, port) {
+        const scheme = WEB_PORTS[port];
+        if (!scheme || !device.ip) return;
+        const host = device.ip.includes(':') ? '[' + device.ip + ']' : device.ip;
+        const base = scheme + '://' + host + (port === 80 || port === 443 ? '' : ':' + port);
+        const offset = (this.windows.length % 6) * 28;
+        const w = {
+          id: ++this.windowSeq, base, url: '', src: '', error: '', busy: true, full: false,
+          framed: false, trusted: false, z: ++this.windowTop,
+          title: (device.name || device.ip) + ' · ' + port,
+          x: Math.max(20, Math.round(window.innerWidth / 2 - 520) + offset),
+          y: 90 + offset, w: Math.min(1040, window.innerWidth - 60), h: Math.min(700, window.innerHeight - 140),
+        };
+        this.windows.push(w);
+        // Vue watches the copy it stored, not the object that was handed in.
+        const live = this.windows[this.windows.length - 1];
+        this.selected = null;
+        try {
+          // The address is issued by the server, signed: the window itself is
+          // kept away from Nextcloud, so it cannot ask on its own behalf.
+          const res = await api('proxy/ticket', { method: 'POST', body: JSON.stringify({ base }) });
+          live.url = res.url;
+          live.src = res.url + '?_nb=' + Date.now();
+        } catch (e) {
+          live.error = e.message || String(e);
+        }
+        live.busy = false;
+      },
+      focusWindow(w) { w.z = ++this.windowTop; },
+      trustWindow(w) {
+        if (!window.confirm(this.t('A page shown this way runs with the same rights as NetBase itself. Only do this for a device you trust.'))) return;
+        w.trusted = true;
+        w.framed = false;
+        this.reloadWindow(w);
+      },
+      onWindowMessage(event) {
+        const data = event && event.data;
+        if (!data || data.netbase !== 'frames') return;
+        const frame = [...document.querySelectorAll('.devwin-frame')].find((f) => f.contentWindow === event.source);
+        if (!frame) return;
+        const w = this.windows.find((x) => x.src === frame.getAttribute('src'));
+        if (w && !w.trusted) w.framed = true;
+      },
+      closeWindow(w) { this.windows = this.windows.filter((x) => x.id !== w.id); },
+      reloadWindow(w) { if (w.url) w.src = w.url + '?_nb=' + Date.now(); },
+      toggleFull(w) {
+        if (w.full) {
+          Object.assign(w, w.full);
+          w.full = false;
+          return;
+        }
+        w.full = { x: w.x, y: w.y, w: w.w, h: w.h };
+        Object.assign(w, { x: 12, y: 60, w: window.innerWidth - 24, h: window.innerHeight - 76 });
+        this.focusWindow(w);
+      },
+      startDrag(w, event) {
+        this.focusWindow(w);
+        this.drag = { w, mode: 'move', x: event.clientX, y: event.clientY, ox: w.x, oy: w.y };
+        this.bindDrag();
+      },
+      startResize(w, event) {
+        this.focusWindow(w);
+        this.drag = { w, mode: 'size', x: event.clientX, y: event.clientY, ow: w.w, oh: w.h };
+        this.bindDrag();
+      },
+      bindDrag() {
+        const move = (e) => {
+          const d = this.drag;
+          if (!d) return;
+          const dx = e.clientX - d.x;
+          const dy = e.clientY - d.y;
+          if (d.mode === 'move') {
+            d.w.x = Math.max(0, Math.min(window.innerWidth - 120, d.ox + dx));
+            d.w.y = Math.max(48, Math.min(window.innerHeight - 60, d.oy + dy));
+          } else {
+            d.w.w = Math.max(360, d.ow + dx);
+            d.w.h = Math.max(240, d.oh + dy);
+          }
+        };
+        const up = () => {
+          this.drag = null;
+          window.removeEventListener('mousemove', move);
+          window.removeEventListener('mouseup', up);
+        };
+        window.addEventListener('mousemove', move);
+        window.addEventListener('mouseup', up);
+      },
+
       /** A device's own web interface, when the port says it has one. */
       portLink(device, port) {
         const scheme = WEB_PORTS[port];
         if (!scheme || !device.ip) return null;
         const host = device.ip.includes(':') ? '[' + device.ip + ']' : device.ip;
         const href = scheme + '://' + host + (port === 80 || port === 443 ? '' : ':' + port);
-        return { href, title: T('Open {url} in a new tab', { url: href }) };
+        return { href, title: T('Open {url} in a window, through this server', { url: href }) };
       },
       /** Ports NetBase can act on itself, rather than hand to the browser. */
       portTool(device, port) {
@@ -1828,6 +2043,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
       webLinks(device) {
         if (!device) return [];
         return (device.ports || []).filter((p) => WEB_PORTS[p]).map((p) => ({
+          port: p,
           href: this.portLink(device, p).href,
           label: WEB_PORTS[p] === 'https' ? T('Open (HTTPS {port})', { port: p }) : T('Open (HTTP {port})', { port: p }),
         }));
@@ -1967,11 +2183,19 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         this.blResult = await this.guarded('bl', () => api('mail/blocklist?' + qs({ ip: this.blIp })));
       },
       async runSend() {
-        this.sendResult = await this.guarded('send', () => api('mail/send', { method: 'POST', body: JSON.stringify({ id: this.sendId, to: this.sendTo, subject: this.sendSubject, body: this.sendBody }) }));
+        const body = { id: this.sendId, to: this.sendTo, subject: this.sendSubject, body: this.sendBody, connection: this.sendId ? {} : { ...this.smtpAdhoc } };
+        this.sendResult = await this.guarded('send', () => api('mail/send', { method: 'POST', body: JSON.stringify(body) }));
         if (this.sendResult) this.note(this.sendResult.ok ? T('The server accepted the message') : T('Sending failed: {error}', { error: this.sendResult.error }));
       },
       async runMailbox() {
-        this.mailboxResult = await this.guarded('mailbox', () => api('connections/' + this.mailboxId + '/test', { method: 'POST', body: '{}' }));
+        const body = { id: this.mailboxId, connection: this.mailboxId ? {} : { ...this.boxAdhoc } };
+        this.mailboxResult = await this.guarded('mailbox', () => api('mail/login', { method: 'POST', body: JSON.stringify(body) }));
+      },
+      /** Hand the typed mail details to the editor so they can be kept. */
+      saveMailAdhoc(which) {
+        const from = which === 'smtp' ? this.smtpAdhoc : this.boxAdhoc;
+        this.openConn(null, from.kind);
+        this.connForm = { ...this.connForm, ...from, id: 0, name: from.host };
       },
 
       // ---- FTP / SFTP ----
@@ -2056,9 +2280,27 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
       async runMtu() { this.mtuResult = await this.guarded('mtu', () => api('tools/mtu?' + qs({ host: this.pingHost }))); },
       async runSplit() { this.splitResult = await this.guarded('split', () => api('tools/subnet-split?' + qs({ cidr: this.splitCidr || this.subnetInput, prefix: this.splitPrefix }))); },
       async runAggregate() { this.aggregateResult = await this.guarded('aggregate', () => api('tools/subnet-aggregate?' + qs({ input: this.aggregateInput }))); },
+      // ---- choosing a file or folder from the user's own Nextcloud files ----
+      pickFile(title, onPick, foldersOnly = false, start = '') {
+        this.picker = { open: true, title, path: '', parent: null, entries: [], foldersOnly, onPick };
+        this.pickerOpen(start);
+      },
+      async pickerOpen(path) {
+        const r = await this.guarded('picker', () => api('nc-files?' + qs({ path: path || '', foldersOnly: this.picker.foldersOnly ? 1 : 0 })));
+        if (!r) return;
+        this.picker.path = r.path;
+        this.picker.parent = r.parent;
+        this.picker.entries = r.entries;
+      },
+      pickerChoose(path) {
+        const pick = this.picker.onPick;
+        this.picker.open = false;
+        if (pick) pick(path);
+      },
+
       openConsole() {
         const conn = this.connById(this.sshConn);
-        if (!conn) return;
+        if (!conn) { this.quickConsole(); return; }
         this.term = {
           open: true, id: conn.id, host: conn.host, user: conn.username || '',
           cwd: (conn.options && conn.options.path) || '', command: '', lines: [], history: [], at: -1,
@@ -2087,7 +2329,8 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         this.term.command = '';
         if (command === 'clear') { this.term.lines = []; return; }
         if (command === 'exit') { this.closeConsole(); return; }
-        const r = await this.guarded('term', () => api('ssh/shell', { method: 'POST', body: JSON.stringify({ id: this.term.id, command, cwd: this.term.cwd }) }));
+        const body = { id: this.term.id, command, cwd: this.term.cwd, connection: this.term.id ? {} : { ...this.sshAdhoc } };
+        const r = await this.guarded('term', () => api('ssh/shell', { method: 'POST', body: JSON.stringify(body) }));
         if (r) {
           if (r.output !== '') this.term.lines.push({ kind: r.exitStatus ? 'err' : 'out', text: r.output });
           if (r.exitStatus) this.term.lines.push({ kind: 'code', text: T('exit status {n}', { n: r.exitStatus }) });
@@ -2101,8 +2344,22 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
           if (this.$refs.termInput) this.$refs.termInput.focus();
         });
       },
-      async runSshPreset() { this.sshRunResult = await this.guarded('sshrun', () => api('ssh/preset', { method: 'POST', body: JSON.stringify({ id: this.sshConn, preset: this.sshPreset }) })); },
-      async runSshCommand() { this.sshRunResult = await this.guarded('sshrun', () => api('ssh/run', { method: 'POST', body: JSON.stringify({ id: this.sshConn, command: this.sshCommand }) })); },
+      sshTarget(extra) { return { id: this.sshConn, connection: this.sshConn ? {} : { ...this.sshAdhoc }, ...extra }; },
+      async runSshPreset() { this.sshRunResult = await this.guarded('sshrun', () => api('ssh/preset', { method: 'POST', body: JSON.stringify(this.sshTarget({ preset: this.sshPreset })) })); },
+      async runSshCommand() { this.sshRunResult = await this.guarded('sshrun', () => api('ssh/run', { method: 'POST', body: JSON.stringify(this.sshTarget({ command: this.sshCommand })) })); },
+      /** Open the console straight from the typed details, without saving. */
+      async quickConsole() {
+        this.sshConn = 0;
+        this.term = {
+          open: true, id: 0, host: this.sshAdhoc.host, user: this.sshAdhoc.username,
+          cwd: '', command: '', lines: [], history: [], at: -1,
+        };
+        this.$nextTick(() => this.$refs.termInput && this.$refs.termInput.focus());
+      },
+      saveSshAdhoc() {
+        this.openConn(null, 'ssh');
+        this.connForm = { ...this.connForm, ...this.sshAdhoc, id: 0, name: this.sshAdhoc.host, privateKey: '' };
+      },
 
       async runDns() { this.dnsResult = await this.guarded('dns', () => api('tools/dns?' + qs({ host: this.dnsHost, types: this.dnsWanted }))); },
       async runWhois() { this.whoisResult = await this.guarded('whois', () => api('tools/whois?' + qs({ query: this.whoisQuery }))); },
@@ -2232,9 +2489,11 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
     },
     unmounted() {
       if (this.liveTimer) clearInterval(this.liveTimer);
+      window.removeEventListener('message', this.onWindowMessage);
     },
     mounted() {
       rootProxy = this;
+      window.addEventListener('message', this.onWindowMessage);
       const root = document.getElementById('netbase-root');
       if (root && root.dataset.theme) this.settings.theme = root.dataset.theme;
       this.applyTheme();

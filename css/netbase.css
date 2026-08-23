@@ -378,3 +378,51 @@
   padding: 4px 0; min-height: 0; border-radius: 0;
 }
 #netbase-root .term-input input:focus { outline: none; }
+#netbase-root .with-button { display: flex; gap: 8px; align-items: center; }
+#netbase-root .with-button input { flex: 1 1 auto; }
+
+/* ---------- device windows ---------- */
+#netbase-root .devwin {
+  position: fixed; background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+  box-shadow: 0 18px 60px rgba(15, 23, 42, .35); display: flex; flex-direction: column; overflow: hidden;
+}
+#netbase-root .devwin-head {
+  display: flex; align-items: center; gap: 8px; padding: 8px 10px; cursor: move;
+  background: var(--surface-2); border-bottom: 1px solid var(--border); user-select: none;
+}
+#netbase-root .devwin-head .nm { font-size: 13.5px; }
+#netbase-root .devwin-head .addr { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 40%; }
+#netbase-root .devwin-head a.btn { text-decoration: none; }
+#netbase-root .devwin-frame { flex: 1 1 auto; width: 100%; border: 0; background: #fff; }
+#netbase-root .devwin-grip {
+  position: absolute; right: 0; bottom: 0; width: 16px; height: 16px; cursor: nwse-resize;
+  background: linear-gradient(135deg, transparent 50%, var(--border) 50%);
+}
+
+/* A window that has nothing to show yet, or cannot show it. */
+.devwin-note {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  text-align: center;
+  line-height: 1.6;
+}
+.devwin-note.error { color: var(--color-error, #c0392b); }
+
+/* Why a window cannot show a page, and what to do about it. */
+.devwin-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  font-size: .85em;
+  background: var(--color-warning, #f5b800);
+  color: #2b2200;
+}
+.devwin-bar span { flex: 1; }
+
+/* While a window is being moved or resized the pointer must stay with the
+   window, not disappear into the page it is showing. */
+.devwin.dragging .devwin-frame { pointer-events: none; }
