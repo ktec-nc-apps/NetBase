@@ -16,6 +16,10 @@ All notable changes to NetBase are documented here.
 - A test rig under `tests/testrig` serves everything that makes a real device interface awkward — EUC-JP without a charset header, root-relative assets, escaping targets, a redirecting login with a cookie, a frameset, `document.write`, XHR and HTTP authentication — so the windows can be checked against it.
 - The sidebar's appearance and language dialog is now simply **Settings**.
 
+### Changed
+- The device list now defaults to administrators. It is not a lookup like whois or ping but the inventory of a private network — what is on it, what it answers on, what it is called — and that belongs to whoever runs the network. Every instance can still hand it to a group, or to everyone, in the app's admin settings.
+- A web port is shown as a link only to an account that may open a device window; to anyone else it is plain text rather than a link that can only be refused.
+
 ## 0.1.0 — 2026-08-22
 
 First working version.
