@@ -5434,13 +5434,16 @@ return function render(_ctx, _cache) {
                   return (_openBlock(), _createElementBlock(_Fragment, {
                     key: l.href
                   }, [
-                    _createElementVNode("button", {
-                      class: "btn sm",
-                      onClick: $event => (_ctx.openDeviceWindow(_ctx.selected, l.port))
-                    }, "🖥 " + _toDisplayString(l.label), 9 /* TEXT, PROPS */, _hoisted_823),
-                    (_ctx.status.preview)
+                    (_ctx.allowed('preview'))
                       ? (_openBlock(), _createElementBlock("button", {
                           key: 0,
+                          class: "btn sm",
+                          onClick: $event => (_ctx.openDeviceWindow(_ctx.selected, l.port))
+                        }, "🖥 " + _toDisplayString(l.label), 9 /* TEXT, PROPS */, _hoisted_823))
+                      : _createCommentVNode("v-if", true),
+                    (_ctx.allowed('preview') && _ctx.status.preview)
+                      ? (_openBlock(), _createElementBlock("button", {
+                          key: 1,
                           class: "btn sm",
                           onClick: $event => (_ctx.showPage(l.href))
                         }, "🖼 " + _toDisplayString(_ctx.t('Show the page')), 9 /* TEXT, PROPS */, _hoisted_824))
@@ -6007,11 +6010,18 @@ return function render(_ctx, _cache) {
       },
 
       /** A device's own web interface, when the port says it has one. */
-      portLink(device, port) {
+      /** The device's own address for a web port, whoever is asking. */
+      webUrl(device, port) {
         const scheme = WEB_PORTS[port];
-        if (!scheme || !device.ip) return null;
+        if (!scheme || !device || !device.ip) return null;
         const host = device.ip.includes(':') ? '[' + device.ip + ']' : device.ip;
-        const href = scheme + '://' + host + (port === 80 || port === 443 ? '' : ':' + port);
+        return scheme + '://' + host + (port === 80 || port === 443 ? '' : ':' + port);
+      },
+      portLink(device, port) {
+        // Without the right to open a device page, the number is just a number:
+        // better plain text than a link that can only fail.
+        const href = this.allowed('preview') ? this.webUrl(device, port) : null;
+        if (!href) return null;
         return { href, title: T('Open {url} in a window, through this server', { url: href }) };
       },
       /** Ports NetBase can act on itself, rather than hand to the browser. */
@@ -6076,7 +6086,7 @@ return function render(_ctx, _cache) {
         if (!device) return [];
         return (device.ports || []).filter((p) => WEB_PORTS[p]).map((p) => ({
           port: p,
-          href: this.portLink(device, p).href,
+          href: this.webUrl(device, p),
           label: WEB_PORTS[p] === 'https' ? T('Open (HTTPS {port})', { port: p }) : T('Open (HTTP {port})', { port: p }),
         }));
       },
