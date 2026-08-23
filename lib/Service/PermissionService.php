@@ -12,9 +12,12 @@ use OCP\IUserSession;
  * Per-tool access control.
  *
  * Each tool is set to one of three levels: administrators only, the groups
- * named in the app settings, or every signed-in user. Probing tools default to
- * administrators; lookups that touch nothing on the local network default to
- * everyone, because they are no more powerful than a public web form.
+ * named in the app settings, or every signed-in user.
+ *
+ * NetBase is an administrator's app that can lend out its harmless half. What
+ * touches the local network — scanning it, reaching into it, or reading the
+ * inventory of it — defaults to administrators. What only asks the public
+ * internet a question, as any web form would, defaults to everyone.
  */
 class PermissionService {
 	public const ADMIN = 'admin';
@@ -28,7 +31,10 @@ class PermissionService {
 	 * @var array<string, array{default: string, label: string, probes: bool}>
 	 */
 	public const TOOLS = [
-		'devices' => ['default' => self::ALL, 'label' => 'Devices — read the device list', 'probes' => false],
+		// The device list is not a lookup, it is the inventory of a private
+		// network — what is on it, what it answers on, what it is called. That
+		// belongs to whoever runs the network, not to everyone with an account.
+		'devices' => ['default' => self::ADMIN, 'label' => 'Devices — read the device list', 'probes' => false],
 		'scan' => ['default' => self::ADMIN, 'label' => 'Scanning — sweep the network and edit the device list', 'probes' => true],
 		'nmap' => ['default' => self::ADMIN, 'label' => 'nmap — presets over the nmap scanner', 'probes' => true],
 		'ports' => ['default' => self::ADMIN, 'label' => 'Ports — TCP connect check with banners', 'probes' => true],
