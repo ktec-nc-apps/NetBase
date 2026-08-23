@@ -20,7 +20,7 @@ Features:
 - Subnet calculator for IPv4 and IPv6
 - Server network information — interfaces, addresses, routes, listening sockets and public IP
 - nmap front end with presets and a strict argument allow-list, when nmap is installed
-- Available in English and Japanese]]></description>
+- Available in twelve languages: English, Japanese, German, Spanish, French, Italian, Portuguese, Russian, Chinese, Korean, Arabic and Hindi]]></description>
 	<description lang="ja"><![CDATA[NetBaseは、Nextcloudをネットワーク管理コンソールに変えるアプリです。LAN上の機器を数秒で洗い出し、それぞれが何であるかを提示したうえで、日常的に使う調査ツールを同じ画面に揃えます。
 
 検出にroot権限・エージェント・追加パッケージは不要です。カーネルの近隣テーブルを起こして読み取り、NetBIOS・mDNS・WS-Discovery・SSDPで各機器に名前を尋ねます。MACアドレスは同梱のIEEE登録簿（53,000件超のベンダープレフィックス）で判別し、ランダム化（プライバシー）MACはその旨を明示します。
@@ -37,8 +37,8 @@ Features:
 - IPv4／IPv6対応のサブネット計算
 - サーバーのネットワーク情報 ― インターフェース・アドレス・経路・待受ソケット・グローバルIP
 - nmapのフロントエンド ― プリセットと厳格な引数許可リスト（nmap導入時）
-- 英語・日本語に対応]]></description>
-	<version>0.1.51</version>
+- 12言語に対応（英語・日本語・ドイツ語・スペイン語・フランス語・イタリア語・ポルトガル語・ロシア語・中国語・韓国語・アラビア語・ヒンディー語）]]></description>
+	<version>0.1.52</version>
 	<licence>agpl</licence>
 	<author>KTEC</author>
 	<namespace>NetBase</namespace>

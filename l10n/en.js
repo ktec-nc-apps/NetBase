@@ -320,7 +320,6 @@ OC.L10N.register(
         "Install these to unlock more": "Install these to unlock more",
         "Everything NetBase can use is already installed.": "Everything NetBase can use is already installed.",
         "Ask an administrator to install it.": "Ask an administrator to install it.",
-        "🎨 Theme": "🎨 Theme",
         "Theme": "Theme",
         "Applies to NetBase only, for your account.": "Applies to NetBase only, for your account.",
         "Default (match Nextcloud)": "Default (match Nextcloud)",
@@ -673,7 +672,12 @@ OC.L10N.register(
         "It is a large package. NetBase runs it with a throwaway profile and deletes it after every page.": "It is a large package. NetBase runs it with a throwaway profile and deletes it after every page.",
         "Enter the connection details": "Enter the connection details",
         "Nothing has to be saved first. Fill this in and connect; save it to the list only if you want it again.": "Nothing has to be saved first. Fill this in and connect; save it to the list only if you want it again.",
-        "Save to the list": "Save to the list"
+        "Save to the list": "Save to the list",
+        "Appearance and language": "Appearance and language",
+        "🎨 Appearance": "🎨 Appearance",
+        "Language": "Language",
+        "Follow Nextcloud": "Follow Nextcloud",
+        "NetBase can speak a different language from the rest of Nextcloud — handy when the interface language and the language you think in are not the same.": "NetBase can speak a different language from the rest of Nextcloud — handy when the interface language and the language you think in are not the same."
     },
     "nplurals=2; plural=(n != 1);"
 );

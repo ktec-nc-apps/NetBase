@@ -319,7 +319,6 @@
         "Install these to unlock more": "導入すると使えるようになるツール",
         "Everything NetBase can use is already installed.": "NetBase が利用できるものは、すべて導入済みです。",
         "Ask an administrator to install it.": "導入は管理者にご依頼ください。",
-        "🎨 Theme": "🎨 表示テーマ",
         "Theme": "表示テーマ",
         "Applies to NetBase only, for your account.": "NetBase の見た目だけを、ご自身のアカウント向けに切り替えます。",
         "Default (match Nextcloud)": "既定（Nextcloud に合わせる）",
@@ -672,7 +671,12 @@
         "It is a large package. NetBase runs it with a throwaway profile and deletes it after every page.": "容量の大きなパッケージです。NetBaseは使い捨てのプロファイルで実行し、描画のたびに削除します。",
         "Enter the connection details": "接続情報を入力してください",
         "Nothing has to be saved first. Fill this in and connect; save it to the list only if you want it again.": "事前の登録は不要です。ここに入力して接続してください。また使うものだけ、一覧に保存できます。",
-        "Save to the list": "接続先として保存"
+        "Save to the list": "接続先として保存",
+        "Appearance and language": "外観と言語",
+        "🎨 Appearance": "🎨 外観と言語",
+        "Language": "言語",
+        "Follow Nextcloud": "Nextcloudに合わせる",
+        "NetBase can speak a different language from the rest of Nextcloud — handy when the interface language and the language you think in are not the same.": "NetBaseだけをNextcloud本体と別の言語で表示できます。画面の言語と、考えるときの言語が違う場合に便利です。"
     },
     "pluralForm": "nplurals=1; plural=0;"
 }
