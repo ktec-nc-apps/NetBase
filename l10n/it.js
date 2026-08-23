@@ -699,7 +699,6 @@ OC.L10N.register(
         "Fill the screen": "Riempi lo schermo",
         "This page is built from frames, which a window kept away from Nextcloud cannot load.": "Questa pagina è composta da frame, che una finestra isolata da Nextcloud non può caricare.",
         "Show it anyway": "Mostrala comunque",
-        "A page shown this way runs with the same rights as NetBase itself. Only do this for a device you trust.": "Una pagina mostrata così viene eseguita con gli stessi diritti di NetBase. Fallo solo con un dispositivo di cui ti fidi.",
         "No answer at all — the name may not resolve, or nothing on the way let the request through.": "Nessuna risposta: il nome non si risolve, oppure qualcosa lungo il percorso ha bloccato la richiesta.",
         "Nothing came back. Many devices and firewalls ignore ping while still answering on a port, so try the TCP check before calling it offline.": "Non è tornato nulla. Molti dispositivi e firewall ignorano il ping ma rispondono su una porta: prova il controllo TCP prima di darlo per spento.",
         "%s%% of the packets went missing. On a wired network that points at a cable or a port; on Wi-Fi, at range or interference.": "È andato perso il %s%% dei pacchetti. Su rete cablata indica un cavo o una porta; in Wi-Fi, distanza o interferenze.",
@@ -714,7 +713,9 @@ OC.L10N.register(
         "Drag to put the tools in the order you want": "Trascina per mettere gli strumenti nell'ordine che vuoi",
         "The list of tools": "L'elenco degli strumenti",
         "Drag the tools in the sidebar into the order you work in — or hold Alt and press the up and down arrows. The order is kept for your account.": "Trascina gli strumenti nella barra laterale nell'ordine in cui lavori — oppure tieni premuto Alt e usa le frecce. L'ordine resta salvato per il tuo account.",
-        "Put them back in the original order": "Ripristina l'ordine originale"
+        "Put them back in the original order": "Ripristina l'ordine originale",
+        "This device's own page will be shown in full. It can then reach NetBase in this browser, though nothing outside the device windows. Do this only for a device you trust.": "La pagina del dispositivo verrà mostrata per intero. Potrà raggiungere NetBase in questo browser, ma nulla fuori dalle finestre dei dispositivi. Fallo solo con un dispositivo di cui ti fidi.",
+        "Shown in full, because you agreed to it for this device. Click to undo.": "Mostrata per intero perché lo hai accettato per questo dispositivo. Clicca per annullare."
     },
     "nplurals=2; plural=(n != 1);"
 );

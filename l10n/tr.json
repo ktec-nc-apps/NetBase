@@ -698,7 +698,6 @@
         "Fill the screen": "Ekranı kapla",
         "This page is built from frames, which a window kept away from Nextcloud cannot load.": "Bu sayfa çerçevelerden oluşuyor; Nextcloud'dan yalıtılmış bir pencere bunları yükleyemez.",
         "Show it anyway": "Yine de göster",
-        "A page shown this way runs with the same rights as NetBase itself. Only do this for a device you trust.": "Böyle gösterilen bir sayfa NetBase ile aynı yetkilerle çalışır. Bunu yalnızca güvendiğiniz bir cihaz için yapın.",
         "No answer at all — the name may not resolve, or nothing on the way let the request through.": "Hiç yanıt yok — ad çözümlenemiyor ya da istek yolda engellendi.",
         "Nothing came back. Many devices and firewalls ignore ping while still answering on a port, so try the TCP check before calling it offline.": "Hiçbir şey dönmedi. Pek çok cihaz ve güvenlik duvarı ping'i yok sayar ama bir bağlantı noktasında yanıt verir; çevrimdışı demeden önce TCP denetimini deneyin.",
         "%s%% of the packets went missing. On a wired network that points at a cable or a port; on Wi-Fi, at range or interference.": "Paketlerin %s%%'i kayboldu. Kablolu ağda bu kabloyu ya da bağlantı noktasını, Wi-Fi'de mesafeyi ya da paraziti gösterir.",
@@ -713,7 +712,9 @@
         "Drag to put the tools in the order you want": "Araçları istediğiniz sıraya koymak için sürükleyin",
         "The list of tools": "Araç listesi",
         "Drag the tools in the sidebar into the order you work in — or hold Alt and press the up and down arrows. The order is kept for your account.": "Kenar çubuğundaki araçları çalıştığınız sıraya sürükleyin ya da Alt'a basılı tutup yön tuşlarını kullanın. Sıra hesabınız için saklanır.",
-        "Put them back in the original order": "Özgün sıraya geri döndür"
+        "Put them back in the original order": "Özgün sıraya geri döndür",
+        "This device's own page will be shown in full. It can then reach NetBase in this browser, though nothing outside the device windows. Do this only for a device you trust.": "Bu cihazın sayfası bütünüyle gösterilecek. O zaman bu tarayıcıdaki NetBase'e erişebilir, ama cihaz pencerelerinin dışına çıkamaz. Bunu yalnızca güvendiğiniz bir cihaz için yapın.",
+        "Shown in full, because you agreed to it for this device. Click to undo.": "Bu cihaz için onayladığınızdan bütünüyle gösteriliyor. Geri almak için tıklayın."
     },
     "pluralForm": "nplurals=2; plural=(n > 1);"
 }

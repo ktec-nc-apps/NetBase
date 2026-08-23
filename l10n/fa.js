@@ -699,7 +699,6 @@ OC.L10N.register(
         "Fill the screen": "پر کردن صفحه",
         "This page is built from frames, which a window kept away from Nextcloud cannot load.": "این صفحه از قاب ساخته شده و پنجره‌ای جدا از نکست‌کلاد نمی‌تواند آن‌ها را بار کند.",
         "Show it anyway": "با این حال نمایش بده",
-        "A page shown this way runs with the same rights as NetBase itself. Only do this for a device you trust.": "صفحه‌ای که این‌گونه نمایش داده شود با همان اختیارات NetBase اجرا می‌شود. تنها برای دستگاهی که به آن اعتماد دارید انجام دهید.",
         "No answer at all — the name may not resolve, or nothing on the way let the request through.": "هیچ پاسخی نیامد — یا نام حل نمی‌شود یا درخواست در راه سد شده است.",
         "Nothing came back. Many devices and firewalls ignore ping while still answering on a port, so try the TCP check before calling it offline.": "چیزی بازنگشت. بسیاری از دستگاه‌ها و دیوارهای آتش پینگ را نادیده می‌گیرند ولی روی درگاه پاسخ می‌دهند؛ پیش از آفلاین خواندن، بررسی TCP را بیازمایید.",
         "%s%% of the packets went missing. On a wired network that points at a cable or a port; on Wi-Fi, at range or interference.": "%s%% بسته‌ها گم شد. در شبکهٔ سیمی به کابل یا درگاه اشاره دارد و در وای‌فای به فاصله یا تداخل.",
@@ -714,7 +713,9 @@ OC.L10N.register(
         "Drag to put the tools in the order you want": "برای چیدن ابزارها به ترتیب دلخواه بکشید",
         "The list of tools": "فهرست ابزارها",
         "Drag the tools in the sidebar into the order you work in — or hold Alt and press the up and down arrows. The order is kept for your account.": "ابزارهای نوار کناری را به ترتیب کارتان بکشید — یا Alt را نگه دارید و کلیدهای بالا و پایین را بزنید. ترتیب برای حساب شما نگه داشته می‌شود.",
-        "Put them back in the original order": "بازگرداندن به ترتیب اصلی"
+        "Put them back in the original order": "بازگرداندن به ترتیب اصلی",
+        "This device's own page will be shown in full. It can then reach NetBase in this browser, though nothing outside the device windows. Do this only for a device you trust.": "صفحهٔ این دستگاه به‌طور کامل نمایش داده می‌شود. آنگاه می‌تواند به نت‌بیس در همین مرورگر دست یابد، اما به بیرون از پنجره‌های دستگاه نه. تنها برای دستگاهی که به آن اعتماد دارید انجام دهید.",
+        "Shown in full, because you agreed to it for this device. Click to undo.": "چون برای این دستگاه پذیرفته‌اید، کامل نمایش داده می‌شود. برای لغو کلیک کنید."
     },
     "nplurals=2; plural=(n > 1);"
 );

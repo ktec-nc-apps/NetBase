@@ -703,6 +703,8 @@ class ApiController extends Controller {
 			'lastTargets' => $uid ? $this->config->getUserValue($uid, 'netbase', 'last_targets', '') : '',
 			// The order the tools are listed in, as this person arranged them.
 			'tabOrder' => $uid ? array_values(array_filter(explode(',', $this->config->getUserValue($uid, 'netbase', 'tab_order', '')))) : [],
+			// Devices whose own page this person has agreed to show in full.
+			'trustedDevices' => $uid ? (array)(json_decode($this->config->getUserValue($uid, 'netbase', 'trusted_devices', '[]'), true) ?: []) : [],
 			'tools' => PermissionService::TOOLS,
 			'admin' => [
 				'levels' => $this->permissions->levels(),
@@ -740,6 +742,16 @@ class ApiController extends Controller {
 				}
 			}
 			$this->config->setUserValue($uid, 'netbase', 'tab_order', implode(',', $order));
+		}
+		if (isset($settings['trustedDevices']) && is_array($settings['trustedDevices'])) {
+			$trusted = [];
+			foreach (array_slice($settings['trustedDevices'], 0, 200) as $base) {
+				$base = mb_substr((string)$base, 0, 255);
+				if (preg_match('#^https?://[^\s/]+$#', $base) === 1 && !in_array($base, $trusted, true)) {
+					$trusted[] = $base;
+				}
+			}
+			$this->config->setUserValue($uid, 'netbase', 'trusted_devices', (string)json_encode($trusted));
 		}
 		if ($this->permissions->isAdmin() && isset($settings['admin']) && is_array($settings['admin'])) {
 			$admin = $settings['admin'];

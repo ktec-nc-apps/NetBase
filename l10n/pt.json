@@ -698,7 +698,6 @@
         "Fill the screen": "Preencher o ecrã",
         "This page is built from frames, which a window kept away from Nextcloud cannot load.": "Esta página é feita de frames, que uma janela isolada do Nextcloud não consegue carregar.",
         "Show it anyway": "Mostrar mesmo assim",
-        "A page shown this way runs with the same rights as NetBase itself. Only do this for a device you trust.": "Uma página mostrada assim corre com os mesmos direitos que o NetBase. Faça-o só num dispositivo de confiança.",
         "No answer at all — the name may not resolve, or nothing on the way let the request through.": "Sem qualquer resposta — o nome não resolve, ou algo pelo caminho bloqueou o pedido.",
         "Nothing came back. Many devices and firewalls ignore ping while still answering on a port, so try the TCP check before calling it offline.": "Não voltou nada. Muitos aparelhos e firewalls ignoram o ping mas respondem numa porta: experimente a verificação TCP antes de o dar como offline.",
         "%s%% of the packets went missing. On a wired network that points at a cable or a port; on Wi-Fi, at range or interference.": "Perderam-se %s%% dos pacotes. Em rede com fios aponta a um cabo ou porta; em Wi-Fi, à distância ou a interferências.",
@@ -713,7 +712,9 @@
         "Drag to put the tools in the order you want": "Arraste para pôr as ferramentas na ordem que quiser",
         "The list of tools": "A lista de ferramentas",
         "Drag the tools in the sidebar into the order you work in — or hold Alt and press the up and down arrows. The order is kept for your account.": "Arraste as ferramentas da barra lateral para a ordem em que trabalha — ou mantenha Alt e use as setas. A ordem fica guardada na sua conta.",
-        "Put them back in the original order": "Repor a ordem original"
+        "Put them back in the original order": "Repor a ordem original",
+        "This device's own page will be shown in full. It can then reach NetBase in this browser, though nothing outside the device windows. Do this only for a device you trust.": "A página do aparelho será mostrada por inteiro. Poderá alcançar o NetBase neste navegador, mas nada fora das janelas de dispositivo. Faça-o só num aparelho de confiança.",
+        "Shown in full, because you agreed to it for this device. Click to undo.": "Mostrada por inteiro porque o aceitou para este aparelho. Clique para anular."
     },
     "pluralForm": "nplurals=2; plural=(n > 1);"
 }

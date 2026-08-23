@@ -22,6 +22,9 @@ use Psr\Log\LoggerInterface;
  * during a scan, can be reached. NetBase is a network tool, not an open proxy.
  */
 class ProxyService {
+	/** The name NetBase gives the window's own document, so a device page can aim at it. */
+	public const WINDOW_NAME = '_netbase_window';
+
 	private const MAX_BYTES = 16777216;
 	private const TIMEOUT = 20;
 
@@ -125,7 +128,6 @@ class ProxyService {
 			$url .= '?' . $query;
 		}
 
-		$jar = $this->cookieJar($userId, $base);
 		$curl = curl_init($url);
 		$headers = [];
 		curl_setopt_array($curl, [
@@ -139,8 +141,11 @@ class ProxyService {
 			// Redirects are rewritten and handed back to the browser instead,
 			// so the window's address bar keeps up with where it is.
 			CURLOPT_FOLLOWLOCATION => false,
-			CURLOPT_COOKIEFILE => $jar,
-			CURLOPT_COOKIEJAR => $jar,
+			// An empty file name starts the cookie engine without one: a device's
+			// session cookie has no expiry, and those are never written to a
+			// cookie file — the sign-in would be forgotten between one page and
+			// the next. They are kept by hand instead, just below.
+			CURLOPT_COOKIEFILE => '',
 			CURLOPT_USERAGENT => 'Mozilla/5.0 (compatible; NetBase for Nextcloud)',
 			CURLOPT_HEADERFUNCTION => function ($handle, string $line) use (&$headers) {
 				$parts = explode(':', $line, 2);
@@ -150,6 +155,9 @@ class ProxyService {
 				return strlen($line);
 			},
 		]);
+		foreach ($this->loadCookies($userId, $base) as $cookie) {
+			curl_setopt($curl, CURLOPT_COOKIELIST, $cookie);
+		}
 		if ($authorization !== '') {
 			// A device that asks for a password does so through the browser, on
 			// this server's address; the answer is handed straight back to it.
@@ -162,6 +170,7 @@ class ProxyService {
 		$body = curl_exec($curl);
 		$status = (int)curl_getinfo($curl, CURLINFO_RESPONSE_CODE);
 		$error = curl_error($curl);
+		$this->saveCookies($userId, $base, (array)curl_getinfo($curl, CURLINFO_COOKIELIST));
 		curl_close($curl);
 
 		if (!is_string($body)) {
@@ -310,7 +319,78 @@ class ProxyService {
 		return '';
 	}
 
-	private function cookieJar(string $userId, string $base): string {
+	// ------------------------------------------------------------------ cookies
+
+	/**
+	 * The device's own session, kept for one person and one device.
+	 *
+	 * A page's frames are fetched all at once, so several requests write here
+	 * within the same instant; each keeps what it learnt and leaves the rest
+	 * alone, rather than replacing the lot with its own view.
+	 *
+	 * @return list<string> cookies in the tab-separated form curl speaks
+	 */
+	private function loadCookies(string $userId, string $base): array {
+		$file = $this->cookieFile($userId, $base);
+		if (!is_readable($file)) {
+			return [];
+		}
+		$lines = preg_split('/\R/', (string)file_get_contents($file)) ?: [];
+		return array_values(array_filter($lines, static fn (string $line) => trim($line) !== ''));
+	}
+
+	/** @param array<int, string> $cookies */
+	private function saveCookies(string $userId, string $base, array $cookies): void {
+		if ($cookies === []) {
+			return;
+		}
+		$file = $this->cookieFile($userId, $base);
+		$handle = @fopen($file, 'c+');
+		if ($handle === false) {
+			return;
+		}
+		try {
+			if (!flock($handle, LOCK_EX)) {
+				return;
+			}
+			$known = [];
+			foreach (preg_split('/\R/', (string)stream_get_contents($handle)) ?: [] as $line) {
+				$key = self::cookieKey($line);
+				if ($key !== '') {
+					$known[$key] = $line;
+				}
+			}
+			foreach ($cookies as $line) {
+				$key = self::cookieKey((string)$line);
+				if ($key !== '') {
+					$known[$key] = (string)$line;
+				}
+			}
+			ftruncate($handle, 0);
+			rewind($handle);
+			fwrite($handle, implode("\n", array_slice($known, -100)) . "\n");
+			fflush($handle);
+			@chmod($file, 0600);
+		} finally {
+			flock($handle, LOCK_UN);
+			fclose($handle);
+		}
+	}
+
+	/** Domain, path and name together identify one cookie. */
+	private static function cookieKey(string $line): string {
+		$line = trim($line);
+		if ($line === '' || (str_starts_with($line, '#') && !str_starts_with($line, '#HttpOnly_'))) {
+			return '';
+		}
+		$parts = explode("\t", $line);
+		if (count($parts) < 6) {
+			return '';
+		}
+		return $parts[0] . '|' . $parts[2] . '|' . $parts[5];
+	}
+
+	private function cookieFile(string $userId, string $base): string {
 		return $this->stateDir() . '/' . sha1($userId . '|' . $base) . '.cookies';
 	}
 
@@ -340,11 +420,13 @@ class ProxyService {
 		$body = preg_replace('#(["\'(])' . $quoted . '(/[^"\')]*)?#i', '$1' . $prefix . '$2', $body) ?? $body;
 
 		// A device page often aims its links at the whole browser window — the
-		// frameset habit of _top and _parent. Inside NetBase that means walking
-		// out of the app, so every such link is turned back on the window it
-		// already lives in.
-		$body = preg_replace('#\btarget\s*=\s*(["\'])\s*_(top|parent|blank)\s*\1#i', 'target="_self"', $body) ?? $body;
-		$body = preg_replace('#\btarget\s*=\s*_(top|parent|blank)(?=[\s>])#i', 'target=_self', $body) ?? $body;
+		// frameset habit of _top and _parent, which on the device means "replace
+		// everything". Inside NetBase that would mean walking out of the app, and
+		// _self would trap the page in whichever small frame the link sat in. Both
+		// are wrong: what the device means by "everything" is this window, which
+		// carries that name.
+		$body = preg_replace('#\btarget\s*=\s*(["\'])\s*_(top|parent|blank)\s*\1#i', 'target="' . self::WINDOW_NAME . '"', $body) ?? $body;
+		$body = preg_replace('#\btarget\s*=\s*_(top|parent|blank)(?=[\s>])#i', 'target=' . self::WINDOW_NAME, $body) ?? $body;
 
 		// A page that forwards itself with a meta refresh is common on routers
 		// and printers, and the address inside it needs the same treatment.
@@ -392,6 +474,7 @@ class ProxyService {
 		return P + u;
 	}
 	var escapes = { _top: 1, _parent: 1, _blank: 1 };
+	var W = __WINDOW__;
 	function fixMarkup(html) {
 		return String(html).replace(/(\b(?:src|href|action|data|poster)\s*=\s*["'])\/(?!\/)/gi, '$1' + P + '/');
 	}
@@ -413,7 +496,7 @@ class ProxyService {
 	window.open = function () {
 		var a = [].slice.call(arguments);
 		a[0] = fix(a[0]);
-		if (a[1] && escapes[String(a[1]).toLowerCase()]) { a[1] = '_self'; }
+		if (a[1] && escapes[String(a[1]).toLowerCase()]) { a[1] = W; }
 		return ow.apply(this, a);
 	};
 	// Old device interfaces build themselves with document.write, and the
@@ -451,7 +534,7 @@ class ProxyService {
 			if (!value) { continue; }
 			if (name === 'target') {
 				// Anything aimed outside the window is aimed at the window.
-				if (escapes[value.toLowerCase()]) { node.setAttribute(name, '_self'); }
+				if (escapes[value.toLowerCase()]) { node.setAttribute(name, W); }
 				continue;
 			}
 			if (value !== fix(value)) { node.setAttribute(name, fix(value)); }
@@ -476,6 +559,63 @@ class ProxyService {
 		});
 	}
 	document.addEventListener('submit', function (event) { scrub(event.target); }, true);
+
+	// "Replace everything" means this window, not the browser.
+	//
+	// A device page built out of frames aims its menu at _top. The window is
+	// sandboxed so that a page cannot navigate the browser, and that same fence
+	// stops a frame inside it from navigating the window's own document — the
+	// browser would open a new tab instead. So the document navigates itself,
+	// on behalf of whichever of its frames asked: the call runs here, in the
+	// window's own document, which is allowed to go where it likes.
+	window.__netbaseGo = function (href) { location.href = href; };
+	window.__netbaseSubmit = function (action, method, fields) {
+		var form = document.createElement('form');
+		form.action = action;
+		form.method = method || 'get';
+		for (var i = 0; i < fields.length; i++) {
+			var input = document.createElement('input');
+			input.type = 'hidden';
+			input.name = fields[i][0];
+			input.value = fields[i][1];
+			form.appendChild(input);
+		}
+		(document.body || document.documentElement).appendChild(form);
+		form.submit();
+	};
+	function windowRoot() {
+		var w = window;
+		try {
+			while (w.parent && w.parent !== w && w.parent.location.pathname.lastIndexOf(P, 0) === 0) { w = w.parent; }
+		} catch (e) { /* a document we may not read is not one of ours */ }
+		return w;
+	}
+	document.addEventListener('click', function (event) {
+		var link = event.target && event.target.closest ? event.target.closest('a[target]') : null;
+		if (!link || link.getAttribute('target') !== W || !link.href) { return; }
+		var root = windowRoot();
+		event.preventDefault();
+		if (root === window || typeof root.__netbaseGo !== 'function') { location.href = link.href; return; }
+		root.__netbaseGo(link.href);
+	}, true);
+	document.addEventListener('submit', function (event) {
+		var form = event.target;
+		if (!form || form.getAttribute('target') !== W) { return; }
+		var root = windowRoot();
+		if (root === window || typeof root.__netbaseSubmit !== 'function') {
+			form.setAttribute('target', '_self');
+			return;
+		}
+		event.preventDefault();
+		var fields = [];
+		for (var i = 0; i < form.elements.length; i++) {
+			var el = form.elements[i];
+			if (!el.name || el.disabled) { continue; }
+			if ((el.type === 'checkbox' || el.type === 'radio') && !el.checked) { continue; }
+			fields.push([el.name, el.value]);
+		}
+		root.__netbaseSubmit(form.action, form.method, fields);
+	}, true);
 	// A page built out of frames cannot load them while the window has no
 	// origin of its own — the browser refuses, and there is no policy that
 	// permits it. NetBase is told, so it can offer the way round.
@@ -498,6 +638,7 @@ class ProxyService {
 })();
 JS;
 		$script = str_replace('__PREFIX__', json_encode($prefix, JSON_UNESCAPED_SLASHES), $script);
+		$script = str_replace('__WINDOW__', json_encode(self::WINDOW_NAME), $script);
 		return '<script>' . $script . '</script>';
 	}
 

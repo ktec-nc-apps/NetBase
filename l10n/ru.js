@@ -699,7 +699,6 @@ OC.L10N.register(
         "Fill the screen": "Во весь экран",
         "This page is built from frames, which a window kept away from Nextcloud cannot load.": "Страница состоит из фреймов, которые окно, отделённое от Nextcloud, загрузить не может.",
         "Show it anyway": "Всё равно показать",
-        "A page shown this way runs with the same rights as NetBase itself. Only do this for a device you trust.": "Показанная так страница работает с теми же правами, что и NetBase. Делайте это только для устройства, которому доверяете.",
         "No answer at all — the name may not resolve, or nothing on the way let the request through.": "Ответа нет вовсе — имя не разрешается, либо запрос где-то заблокирован.",
         "Nothing came back. Many devices and firewalls ignore ping while still answering on a port, so try the TCP check before calling it offline.": "Ничего не вернулось. Многие устройства и межсетевые экраны игнорируют ping, но отвечают на порту — проверьте по TCP, прежде чем считать его недоступным.",
         "%s%% of the packets went missing. On a wired network that points at a cable or a port; on Wi-Fi, at range or interference.": "Потеряно %s%% пакетов. В проводной сети это указывает на кабель или порт, в Wi-Fi — на расстояние или помехи.",
@@ -714,7 +713,9 @@ OC.L10N.register(
         "Drag to put the tools in the order you want": "Перетащите, чтобы расположить инструменты в нужном порядке",
         "The list of tools": "Список инструментов",
         "Drag the tools in the sidebar into the order you work in — or hold Alt and press the up and down arrows. The order is kept for your account.": "Перетащите инструменты на боковой панели в удобный порядок — или удерживайте Alt и нажимайте стрелки. Порядок сохраняется для вашей учётной записи.",
-        "Put them back in the original order": "Вернуть исходный порядок"
+        "Put them back in the original order": "Вернуть исходный порядок",
+        "This device's own page will be shown in full. It can then reach NetBase in this browser, though nothing outside the device windows. Do this only for a device you trust.": "Страница устройства будет показана полностью. Она сможет обратиться к NetBase в этом браузере, но ни к чему за пределами окон устройств. Делайте это только для устройства, которому доверяете.",
+        "Shown in full, because you agreed to it for this device. Click to undo.": "Показывается полностью, потому что вы согласились на это для данного устройства. Нажмите, чтобы отменить."
     },
     "nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);"
 );
