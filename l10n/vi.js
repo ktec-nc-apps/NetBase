@@ -710,7 +710,11 @@ OC.L10N.register(
         "It calls the protected part “%s”.": "Nó gọi phần được bảo vệ là “%s”.",
         "NetBase will remember it for you, for this device only.": "NetBase sẽ nhớ giúp bạn, chỉ cho thiết bị này.",
         "Back": "Quay lại",
-        "Front page": "Trang đầu"
+        "Front page": "Trang đầu",
+        "Drag to put the tools in the order you want": "Kéo để sắp các công cụ theo thứ tự bạn muốn",
+        "The list of tools": "Danh sách công cụ",
+        "Drag the tools in the sidebar into the order you work in — or hold Alt and press the up and down arrows. The order is kept for your account.": "Kéo các công cụ ở thanh bên theo thứ tự bạn làm việc — hoặc giữ Alt và bấm mũi tên lên xuống. Thứ tự được lưu cho tài khoản của bạn.",
+        "Put them back in the original order": "Trả lại thứ tự ban đầu"
     },
     "nplurals=1; plural=0;"
 );

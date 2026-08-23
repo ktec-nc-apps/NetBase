@@ -710,7 +710,11 @@ OC.L10N.register(
         "It calls the protected part “%s”.": "它把受保护的部分称为“%s”。",
         "NetBase will remember it for you, for this device only.": "NetBase 会为你记住，仅限该设备。",
         "Back": "返回",
-        "Front page": "首页"
+        "Front page": "首页",
+        "Drag to put the tools in the order you want": "拖动即可按你想要的顺序排列工具",
+        "The list of tools": "工具列表",
+        "Drag the tools in the sidebar into the order you work in — or hold Alt and press the up and down arrows. The order is kept for your account.": "把侧边栏的工具拖成你惯用的顺序，或按住 Alt 键用上下方向键移动。顺序会保存在你的账户中。",
+        "Put them back in the original order": "恢复原来的顺序"
     },
     "nplurals=1; plural=0;"
 );

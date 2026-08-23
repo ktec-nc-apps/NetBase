@@ -709,7 +709,11 @@
         "It calls the protected part “%s”.": "Защищённую часть оно называет «%s».",
         "NetBase will remember it for you, for this device only.": "NetBase запомнит это для вас — только для этого устройства.",
         "Back": "Назад",
-        "Front page": "Начальная страница"
+        "Front page": "Начальная страница",
+        "Drag to put the tools in the order you want": "Перетащите, чтобы расположить инструменты в нужном порядке",
+        "The list of tools": "Список инструментов",
+        "Drag the tools in the sidebar into the order you work in — or hold Alt and press the up and down arrows. The order is kept for your account.": "Перетащите инструменты на боковой панели в удобный порядок — или удерживайте Alt и нажимайте стрелки. Порядок сохраняется для вашей учётной записи.",
+        "Put them back in the original order": "Вернуть исходный порядок"
     },
     "pluralForm": "nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);"
 }

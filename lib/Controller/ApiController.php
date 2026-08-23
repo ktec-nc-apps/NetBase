@@ -701,6 +701,8 @@ class ApiController extends Controller {
 			'languages' => $this->availableLanguages(),
 			'theme' => $uid ? $this->config->getUserValue($uid, 'netbase', 'theme', 'auto') : 'auto',
 			'lastTargets' => $uid ? $this->config->getUserValue($uid, 'netbase', 'last_targets', '') : '',
+			// The order the tools are listed in, as this person arranged them.
+			'tabOrder' => $uid ? array_values(array_filter(explode(',', $this->config->getUserValue($uid, 'netbase', 'tab_order', '')))) : [],
 			'tools' => PermissionService::TOOLS,
 			'admin' => [
 				'levels' => $this->permissions->levels(),
@@ -726,6 +728,18 @@ class ApiController extends Controller {
 				continue;
 			}
 			$this->config->setUserValue($uid, 'netbase', $stored, $value);
+		}
+		if (isset($settings['tabOrder']) && is_array($settings['tabOrder'])) {
+			// Only real tools, each once. A tool left out simply keeps its place
+			// at the end, which is what happens when NetBase gains a new one.
+			$order = [];
+			foreach ($settings['tabOrder'] as $tool) {
+				$tool = (string)$tool;
+				if (isset(PermissionService::TOOLS[$tool]) && !in_array($tool, $order, true)) {
+					$order[] = $tool;
+				}
+			}
+			$this->config->setUserValue($uid, 'netbase', 'tab_order', implode(',', $order));
 		}
 		if ($this->permissions->isAdmin() && isset($settings['admin']) && is_array($settings['admin'])) {
 			$admin = $settings['admin'];

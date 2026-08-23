@@ -709,7 +709,11 @@
         "It calls the protected part “%s”.": "อุปกรณ์เรียกส่วนที่ป้องกันไว้ว่า “%s”",
         "NetBase will remember it for you, for this device only.": "NetBase จะจดจำไว้ให้คุณ เฉพาะอุปกรณ์นี้เท่านั้น",
         "Back": "ย้อนกลับ",
-        "Front page": "หน้าแรก"
+        "Front page": "หน้าแรก",
+        "Drag to put the tools in the order you want": "ลากเพื่อจัดเรียงเครื่องมือตามที่ต้องการ",
+        "The list of tools": "รายการเครื่องมือ",
+        "Drag the tools in the sidebar into the order you work in — or hold Alt and press the up and down arrows. The order is kept for your account.": "ลากเครื่องมือในแถบข้างให้เรียงตามลำดับที่คุณใช้ หรือกด Alt ค้างแล้วใช้ลูกศรขึ้นลง ลำดับจะถูกเก็บไว้กับบัญชีของคุณ",
+        "Put them back in the original order": "คืนลำดับเดิม"
     },
     "pluralForm": "nplurals=1; plural=0;"
 }

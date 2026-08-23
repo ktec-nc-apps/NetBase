@@ -709,7 +709,11 @@
         "It calls the protected part “%s”.": "Il appelle « %s » la partie protégée.",
         "NetBase will remember it for you, for this device only.": "NetBase s'en souviendra pour vous, pour cet appareil seulement.",
         "Back": "Retour",
-        "Front page": "Page d'accueil"
+        "Front page": "Page d'accueil",
+        "Drag to put the tools in the order you want": "Faites glisser pour ranger les outils dans l'ordre voulu",
+        "The list of tools": "La liste des outils",
+        "Drag the tools in the sidebar into the order you work in — or hold Alt and press the up and down arrows. The order is kept for your account.": "Faites glisser les outils de la barre latérale dans votre ordre de travail — ou maintenez Alt et utilisez les flèches. L'ordre est conservé pour votre compte.",
+        "Put them back in the original order": "Rétablir l'ordre d'origine"
     },
     "pluralForm": "nplurals=2; plural=(n > 1);"
 }
