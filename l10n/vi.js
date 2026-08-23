@@ -699,7 +699,6 @@ OC.L10N.register(
         "Fill the screen": "Đầy màn hình",
         "This page is built from frames, which a window kept away from Nextcloud cannot load.": "Trang này được dựng bằng khung, mà cửa sổ tách khỏi Nextcloud không thể tải.",
         "Show it anyway": "Vẫn hiển thị",
-        "A page shown this way runs with the same rights as NetBase itself. Only do this for a device you trust.": "Trang hiển thị theo cách này chạy với quyền như chính NetBase. Chỉ làm vậy với thiết bị bạn tin tưởng.",
         "No answer at all — the name may not resolve, or nothing on the way let the request through.": "Không có phản hồi nào — tên không phân giải được, hoặc yêu cầu bị chặn trên đường đi.",
         "Nothing came back. Many devices and firewalls ignore ping while still answering on a port, so try the TCP check before calling it offline.": "Không có gì trả về. Nhiều thiết bị và tường lửa bỏ qua ping nhưng vẫn trả lời trên cổng; hãy thử kiểm tra TCP trước khi coi là ngoại tuyến.",
         "%s%% of the packets went missing. On a wired network that points at a cable or a port; on Wi-Fi, at range or interference.": "%s%% gói tin bị mất. Trên mạng dây, điều đó chỉ tới cáp hoặc cổng; trên Wi-Fi là khoảng cách hoặc nhiễu.",
@@ -714,7 +713,9 @@ OC.L10N.register(
         "Drag to put the tools in the order you want": "Kéo để sắp các công cụ theo thứ tự bạn muốn",
         "The list of tools": "Danh sách công cụ",
         "Drag the tools in the sidebar into the order you work in — or hold Alt and press the up and down arrows. The order is kept for your account.": "Kéo các công cụ ở thanh bên theo thứ tự bạn làm việc — hoặc giữ Alt và bấm mũi tên lên xuống. Thứ tự được lưu cho tài khoản của bạn.",
-        "Put them back in the original order": "Trả lại thứ tự ban đầu"
+        "Put them back in the original order": "Trả lại thứ tự ban đầu",
+        "This device's own page will be shown in full. It can then reach NetBase in this browser, though nothing outside the device windows. Do this only for a device you trust.": "Trang của thiết bị sẽ hiển thị đầy đủ. Khi đó nó có thể chạm tới NetBase trong trình duyệt này, nhưng không ra ngoài các cửa sổ thiết bị. Chỉ làm vậy với thiết bị bạn tin tưởng.",
+        "Shown in full, because you agreed to it for this device. Click to undo.": "Hiển thị đầy đủ vì bạn đã đồng ý cho thiết bị này. Bấm để hoàn tác."
     },
     "nplurals=1; plural=0;"
 );

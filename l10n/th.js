@@ -699,7 +699,6 @@ OC.L10N.register(
         "Fill the screen": "เต็มหน้าจอ",
         "This page is built from frames, which a window kept away from Nextcloud cannot load.": "หน้านี้สร้างด้วยเฟรม ซึ่งหน้าต่างที่แยกจาก Nextcloud ไม่สามารถโหลดได้",
         "Show it anyway": "แสดงต่อไป",
-        "A page shown this way runs with the same rights as NetBase itself. Only do this for a device you trust.": "หน้าที่แสดงด้วยวิธีนี้จะทำงานด้วยสิทธิ์เดียวกับ NetBase ใช้กับอุปกรณ์ที่ไว้ใจได้เท่านั้น",
         "No answer at all — the name may not resolve, or nothing on the way let the request through.": "ไม่มีการตอบกลับเลย — ชื่ออาจแปลงไม่ได้ หรือคำขอถูกกั้นระหว่างทาง",
         "Nothing came back. Many devices and firewalls ignore ping while still answering on a port, so try the TCP check before calling it offline.": "ไม่มีอะไรตอบกลับ อุปกรณ์และไฟร์วอลล์จำนวนมากไม่ตอบ ping แต่ยังตอบที่พอร์ต ลองตรวจแบบ TCP ก่อนสรุปว่าออฟไลน์",
         "%s%% of the packets went missing. On a wired network that points at a cable or a port; on Wi-Fi, at range or interference.": "แพ็กเก็ตหายไป %s%% หากเป็นเครือข่ายมีสายมักเกิดจากสายหรือพอร์ต หากเป็น Wi-Fi มักเกิดจากระยะทางหรือสัญญาณรบกวน",
@@ -714,7 +713,9 @@ OC.L10N.register(
         "Drag to put the tools in the order you want": "ลากเพื่อจัดเรียงเครื่องมือตามที่ต้องการ",
         "The list of tools": "รายการเครื่องมือ",
         "Drag the tools in the sidebar into the order you work in — or hold Alt and press the up and down arrows. The order is kept for your account.": "ลากเครื่องมือในแถบข้างให้เรียงตามลำดับที่คุณใช้ หรือกด Alt ค้างแล้วใช้ลูกศรขึ้นลง ลำดับจะถูกเก็บไว้กับบัญชีของคุณ",
-        "Put them back in the original order": "คืนลำดับเดิม"
+        "Put them back in the original order": "คืนลำดับเดิม",
+        "This device's own page will be shown in full. It can then reach NetBase in this browser, though nothing outside the device windows. Do this only for a device you trust.": "จะแสดงหน้าของอุปกรณ์นี้อย่างเต็มรูปแบบ หน้าดังกล่าวจะเข้าถึง NetBase ในเบราว์เซอร์นี้ได้ แต่ออกไปนอกหน้าต่างอุปกรณ์ไม่ได้ ใช้กับอุปกรณ์ที่ไว้ใจได้เท่านั้น",
+        "Shown in full, because you agreed to it for this device. Click to undo.": "แสดงเต็มรูปแบบเพราะคุณยินยอมไว้สำหรับอุปกรณ์นี้ คลิกเพื่อยกเลิก"
     },
     "nplurals=1; plural=0;"
 );

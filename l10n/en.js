@@ -699,7 +699,6 @@ OC.L10N.register(
         "Fill the screen": "Fill the screen",
         "This page is built from frames, which a window kept away from Nextcloud cannot load.": "This page is built from frames, which a window kept away from Nextcloud cannot load.",
         "Show it anyway": "Show it anyway",
-        "A page shown this way runs with the same rights as NetBase itself. Only do this for a device you trust.": "A page shown this way runs with the same rights as NetBase itself. Only do this for a device you trust.",
         "No answer at all — the name may not resolve, or nothing on the way let the request through.": "No answer at all — the name may not resolve, or nothing on the way let the request through.",
         "Nothing came back. Many devices and firewalls ignore ping while still answering on a port, so try the TCP check before calling it offline.": "Nothing came back. Many devices and firewalls ignore ping while still answering on a port, so try the TCP check before calling it offline.",
         "%s%% of the packets went missing. On a wired network that points at a cable or a port; on Wi-Fi, at range or interference.": "%s%% of the packets went missing. On a wired network that points at a cable or a port; on Wi-Fi, at range or interference.",
@@ -714,7 +713,9 @@ OC.L10N.register(
         "Drag to put the tools in the order you want": "Drag to put the tools in the order you want",
         "The list of tools": "The list of tools",
         "Drag the tools in the sidebar into the order you work in — or hold Alt and press the up and down arrows. The order is kept for your account.": "Drag the tools in the sidebar into the order you work in — or hold Alt and press the up and down arrows. The order is kept for your account.",
-        "Put them back in the original order": "Put them back in the original order"
+        "Put them back in the original order": "Put them back in the original order",
+        "This device's own page will be shown in full. It can then reach NetBase in this browser, though nothing outside the device windows. Do this only for a device you trust.": "This device's own page will be shown in full. It can then reach NetBase in this browser, though nothing outside the device windows. Do this only for a device you trust.",
+        "Shown in full, because you agreed to it for this device. Click to undo.": "Shown in full, because you agreed to it for this device. Click to undo."
     },
     "nplurals=2; plural=(n != 1);"
 );

@@ -101,32 +101,40 @@ class ProxyController extends Controller {
 	 * this builds the whole thing — permissive towards the page, but still
 	 * nailed to this origin, which is only ever the proxy itself.
 	 */
+	/**
+	 * The device's page has to be allowed to be itself — and nothing else.
+	 *
+	 * Nextcloud's own policy is built for Nextcloud's own code: it pins scripts
+	 * to a nonce a device cannot know. This one is permissive about what the
+	 * page may do and strict about where it may reach: every source is the
+	 * proxy's own path, so whatever the page loads, submits or asks for goes
+	 * back through the proxy. Even shown with an origin of its own, it cannot
+	 * call a Nextcloud endpoint.
+	 */
 	private function policy(): EmptyContentSecurityPolicy {
+		$here = $this->urls->getAbsoluteURL('/apps/netbase/proxy/');
 		$policy = new EmptyContentSecurityPolicy();
 		$policy->allowEvalScript(true);
 		$policy->allowEvalWasm(true);
 		$policy->allowInlineStyle(true);
-		$policy->addAllowedScriptDomain("'self'");
+		$policy->addAllowedScriptDomain($here);
 		$policy->addAllowedScriptDomain("'unsafe-inline'");
-		$policy->addAllowedStyleDomain("'self'");
+		$policy->addAllowedStyleDomain($here);
 		$policy->addAllowedStyleDomain("'unsafe-inline'");
-		foreach (["'self'", 'data:', 'blob:'] as $source) {
+		foreach ([$here, 'data:', 'blob:'] as $source) {
 			$policy->addAllowedImageDomain($source);
 			$policy->addAllowedMediaDomain($source);
 			$policy->addAllowedFontDomain($source);
 			$policy->addAllowedObjectDomain($source);
 		}
-		$policy->addAllowedConnectDomain("'self'");
-		$policy->addAllowedFrameDomain("'self'");
-		$policy->addAllowedChildSrcDomain("'self'");
-		$policy->addAllowedWorkerSrcDomain("'self'");
+		$policy->addAllowedConnectDomain($here);
+		$policy->addAllowedFrameDomain($here);
+		$policy->addAllowedChildSrcDomain($here);
+		$policy->addAllowedWorkerSrcDomain($here);
 		$policy->addAllowedWorkerSrcDomain('blob:');
-		$policy->addAllowedFormActionDomain("'self'");
-		// The window runs without an origin of its own, so it does not count as
-		// 'self' to its own frames — a device page built out of frames would be
-		// refused by anything narrower. What guards this address is the signed
-		// ticket in it, not who is showing it.
-		$policy->addAllowedFrameAncestorDomain('*');
+		$policy->addAllowedFormActionDomain($here);
+		// The window itself is inside NetBase, which is this origin.
+		$policy->addAllowedFrameAncestorDomain("'self'");
 		return $policy;
 	}
 

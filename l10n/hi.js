@@ -699,7 +699,6 @@ OC.L10N.register(
         "Fill the screen": "पूरी स्क्रीन",
         "This page is built from frames, which a window kept away from Nextcloud cannot load.": "यह पृष्ठ फ़्रेम से बना है, जिन्हें Nextcloud से अलग रखी विंडो लोड नहीं कर सकती।",
         "Show it anyway": "फिर भी दिखाएँ",
-        "A page shown this way runs with the same rights as NetBase itself. Only do this for a device you trust.": "इस तरह दिखाया गया पृष्ठ NetBase जितने ही अधिकारों से चलता है। केवल भरोसेमंद उपकरण के लिए ऐसा करें।",
         "No answer at all — the name may not resolve, or nothing on the way let the request through.": "कोई उत्तर नहीं — या तो नाम हल नहीं होता, या रास्ते में अनुरोध रोक दिया गया।",
         "Nothing came back. Many devices and firewalls ignore ping while still answering on a port, so try the TCP check before calling it offline.": "कुछ भी वापस नहीं आया। कई उपकरण और फ़ायरवॉल ping को अनदेखा करते हैं पर पोर्ट पर उत्तर देते हैं — ऑफ़लाइन मानने से पहले TCP जाँच करें।",
         "%s%% of the packets went missing. On a wired network that points at a cable or a port; on Wi-Fi, at range or interference.": "%s%% पैकेट खो गए। तार वाले नेटवर्क में यह केबल या पोर्ट की ओर, और वाई-फ़ाई में दूरी या व्यवधान की ओर इशारा करता है।",
@@ -714,7 +713,9 @@ OC.L10N.register(
         "Drag to put the tools in the order you want": "औज़ारों को मनचाहे क्रम में लगाने हेतु खींचें",
         "The list of tools": "औज़ारों की सूची",
         "Drag the tools in the sidebar into the order you work in — or hold Alt and press the up and down arrows. The order is kept for your account.": "बग़ल की पट्टी में औज़ारों को अपने काम के क्रम में खींचें — या Alt दबाकर ऊपर-नीचे तीर दबाएँ। क्रम आपके खाते के लिए सहेजा जाता है।",
-        "Put them back in the original order": "मूल क्रम में लौटाएँ"
+        "Put them back in the original order": "मूल क्रम में लौटाएँ",
+        "This device's own page will be shown in full. It can then reach NetBase in this browser, though nothing outside the device windows. Do this only for a device you trust.": "इस उपकरण का पृष्ठ पूरा दिखाया जाएगा। तब वह इस ब्राउज़र में NetBase तक पहुँच सकता है, पर उपकरण खिड़कियों के बाहर कुछ नहीं। केवल भरोसेमंद उपकरण के लिए करें।",
+        "Shown in full, because you agreed to it for this device. Click to undo.": "आपने इस उपकरण हेतु सहमति दी थी, इसलिए पूरा दिखाया जा रहा है। पूर्ववत करने हेतु क्लिक करें।"
     },
     "nplurals=2; plural=(n != 1);"
 );
