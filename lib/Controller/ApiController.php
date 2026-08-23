@@ -9,6 +9,7 @@ use OCA\NetBase\Db\DeviceMapper;
 use OCA\NetBase\Db\ScanMapper;
 use OCA\NetBase\Service\BenchmarkService;
 use OCA\NetBase\Service\BrowserService;
+use OCA\NetBase\Service\ProxyService;
 use OCA\NetBase\Service\DiscoveryService;
 use OCA\NetBase\Service\DnsService;
 use OCA\NetBase\Service\EndpointService;
@@ -32,6 +33,7 @@ use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IConfig;
 use OCP\IRequest;
+use OCP\IURLGenerator;
 use Psr\Log\LoggerInterface;
 
 class ApiController extends Controller {
@@ -50,6 +52,8 @@ class ApiController extends Controller {
 		private SshService $ssh,
 		private DnsService $dnsService,
 		private BrowserService $browser,
+		private ProxyService $proxy,
+		private IURLGenerator $urls,
 		private OuiService $oui,
 		private ExecService $exec,
 		private PermissionService $permissions,
@@ -432,6 +436,13 @@ class ApiController extends Controller {
 	}
 
 
+	/** The user's own Nextcloud files, for choosing a key, a source or a target. */
+	#[NoAdminRequired]
+	#[UserRateLimit(limit: 240, period: 60)]
+	public function nextcloudFiles(string $path = '', bool $foldersOnly = false): JSONResponse {
+		return $this->guardAny(fn () => $this->transfer->browseNextcloud($this->uid(), $path, $foldersOnly), ['files', 'mail', 'sshexec']);
+	}
+
 	// ---------------------------------------------------------------- mail
 
 	#[NoAdminRequired]
@@ -454,14 +465,52 @@ class ApiController extends Controller {
 
 	#[NoAdminRequired]
 	#[UserRateLimit(limit: 10, period: 300)]
-	public function mailSend(int $id, string $to, string $subject = '', string $body = ''): JSONResponse {
-		return $this->guard(fn () => $this->mail->send($this->endpoints->get($id, $this->uid()), $to, $subject, $body), 'mail');
+	public function mailSend(string $to, int $id = 0, string $subject = '', string $body = '', array $connection = []): JSONResponse {
+		return $this->guard(fn () => $this->mail->send($this->endpointFor($id, $connection), $to, $subject, $body), 'mail');
+	}
+
+	/** Sign in to a mailbox, saved or just typed in. */
+	#[NoAdminRequired]
+	#[UserRateLimit(limit: 30, period: 60)]
+	public function mailLogin(int $id = 0, array $connection = []): JSONResponse {
+		return $this->guard(fn () => $this->mail->login($this->endpointFor($id, $connection)), 'mail');
 	}
 
 	#[NoAdminRequired]
 	#[UserRateLimit(limit: 30, period: 60)]
 	public function mailBlocklist(string $ip): JSONResponse {
 		return $this->guard(fn () => ['ip' => $ip, 'results' => $this->mail->blocklists($ip)], 'mail');
+	}
+
+	// ---------------------------------------------------------------- device windows
+
+	/**
+	 * Hand back the address of a window that shows one device's own web page.
+	 *
+	 * The window is served by this server, so it works from anywhere the
+	 * Nextcloud does — which a link to 192.168.x.y never would. Whether the
+	 * address may be opened at all is settled here, once, and the answer is
+	 * carried in the ticket.
+	 */
+	#[NoAdminRequired]
+	public function proxyTicket(string $base) {
+		try {
+			$this->permissions->require('preview');
+			$token = $this->proxy->issue($base, (string)$this->permissions->uid());
+		} catch (\InvalidArgumentException $e) {
+			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_BAD_REQUEST);
+		} catch (\RuntimeException $e) {
+			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_FORBIDDEN);
+		} catch (\Throwable $e) {
+			$this->logger->error('NetBase: ' . $e->getMessage(), ['exception' => $e, 'app' => 'netbase']);
+			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_INTERNAL_SERVER_ERROR);
+		}
+		// The trailing slash matters: everything the device page points at is
+		// resolved against this address, and without it the last segment — the
+		// ticket itself — would be replaced instead of appended to.
+		return new JSONResponse([
+			'url' => rtrim($this->urls->linkToRoute('netbase.proxy.open', ['token' => $token, 'path' => '']), '/') . '/',
+		]);
 	}
 
 	// ---------------------------------------------------------------- page preview
@@ -499,21 +548,21 @@ class ApiController extends Controller {
 
 	#[NoAdminRequired]
 	#[UserRateLimit(limit: 60, period: 60)]
-	public function sshRun(int $id, string $command): JSONResponse {
-		return $this->guard(fn () => $this->ssh->run($this->endpoints->get($id, $this->uid()), $command), 'sshexec');
+	public function sshRun(string $command, int $id = 0, array $connection = []): JSONResponse {
+		return $this->guard(fn () => $this->ssh->run($this->endpointFor($id, $connection), $command), 'sshexec');
 	}
 
 	/** One line typed into the console window. */
 	#[NoAdminRequired]
 	#[UserRateLimit(limit: 240, period: 60)]
-	public function sshShell(int $id, string $command, string $cwd = ''): JSONResponse {
-		return $this->guard(fn () => $this->ssh->shell($this->endpoints->get($id, $this->uid()), $command, $cwd), 'sshexec');
+	public function sshShell(string $command, int $id = 0, string $cwd = '', array $connection = []): JSONResponse {
+		return $this->guard(fn () => $this->ssh->shell($this->endpointFor($id, $connection), $command, $cwd), 'sshexec');
 	}
 
 	#[NoAdminRequired]
 	#[UserRateLimit(limit: 60, period: 60)]
-	public function sshPreset(int $id, string $preset): JSONResponse {
-		return $this->guard(fn () => $this->ssh->preset($this->endpoints->get($id, $this->uid()), $preset), 'sshexec');
+	public function sshPreset(string $preset, int $id = 0, array $connection = []): JSONResponse {
+		return $this->guard(fn () => $this->ssh->preset($this->endpointFor($id, $connection), $preset), 'sshexec');
 	}
 
 	// ---------------------------------------------------------------- DNS in depth
