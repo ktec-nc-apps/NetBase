@@ -18,7 +18,7 @@ Discovery needs no root, no agent and no extra packages. Nextcloud runs unprivil
 - **Ping, traceroute, TCP port check** with banner grab and port ranges, plus a TCP ping for hosts that drop ICMP, path-MTU discovery, and Wake-on-LAN.
 - **TLS and HTTP inspector** — certificate subject, issuer, expiry, SANs and chain; which TLS versions the server still accepts; the redirect chain and a security-header assessment.
 - **Subnet calculator** for IPv4 and IPv6, splitting a network into smaller ones and combining scattered addresses into the fewest CIDR blocks.
-- **Server network information** — interfaces, addresses, routes, resolvers and listening sockets.
+- **This server's own network** — interfaces, addresses, routes, resolvers and listening sockets, shown inside **System information** (administrators).
 - **nmap front end** — presets from host discovery to service detection, with results parsed from nmap's XML output. Available when nmap is installed.
 - **Mail server testing** — the DNS side of a domain (MX, SPF, DKIM, DMARC, MTA-STS, DANE, blocklists) and the servers themselves (SMTP, IMAP, POP3), ending in a plain-language list of what to fix.
 - **FTP and SFTP** — browse a remote server and move files between it and your own Nextcloud folders, with the connection details saved and encrypted.
@@ -64,7 +64,7 @@ Two halves, deliberately separate.
 
 **The command half signs in** to a saved connection with its password or private key and runs one command, returning the output and the exit status. Presets cover the questions asked most often — a system snapshot, disk usage, failed services and recent errors, network configuration, listening sockets, pending updates, who is logged in and who failed — and there is a free-form command box next to them.
 
-There is no terminal, and that is not an oversight: PHP-FPM ends every request, so a shell session cannot outlive one. A command that runs, finishes and returns its output is what can be done honestly here.
+**The console** is a window that behaves like a shell. PHP-FPM ends every request, so a session cannot be held open; instead each line reconnects and carries the working directory across, which is enough for `cd`, `ls`, `tail`, `systemctl` and everything else that finishes on its own. Command history is on the arrow keys, `clear` and `exit` work. What it cannot do is run a program that expects a terminal — `vi`, `top`, an interactive password prompt — because there is nothing on the other end to type into.
 
 ## Files: FTP and SFTP
 
@@ -155,7 +155,7 @@ Nextcloud 用のネットワーク総合ツールです。LAN上の機器を高�
 - **ping・traceroute・TCPポート確認**（バナー取得・ポート範囲指定）に加え、ICMPが通らない相手向けの **TCP ping**、**経路MTUの測定**、**Wake-on-LAN**。
 - **TLS・HTTP検査** ― 証明書のサブジェクト・発行者・有効期限・SAN・チェーンに加え、受け付けているTLSバージョンの一覧、リダイレクト連鎖とセキュリティヘッダーの評価。
 - **サブネット計算**（IPv4／IPv6）。ネットワークの分割、散らばったアドレスの最小CIDRへの集約にも対応します。
-- **サーバーのネットワーク情報** ― インターフェース・アドレス・経路・DNSサーバー・待受ソケット。
+- **このサーバー自身のネットワーク情報** ― インターフェース・アドレス・経路・DNSサーバー・待受ソケット。**システム情報**の中に表示します（管理者向け）。
 - **nmap のフロントエンド** ― ホスト探索からサービス判定までのプリセットを用意し、結果は nmap の XML 出力を解析して表示します。nmap 導入時に利用できます。
 - **メールサーバー検査** ― ドメイン側の設定（MX・SPF・DKIM・DMARC・MTA-STS・DANE・ブロックリスト）とサーバー本体（SMTP・IMAP・POP3）を調べ、「何を直すべきか」を平易な文章で提示します。
 - **FTP・SFTP** ― リモートサーバーを閲覧し、Nextcloud内のフォルダーとの間でファイルを受け渡します。接続情報は暗号化して保存できます。
@@ -201,7 +201,7 @@ Nextcloud 用のネットワーク総合ツールです。LAN上の機器を高�
 
 **コマンド実行は**、保存済み接続先へパスワードまたは秘密鍵でサインインし、コマンドを1つ実行して出力と終了コードを返します。よく使う確認はプリセットにしてあります（システム概況・ディスク使用状況・失敗したサービスと直近のエラー・ネットワーク設定・待受ソケット・未適用の更新・ログイン状況）。自由入力の欄も併設しています。
 
-ターミナルは用意していません。これは手抜きではなく、PHP-FPMがリクエストごとに終了する以上、シェルセッションを維持できないためです。実行して終了し、出力を返すコマンド ― ここで誠実に提供できるのはその形です。
+**コンソール**は、シェルのように使えるウィンドウです。PHP-FPMはリクエストごとに終了するためセッションは保持できません。そこで1行ごとに接続し直し、カレントディレクトリを引き継ぐ方式にしました。`cd`・`ls`・`tail`・`systemctl` など、自分で終了するコマンドはこれで十分に動きます。コマンド履歴は上下キー、`clear` と `exit` も使えます。できないのは本物の端末を必要とするもの（`vi`・`top`・対話的なパスワード入力）です。入力を受け取る端末がそこに無いためです。
 
 ## ファイル: FTP・SFTP
 

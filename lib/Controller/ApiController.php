@@ -351,17 +351,17 @@ class ApiController extends Controller {
 			'connections' => $this->endpoints->list($this->uid()),
 			'kinds' => EndpointService::KINDS,
 			'capabilities' => $this->transfer->capabilities(),
-		], ['files', 'mail']);
+		], ['files', 'mail', 'sshexec']);
 	}
 
 	#[NoAdminRequired]
 	public function saveConnection(array $connection = []): JSONResponse {
-		return $this->guardAny(fn () => ['connection' => $this->endpoints->save($this->uid(), $connection)], ['files', 'mail']);
+		return $this->guardAny(fn () => ['connection' => $this->endpoints->save($this->uid(), $connection)], ['files', 'mail', 'sshexec']);
 	}
 
 	#[NoAdminRequired]
 	public function updateConnection(int $id, array $connection = []): JSONResponse {
-		return $this->guardAny(fn () => ['connection' => $this->endpoints->save($this->uid(), $connection, $id)], ['files', 'mail']);
+		return $this->guardAny(fn () => ['connection' => $this->endpoints->save($this->uid(), $connection, $id)], ['files', 'mail', 'sshexec']);
 	}
 
 	#[NoAdminRequired]
@@ -369,7 +369,7 @@ class ApiController extends Controller {
 		return $this->guardAny(function () use ($id) {
 			$this->endpoints->delete($id, $this->uid());
 			return ['ok' => true];
-		}, ['files', 'mail']);
+		}, ['files', 'mail', 'sshexec']);
 	}
 
 	/** One button that means the right thing for whichever kind of server it is. */
@@ -389,7 +389,7 @@ class ApiController extends Controller {
 			}
 			$this->permissions->require('ssh');
 			return $this->probe->ssh((string)$endpoint->getHost(), (int)$endpoint->getPort() ?: 22);
-		}, ['files', 'mail']);
+		}, ['files', 'mail', 'sshexec']);
 	}
 
 	// ---------------------------------------------------------------- file transfer
@@ -503,6 +503,13 @@ class ApiController extends Controller {
 		return $this->guard(fn () => $this->ssh->run($this->endpoints->get($id, $this->uid()), $command), 'sshexec');
 	}
 
+	/** One line typed into the console window. */
+	#[NoAdminRequired]
+	#[UserRateLimit(limit: 240, period: 60)]
+	public function sshShell(int $id, string $command, string $cwd = ''): JSONResponse {
+		return $this->guard(fn () => $this->ssh->shell($this->endpoints->get($id, $this->uid()), $command, $cwd), 'sshexec');
+	}
+
 	#[NoAdminRequired]
 	#[UserRateLimit(limit: 60, period: 60)]
 	public function sshPreset(int $id, string $preset): JSONResponse {
@@ -582,7 +589,7 @@ class ApiController extends Controller {
 	#[NoAdminRequired]
 	#[UserRateLimit(limit: 60, period: 60)]
 	public function probeNtp(string $host = 'pool.ntp.org'): JSONResponse {
-		return $this->guard(fn () => $this->probe->ntp($host), 'ssh');
+		return $this->guard(fn () => $this->probe->ntp($host), 'ntp');
 	}
 
 	// ---------------------------------------------------------------- languages

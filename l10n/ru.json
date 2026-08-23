@@ -482,7 +482,6 @@
         "SSH": "SSH",
         "Mail — domain policy audit, server tests and test messages": "Почта — проверка политики домена, проверка серверов и тестовые письма",
         "FTP and SFTP — browse remote servers and move files": "FTP и SFTP — просмотр удалённых серверов и перемещение файлов",
-        "SSH, Telnet and NTP — service probes without signing in": "SSH, Telnet и NTP — опрос служб без входа",
         "Sign in with": "Способ входа",
         "Private key": "Закрытый ключ",
         "Private key (leave blank to keep)": "Закрытый ключ (оставьте пустым, чтобы сохранить прежний)",
@@ -611,7 +610,6 @@
         "Run command": "Выполнить команду",
         "SSH commands — run commands on a saved connection": "Команды SSH — выполнение команд на сохранённом подключении",
         "Sign-in was refused for %s@%s. Check the user name and the password or key.": "Вход для %s@%s отклонён. Проверьте имя пользователя и пароль или ключ.",
-        "Signs in to a saved SSH connection with its password or private key and runs one command. There is no terminal: PHP ends every request, so a shell session cannot outlive one.": "Входит в сохранённое подключение SSH по паролю или закрытому ключу и выполняет одну команду. Терминала нет: PHP завершает каждый запрос, поэтому сеанс оболочки его не переживёт.",
         "Split": "Разделить",
         "Split into smaller networks": "Разделить на меньшие сети",
         "Strict-Transport-Security is set: %s": "Strict-Transport-Security задан: %s",
@@ -676,7 +674,18 @@
         "🎨 Appearance": "🎨 Оформление",
         "Language": "Язык",
         "Follow Nextcloud": "Как в Nextcloud",
-        "NetBase can speak a different language from the rest of Nextcloud — handy when the interface language and the language you think in are not the same.": "NetBase может говорить на языке, отличном от остального Nextcloud, — удобно, когда язык интерфейса и язык, на котором вы думаете, не совпадают."
+        "NetBase can speak a different language from the rest of Nextcloud — handy when the interface language and the language you think in are not the same.": "NetBase может говорить на языке, отличном от остального Nextcloud, — удобно, когда язык интерфейса и язык, на котором вы думаете, не совпадают.",
+        "Clock check": "Проверка часов",
+        "How far the clock has drifted from a time server": "Насколько часы разошлись с сервером времени",
+        "SSH and Telnet — service probes without signing in": "SSH и Telnet — опрос служб без входа",
+        "Clock check — compare this server's clock with a time server": "Проверка часов — сравнить часы этого сервера с сервером времени",
+        "Open a console": "Открыть консоль",
+        "SSH console": "Консоль SSH",
+        "Clear": "Очистить",
+        "Each line runs on its own connection and the working directory is carried over, so cd, ls and tail behave as expected. Programs that need a real terminal — vi, top, an interactive password prompt — cannot run here.": "Каждая строка выполняется в своём соединении, а рабочий каталог сохраняется, поэтому cd, ls и tail ведут себя как обычно. Программы, которым нужен настоящий терминал (vi, top, интерактивный запрос пароля), здесь работать не будут.",
+        "exit status {n}": "код возврата {n}",
+        "The command could not be run.": "Не удалось выполнить команду.",
+        "Signs in to a saved SSH connection with its password or private key. Run a single command, pick a preset, or open a console that keeps its working directory from one line to the next.": "Входит в сохранённое подключение SSH по паролю или закрытому ключу. Выполните одну команду, выберите готовый набор или откройте консоль, которая переносит рабочий каталог со строки на строку."
     },
     "pluralForm": "nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);"
 }

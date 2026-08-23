@@ -483,7 +483,6 @@ OC.L10N.register(
         "SSH": "SSH",
         "Mail — domain policy audit, server tests and test messages": "Pošta — prověření zásad domény, testy serveru a zkušební zprávy",
         "FTP and SFTP — browse remote servers and move files": "FTP a SFTP — procházení vzdálených serverů a přesun souborů",
-        "SSH, Telnet and NTP — service probes without signing in": "SSH, Telnet a NTP — průzkum služeb bez přihlášení",
         "Sign in with": "Přihlásit se pomocí",
         "Private key": "Soukromý klíč",
         "Private key (leave blank to keep)": "Soukromý klíč (ponechte prázdné pro zachování)",
@@ -612,7 +611,6 @@ OC.L10N.register(
         "Run command": "Spustit příkaz",
         "SSH commands — run commands on a saved connection": "Příkazy SSH — spouštění příkazů na uloženém připojení",
         "Sign-in was refused for %s@%s. Check the user name and the password or key.": "Přihlášení pro %s@%s bylo odmítnuto. Zkontrolujte uživatelské jméno a heslo nebo klíč.",
-        "Signs in to a saved SSH connection with its password or private key and runs one command. There is no terminal: PHP ends every request, so a shell session cannot outlive one.": "Přihlásí se k uloženému připojení SSH heslem nebo soukromým klíčem a spustí jeden příkaz. Terminál k dispozici není: PHP každý požadavek ukončí, takže relace shellu jej nepřežije.",
         "Split": "Rozdělit",
         "Split into smaller networks": "Rozdělit na menší sítě",
         "Strict-Transport-Security is set: %s": "Strict-Transport-Security je nastaveno: %s",
@@ -677,7 +675,18 @@ OC.L10N.register(
         "🎨 Appearance": "🎨 Vzhled",
         "Language": "Jazyk",
         "Follow Nextcloud": "Podle Nextcloudu",
-        "NetBase can speak a different language from the rest of Nextcloud — handy when the interface language and the language you think in are not the same.": "NetBase může mluvit jiným jazykem než zbytek Nextcloudu — hodí se, když jazyk rozhraní a jazyk, ve kterém přemýšlíte, nejsou tytéž."
+        "NetBase can speak a different language from the rest of Nextcloud — handy when the interface language and the language you think in are not the same.": "NetBase může mluvit jiným jazykem než zbytek Nextcloudu — hodí se, když jazyk rozhraní a jazyk, ve kterém přemýšlíte, nejsou tytéž.",
+        "Clock check": "Kontrola hodin",
+        "How far the clock has drifted from a time server": "Jak moc se hodiny liší od časového serveru",
+        "SSH and Telnet — service probes without signing in": "SSH a Telnet — průzkum služeb bez přihlášení",
+        "Clock check — compare this server's clock with a time server": "Kontrola hodin — porovnání hodin tohoto serveru s časovým serverem",
+        "Open a console": "Otevřít konzoli",
+        "SSH console": "Konzole SSH",
+        "Clear": "Vymazat",
+        "Each line runs on its own connection and the working directory is carried over, so cd, ls and tail behave as expected. Programs that need a real terminal — vi, top, an interactive password prompt — cannot run here.": "Každý řádek běží ve vlastním spojení a pracovní adresář se přenáší, takže cd, ls a tail se chovají jako obvykle. Programy, které potřebují skutečný terminál — vi, top, interaktivní dotaz na heslo — zde spustit nelze.",
+        "exit status {n}": "návratový kód {n}",
+        "The command could not be run.": "Příkaz se nepodařilo spustit.",
+        "Signs in to a saved SSH connection with its password or private key. Run a single command, pick a preset, or open a console that keeps its working directory from one line to the next.": "Přihlásí se k uloženému připojení SSH heslem nebo soukromým klíčem. Spusťte jediný příkaz, vyberte připravenou sadu, nebo otevřete konzoli, která si mezi řádky drží pracovní adresář."
     },
     "nplurals=4; plural=(n == 1 && n % 1 == 0) ? 0 : (n >= 2 && n <= 4 && n % 1 == 0) ? 1: (n % 1 != 0 ) ? 2 : 3;"
 );

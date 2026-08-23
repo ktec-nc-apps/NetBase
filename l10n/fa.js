@@ -483,7 +483,6 @@ OC.L10N.register(
         "SSH": "SSH",
         "Mail — domain policy audit, server tests and test messages": "رایانامه — بازبینی سیاست دامنه، آزمون کارسازها و پیام‌های آزمایشی",
         "FTP and SFTP — browse remote servers and move files": "FTP و SFTP — گشت‌وگذار در کارسازهای دور و جابه‌جایی پرونده",
-        "SSH, Telnet and NTP — service probes without signing in": "SSH، Telnet و NTP — کاوش سرویس بدون ورود",
         "Sign in with": "ورود با",
         "Private key": "کلید خصوصی",
         "Private key (leave blank to keep)": "کلید خصوصی (برای نگه‌داشتن، خالی بگذارید)",
@@ -612,7 +611,6 @@ OC.L10N.register(
         "Run command": "اجرای فرمان",
         "SSH commands — run commands on a saved connection": "فرمان‌های SSH — اجرای فرمان روی یک اتصال ذخیره‌شده",
         "Sign-in was refused for %s@%s. Check the user name and the password or key.": "ورود برای %s@%s رد شد. نام کاربری و گذرواژه یا کلید را بررسی کنید.",
-        "Signs in to a saved SSH connection with its password or private key and runs one command. There is no terminal: PHP ends every request, so a shell session cannot outlive one.": "با گذرواژه یا کلید خصوصی به یک اتصال SSH ذخیره‌شده وارد می‌شود و یک فرمان اجرا می‌کند. پایانه‌ای در کار نیست: PHP هر درخواست را پایان می‌دهد، پس نشست پوسته نمی‌تواند از آن دوام بیاورد.",
         "Split": "تقسیم",
         "Split into smaller networks": "تقسیم به شبکه‌های کوچک‌تر",
         "Strict-Transport-Security is set: %s": "Strict-Transport-Security تنظیم شده است: %s",
@@ -677,7 +675,18 @@ OC.L10N.register(
         "🎨 Appearance": "🎨 ظاهر",
         "Language": "زبان",
         "Follow Nextcloud": "پیروی از Nextcloud",
-        "NetBase can speak a different language from the rest of Nextcloud — handy when the interface language and the language you think in are not the same.": "NetBase می‌تواند به زبانی جز بقیهٔ Nextcloud سخن بگوید — وقتی زبان رابط با زبانی که با آن می‌اندیشید یکی نیست به کار می‌آید."
+        "NetBase can speak a different language from the rest of Nextcloud — handy when the interface language and the language you think in are not the same.": "NetBase می‌تواند به زبانی جز بقیهٔ Nextcloud سخن بگوید — وقتی زبان رابط با زبانی که با آن می‌اندیشید یکی نیست به کار می‌آید.",
+        "Clock check": "بررسی ساعت",
+        "How far the clock has drifted from a time server": "ساعت چقدر از کارساز زمان فاصله گرفته است",
+        "SSH and Telnet — service probes without signing in": "SSH و Telnet — کاوش سرویس بدون ورود",
+        "Clock check — compare this server's clock with a time server": "بررسی ساعت — سنجش ساعت این کارساز با کارساز زمان",
+        "Open a console": "گشودن کنسول",
+        "SSH console": "کنسول SSH",
+        "Clear": "پاک‌سازی",
+        "Each line runs on its own connection and the working directory is carried over, so cd, ls and tail behave as expected. Programs that need a real terminal — vi, top, an interactive password prompt — cannot run here.": "هر خط روی اتصال خودش اجرا می‌شود و شاخهٔ کاری منتقل می‌شود، پس cd و ls و tail مثل همیشه رفتار می‌کنند. برنامه‌هایی که به پایانهٔ واقعی نیاز دارند — vi، top، پرسش تعاملی گذرواژه — اینجا اجرا نمی‌شوند.",
+        "exit status {n}": "کد خروج {n}",
+        "The command could not be run.": "فرمان اجرا نشد.",
+        "Signs in to a saved SSH connection with its password or private key. Run a single command, pick a preset, or open a console that keeps its working directory from one line to the next.": "با گذرواژه یا کلید خصوصی به یک اتصال SSH ذخیره‌شده وارد می‌شود. یک فرمان اجرا کنید، یک پیش‌تنظیم برگزینید، یا کنسولی بگشایید که شاخهٔ کاری را از خطی به خط دیگر نگه می‌دارد."
     },
     "nplurals=2; plural=(n > 1);"
 );

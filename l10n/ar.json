@@ -482,7 +482,6 @@
         "SSH": "SSH",
         "Mail — domain policy audit, server tests and test messages": "البريد — تدقيق سياسة النطاق واختبار الخوادم ورسائل الاختبار",
         "FTP and SFTP — browse remote servers and move files": "FTP وSFTP — تصفّح الخوادم البعيدة ونقل الملفات",
-        "SSH, Telnet and NTP — service probes without signing in": "SSH وTelnet وNTP — فحص الخدمات دون تسجيل دخول",
         "Sign in with": "سجّل الدخول بـ",
         "Private key": "مفتاح خاص",
         "Private key (leave blank to keep)": "مفتاح خاص (اتركه فارغًا للإبقاء عليه)",
@@ -611,7 +610,6 @@
         "Run command": "نفّذ الأمر",
         "SSH commands — run commands on a saved connection": "أوامر SSH — تنفيذ أوامر على اتصال محفوظ",
         "Sign-in was refused for %s@%s. Check the user name and the password or key.": "رُفض تسجيل الدخول لـ%s@%s. تحقق من اسم المستخدم وكلمة المرور أو المفتاح.",
-        "Signs in to a saved SSH connection with its password or private key and runs one command. There is no terminal: PHP ends every request, so a shell session cannot outlive one.": "يسجّل الدخول إلى اتصال SSH محفوظ بكلمة مروره أو مفتاحه الخاص وينفّذ أمرًا واحدًا. لا توجد طرفية: إذ ينهي PHP كل طلب، فلا تستطيع جلسة الصدفة أن تتجاوزه.",
         "Split": "قسّم",
         "Split into smaller networks": "قسّم إلى شبكات أصغر",
         "Strict-Transport-Security is set: %s": "‏Strict-Transport-Security مضبوطة: %s",
@@ -676,7 +674,18 @@
         "🎨 Appearance": "🎨 المظهر",
         "Language": "اللغة",
         "Follow Nextcloud": "اتباع Nextcloud",
-        "NetBase can speak a different language from the rest of Nextcloud — handy when the interface language and the language you think in are not the same.": "يستطيع NetBase التحدث بلغة تختلف عن بقية Nextcloud — وهو أمر مفيد حين تختلف لغة الواجهة عن اللغة التي تفكر بها."
+        "NetBase can speak a different language from the rest of Nextcloud — handy when the interface language and the language you think in are not the same.": "يستطيع NetBase التحدث بلغة تختلف عن بقية Nextcloud — وهو أمر مفيد حين تختلف لغة الواجهة عن اللغة التي تفكر بها.",
+        "Clock check": "فحص الساعة",
+        "How far the clock has drifted from a time server": "مقدار انحراف الساعة عن خادم الوقت",
+        "SSH and Telnet — service probes without signing in": "SSH وTelnet — فحص الخدمات دون تسجيل دخول",
+        "Clock check — compare this server's clock with a time server": "فحص الساعة — مقارنة ساعة هذا الخادم بخادم وقت",
+        "Open a console": "فتح وحدة تحكم",
+        "SSH console": "وحدة تحكم SSH",
+        "Clear": "مسح",
+        "Each line runs on its own connection and the working directory is carried over, so cd, ls and tail behave as expected. Programs that need a real terminal — vi, top, an interactive password prompt — cannot run here.": "كل سطر يعمل على اتصال خاص به مع الاحتفاظ بمجلد العمل، لذا تتصرف cd وls وtail كالمعتاد. أما البرامج التي تحتاج طرفية حقيقية — vi وtop وطلب كلمة مرور تفاعلي — فلا تعمل هنا.",
+        "exit status {n}": "رمز الخروج {n}",
+        "The command could not be run.": "تعذّر تنفيذ الأمر.",
+        "Signs in to a saved SSH connection with its password or private key. Run a single command, pick a preset, or open a console that keeps its working directory from one line to the next.": "يسجّل الدخول إلى اتصال SSH محفوظ بكلمة مروره أو مفتاحه الخاص. نفّذ أمرًا واحدًا، أو اختر إعدادًا جاهزًا، أو افتح وحدة تحكم تحتفظ بمجلد العمل من سطر إلى آخر."
     },
     "pluralForm": "nplurals=6; plural=(n==0 ? 0 : n==1 ? 1 : n==2 ? 2 : n%100>=3 && n%100<=10 ? 3 : n%100>=11 && n%100<=99 ? 4 : 5);"
 }

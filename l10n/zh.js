@@ -483,7 +483,6 @@ OC.L10N.register(
         "SSH": "SSH",
         "Mail — domain policy audit, server tests and test messages": "邮件 — 域名策略审查、服务器检测与测试邮件",
         "FTP and SFTP — browse remote servers and move files": "FTP 与 SFTP — 浏览远程服务器并传输文件",
-        "SSH, Telnet and NTP — service probes without signing in": "SSH、Telnet 与 NTP — 无需登录的服务探测",
         "Sign in with": "登录方式",
         "Private key": "私钥",
         "Private key (leave blank to keep)": "私钥（留空则保持不变）",
@@ -612,7 +611,6 @@ OC.L10N.register(
         "Run command": "执行命令",
         "SSH commands — run commands on a saved connection": "SSH 命令 — 在已保存的连接上执行命令",
         "Sign-in was refused for %s@%s. Check the user name and the password or key.": "%s@%s 的登录被拒绝。请检查用户名与密码或密钥。",
-        "Signs in to a saved SSH connection with its password or private key and runs one command. There is no terminal: PHP ends every request, so a shell session cannot outlive one.": "使用密码或私钥登录已保存的 SSH 连接并执行一条命令。这里没有终端：PHP 在每个请求结束时终止，shell 会话无法延续。",
         "Split": "拆分",
         "Split into smaller networks": "拆分为更小的网段",
         "Strict-Transport-Security is set: %s": "已设置 Strict-Transport-Security：%s",
@@ -677,7 +675,18 @@ OC.L10N.register(
         "🎨 Appearance": "🎨 外观",
         "Language": "语言",
         "Follow Nextcloud": "跟随 Nextcloud",
-        "NetBase can speak a different language from the rest of Nextcloud — handy when the interface language and the language you think in are not the same.": "NetBase 可以使用与 Nextcloud 其余部分不同的语言——当界面语言与您思考时使用的语言不同，这会很方便。"
+        "NetBase can speak a different language from the rest of Nextcloud — handy when the interface language and the language you think in are not the same.": "NetBase 可以使用与 Nextcloud 其余部分不同的语言——当界面语言与您思考时使用的语言不同，这会很方便。",
+        "Clock check": "时钟检查",
+        "How far the clock has drifted from a time server": "时钟与授时服务器相差多少",
+        "SSH and Telnet — service probes without signing in": "SSH 与 Telnet — 无需登录的服务探测",
+        "Clock check — compare this server's clock with a time server": "时钟检查 — 将本服务器的时钟与授时服务器比较",
+        "Open a console": "打开控制台",
+        "SSH console": "SSH 控制台",
+        "Clear": "清空",
+        "Each line runs on its own connection and the working directory is carried over, so cd, ls and tail behave as expected. Programs that need a real terminal — vi, top, an interactive password prompt — cannot run here.": "每一行都在各自的连接中执行，并保留当前目录，因此 cd、ls、tail 的表现与平常一致。需要真实终端的程序（vi、top、交互式密码提示）在这里无法运行。",
+        "exit status {n}": "退出码 {n}",
+        "The command could not be run.": "无法执行该命令。",
+        "Signs in to a saved SSH connection with its password or private key. Run a single command, pick a preset, or open a console that keeps its working directory from one line to the next.": "使用密码或私钥登录已保存的 SSH 连接。可执行单条命令、选择预设，或打开一个在各行之间保留当前目录的控制台。"
     },
     "nplurals=1; plural=0;"
 );

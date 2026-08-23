@@ -18,7 +18,7 @@ Features:
 - Ping, traceroute, TCP port check with banner grab, and Wake-on-LAN
 - TLS certificate and HTTP header inspector, including expiry and redirect chains
 - Subnet calculator for IPv4 and IPv6
-- Server network information — interfaces, addresses, routes, listening sockets and public IP
+- This server's own network information — interfaces, routes, resolvers and listening sockets, inside System information
 - nmap front end with presets and a strict argument allow-list, when nmap is installed
 - Available in twenty languages: English, Japanese, German, Spanish, French, Italian, Portuguese, Russian, Chinese, Korean, Arabic, Hindi, Turkish, Indonesian, Vietnamese, Thai, Persian, Polish, Ukrainian and Czech]]></description>
 	<description lang="ja"><![CDATA[NetBaseは、Nextcloudをネットワーク管理コンソールに変えるアプリです。LAN上の機器を数秒で洗い出し、それぞれが何であるかを提示したうえで、日常的に使う調査ツールを同じ画面に揃えます。
@@ -35,10 +35,10 @@ Features:
 - ping・traceroute・TCPポート確認（バナー取得）・Wake-on-LAN
 - TLS証明書とHTTPヘッダーの検査 ― 有効期限やリダイレクト連鎖を含む
 - IPv4／IPv6対応のサブネット計算
-- サーバーのネットワーク情報 ― インターフェース・アドレス・経路・待受ソケット・グローバルIP
+- このサーバー自身のネットワーク情報 ― インターフェース・経路・DNSサーバー・待受ソケット（システム情報の中に表示）
 - nmapのフロントエンド ― プリセットと厳格な引数許可リスト（nmap導入時）
 - 20言語に対応（英語・日本語・ドイツ語・スペイン語・フランス語・イタリア語・ポルトガル語・ロシア語・中国語・韓国語・アラビア語・ヒンディー語・トルコ語・インドネシア語・ベトナム語・タイ語・ペルシャ語・ポーランド語・ウクライナ語・チェコ語）]]></description>
-	<version>0.1.53</version>
+	<version>0.1.56</version>
 	<licence>agpl</licence>
 	<author>KTEC</author>
 	<namespace>NetBase</namespace>

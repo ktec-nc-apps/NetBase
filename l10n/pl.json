@@ -482,7 +482,6 @@
         "SSH": "SSH",
         "Mail — domain policy audit, server tests and test messages": "Poczta — audyt polityki domeny, testy serwera i wiadomości testowe",
         "FTP and SFTP — browse remote servers and move files": "FTP i SFTP — przeglądanie zdalnych serwerów i przenoszenie plików",
-        "SSH, Telnet and NTP — service probes without signing in": "SSH, Telnet i NTP — badanie usług bez logowania",
         "Sign in with": "Zaloguj się przez",
         "Private key": "Klucz prywatny",
         "Private key (leave blank to keep)": "Klucz prywatny (pozostaw puste, aby zachować)",
@@ -611,7 +610,6 @@
         "Run command": "Uruchom polecenie",
         "SSH commands — run commands on a saved connection": "Polecenia SSH — uruchamianie poleceń na zapisanym połączeniu",
         "Sign-in was refused for %s@%s. Check the user name and the password or key.": "Odmowa logowania dla %s@%s. Sprawdź nazwę użytkownika oraz hasło lub klucz.",
-        "Signs in to a saved SSH connection with its password or private key and runs one command. There is no terminal: PHP ends every request, so a shell session cannot outlive one.": "Loguje się do zapisanego połączenia SSH hasłem lub kluczem prywatnym i uruchamia jedno polecenie. Nie ma terminala: PHP kończy każde żądanie, więc sesja powłoki nie może go przetrwać.",
         "Split": "Podziel",
         "Split into smaller networks": "Podziel na mniejsze sieci",
         "Strict-Transport-Security is set: %s": "Strict-Transport-Security jest ustawiony: %s",
@@ -676,7 +674,18 @@
         "🎨 Appearance": "🎨 Wygląd",
         "Language": "Język",
         "Follow Nextcloud": "Za Nextcloud",
-        "NetBase can speak a different language from the rest of Nextcloud — handy when the interface language and the language you think in are not the same.": "NetBase może mówić innym językiem niż reszta Nextcloud — przydaje się, gdy język interfejsu i język, w którym się myśli, to nie to samo."
+        "NetBase can speak a different language from the rest of Nextcloud — handy when the interface language and the language you think in are not the same.": "NetBase może mówić innym językiem niż reszta Nextcloud — przydaje się, gdy język interfejsu i język, w którym się myśli, to nie to samo.",
+        "Clock check": "Sprawdzenie zegara",
+        "How far the clock has drifted from a time server": "O ile zegar odbiegł od serwera czasu",
+        "SSH and Telnet — service probes without signing in": "SSH i Telnet — badanie usług bez logowania",
+        "Clock check — compare this server's clock with a time server": "Sprawdzenie zegara — porównanie zegara tego serwera z serwerem czasu",
+        "Open a console": "Otwórz konsolę",
+        "SSH console": "Konsola SSH",
+        "Clear": "Wyczyść",
+        "Each line runs on its own connection and the working directory is carried over, so cd, ls and tail behave as expected. Programs that need a real terminal — vi, top, an interactive password prompt — cannot run here.": "Każdy wiersz działa na własnym połączeniu, a katalog roboczy jest przenoszony, więc cd, ls i tail zachowują się jak zwykle. Programy wymagające prawdziwego terminala — vi, top, interaktywne pytanie o hasło — tutaj nie zadziałają.",
+        "exit status {n}": "kod wyjścia {n}",
+        "The command could not be run.": "Nie udało się uruchomić polecenia.",
+        "Signs in to a saved SSH connection with its password or private key. Run a single command, pick a preset, or open a console that keeps its working directory from one line to the next.": "Loguje się do zapisanego połączenia SSH hasłem lub kluczem prywatnym. Uruchom pojedyncze polecenie, wybierz gotowy zestaw albo otwórz konsolę, która zachowuje katalog roboczy z wiersza na wiersz."
     },
     "pluralForm": "nplurals=4; plural=(n==1 ? 0 : (n%10>=2 && n%10<=4) && (n%100<12 || n%100>14) ? 1 : n!=1 && (n%10>=0 && n%10<=1) || (n%10>=5 && n%10<=9) || (n%100>=12 && n%100<=14) ? 2 : 3);"
 }

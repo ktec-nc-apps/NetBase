@@ -482,7 +482,6 @@
         "SSH": "SSH",
         "Mail — domain policy audit, server tests and test messages": "Posta — alan adı ilkesi denetimi, sunucu sınamaları ve sınama iletileri",
         "FTP and SFTP — browse remote servers and move files": "FTP ve SFTP — uzak sunuculara göz atmak ve dosya taşımak",
-        "SSH, Telnet and NTP — service probes without signing in": "SSH, Telnet ve NTP — oturum açmadan hizmet yoklamaları",
         "Sign in with": "Şununla oturum aç",
         "Private key": "Özel anahtar",
         "Private key (leave blank to keep)": "Özel anahtar (korumak için boş bırakın)",
@@ -611,7 +610,6 @@
         "Run command": "Komutu çalıştır",
         "SSH commands — run commands on a saved connection": "SSH komutları — kayıtlı bir bağlantıda komut çalıştırmak",
         "Sign-in was refused for %s@%s. Check the user name and the password or key.": "%s@%s için oturum açma geri çevrildi. Kullanıcı adını ve parolayı ya da anahtarı denetleyin.",
-        "Signs in to a saved SSH connection with its password or private key and runs one command. There is no terminal: PHP ends every request, so a shell session cannot outlive one.": "Kayıtlı bir SSH bağlantısına parolası veya özel anahtarıyla girer ve bir komut çalıştırır. Uçbirim yoktur: PHP her isteği sonlandırır, bu yüzden bir kabuk oturumu ondan uzun yaşayamaz.",
         "Split": "Böl",
         "Split into smaller networks": "Daha küçük ağlara böl",
         "Strict-Transport-Security is set: %s": "Strict-Transport-Security ayarlı: %s",
@@ -676,7 +674,18 @@
         "🎨 Appearance": "🎨 Görünüm",
         "Language": "Dil",
         "Follow Nextcloud": "Nextcloud'u izle",
-        "NetBase can speak a different language from the rest of Nextcloud — handy when the interface language and the language you think in are not the same.": "NetBase, Nextcloud'un geri kalanından farklı bir dil konuşabilir — arayüz dili ile düşündüğünüz dil aynı olmadığında işe yarar."
+        "NetBase can speak a different language from the rest of Nextcloud — handy when the interface language and the language you think in are not the same.": "NetBase, Nextcloud'un geri kalanından farklı bir dil konuşabilir — arayüz dili ile düşündüğünüz dil aynı olmadığında işe yarar.",
+        "Clock check": "Saat denetimi",
+        "How far the clock has drifted from a time server": "Saatin bir zaman sunucusundan ne kadar kaydığı",
+        "SSH and Telnet — service probes without signing in": "SSH ve Telnet — oturum açmadan hizmet yoklamaları",
+        "Clock check — compare this server's clock with a time server": "Saat denetimi — bu sunucunun saatini bir zaman sunucusuyla karşılaştırmak",
+        "Open a console": "Konsol aç",
+        "SSH console": "SSH konsolu",
+        "Clear": "Temizle",
+        "Each line runs on its own connection and the working directory is carried over, so cd, ls and tail behave as expected. Programs that need a real terminal — vi, top, an interactive password prompt — cannot run here.": "Her satır kendi bağlantısında çalışır ve çalışma dizini taşınır; bu yüzden cd, ls ve tail beklendiği gibi davranır. Gerçek bir uçbirim isteyen programlar (vi, top, etkileşimli parola sorusu) burada çalışamaz.",
+        "exit status {n}": "çıkış kodu {n}",
+        "The command could not be run.": "Komut çalıştırılamadı.",
+        "Signs in to a saved SSH connection with its password or private key. Run a single command, pick a preset, or open a console that keeps its working directory from one line to the next.": "Kayıtlı bir SSH bağlantısına parolası veya özel anahtarıyla girer. Tek bir komut çalıştırın, hazır bir ayar seçin ya da çalışma dizinini satırdan satıra koruyan bir konsol açın."
     },
     "pluralForm": "nplurals=2; plural=(n > 1);"
 }

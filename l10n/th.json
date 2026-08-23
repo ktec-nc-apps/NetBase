@@ -482,7 +482,6 @@
         "SSH": "SSH",
         "Mail — domain policy audit, server tests and test messages": "เมล — ตรวจนโยบายโดเมน ทดสอบเซิร์ฟเวอร์ และข้อความทดสอบ",
         "FTP and SFTP — browse remote servers and move files": "FTP และ SFTP — เรียกดูเซิร์ฟเวอร์ระยะไกลและย้ายไฟล์",
-        "SSH, Telnet and NTP — service probes without signing in": "SSH, Telnet และ NTP — ตรวจบริการโดยไม่ต้องลงชื่อเข้าใช้",
         "Sign in with": "ลงชื่อเข้าใช้ด้วย",
         "Private key": "กุญแจส่วนตัว",
         "Private key (leave blank to keep)": "กุญแจส่วนตัว (เว้นว่างเพื่อคงไว้)",
@@ -611,7 +610,6 @@
         "Run command": "รันคำสั่ง",
         "SSH commands — run commands on a saved connection": "คำสั่ง SSH — รันคำสั่งบนการเชื่อมต่อที่บันทึกไว้",
         "Sign-in was refused for %s@%s. Check the user name and the password or key.": "การลงชื่อเข้าใช้สำหรับ %s@%s ถูกปฏิเสธ ตรวจชื่อผู้ใช้และรหัสผ่านหรือกุญแจ",
-        "Signs in to a saved SSH connection with its password or private key and runs one command. There is no terminal: PHP ends every request, so a shell session cannot outlive one.": "ลงชื่อเข้าใช้การเชื่อมต่อ SSH ที่บันทึกไว้ด้วยรหัสผ่านหรือกุญแจส่วนตัว แล้วรันคำสั่งหนึ่งคำสั่ง ไม่มีเทอร์มินัล เพราะ PHP จบทุกคำขอ เซสชันเชลล์จึงอยู่ต่อไม่ได้",
         "Split": "แบ่ง",
         "Split into smaller networks": "แบ่งเป็นเครือข่ายย่อย",
         "Strict-Transport-Security is set: %s": "ตั้ง Strict-Transport-Security แล้ว: %s",
@@ -676,7 +674,18 @@
         "🎨 Appearance": "🎨 รูปลักษณ์",
         "Language": "ภาษา",
         "Follow Nextcloud": "ตาม Nextcloud",
-        "NetBase can speak a different language from the rest of Nextcloud — handy when the interface language and the language you think in are not the same.": "NetBase ใช้ภาษาต่างจากส่วนอื่นของ Nextcloud ได้ สะดวกเมื่อภาษาของหน้าจอกับภาษาที่คุณใช้คิดไม่ตรงกัน"
+        "NetBase can speak a different language from the rest of Nextcloud — handy when the interface language and the language you think in are not the same.": "NetBase ใช้ภาษาต่างจากส่วนอื่นของ Nextcloud ได้ สะดวกเมื่อภาษาของหน้าจอกับภาษาที่คุณใช้คิดไม่ตรงกัน",
+        "Clock check": "ตรวจนาฬิกา",
+        "How far the clock has drifted from a time server": "นาฬิกาคลาดจากเซิร์ฟเวอร์เวลาเท่าใด",
+        "SSH and Telnet — service probes without signing in": "SSH และ Telnet — ตรวจบริการโดยไม่ต้องลงชื่อเข้าใช้",
+        "Clock check — compare this server's clock with a time server": "ตรวจนาฬิกา — เทียบนาฬิกาของเซิร์ฟเวอร์นี้กับเซิร์ฟเวอร์เวลา",
+        "Open a console": "เปิดคอนโซล",
+        "SSH console": "คอนโซล SSH",
+        "Clear": "ล้าง",
+        "Each line runs on its own connection and the working directory is carried over, so cd, ls and tail behave as expected. Programs that need a real terminal — vi, top, an interactive password prompt — cannot run here.": "แต่ละบรรทัดทำงานบนการเชื่อมต่อของตนเองและสืบทอดไดเรกทอรีปัจจุบัน ดังนั้น cd, ls และ tail จึงทำงานตามปกติ ส่วนโปรแกรมที่ต้องใช้เทอร์มินัลจริง เช่น vi, top หรือการถามรหัสผ่านแบบโต้ตอบ จะทำงานที่นี่ไม่ได้",
+        "exit status {n}": "รหัสสิ้นสุด {n}",
+        "The command could not be run.": "เรียกใช้คำสั่งไม่สำเร็จ",
+        "Signs in to a saved SSH connection with its password or private key. Run a single command, pick a preset, or open a console that keeps its working directory from one line to the next.": "ลงชื่อเข้าใช้การเชื่อมต่อ SSH ที่บันทึกไว้ด้วยรหัสผ่านหรือกุญแจส่วนตัว จะรันคำสั่งเดียว เลือกชุดค่าสำเร็จรูป หรือเปิดคอนโซลที่คงไดเรกทอรีปัจจุบันจากบรรทัดหนึ่งไปยังบรรทัดถัดไปก็ได้"
     },
     "pluralForm": "nplurals=1; plural=0;"
 }

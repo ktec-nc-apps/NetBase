@@ -482,7 +482,6 @@
         "SSH": "SSH",
         "Mail — domain policy audit, server tests and test messages": "Пошта — перевірка політики домену, тестування серверів і тестові листи",
         "FTP and SFTP — browse remote servers and move files": "FTP і SFTP — перегляд віддалених серверів і переміщення файлів",
-        "SSH, Telnet and NTP — service probes without signing in": "SSH, Telnet і NTP — опитування служб без входу",
         "Sign in with": "Спосіб входу",
         "Private key": "Закритий ключ",
         "Private key (leave blank to keep)": "Закритий ключ (залиште порожнім, щоб зберегти)",
@@ -611,7 +610,6 @@
         "Run command": "Виконати команду",
         "SSH commands — run commands on a saved connection": "Команди SSH — виконання команд на збереженому з'єднанні",
         "Sign-in was refused for %s@%s. Check the user name and the password or key.": "Вхід для %s@%s відхилено. Перевірте ім'я користувача та пароль або ключ.",
-        "Signs in to a saved SSH connection with its password or private key and runs one command. There is no terminal: PHP ends every request, so a shell session cannot outlive one.": "Входить до збереженого з'єднання SSH за паролем або закритим ключем і виконує одну команду. Термінала немає: PHP завершує кожен запит, тож сеанс оболонки його не переживе.",
         "Split": "Поділити",
         "Split into smaller networks": "Поділити на менші мережі",
         "Strict-Transport-Security is set: %s": "Strict-Transport-Security задано: %s",
@@ -676,7 +674,18 @@
         "🎨 Appearance": "🎨 Вигляд",
         "Language": "Мова",
         "Follow Nextcloud": "Як у Nextcloud",
-        "NetBase can speak a different language from the rest of Nextcloud — handy when the interface language and the language you think in are not the same.": "NetBase може говорити іншою мовою, ніж решта Nextcloud, — зручно, коли мова інтерфейсу й мова, якою ви думаєте, різні."
+        "NetBase can speak a different language from the rest of Nextcloud — handy when the interface language and the language you think in are not the same.": "NetBase може говорити іншою мовою, ніж решта Nextcloud, — зручно, коли мова інтерфейсу й мова, якою ви думаєте, різні.",
+        "Clock check": "Перевірка годинника",
+        "How far the clock has drifted from a time server": "Наскільки годинник розійшовся із сервером часу",
+        "SSH and Telnet — service probes without signing in": "SSH і Telnet — опитування служб без входу",
+        "Clock check — compare this server's clock with a time server": "Перевірка годинника — порівняння годинника цього сервера із сервером часу",
+        "Open a console": "Відкрити консоль",
+        "SSH console": "Консоль SSH",
+        "Clear": "Очистити",
+        "Each line runs on its own connection and the working directory is carried over, so cd, ls and tail behave as expected. Programs that need a real terminal — vi, top, an interactive password prompt — cannot run here.": "Кожен рядок виконується у власному з'єднанні, а робочий каталог переноситься, тож cd, ls і tail поводяться як звично. Програми, яким потрібен справжній термінал (vi, top, інтерактивний запит пароля), тут не працюють.",
+        "exit status {n}": "код завершення {n}",
+        "The command could not be run.": "Не вдалося виконати команду.",
+        "Signs in to a saved SSH connection with its password or private key. Run a single command, pick a preset, or open a console that keeps its working directory from one line to the next.": "Входить до збереженого з'єднання SSH за паролем або закритим ключем. Виконайте одну команду, оберіть готовий набір або відкрийте консоль, яка переносить робочий каталог із рядка в рядок."
     },
     "pluralForm": "nplurals=4; plural=(n % 1 == 0 && n % 10 == 1 && n % 100 != 11 ? 0 : n % 1 == 0 && n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14) ? 1 : n % 1 == 0 && (n % 10 ==0 || (n % 10 >=5 && n % 10 <=9) || (n % 100 >=11 && n % 100 <=14 )) ? 2: 3);"
 }
