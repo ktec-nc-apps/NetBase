@@ -1498,8 +1498,8 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
           </div>
           <div class="drawer-tools">
             <template v-for="l in webLinks(selected)" :key="l.href">
-              <button class="btn sm" @click="openDeviceWindow(selected, l.port)">🖥 {{ l.label }}</button>
-              <button class="btn sm" v-if="status.preview" @click="showPage(l.href)">🖼 {{ t('Show the page') }}</button>
+              <button class="btn sm" v-if="allowed('preview')" @click="openDeviceWindow(selected, l.port)">🖥 {{ l.label }}</button>
+              <button class="btn sm" v-if="allowed('preview') && status.preview" @click="showPage(l.href)">🖼 {{ t('Show the page') }}</button>
               <a class="btn sm" :href="l.href" target="_blank" rel="noopener noreferrer" :title="t('Only works from inside that network')">↗</a>
             </template>
             <button class="btn sm" v-if="allowed('ping')" @click="toolFor('ping')">📡 {{ t('Ping') }}</button>
@@ -2013,11 +2013,18 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
       },
 
       /** A device's own web interface, when the port says it has one. */
-      portLink(device, port) {
+      /** The device's own address for a web port, whoever is asking. */
+      webUrl(device, port) {
         const scheme = WEB_PORTS[port];
-        if (!scheme || !device.ip) return null;
+        if (!scheme || !device || !device.ip) return null;
         const host = device.ip.includes(':') ? '[' + device.ip + ']' : device.ip;
-        const href = scheme + '://' + host + (port === 80 || port === 443 ? '' : ':' + port);
+        return scheme + '://' + host + (port === 80 || port === 443 ? '' : ':' + port);
+      },
+      portLink(device, port) {
+        // Without the right to open a device page, the number is just a number:
+        // better plain text than a link that can only fail.
+        const href = this.allowed('preview') ? this.webUrl(device, port) : null;
+        if (!href) return null;
         return { href, title: T('Open {url} in a window, through this server', { url: href }) };
       },
       /** Ports NetBase can act on itself, rather than hand to the browser. */
@@ -2082,7 +2089,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         if (!device) return [];
         return (device.ports || []).filter((p) => WEB_PORTS[p]).map((p) => ({
           port: p,
-          href: this.portLink(device, p).href,
+          href: this.webUrl(device, p),
           label: WEB_PORTS[p] === 'https' ? T('Open (HTTPS {port})', { port: p }) : T('Open (HTTP {port})', { port: p }),
         }));
       },
