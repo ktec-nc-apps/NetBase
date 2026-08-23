@@ -705,7 +705,12 @@ OC.L10N.register(
         "%s%% of the packets went missing. On a wired network that points at a cable or a port; on Wi-Fi, at range or interference.": "パケットの %s%% が失われました。有線ならケーブルやポート、無線なら距離や電波干渉が疑われます。",
         "Every packet came back.": "すべてのパケットが返ってきました。",
         "Round-trip times vary by %s ms. That much jitter is felt in calls and remote sessions.": "往復時間が %s ms ばらついています。この程度の揺らぎは通話やリモート操作で体感されます。",
-        "An average of %s ms is high enough to be noticeable in anything interactive.": "平均 %s ms は、対話的な操作で遅さを感じる水準です。"
+        "An average of %s ms is high enough to be noticeable in anything interactive.": "平均 %s ms は、対話的な操作で遅さを感じる水準です。",
+        "This device is asking for a user name and password": "この機器はユーザー名とパスワードを求めています",
+        "It calls the protected part “%s”.": "保護された領域の名前は「%s」です。",
+        "NetBase will remember it for you, for this device only.": "入力内容はこの機器の分だけ、あなた専用に保存されます。",
+        "Back": "戻る",
+        "Front page": "最初のページ"
     },
     "nplurals=1; plural=0;"
 );

@@ -704,7 +704,12 @@
         "%s%% of the packets went missing. On a wired network that points at a cable or a port; on Wi-Fi, at range or interference.": "%s%% gói tin bị mất. Trên mạng dây, điều đó chỉ tới cáp hoặc cổng; trên Wi-Fi là khoảng cách hoặc nhiễu.",
         "Every packet came back.": "Mọi gói tin đều trở về.",
         "Round-trip times vary by %s ms. That much jitter is felt in calls and remote sessions.": "Thời gian khứ hồi dao động %s ms. Độ trồi sụt như vậy nghe thấy rõ khi gọi và làm việc từ xa.",
-        "An average of %s ms is high enough to be noticeable in anything interactive.": "Trung bình %s ms đủ cao để cảm nhận được trong mọi thao tác tương tác."
+        "An average of %s ms is high enough to be noticeable in anything interactive.": "Trung bình %s ms đủ cao để cảm nhận được trong mọi thao tác tương tác.",
+        "This device is asking for a user name and password": "Thiết bị này yêu cầu tên người dùng và mật khẩu",
+        "It calls the protected part “%s”.": "Nó gọi phần được bảo vệ là “%s”.",
+        "NetBase will remember it for you, for this device only.": "NetBase sẽ nhớ giúp bạn, chỉ cho thiết bị này.",
+        "Back": "Quay lại",
+        "Front page": "Trang đầu"
     },
     "pluralForm": "nplurals=1; plural=0;"
 }

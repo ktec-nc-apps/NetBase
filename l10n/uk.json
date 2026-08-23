@@ -704,7 +704,12 @@
         "%s%% of the packets went missing. On a wired network that points at a cable or a port; on Wi-Fi, at range or interference.": "Втрачено %s%% пакетів. У дротовій мережі це вказує на кабель чи порт, у Wi-Fi — на відстань або завади.",
         "Every packet came back.": "Повернулися всі пакети.",
         "Round-trip times vary by %s ms. That much jitter is felt in calls and remote sessions.": "Час відгуку коливається на %s мс. Таке тремтіння відчутне у дзвінках і віддалених сеансах.",
-        "An average of %s ms is high enough to be noticeable in anything interactive.": "Середнє %s мс уже помітне в будь-якій інтерактивній роботі."
+        "An average of %s ms is high enough to be noticeable in anything interactive.": "Середнє %s мс уже помітне в будь-якій інтерактивній роботі.",
+        "This device is asking for a user name and password": "Цей пристрій просить ім’я користувача та пароль",
+        "It calls the protected part “%s”.": "Захищену частину він називає «%s».",
+        "NetBase will remember it for you, for this device only.": "NetBase запам’ятає це для вас — лише для цього пристрою.",
+        "Back": "Назад",
+        "Front page": "Головна сторінка"
     },
     "pluralForm": "nplurals=4; plural=(n % 1 == 0 && n % 10 == 1 && n % 100 != 11 ? 0 : n % 1 == 0 && n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14) ? 1 : n % 1 == 0 && (n % 10 ==0 || (n % 10 >=5 && n % 10 <=9) || (n % 100 >=11 && n % 100 <=14 )) ? 2: 3);"
 }

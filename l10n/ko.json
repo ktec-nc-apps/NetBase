@@ -704,7 +704,12 @@
         "%s%% of the packets went missing. On a wired network that points at a cable or a port; on Wi-Fi, at range or interference.": "패킷의 %s%%가 사라졌습니다. 유선이면 케이블이나 포트, 무선이면 거리나 간섭을 의심하세요.",
         "Every packet came back.": "모든 패킷이 돌아왔습니다.",
         "Round-trip times vary by %s ms. That much jitter is felt in calls and remote sessions.": "왕복 시간이 %s ms 흔들립니다. 이 정도 지터는 통화와 원격 작업에서 느껴집니다.",
-        "An average of %s ms is high enough to be noticeable in anything interactive.": "평균 %s ms는 대화형 작업에서 느껴질 만한 수준입니다."
+        "An average of %s ms is high enough to be noticeable in anything interactive.": "평균 %s ms는 대화형 작업에서 느껴질 만한 수준입니다.",
+        "This device is asking for a user name and password": "이 장치가 사용자 이름과 비밀번호를 요구합니다",
+        "It calls the protected part “%s”.": "보호된 영역의 이름은 “%s”입니다.",
+        "NetBase will remember it for you, for this device only.": "NetBase가 이 장치에 한해 기억해 둡니다.",
+        "Back": "뒤로",
+        "Front page": "첫 페이지"
     },
     "pluralForm": "nplurals=1; plural=0;"
 }

@@ -705,7 +705,12 @@ OC.L10N.register(
         "%s%% of the packets went missing. On a wired network that points at a cable or a port; on Wi-Fi, at range or interference.": "ضاع %s%% من الحزم. في الشبكة السلكية يشير ذلك إلى كبل أو منفذ، وفي اللاسلكية إلى المسافة أو التشويش.",
         "Every packet came back.": "عادت كل الحزم.",
         "Round-trip times vary by %s ms. That much jitter is felt in calls and remote sessions.": "يتفاوت زمن الذهاب والإياب بمقدار %s ملي‌ثانية. هذا القدر من الاضطراب يُلحظ في المكالمات والجلسات البعيدة.",
-        "An average of %s ms is high enough to be noticeable in anything interactive.": "متوسط %s ملي‌ثانية عالٍ بما يكفي ليُلحظ في أي عمل تفاعلي."
+        "An average of %s ms is high enough to be noticeable in anything interactive.": "متوسط %s ملي‌ثانية عالٍ بما يكفي ليُلحظ في أي عمل تفاعلي.",
+        "This device is asking for a user name and password": "يطلب هذا الجهاز اسم مستخدم وكلمة مرور",
+        "It calls the protected part “%s”.": "يسمّي الجزء المحمي «%s».",
+        "NetBase will remember it for you, for this device only.": "سيتذكّرها نِت‌بيس من أجلك، لهذا الجهاز وحده.",
+        "Back": "رجوع",
+        "Front page": "الصفحة الأولى"
     },
     "nplurals=6; plural=(n==0 ? 0 : n==1 ? 1 : n==2 ? 2 : n%100>=3 && n%100<=10 ? 3 : n%100>=11 && n%100<=99 ? 4 : 5);"
 );

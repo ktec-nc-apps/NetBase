@@ -705,7 +705,12 @@ OC.L10N.register(
         "%s%% of the packets went missing. On a wired network that points at a cable or a port; on Wi-Fi, at range or interference.": "%s%% पैकेट खो गए। तार वाले नेटवर्क में यह केबल या पोर्ट की ओर, और वाई-फ़ाई में दूरी या व्यवधान की ओर इशारा करता है।",
         "Every packet came back.": "हर पैकेट वापस आया।",
         "Round-trip times vary by %s ms. That much jitter is felt in calls and remote sessions.": "राउंड-ट्रिप समय %s ms तक बदलता है। इतना जिटर कॉल और रिमोट सत्रों में महसूस होता है।",
-        "An average of %s ms is high enough to be noticeable in anything interactive.": "%s ms का औसत किसी भी संवादात्मक काम में महसूस होने लायक है।"
+        "An average of %s ms is high enough to be noticeable in anything interactive.": "%s ms का औसत किसी भी संवादात्मक काम में महसूस होने लायक है।",
+        "This device is asking for a user name and password": "यह उपकरण उपयोक्ता नाम और कूटशब्द माँग रहा है",
+        "It calls the protected part “%s”.": "यह सुरक्षित भाग को “%s” कहता है।",
+        "NetBase will remember it for you, for this device only.": "NetBase इसे आपके लिए, केवल इसी उपकरण हेतु याद रखेगा।",
+        "Back": "पीछे",
+        "Front page": "पहला पृष्ठ"
     },
     "nplurals=2; plural=(n != 1);"
 );

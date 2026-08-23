@@ -704,7 +704,12 @@
         "%s%% of the packets went missing. On a wired network that points at a cable or a port; on Wi-Fi, at range or interference.": "%s%% paket hilang. Di jaringan kabel itu menunjuk ke kabel atau porta; di Wi-Fi, ke jarak atau gangguan.",
         "Every packet came back.": "Semua paket kembali.",
         "Round-trip times vary by %s ms. That much jitter is felt in calls and remote sessions.": "Waktu pulang-pergi bergoyang %s ms. Jitter sebesar itu terasa saat panggilan dan sesi jarak jauh.",
-        "An average of %s ms is high enough to be noticeable in anything interactive.": "Rerata %s ms sudah cukup tinggi untuk terasa pada pekerjaan interaktif."
+        "An average of %s ms is high enough to be noticeable in anything interactive.": "Rerata %s ms sudah cukup tinggi untuk terasa pada pekerjaan interaktif.",
+        "This device is asking for a user name and password": "Perangkat ini meminta nama pengguna dan kata sandi",
+        "It calls the protected part “%s”.": "Bagian terlindungi itu disebutnya “%s”.",
+        "NetBase will remember it for you, for this device only.": "NetBase akan mengingatnya untuk Anda, khusus perangkat ini.",
+        "Back": "Kembali",
+        "Front page": "Halaman depan"
     },
     "pluralForm": "nplurals=1; plural=0;"
 }

@@ -704,7 +704,12 @@
         "%s%% of the packets went missing. On a wired network that points at a cable or a port; on Wi-Fi, at range or interference.": "แพ็กเก็ตหายไป %s%% หากเป็นเครือข่ายมีสายมักเกิดจากสายหรือพอร์ต หากเป็น Wi-Fi มักเกิดจากระยะทางหรือสัญญาณรบกวน",
         "Every packet came back.": "แพ็กเก็ตกลับมาครบทุกชิ้น",
         "Round-trip times vary by %s ms. That much jitter is felt in calls and remote sessions.": "เวลาไป-กลับแกว่ง %s ms ความแกว่งเท่านี้รู้สึกได้ในการโทรและการใช้งานระยะไกล",
-        "An average of %s ms is high enough to be noticeable in anything interactive.": "ค่าเฉลี่ย %s ms สูงพอที่จะรู้สึกได้ในงานโต้ตอบทุกชนิด"
+        "An average of %s ms is high enough to be noticeable in anything interactive.": "ค่าเฉลี่ย %s ms สูงพอที่จะรู้สึกได้ในงานโต้ตอบทุกชนิด",
+        "This device is asking for a user name and password": "อุปกรณ์นี้ขอชื่อผู้ใช้และรหัสผ่าน",
+        "It calls the protected part “%s”.": "อุปกรณ์เรียกส่วนที่ป้องกันไว้ว่า “%s”",
+        "NetBase will remember it for you, for this device only.": "NetBase จะจดจำไว้ให้คุณ เฉพาะอุปกรณ์นี้เท่านั้น",
+        "Back": "ย้อนกลับ",
+        "Front page": "หน้าแรก"
     },
     "pluralForm": "nplurals=1; plural=0;"
 }
