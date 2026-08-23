@@ -698,7 +698,13 @@
         "Fill the screen": "Fill the screen",
         "This page is built from frames, which a window kept away from Nextcloud cannot load.": "This page is built from frames, which a window kept away from Nextcloud cannot load.",
         "Show it anyway": "Show it anyway",
-        "A page shown this way runs with the same rights as NetBase itself. Only do this for a device you trust.": "A page shown this way runs with the same rights as NetBase itself. Only do this for a device you trust."
+        "A page shown this way runs with the same rights as NetBase itself. Only do this for a device you trust.": "A page shown this way runs with the same rights as NetBase itself. Only do this for a device you trust.",
+        "No answer at all — the name may not resolve, or nothing on the way let the request through.": "No answer at all — the name may not resolve, or nothing on the way let the request through.",
+        "Nothing came back. Many devices and firewalls ignore ping while still answering on a port, so try the TCP check before calling it offline.": "Nothing came back. Many devices and firewalls ignore ping while still answering on a port, so try the TCP check before calling it offline.",
+        "%s%% of the packets went missing. On a wired network that points at a cable or a port; on Wi-Fi, at range or interference.": "%s%% of the packets went missing. On a wired network that points at a cable or a port; on Wi-Fi, at range or interference.",
+        "Every packet came back.": "Every packet came back.",
+        "Round-trip times vary by %s ms. That much jitter is felt in calls and remote sessions.": "Round-trip times vary by %s ms. That much jitter is felt in calls and remote sessions.",
+        "An average of %s ms is high enough to be noticeable in anything interactive.": "An average of %s ms is high enough to be noticeable in anything interactive."
     },
     "pluralForm": "nplurals=2; plural=(n != 1);"
 }

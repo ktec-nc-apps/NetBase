@@ -279,7 +279,28 @@ class ToolService {
 		if (preg_match('#min/avg/max/[a-z]+ = ([\d.]+)/([\d.]+)/([\d.]+)/([\d.]+)#', $result['stdout'], $m)) {
 			$stats += ['min' => (float)$m[1], 'avg' => (float)$m[2], 'max' => (float)$m[3], 'mdev' => (float)$m[4]];
 		}
-		return ['host' => $host, 'stats' => $stats, 'output' => $result['stdout'] ?: $result['stderr'], 'available' => $result['code'] !== 127];
+		// A bare "100% packet loss" reads as "the device is down", and often it
+		// is not: plenty of devices and firewalls simply ignore ping. Say what
+		// the number means, and what to do next.
+		$findings = [];
+		$loss = $stats['loss'] ?? null;
+		if ($loss === null && $result['code'] !== 127) {
+			$findings[] = ['level' => 'warn', 'area' => 'Ping', 'text' => $this->l->t('No answer at all — the name may not resolve, or nothing on the way let the request through.')];
+		} elseif ($loss !== null && $loss >= 100.0) {
+			$findings[] = ['level' => 'warn', 'area' => 'Ping', 'text' => $this->l->t('Nothing came back. Many devices and firewalls ignore ping while still answering on a port, so try the TCP check before calling it offline.')];
+		} elseif ($loss !== null && $loss > 0.0) {
+			$findings[] = ['level' => 'warn', 'area' => 'Ping', 'text' => $this->l->t('%s%% of the packets went missing. On a wired network that points at a cable or a port; on Wi-Fi, at range or interference.', [(string)$loss])];
+		} elseif ($loss !== null) {
+			$findings[] = ['level' => 'ok', 'area' => 'Ping', 'text' => $this->l->t('Every packet came back.')];
+		}
+		if (isset($stats['mdev']) && $stats['mdev'] > 30.0) {
+			$findings[] = ['level' => 'warn', 'area' => 'Ping', 'text' => $this->l->t('Round-trip times vary by %s ms. That much jitter is felt in calls and remote sessions.', [(string)$stats['mdev']])];
+		}
+		if (isset($stats['avg']) && $stats['avg'] > 200.0) {
+			$findings[] = ['level' => 'warn', 'area' => 'Ping', 'text' => $this->l->t('An average of %s ms is high enough to be noticeable in anything interactive.', [(string)$stats['avg']])];
+		}
+
+		return ['host' => $host, 'stats' => $stats, 'findings' => $findings, 'output' => $result['stdout'] ?: $result['stderr'], 'available' => $result['code'] !== 127];
 	}
 
 	public function traceroute(string $host, int $maxHops = 20): array {

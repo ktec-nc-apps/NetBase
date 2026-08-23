@@ -698,7 +698,13 @@
         "Fill the screen": "充满屏幕",
         "This page is built from frames, which a window kept away from Nextcloud cannot load.": "该页面由框架构成，与 Nextcloud 隔离的窗口无法加载框架。",
         "Show it anyway": "仍然显示",
-        "A page shown this way runs with the same rights as NetBase itself. Only do this for a device you trust.": "以此方式显示的页面将拥有与 NetBase 相同的权限。请仅对可信设备这样做。"
+        "A page shown this way runs with the same rights as NetBase itself. Only do this for a device you trust.": "以此方式显示的页面将拥有与 NetBase 相同的权限。请仅对可信设备这样做。",
+        "No answer at all — the name may not resolve, or nothing on the way let the request through.": "完全没有响应——名称无法解析，或请求在中途被拦截。",
+        "Nothing came back. Many devices and firewalls ignore ping while still answering on a port, so try the TCP check before calling it offline.": "没有任何回应。许多设备和防火墙会忽略 ping，却仍在端口上响应；判定离线前请先做 TCP 检查。",
+        "%s%% of the packets went missing. On a wired network that points at a cable or a port; on Wi-Fi, at range or interference.": "丢失了 %s%% 的数据包。有线网络多为线缆或端口问题；无线则多因距离或干扰。",
+        "Every packet came back.": "所有数据包均已返回。",
+        "Round-trip times vary by %s ms. That much jitter is felt in calls and remote sessions.": "往返时间波动 %s 毫秒。这样的抖动在通话和远程操作中能感觉到。",
+        "An average of %s ms is high enough to be noticeable in anything interactive.": "平均 %s 毫秒，在任何交互操作中都能察觉。"
     },
     "pluralForm": "nplurals=1; plural=0;"
 }

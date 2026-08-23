@@ -698,7 +698,13 @@
         "Fill the screen": "ملء الشاشة",
         "This page is built from frames, which a window kept away from Nextcloud cannot load.": "تتكوّن هذه الصفحة من إطارات لا تستطيع نافذة معزولة عن نكستكلاود تحميلها.",
         "Show it anyway": "اعرضها على أي حال",
-        "A page shown this way runs with the same rights as NetBase itself. Only do this for a device you trust.": "الصفحة المعروضة بهذه الطريقة تعمل بنفس صلاحيات نِت‌بيس. لا تفعل ذلك إلا مع جهاز تثق به."
+        "A page shown this way runs with the same rights as NetBase itself. Only do this for a device you trust.": "الصفحة المعروضة بهذه الطريقة تعمل بنفس صلاحيات نِت‌بيس. لا تفعل ذلك إلا مع جهاز تثق به.",
+        "No answer at all — the name may not resolve, or nothing on the way let the request through.": "لا يوجد أي رد — إمّا أن الاسم لا يُترجم، أو أن شيئًا في الطريق منع الطلب.",
+        "Nothing came back. Many devices and firewalls ignore ping while still answering on a port, so try the TCP check before calling it offline.": "لم يعد أي شيء. كثير من الأجهزة والجدران النارية تتجاهل ping بينما تردّ على منفذ، فجرّب فحص TCP قبل اعتباره غير متصل.",
+        "%s%% of the packets went missing. On a wired network that points at a cable or a port; on Wi-Fi, at range or interference.": "ضاع %s%% من الحزم. في الشبكة السلكية يشير ذلك إلى كبل أو منفذ، وفي اللاسلكية إلى المسافة أو التشويش.",
+        "Every packet came back.": "عادت كل الحزم.",
+        "Round-trip times vary by %s ms. That much jitter is felt in calls and remote sessions.": "يتفاوت زمن الذهاب والإياب بمقدار %s ملي‌ثانية. هذا القدر من الاضطراب يُلحظ في المكالمات والجلسات البعيدة.",
+        "An average of %s ms is high enough to be noticeable in anything interactive.": "متوسط %s ملي‌ثانية عالٍ بما يكفي ليُلحظ في أي عمل تفاعلي."
     },
     "pluralForm": "nplurals=6; plural=(n==0 ? 0 : n==1 ? 1 : n==2 ? 2 : n%100>=3 && n%100<=10 ? 3 : n%100>=11 && n%100<=99 ? 4 : 5);"
 }

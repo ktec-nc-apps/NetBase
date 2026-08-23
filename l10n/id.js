@@ -699,7 +699,13 @@ OC.L10N.register(
         "Fill the screen": "Penuhi layar",
         "This page is built from frames, which a window kept away from Nextcloud cannot load.": "Halaman ini tersusun dari bingkai, yang tak dapat dimuat jendela terpisah dari Nextcloud.",
         "Show it anyway": "Tetap tampilkan",
-        "A page shown this way runs with the same rights as NetBase itself. Only do this for a device you trust.": "Halaman yang ditampilkan begini berjalan dengan hak yang sama seperti NetBase. Lakukan hanya untuk perangkat tepercaya."
+        "A page shown this way runs with the same rights as NetBase itself. Only do this for a device you trust.": "Halaman yang ditampilkan begini berjalan dengan hak yang sama seperti NetBase. Lakukan hanya untuk perangkat tepercaya.",
+        "No answer at all — the name may not resolve, or nothing on the way let the request through.": "Sama sekali tidak ada jawaban — nama tak dapat diterjemahkan, atau permintaan dihadang di jalan.",
+        "Nothing came back. Many devices and firewalls ignore ping while still answering on a port, so try the TCP check before calling it offline.": "Tak ada yang kembali. Banyak perangkat dan tembok api mengabaikan ping tapi tetap menjawab di porta; coba pemeriksaan TCP sebelum menyebutnya mati.",
+        "%s%% of the packets went missing. On a wired network that points at a cable or a port; on Wi-Fi, at range or interference.": "%s%% paket hilang. Di jaringan kabel itu menunjuk ke kabel atau porta; di Wi-Fi, ke jarak atau gangguan.",
+        "Every packet came back.": "Semua paket kembali.",
+        "Round-trip times vary by %s ms. That much jitter is felt in calls and remote sessions.": "Waktu pulang-pergi bergoyang %s ms. Jitter sebesar itu terasa saat panggilan dan sesi jarak jauh.",
+        "An average of %s ms is high enough to be noticeable in anything interactive.": "Rerata %s ms sudah cukup tinggi untuk terasa pada pekerjaan interaktif."
     },
     "nplurals=1; plural=0;"
 );

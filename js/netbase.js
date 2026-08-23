@@ -382,6 +382,9 @@
             </div>
           </div>
           <div class="card" v-if="pingResult">
+            <div v-for="(f,i) in (pingResult.findings || [])" :key="i" class="finding" :class="f.level">
+              <span class="area">{{ f.area }}</span><span>{{ f.text }}</span>
+            </div>
             <div class="kv" v-if="pingResult.stats && pingResult.stats.sent">
               <div><span>{{ t('Sent') }}</span><code>{{ pingResult.stats.sent }}</code></div>
               <div><span>{{ t('Received') }}</span><code>{{ pingResult.stats.received }}</code></div>
@@ -1367,7 +1370,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
             <div class="dim mono tiny">{{ preview.url }}</div>
           </div>
           <span class="spacer"></span>
-          <a class="btn sm" :href="preview.url" target="_blank" rel="noopener noreferrer">{{ t('Open in a new tab') }}</a>
+          <a class="btn sm" :href="preview.url" target="_blank" rel="noopener noreferrer" :title="t('Only works from inside that network')">↗</a>
           <button class="btn sm" :disabled="preview.loading" @click="reloadPreview">{{ t('Reload') }}</button>
           <button class="btn xs" @click="closePreview">✕</button>
         </div>

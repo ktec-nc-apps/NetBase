@@ -699,7 +699,13 @@ OC.L10N.register(
         "Fill the screen": "Occuper l'écran",
         "This page is built from frames, which a window kept away from Nextcloud cannot load.": "Cette page est faite de cadres, qu'une fenêtre isolée de Nextcloud ne peut pas charger.",
         "Show it anyway": "Afficher quand même",
-        "A page shown this way runs with the same rights as NetBase itself. Only do this for a device you trust.": "Une page affichée ainsi s'exécute avec les mêmes droits que NetBase. À réserver à un appareil de confiance."
+        "A page shown this way runs with the same rights as NetBase itself. Only do this for a device you trust.": "Une page affichée ainsi s'exécute avec les mêmes droits que NetBase. À réserver à un appareil de confiance.",
+        "No answer at all — the name may not resolve, or nothing on the way let the request through.": "Aucune réponse — le nom ne se résout pas, ou la requête a été bloquée en chemin.",
+        "Nothing came back. Many devices and firewalls ignore ping while still answering on a port, so try the TCP check before calling it offline.": "Rien n'est revenu. Beaucoup d'appareils et de pare-feux ignorent le ping tout en répondant sur un port : essayez le test TCP avant de le déclarer hors ligne.",
+        "%s%% of the packets went missing. On a wired network that points at a cable or a port; on Wi-Fi, at range or interference.": "%s%% des paquets ont disparu. En filaire, cela désigne un câble ou un port ; en Wi-Fi, la portée ou des interférences.",
+        "Every packet came back.": "Tous les paquets sont revenus.",
+        "Round-trip times vary by %s ms. That much jitter is felt in calls and remote sessions.": "Les temps d'aller-retour varient de %s ms. Une telle gigue se ressent en appel et en session distante.",
+        "An average of %s ms is high enough to be noticeable in anything interactive.": "Une moyenne de %s ms se remarque dans tout usage interactif."
     },
     "nplurals=2; plural=(n > 1);"
 );

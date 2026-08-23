@@ -699,7 +699,13 @@ OC.L10N.register(
         "Fill the screen": "पूरी स्क्रीन",
         "This page is built from frames, which a window kept away from Nextcloud cannot load.": "यह पृष्ठ फ़्रेम से बना है, जिन्हें Nextcloud से अलग रखी विंडो लोड नहीं कर सकती।",
         "Show it anyway": "फिर भी दिखाएँ",
-        "A page shown this way runs with the same rights as NetBase itself. Only do this for a device you trust.": "इस तरह दिखाया गया पृष्ठ NetBase जितने ही अधिकारों से चलता है। केवल भरोसेमंद उपकरण के लिए ऐसा करें।"
+        "A page shown this way runs with the same rights as NetBase itself. Only do this for a device you trust.": "इस तरह दिखाया गया पृष्ठ NetBase जितने ही अधिकारों से चलता है। केवल भरोसेमंद उपकरण के लिए ऐसा करें।",
+        "No answer at all — the name may not resolve, or nothing on the way let the request through.": "कोई उत्तर नहीं — या तो नाम हल नहीं होता, या रास्ते में अनुरोध रोक दिया गया।",
+        "Nothing came back. Many devices and firewalls ignore ping while still answering on a port, so try the TCP check before calling it offline.": "कुछ भी वापस नहीं आया। कई उपकरण और फ़ायरवॉल ping को अनदेखा करते हैं पर पोर्ट पर उत्तर देते हैं — ऑफ़लाइन मानने से पहले TCP जाँच करें।",
+        "%s%% of the packets went missing. On a wired network that points at a cable or a port; on Wi-Fi, at range or interference.": "%s%% पैकेट खो गए। तार वाले नेटवर्क में यह केबल या पोर्ट की ओर, और वाई-फ़ाई में दूरी या व्यवधान की ओर इशारा करता है।",
+        "Every packet came back.": "हर पैकेट वापस आया।",
+        "Round-trip times vary by %s ms. That much jitter is felt in calls and remote sessions.": "राउंड-ट्रिप समय %s ms तक बदलता है। इतना जिटर कॉल और रिमोट सत्रों में महसूस होता है।",
+        "An average of %s ms is high enough to be noticeable in anything interactive.": "%s ms का औसत किसी भी संवादात्मक काम में महसूस होने लायक है।"
     },
     "nplurals=2; plural=(n != 1);"
 );

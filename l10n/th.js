@@ -699,7 +699,13 @@ OC.L10N.register(
         "Fill the screen": "เต็มหน้าจอ",
         "This page is built from frames, which a window kept away from Nextcloud cannot load.": "หน้านี้สร้างด้วยเฟรม ซึ่งหน้าต่างที่แยกจาก Nextcloud ไม่สามารถโหลดได้",
         "Show it anyway": "แสดงต่อไป",
-        "A page shown this way runs with the same rights as NetBase itself. Only do this for a device you trust.": "หน้าที่แสดงด้วยวิธีนี้จะทำงานด้วยสิทธิ์เดียวกับ NetBase ใช้กับอุปกรณ์ที่ไว้ใจได้เท่านั้น"
+        "A page shown this way runs with the same rights as NetBase itself. Only do this for a device you trust.": "หน้าที่แสดงด้วยวิธีนี้จะทำงานด้วยสิทธิ์เดียวกับ NetBase ใช้กับอุปกรณ์ที่ไว้ใจได้เท่านั้น",
+        "No answer at all — the name may not resolve, or nothing on the way let the request through.": "ไม่มีการตอบกลับเลย — ชื่ออาจแปลงไม่ได้ หรือคำขอถูกกั้นระหว่างทาง",
+        "Nothing came back. Many devices and firewalls ignore ping while still answering on a port, so try the TCP check before calling it offline.": "ไม่มีอะไรตอบกลับ อุปกรณ์และไฟร์วอลล์จำนวนมากไม่ตอบ ping แต่ยังตอบที่พอร์ต ลองตรวจแบบ TCP ก่อนสรุปว่าออฟไลน์",
+        "%s%% of the packets went missing. On a wired network that points at a cable or a port; on Wi-Fi, at range or interference.": "แพ็กเก็ตหายไป %s%% หากเป็นเครือข่ายมีสายมักเกิดจากสายหรือพอร์ต หากเป็น Wi-Fi มักเกิดจากระยะทางหรือสัญญาณรบกวน",
+        "Every packet came back.": "แพ็กเก็ตกลับมาครบทุกชิ้น",
+        "Round-trip times vary by %s ms. That much jitter is felt in calls and remote sessions.": "เวลาไป-กลับแกว่ง %s ms ความแกว่งเท่านี้รู้สึกได้ในการโทรและการใช้งานระยะไกล",
+        "An average of %s ms is high enough to be noticeable in anything interactive.": "ค่าเฉลี่ย %s ms สูงพอที่จะรู้สึกได้ในงานโต้ตอบทุกชนิด"
     },
     "nplurals=1; plural=0;"
 );

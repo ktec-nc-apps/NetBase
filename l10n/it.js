@@ -699,7 +699,13 @@ OC.L10N.register(
         "Fill the screen": "Riempi lo schermo",
         "This page is built from frames, which a window kept away from Nextcloud cannot load.": "Questa pagina è composta da frame, che una finestra isolata da Nextcloud non può caricare.",
         "Show it anyway": "Mostrala comunque",
-        "A page shown this way runs with the same rights as NetBase itself. Only do this for a device you trust.": "Una pagina mostrata così viene eseguita con gli stessi diritti di NetBase. Fallo solo con un dispositivo di cui ti fidi."
+        "A page shown this way runs with the same rights as NetBase itself. Only do this for a device you trust.": "Una pagina mostrata così viene eseguita con gli stessi diritti di NetBase. Fallo solo con un dispositivo di cui ti fidi.",
+        "No answer at all — the name may not resolve, or nothing on the way let the request through.": "Nessuna risposta: il nome non si risolve, oppure qualcosa lungo il percorso ha bloccato la richiesta.",
+        "Nothing came back. Many devices and firewalls ignore ping while still answering on a port, so try the TCP check before calling it offline.": "Non è tornato nulla. Molti dispositivi e firewall ignorano il ping ma rispondono su una porta: prova il controllo TCP prima di darlo per spento.",
+        "%s%% of the packets went missing. On a wired network that points at a cable or a port; on Wi-Fi, at range or interference.": "È andato perso il %s%% dei pacchetti. Su rete cablata indica un cavo o una porta; in Wi-Fi, distanza o interferenze.",
+        "Every packet came back.": "Sono tornati tutti i pacchetti.",
+        "Round-trip times vary by %s ms. That much jitter is felt in calls and remote sessions.": "I tempi di andata e ritorno variano di %s ms. Un jitter simile si sente nelle chiamate e nelle sessioni remote.",
+        "An average of %s ms is high enough to be noticeable in anything interactive.": "Una media di %s ms si nota in qualsiasi uso interattivo."
     },
     "nplurals=2; plural=(n != 1);"
 );
