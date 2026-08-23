@@ -699,7 +699,13 @@ OC.L10N.register(
         "Fill the screen": "Preencher o ecrã",
         "This page is built from frames, which a window kept away from Nextcloud cannot load.": "Esta página é feita de frames, que uma janela isolada do Nextcloud não consegue carregar.",
         "Show it anyway": "Mostrar mesmo assim",
-        "A page shown this way runs with the same rights as NetBase itself. Only do this for a device you trust.": "Uma página mostrada assim corre com os mesmos direitos que o NetBase. Faça-o só num dispositivo de confiança."
+        "A page shown this way runs with the same rights as NetBase itself. Only do this for a device you trust.": "Uma página mostrada assim corre com os mesmos direitos que o NetBase. Faça-o só num dispositivo de confiança.",
+        "No answer at all — the name may not resolve, or nothing on the way let the request through.": "Sem qualquer resposta — o nome não resolve, ou algo pelo caminho bloqueou o pedido.",
+        "Nothing came back. Many devices and firewalls ignore ping while still answering on a port, so try the TCP check before calling it offline.": "Não voltou nada. Muitos aparelhos e firewalls ignoram o ping mas respondem numa porta: experimente a verificação TCP antes de o dar como offline.",
+        "%s%% of the packets went missing. On a wired network that points at a cable or a port; on Wi-Fi, at range or interference.": "Perderam-se %s%% dos pacotes. Em rede com fios aponta a um cabo ou porta; em Wi-Fi, à distância ou a interferências.",
+        "Every packet came back.": "Voltaram todos os pacotes.",
+        "Round-trip times vary by %s ms. That much jitter is felt in calls and remote sessions.": "Os tempos de ida e volta variam %s ms. Esse jitter sente-se em chamadas e sessões remotas.",
+        "An average of %s ms is high enough to be noticeable in anything interactive.": "Uma média de %s ms já se nota em qualquer uso interativo."
     },
     "nplurals=2; plural=(n > 1);"
 );

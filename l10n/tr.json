@@ -698,7 +698,13 @@
         "Fill the screen": "Ekranı kapla",
         "This page is built from frames, which a window kept away from Nextcloud cannot load.": "Bu sayfa çerçevelerden oluşuyor; Nextcloud'dan yalıtılmış bir pencere bunları yükleyemez.",
         "Show it anyway": "Yine de göster",
-        "A page shown this way runs with the same rights as NetBase itself. Only do this for a device you trust.": "Böyle gösterilen bir sayfa NetBase ile aynı yetkilerle çalışır. Bunu yalnızca güvendiğiniz bir cihaz için yapın."
+        "A page shown this way runs with the same rights as NetBase itself. Only do this for a device you trust.": "Böyle gösterilen bir sayfa NetBase ile aynı yetkilerle çalışır. Bunu yalnızca güvendiğiniz bir cihaz için yapın.",
+        "No answer at all — the name may not resolve, or nothing on the way let the request through.": "Hiç yanıt yok — ad çözümlenemiyor ya da istek yolda engellendi.",
+        "Nothing came back. Many devices and firewalls ignore ping while still answering on a port, so try the TCP check before calling it offline.": "Hiçbir şey dönmedi. Pek çok cihaz ve güvenlik duvarı ping'i yok sayar ama bir bağlantı noktasında yanıt verir; çevrimdışı demeden önce TCP denetimini deneyin.",
+        "%s%% of the packets went missing. On a wired network that points at a cable or a port; on Wi-Fi, at range or interference.": "Paketlerin %s%%'i kayboldu. Kablolu ağda bu kabloyu ya da bağlantı noktasını, Wi-Fi'de mesafeyi ya da paraziti gösterir.",
+        "Every packet came back.": "Bütün paketler geri döndü.",
+        "Round-trip times vary by %s ms. That much jitter is felt in calls and remote sessions.": "Gidiş-dönüş süreleri %s ms oynuyor. Bu kadar titreşim aramalarda ve uzak oturumlarda hissedilir.",
+        "An average of %s ms is high enough to be noticeable in anything interactive.": "%s ms'lik ortalama, etkileşimli her işte fark edilecek kadar yüksektir."
     },
     "pluralForm": "nplurals=2; plural=(n > 1);"
 }

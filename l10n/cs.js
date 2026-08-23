@@ -699,7 +699,13 @@ OC.L10N.register(
         "Fill the screen": "Vyplnit obrazovku",
         "This page is built from frames, which a window kept away from Nextcloud cannot load.": "Tato stránka se skládá z rámů, které okno oddělené od Nextcloudu nedokáže načíst.",
         "Show it anyway": "Přesto zobrazit",
-        "A page shown this way runs with the same rights as NetBase itself. Only do this for a device you trust.": "Stránka zobrazená tímto způsobem běží se stejnými právy jako NetBase. Dělejte to jen u zařízení, kterému věříte."
+        "A page shown this way runs with the same rights as NetBase itself. Only do this for a device you trust.": "Stránka zobrazená tímto způsobem běží se stejnými právy jako NetBase. Dělejte to jen u zařízení, kterému věříte.",
+        "No answer at all — the name may not resolve, or nothing on the way let the request through.": "Žádná odpověď — název se nepřekládá, nebo byl požadavek cestou zablokován.",
+        "Nothing came back. Many devices and firewalls ignore ping while still answering on a port, so try the TCP check before calling it offline.": "Nic se nevrátilo. Mnoho zařízení a firewallů ping ignoruje, ale na portu odpoví — než je prohlásíte za nedostupné, zkuste kontrolu TCP.",
+        "%s%% of the packets went missing. On a wired network that points at a cable or a port; on Wi-Fi, at range or interference.": "Ztratilo se %s%% paketů. V kabelové síti to ukazuje na kabel nebo port, u Wi-Fi na dosah či rušení.",
+        "Every packet came back.": "Vrátily se všechny pakety.",
+        "Round-trip times vary by %s ms. That much jitter is felt in calls and remote sessions.": "Doby odezvy kolísají o %s ms. Takový jitter je znát při hovorech a vzdálených relacích.",
+        "An average of %s ms is high enough to be noticeable in anything interactive.": "Průměr %s ms je dost vysoký, aby byl znát při interaktivní práci."
     },
     "nplurals=4; plural=(n == 1 && n % 1 == 0) ? 0 : (n >= 2 && n <= 4 && n % 1 == 0) ? 1: (n % 1 != 0 ) ? 2 : 3;"
 );

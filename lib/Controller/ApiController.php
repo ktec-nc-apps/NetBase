@@ -250,7 +250,12 @@ class ApiController extends Controller {
 
 	#[NoAdminRequired]
 	#[UserRateLimit(limit: 60, period: 60)]
-	public function ports(string $host, array $ports = [], string $spec = ''): JSONResponse {
+	public function ports(string $host, array|string $ports = [], string $spec = ''): JSONResponse {
+		if (is_string($ports)) {
+			// A list typed as one string is what anyone would send by hand.
+			$spec = $spec !== '' ? $spec : $ports;
+			$ports = [];
+		}
 		return $this->guard(function () use ($host, $ports, $spec) {
 			// A typed range ("22,80,8000-8010") beats ticking boxes when someone
 			// already knows what they are looking for.

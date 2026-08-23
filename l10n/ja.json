@@ -698,7 +698,13 @@
         "Fill the screen": "画面いっぱいに",
         "This page is built from frames, which a window kept away from Nextcloud cannot load.": "このページはフレーム構成のため、Nextcloudから隔離した表示ではフレームを読み込めません。",
         "Show it anyway": "それでも表示する",
-        "A page shown this way runs with the same rights as NetBase itself. Only do this for a device you trust.": "この方法で表示したページは、NetBase と同じ権限で動作します。信頼できる機器だけに使ってください。"
+        "A page shown this way runs with the same rights as NetBase itself. Only do this for a device you trust.": "この方法で表示したページは、NetBase と同じ権限で動作します。信頼できる機器だけに使ってください。",
+        "No answer at all — the name may not resolve, or nothing on the way let the request through.": "まったく応答がありません。名前が解決できないか、経路上のどこかで遮断されています。",
+        "Nothing came back. Many devices and firewalls ignore ping while still answering on a port, so try the TCP check before calling it offline.": "応答がありません。ping を無視する機器やファイアウォールは多く、ポートには応答することがあります。オフラインと判断する前に TCP 確認をお試しください。",
+        "%s%% of the packets went missing. On a wired network that points at a cable or a port; on Wi-Fi, at range or interference.": "パケットの %s%% が失われました。有線ならケーブルやポート、無線なら距離や電波干渉が疑われます。",
+        "Every packet came back.": "すべてのパケットが返ってきました。",
+        "Round-trip times vary by %s ms. That much jitter is felt in calls and remote sessions.": "往復時間が %s ms ばらついています。この程度の揺らぎは通話やリモート操作で体感されます。",
+        "An average of %s ms is high enough to be noticeable in anything interactive.": "平均 %s ms は、対話的な操作で遅さを感じる水準です。"
     },
     "pluralForm": "nplurals=1; plural=0;"
 }

@@ -699,7 +699,13 @@ OC.L10N.register(
         "Fill the screen": "화면 가득",
         "This page is built from frames, which a window kept away from Nextcloud cannot load.": "이 페이지는 프레임으로 구성되어 있어, Nextcloud와 분리된 창에서는 불러올 수 없습니다.",
         "Show it anyway": "그래도 표시",
-        "A page shown this way runs with the same rights as NetBase itself. Only do this for a device you trust.": "이렇게 표시한 페이지는 NetBase와 같은 권한으로 실행됩니다. 신뢰하는 장치에만 사용하세요."
+        "A page shown this way runs with the same rights as NetBase itself. Only do this for a device you trust.": "이렇게 표시한 페이지는 NetBase와 같은 권한으로 실행됩니다. 신뢰하는 장치에만 사용하세요.",
+        "No answer at all — the name may not resolve, or nothing on the way let the request through.": "응답이 전혀 없습니다. 이름이 확인되지 않거나, 경로 어딘가에서 차단되었습니다.",
+        "Nothing came back. Many devices and firewalls ignore ping while still answering on a port, so try the TCP check before calling it offline.": "아무 응답도 없습니다. 많은 장치와 방화벽은 ping을 무시하면서도 포트에는 응답합니다. 오프라인이라 단정하기 전에 TCP 확인을 해 보세요.",
+        "%s%% of the packets went missing. On a wired network that points at a cable or a port; on Wi-Fi, at range or interference.": "패킷의 %s%%가 사라졌습니다. 유선이면 케이블이나 포트, 무선이면 거리나 간섭을 의심하세요.",
+        "Every packet came back.": "모든 패킷이 돌아왔습니다.",
+        "Round-trip times vary by %s ms. That much jitter is felt in calls and remote sessions.": "왕복 시간이 %s ms 흔들립니다. 이 정도 지터는 통화와 원격 작업에서 느껴집니다.",
+        "An average of %s ms is high enough to be noticeable in anything interactive.": "평균 %s ms는 대화형 작업에서 느껴질 만한 수준입니다."
     },
     "nplurals=1; plural=0;"
 );

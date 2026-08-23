@@ -699,7 +699,13 @@ OC.L10N.register(
         "Fill the screen": "На весь екран",
         "This page is built from frames, which a window kept away from Nextcloud cannot load.": "Ця сторінка складається з фреймів, які вікно, відокремлене від Nextcloud, не може завантажити.",
         "Show it anyway": "Усе одно показати",
-        "A page shown this way runs with the same rights as NetBase itself. Only do this for a device you trust.": "Показана так сторінка працює з тими самими правами, що й NetBase. Робіть це лише для пристрою, якому довіряєте."
+        "A page shown this way runs with the same rights as NetBase itself. Only do this for a device you trust.": "Показана так сторінка працює з тими самими правами, що й NetBase. Робіть це лише для пристрою, якому довіряєте.",
+        "No answer at all — the name may not resolve, or nothing on the way let the request through.": "Відповіді немає взагалі — ім’я не розв’язується або запит десь заблоковано.",
+        "Nothing came back. Many devices and firewalls ignore ping while still answering on a port, so try the TCP check before calling it offline.": "Нічого не повернулося. Багато пристроїв і брандмауерів ігнорують ping, але відповідають на порту — перевірте через TCP, перш ніж вважати його вимкненим.",
+        "%s%% of the packets went missing. On a wired network that points at a cable or a port; on Wi-Fi, at range or interference.": "Втрачено %s%% пакетів. У дротовій мережі це вказує на кабель чи порт, у Wi-Fi — на відстань або завади.",
+        "Every packet came back.": "Повернулися всі пакети.",
+        "Round-trip times vary by %s ms. That much jitter is felt in calls and remote sessions.": "Час відгуку коливається на %s мс. Таке тремтіння відчутне у дзвінках і віддалених сеансах.",
+        "An average of %s ms is high enough to be noticeable in anything interactive.": "Середнє %s мс уже помітне в будь-якій інтерактивній роботі."
     },
     "nplurals=4; plural=(n % 1 == 0 && n % 10 == 1 && n % 100 != 11 ? 0 : n % 1 == 0 && n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14) ? 1 : n % 1 == 0 && (n % 10 ==0 || (n % 10 >=5 && n % 10 <=9) || (n % 100 >=11 && n % 100 <=14 )) ? 2: 3);"
 );
