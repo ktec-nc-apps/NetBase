@@ -712,7 +712,17 @@ OC.L10N.register(
         "The list of tools": "Список інструментів",
         "Drag the tools in the sidebar into the order you work in — or hold Alt and press the up and down arrows. The order is kept for your account.": "Перетягніть інструменти на бічній панелі у зручний порядок — або утримуйте Alt і натискайте стрілки вгору й униз. Порядок зберігається для вашого облікового запису.",
         "Put them back in the original order": "Повернути початковий порядок",
-        "{host} — its own settings page, opened through this server, so it works from anywhere. Sign in and change settings as you would standing in front of it.": "{host} — власна сторінка налаштувань пристрою, відкрита через цей сервер, тож доступна звідусіль. Заходьте й змінюйте налаштування, як стоячи перед ним."
+        "{host} — its own settings page, opened through this server, so it works from anywhere. Sign in and change settings as you would standing in front of it.": "{host} — власна сторінка налаштувань пристрою, відкрита через цей сервер, тож доступна звідусіль. Заходьте й змінюйте налаштування, як стоячи перед ним.",
+        "What this window can and cannot do": "Що це вікно може, а чого ні",
+        "What works here": "Що тут працює",
+        "What does not": "Що не працює",
+        "Sign in and change settings, exactly as you would in front of the device": "Вхід і зміна налаштувань — так само, як перед пристроєм",
+        "Send files to it — new firmware, a saved configuration": "Надсилати файли — нову прошивку, збережену конфігурацію",
+        "Take files from it — a backup, a log — whatever their size": "Забирати файли — резервну копію, журнал — будь-якого розміру",
+        "Older interfaces built out of frames": "Старі інтерфейси з фреймів",
+        "Its password, remembered for you after the first time": "Його пароль — запам’ятовується після першого разу",
+        "A console that stays connected, which some switches offer": "Консоль із постійним з’єднанням, яку мають деякі комутатори",
+        "Anything needing Java or ActiveX in the browser": "Усе, що потребує Java чи ActiveX у браузері"
     },
     "nplurals=4; plural=(n % 1 == 0 && n % 10 == 1 && n % 100 != 11 ? 0 : n % 1 == 0 && n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14) ? 1 : n % 1 == 0 && (n % 10 ==0 || (n % 10 >=5 && n % 10 <=9) || (n % 100 >=11 && n % 100 <=14 )) ? 2: 3);"
 );

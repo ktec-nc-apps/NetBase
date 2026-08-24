@@ -712,7 +712,17 @@ OC.L10N.register(
         "The list of tools": "Daftar perkakas",
         "Drag the tools in the sidebar into the order you work in — or hold Alt and press the up and down arrows. The order is kept for your account.": "Seret perkakas di bilah sisi ke urutan kerja Anda — atau tahan Alt lalu tekan panah atas-bawah. Urutan disimpan untuk akun Anda.",
         "Put them back in the original order": "Kembalikan ke urutan semula",
-        "{host} — its own settings page, opened through this server, so it works from anywhere. Sign in and change settings as you would standing in front of it.": "{host} — halaman pengaturan perangkat itu sendiri, dibuka lewat peladen ini sehingga bisa dipakai dari mana saja. Masuk dan ubah pengaturan seperti saat berdiri di depannya."
+        "{host} — its own settings page, opened through this server, so it works from anywhere. Sign in and change settings as you would standing in front of it.": "{host} — halaman pengaturan perangkat itu sendiri, dibuka lewat peladen ini sehingga bisa dipakai dari mana saja. Masuk dan ubah pengaturan seperti saat berdiri di depannya.",
+        "What this window can and cannot do": "Yang bisa dan tidak bisa dilakukan jendela ini",
+        "What works here": "Yang bisa dilakukan",
+        "What does not": "Yang tidak bisa",
+        "Sign in and change settings, exactly as you would in front of the device": "Masuk dan mengubah pengaturan, persis seperti di depan perangkat",
+        "Send files to it — new firmware, a saved configuration": "Mengirim berkas ke perangkat — firmware baru, konfigurasi tersimpan",
+        "Take files from it — a backup, a log — whatever their size": "Mengambil berkas darinya — cadangan, log — berapa pun ukurannya",
+        "Older interfaces built out of frames": "Antarmuka lama yang tersusun dari bingkai",
+        "Its password, remembered for you after the first time": "Kata sandinya, diingat setelah pertama kali",
+        "A console that stays connected, which some switches offer": "Konsol yang terus tersambung, seperti pada sebagian saklar jaringan",
+        "Anything needing Java or ActiveX in the browser": "Apa pun yang butuh Java atau ActiveX di peramban"
     },
     "nplurals=1; plural=0;"
 );

@@ -711,7 +711,17 @@
         "The list of tools": "Araç listesi",
         "Drag the tools in the sidebar into the order you work in — or hold Alt and press the up and down arrows. The order is kept for your account.": "Kenar çubuğundaki araçları çalıştığınız sıraya sürükleyin ya da Alt'a basılı tutup yön tuşlarını kullanın. Sıra hesabınız için saklanır.",
         "Put them back in the original order": "Özgün sıraya geri döndür",
-        "{host} — its own settings page, opened through this server, so it works from anywhere. Sign in and change settings as you would standing in front of it.": "{host} — cihazın kendi ayar sayfası, bu sunucu üzerinden açıldığı için her yerden çalışır. Karşısındaymışsınız gibi oturum açıp ayarları değiştirin."
+        "{host} — its own settings page, opened through this server, so it works from anywhere. Sign in and change settings as you would standing in front of it.": "{host} — cihazın kendi ayar sayfası, bu sunucu üzerinden açıldığı için her yerden çalışır. Karşısındaymışsınız gibi oturum açıp ayarları değiştirin.",
+        "What this window can and cannot do": "Bu pencerenin yapabildikleri ve yapamadıkları",
+        "What works here": "Burada işleyenler",
+        "What does not": "İşlemeyenler",
+        "Sign in and change settings, exactly as you would in front of the device": "Cihazın başındaymışsınız gibi oturum açmak ve ayarları değiştirmek",
+        "Send files to it — new firmware, a saved configuration": "Ona dosya göndermek — yeni bellenim, kayıtlı bir yapılandırma",
+        "Take files from it — a backup, a log — whatever their size": "Ondan dosya almak — bir yedek, bir günlük — boyutu ne olursa olsun",
+        "Older interfaces built out of frames": "Çerçevelerden kurulu eski arayüzler",
+        "Its password, remembered for you after the first time": "Parolası, ilk seferden sonra hatırlanır",
+        "A console that stays connected, which some switches offer": "Bazı anahtarların sunduğu, bağlı kalan konsol",
+        "Anything needing Java or ActiveX in the browser": "Tarayıcıda Java ya da ActiveX isteyen her şey"
     },
     "pluralForm": "nplurals=2; plural=(n > 1);"
 }

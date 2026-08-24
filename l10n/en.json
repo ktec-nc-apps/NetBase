@@ -711,7 +711,17 @@
         "The list of tools": "The list of tools",
         "Drag the tools in the sidebar into the order you work in — or hold Alt and press the up and down arrows. The order is kept for your account.": "Drag the tools in the sidebar into the order you work in — or hold Alt and press the up and down arrows. The order is kept for your account.",
         "Put them back in the original order": "Put them back in the original order",
-        "{host} — its own settings page, opened through this server, so it works from anywhere. Sign in and change settings as you would standing in front of it.": "{host} — its own settings page, opened through this server, so it works from anywhere. Sign in and change settings as you would standing in front of it."
+        "{host} — its own settings page, opened through this server, so it works from anywhere. Sign in and change settings as you would standing in front of it.": "{host} — its own settings page, opened through this server, so it works from anywhere. Sign in and change settings as you would standing in front of it.",
+        "What this window can and cannot do": "What this window can and cannot do",
+        "What works here": "What works here",
+        "What does not": "What does not",
+        "Sign in and change settings, exactly as you would in front of the device": "Sign in and change settings, exactly as you would in front of the device",
+        "Send files to it — new firmware, a saved configuration": "Send files to it — new firmware, a saved configuration",
+        "Take files from it — a backup, a log — whatever their size": "Take files from it — a backup, a log — whatever their size",
+        "Older interfaces built out of frames": "Older interfaces built out of frames",
+        "Its password, remembered for you after the first time": "Its password, remembered for you after the first time",
+        "A console that stays connected, which some switches offer": "A console that stays connected, which some switches offer",
+        "Anything needing Java or ActiveX in the browser": "Anything needing Java or ActiveX in the browser"
     },
     "pluralForm": "nplurals=2; plural=(n != 1);"
 }

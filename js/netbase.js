@@ -1300,7 +1300,24 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         <button class="btn xs" :title="t('Front page')" @click.stop="homeWindow(w)">⌂</button>
         <button class="btn xs" :title="t('Reload')" @click.stop="reloadWindow(w)">⟳</button>
         <button class="btn xs" :title="t('Fill the screen')" @click.stop="toggleFull(w)">⤢</button>
+        <button class="btn xs" :title="t('What this window can and cannot do')" @click.stop="w.help = !w.help">?</button>
         <button class="btn xs" :title="t('Close')" @click.stop="closeWindow(w)">✕</button>
+      </div>
+      <div v-if="w.help" class="devwin-help" @mousedown.stop>
+        <strong>{{ t('What works here') }}</strong>
+        <ul>
+          <li>{{ t('Sign in and change settings, exactly as you would in front of the device') }}</li>
+          <li>{{ t('Send files to it — new firmware, a saved configuration') }}</li>
+          <li>{{ t('Take files from it — a backup, a log — whatever their size') }}</li>
+          <li>{{ t('Older interfaces built out of frames') }}</li>
+          <li>{{ t('Its password, remembered for you after the first time') }}</li>
+        </ul>
+        <strong>{{ t('What does not') }}</strong>
+        <ul>
+          <li>{{ t('A console that stays connected, which some switches offer') }}</li>
+          <li>{{ t('Anything needing Java or ActiveX in the browser') }}</li>
+        </ul>
+        <button class="btn xs" @click.stop="w.help = false">{{ t('Close') }}</button>
       </div>
       <div class="devwin-line">{{ t('{host} — its own settings page, opened through this server, so it works from anywhere. Sign in and change settings as you would standing in front of it.', { host: w.base.replace(/^https?:\/\//, '') }) }}</div>
       <div v-if="w.busy" class="devwin-note dim">{{ t('Connecting…') }}</div>
@@ -1986,7 +2003,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         const offset = (this.windows.length % 6) * 28;
         const w = {
           id: ++this.windowSeq, base, url: '', src: '', error: '', busy: true, full: false,
-          here: '', trail: [], trailAt: -1, rewinding: false, z: ++this.windowTop,
+          here: '', trail: [], trailAt: -1, rewinding: false, help: false, z: ++this.windowTop,
           title: (device.name || device.ip) + ' · ' + port,
           x: Math.max(20, Math.round(window.innerWidth / 2 - 520) + offset),
           y: 90 + offset, w: Math.min(1040, window.innerWidth - 60), h: Math.min(700, window.innerHeight - 140),

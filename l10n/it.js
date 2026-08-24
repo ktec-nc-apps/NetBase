@@ -712,7 +712,17 @@ OC.L10N.register(
         "The list of tools": "L'elenco degli strumenti",
         "Drag the tools in the sidebar into the order you work in — or hold Alt and press the up and down arrows. The order is kept for your account.": "Trascina gli strumenti nella barra laterale nell'ordine in cui lavori — oppure tieni premuto Alt e usa le frecce. L'ordine resta salvato per il tuo account.",
         "Put them back in the original order": "Ripristina l'ordine originale",
-        "{host} — its own settings page, opened through this server, so it works from anywhere. Sign in and change settings as you would standing in front of it.": "{host} — la sua pagina di impostazioni, aperta tramite questo server, quindi utilizzabile ovunque. Accedi e cambia le impostazioni come se fossi davanti al dispositivo."
+        "{host} — its own settings page, opened through this server, so it works from anywhere. Sign in and change settings as you would standing in front of it.": "{host} — la sua pagina di impostazioni, aperta tramite questo server, quindi utilizzabile ovunque. Accedi e cambia le impostazioni come se fossi davanti al dispositivo.",
+        "What this window can and cannot do": "Cosa può e cosa non può fare questa finestra",
+        "What works here": "Cosa funziona qui",
+        "What does not": "Cosa non funziona",
+        "Sign in and change settings, exactly as you would in front of the device": "Accedere e cambiare impostazioni, come davanti al dispositivo",
+        "Send files to it — new firmware, a saved configuration": "Inviargli file — nuovo firmware, una configurazione salvata",
+        "Take files from it — a backup, a log — whatever their size": "Scaricare file — un backup, un registro — di qualsiasi dimensione",
+        "Older interfaces built out of frames": "Vecchie interfacce composte da frame",
+        "Its password, remembered for you after the first time": "La sua password, ricordata dopo la prima volta",
+        "A console that stays connected, which some switches offer": "Una console che resta connessa, come offrono alcuni switch",
+        "Anything needing Java or ActiveX in the browser": "Tutto ciò che richiede Java o ActiveX nel browser"
     },
     "nplurals=2; plural=(n != 1);"
 );

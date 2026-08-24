@@ -450,3 +450,22 @@
   border-radius: 2px;
   background: var(--color-primary-element, #2970e2);
 }
+
+/* What the window can and cannot do, when someone asks. */
+.devwin-help {
+  position: absolute;
+  top: 40px;
+  right: 10px;
+  z-index: 2;
+  width: min(26em, calc(100% - 20px));
+  padding: 14px 16px;
+  border-radius: 10px;
+  background: var(--color-main-background, #fff);
+  color: var(--color-main-text, #222);
+  box-shadow: 0 4px 20px rgba(15, 23, 42, .25);
+  font-size: .85em;
+  line-height: 1.6;
+}
+.devwin-help strong { display: block; margin-bottom: 4px; }
+.devwin-help ul { margin: 0 0 12px; padding-left: 1.2em; }
+.devwin-help li { list-style: disc; }
