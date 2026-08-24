@@ -71,16 +71,18 @@
 #netbase-root .brand { display: flex; align-items: center; gap: 10px; padding: 18px 18px 12px; font-weight: 800; font-size: 20px; }
 #netbase-root .brand .logo { font-size: 22px; }
 #netbase-root .brand .tag { font-size: 11px; font-weight: 600; color: var(--muted); background: var(--surface-2); border-radius: 999px; padding: 2px 8px; }
-#netbase-root .nav-list { flex: 1 1 auto; overflow-y: auto; overflow-x: hidden; padding: 4px 10px; display: flex; flex-direction: column; gap: 2px; }
+#netbase-root .nav-list { flex: 1 1 auto; overflow-y: auto; overflow-x: hidden; padding: 4px 10px; display: flex; flex-direction: column; gap: 1px; }
 #netbase-root .nav-item {
   display: flex; align-items: center; gap: 10px; width: 100%; text-align: left;
-  background: none; border: 0; border-radius: 10px; padding: 9px 10px; color: var(--text); font-size: 14.5px;
+  background: none; border: 0; border-radius: 10px; padding: 6px 10px; color: var(--text); font-size: 14.5px;
 }
 #netbase-root .nav-item:hover { background: var(--surface-2); }
 #netbase-root .nav-item.active { background: color-mix(in srgb, var(--primary) 14%, transparent); color: var(--primary); font-weight: 600; }
-#netbase-root .nav-item .nm { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* A tool's name is how it is found: it wraps rather than being cut short,
+   because what fits in English does not fit in every language. */
+#netbase-root .nav-item .nm { flex: 1 1 auto; min-width: 0; white-space: normal; overflow-wrap: anywhere; line-height: 1.25; }
 #netbase-root .nav-item .ct { font-size: 12px; color: var(--muted); background: var(--surface-2); border-radius: 999px; padding: 1px 8px; }
-#netbase-root .sidebar-foot { padding: 12px; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 8px; }
+#netbase-root .sidebar-foot { padding: 9px 12px; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 6px; }
 
 #netbase-root .main { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; }
 #netbase-root .topbar {
