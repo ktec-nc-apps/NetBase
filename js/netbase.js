@@ -111,7 +111,11 @@
         </button>
       </nav>
       <div class="sidebar-foot">
-        <button class="btn primary block" v-if="status.canScan" :disabled="scanning" @click="startScan()">{{ scanning ? t('Scanning…') : t('🛰️ Scan the network') }}</button>
+        <!-- The device list carries its own Start button, so this one would only
+             repeat it. It stays for the rare account that may sweep the network
+             without being allowed to see the result, which would otherwise have
+             no way to begin. -->
+        <button class="btn primary block" v-if="status.canScan && !allowed('devices')" :disabled="scanning" @click="startScan()">{{ scanning ? t('Scanning…') : t('🛰️ Scan the network') }}</button>
         <button class="btn sm block" v-if="status.isAdmin" @click="openSysInfo">{{ t('🖥 System information') }}</button>
         <button class="btn sm block" @click="themeBox = true">{{ t('⚙ Settings') }}</button>
       </div>
