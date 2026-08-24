@@ -697,8 +697,6 @@ OC.L10N.register(
         "Device web pages — open them in a window through this server, or as a picture": "Strony urządzeń — w oknie przez ten serwer albo jako obraz",
         "Connecting…": "Łączenie…",
         "Fill the screen": "Wypełnij ekran",
-        "This page is built from frames, which a window kept away from Nextcloud cannot load.": "Ta strona składa się z ramek, których okno odseparowane od Nextcloud nie może wczytać.",
-        "Show it anyway": "Pokaż mimo to",
         "No answer at all — the name may not resolve, or nothing on the way let the request through.": "Brak jakiejkolwiek odpowiedzi — nazwa się nie rozwiązuje albo żądanie zostało po drodze zablokowane.",
         "Nothing came back. Many devices and firewalls ignore ping while still answering on a port, so try the TCP check before calling it offline.": "Nic nie wróciło. Wiele urządzeń i zapór ignoruje ping, choć odpowiada na porcie — sprawdź przez TCP, zanim uznasz je za niedostępne.",
         "%s%% of the packets went missing. On a wired network that points at a cable or a port; on Wi-Fi, at range or interference.": "Zgubiło się %s%% pakietów. W sieci przewodowej wskazuje to na kabel lub port, w Wi-Fi na zasięg lub zakłócenia.",
@@ -714,8 +712,14 @@ OC.L10N.register(
         "The list of tools": "Lista narzędzi",
         "Drag the tools in the sidebar into the order you work in — or hold Alt and press the up and down arrows. The order is kept for your account.": "Przeciągnij narzędzia na pasku bocznym w swoją kolejność pracy albo przytrzymaj Alt i użyj strzałek. Kolejność zostaje zapamiętana dla Twojego konta.",
         "Put them back in the original order": "Przywróć pierwotną kolejność",
-        "This device's own page will be shown in full. It can then reach NetBase in this browser, though nothing outside the device windows. Do this only for a device you trust.": "Strona urządzenia zostanie pokazana w całości. Będzie mogła sięgnąć do NetBase w tej przeglądarce, ale poza okna urządzeń już nie. Rób to tylko dla zaufanego urządzenia.",
-        "Shown in full, because you agreed to it for this device. Click to undo.": "Pokazywana w całości, bo zgodziłeś się na to dla tego urządzenia. Kliknij, aby cofnąć."
+        "Shown in full, because you agreed to it for this device. Click to undo.": "Pokazywana w całości, bo zgodziłeś się na to dla tego urządzenia. Kliknij, aby cofnąć.",
+        "This page is built from frames, which a window kept away from Nextcloud cannot load. Showing it in full lets the page reach NetBase in this browser, but nothing outside the device windows.": "Ta strona składa się z ramek, których okno odseparowane od Nextcloud nie może wczytać. Pokazana w całości sięga do NetBase w tej przeglądarce, ale poza okna urządzeń już nie.",
+        "Show it in full, and remember this device": "Pokaż w całości i zapamiętaj to urządzenie",
+        "Not now": "Nie teraz",
+        "Devices shown in full": "Urządzenia pokazywane w całości",
+        "A device page built from frames only works when shown in full. These are the ones you have agreed to; the rest are kept at arm's length from Nextcloud.": "Strona urządzenia zbudowana z ramek działa tylko pokazana w całości. Oto te, na które się zgodziłeś; reszta pozostaje z dala od Nextcloud.",
+        "None yet.": "Jeszcze żadnych.",
+        "Undo": "Cofnij"
     },
     "nplurals=4; plural=(n==1 ? 0 : (n%10>=2 && n%10<=4) && (n%100<12 || n%100>14) ? 1 : n!=1 && (n%10>=0 && n%10<=1) || (n%10>=5 && n%10<=9) || (n%100>=12 && n%100<=14) ? 2 : 3);"
 );

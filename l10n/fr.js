@@ -697,8 +697,6 @@ OC.L10N.register(
         "Device web pages — open them in a window through this server, or as a picture": "Pages web des appareils — dans une fenêtre via ce serveur, ou en image",
         "Connecting…": "Connexion…",
         "Fill the screen": "Occuper l'écran",
-        "This page is built from frames, which a window kept away from Nextcloud cannot load.": "Cette page est faite de cadres, qu'une fenêtre isolée de Nextcloud ne peut pas charger.",
-        "Show it anyway": "Afficher quand même",
         "No answer at all — the name may not resolve, or nothing on the way let the request through.": "Aucune réponse — le nom ne se résout pas, ou la requête a été bloquée en chemin.",
         "Nothing came back. Many devices and firewalls ignore ping while still answering on a port, so try the TCP check before calling it offline.": "Rien n'est revenu. Beaucoup d'appareils et de pare-feux ignorent le ping tout en répondant sur un port : essayez le test TCP avant de le déclarer hors ligne.",
         "%s%% of the packets went missing. On a wired network that points at a cable or a port; on Wi-Fi, at range or interference.": "%s%% des paquets ont disparu. En filaire, cela désigne un câble ou un port ; en Wi-Fi, la portée ou des interférences.",
@@ -714,8 +712,14 @@ OC.L10N.register(
         "The list of tools": "La liste des outils",
         "Drag the tools in the sidebar into the order you work in — or hold Alt and press the up and down arrows. The order is kept for your account.": "Faites glisser les outils de la barre latérale dans votre ordre de travail — ou maintenez Alt et utilisez les flèches. L'ordre est conservé pour votre compte.",
         "Put them back in the original order": "Rétablir l'ordre d'origine",
-        "This device's own page will be shown in full. It can then reach NetBase in this browser, though nothing outside the device windows. Do this only for a device you trust.": "La page de cet appareil sera affichée entièrement. Elle pourra alors atteindre NetBase dans ce navigateur, mais rien en dehors des fenêtres d'appareil. À réserver à un appareil de confiance.",
-        "Shown in full, because you agreed to it for this device. Click to undo.": "Affichée entièrement parce que vous l'avez accepté pour cet appareil. Cliquez pour annuler."
+        "Shown in full, because you agreed to it for this device. Click to undo.": "Affichée entièrement parce que vous l'avez accepté pour cet appareil. Cliquez pour annuler.",
+        "This page is built from frames, which a window kept away from Nextcloud cannot load. Showing it in full lets the page reach NetBase in this browser, but nothing outside the device windows.": "Cette page est faite de cadres, qu'une fenêtre isolée de Nextcloud ne peut pas charger. Affichée entièrement, elle atteint NetBase dans ce navigateur, mais rien en dehors des fenêtres d'appareil.",
+        "Show it in full, and remember this device": "Afficher entièrement et retenir cet appareil",
+        "Not now": "Pas maintenant",
+        "Devices shown in full": "Appareils affichés entièrement",
+        "A device page built from frames only works when shown in full. These are the ones you have agreed to; the rest are kept at arm's length from Nextcloud.": "Une page d'appareil faite de cadres ne fonctionne qu'affichée entièrement. Voici ceux que vous avez acceptés ; les autres restent tenus à l'écart de Nextcloud.",
+        "None yet.": "Aucun pour l'instant.",
+        "Undo": "Annuler"
     },
     "nplurals=2; plural=(n > 1);"
 );

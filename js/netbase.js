@@ -1278,6 +1278,16 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
           </label>
           <p class="dim">{{ t('NetBase can speak a different language from the rest of Nextcloud — handy when the interface language and the language you think in are not the same.') }}</p>
 
+          <h3>{{ t('Devices shown in full') }}</h3>
+          <p class="dim">{{ t('A device page built from frames only works when shown in full. These are the ones you have agreed to; the rest are kept at arm\'s length from Nextcloud.') }}</p>
+          <div v-if="(settings.trustedDevices || []).length" class="kv">
+            <div v-for="d in settings.trustedDevices" :key="d">
+              <span class="mono">{{ d }}</span>
+              <code><button class="btn xs" @click="rememberTrust(d, false)">{{ t('Undo') }}</button></code>
+            </div>
+          </div>
+          <p v-else class="dim">{{ t('None yet.') }}</p>
+
           <h3>{{ t('The list of tools') }}</h3>
           <p class="dim">{{ t('Drag the tools in the sidebar into the order you work in — or hold Alt and press the up and down arrows. The order is kept for your account.') }}</p>
           <button class="btn sm" :disabled="!(settings.tabOrder || []).length" @click="resetTabOrder">{{ t('Put them back in the original order') }}</button>
@@ -1304,8 +1314,9 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         <button class="btn xs" :title="t('Close')" @click.stop="closeWindow(w)">✕</button>
       </div>
       <div v-if="w.framed && !w.trusted" class="devwin-bar">
-        <span>{{ t('This page is built from frames, which a window kept away from Nextcloud cannot load.') }}</span>
-        <button class="btn xs" @click.stop="trustWindow(w)">{{ t('Show it anyway') }}</button>
+        <span>{{ t('This page is built from frames, which a window kept away from Nextcloud cannot load. Showing it in full lets the page reach NetBase in this browser, but nothing outside the device windows.') }}</span>
+        <button class="btn xs" @click.stop="trustWindow(w)">{{ t('Show it in full, and remember this device') }}</button>
+        <button class="btn xs" :title="t('Not now')" @click.stop="w.framed = false">✕</button>
       </div>
       <div v-if="w.busy" class="devwin-note dim">{{ t('Connecting…') }}</div>
       <div v-else-if="w.error" class="devwin-note error">⚠ {{ w.error }}</div>
@@ -2005,7 +2016,8 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
       },
       focusWindow(w) { w.z = ++this.windowTop; },
       trustWindow(w) {
-        if (!window.confirm(this.t('This device\'s own page will be shown in full. It can then reach NetBase in this browser, though nothing outside the device windows. Do this only for a device you trust.'))) return;
+        // Said once, in the bar, and remembered: this is a device on the
+        // administrator's own network, not a decision worth a dialog every time.
         w.trusted = true;
         w.framed = false;
         this.rememberTrust(w.base, true);

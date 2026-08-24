@@ -697,8 +697,6 @@ OC.L10N.register(
         "Device web pages — open them in a window through this server, or as a picture": "उपकरणों के वेब पृष्ठ — इस सर्वर के ज़रिए विंडो में, या चित्र के रूप में",
         "Connecting…": "जोड़ा जा रहा है…",
         "Fill the screen": "पूरी स्क्रीन",
-        "This page is built from frames, which a window kept away from Nextcloud cannot load.": "यह पृष्ठ फ़्रेम से बना है, जिन्हें Nextcloud से अलग रखी विंडो लोड नहीं कर सकती।",
-        "Show it anyway": "फिर भी दिखाएँ",
         "No answer at all — the name may not resolve, or nothing on the way let the request through.": "कोई उत्तर नहीं — या तो नाम हल नहीं होता, या रास्ते में अनुरोध रोक दिया गया।",
         "Nothing came back. Many devices and firewalls ignore ping while still answering on a port, so try the TCP check before calling it offline.": "कुछ भी वापस नहीं आया। कई उपकरण और फ़ायरवॉल ping को अनदेखा करते हैं पर पोर्ट पर उत्तर देते हैं — ऑफ़लाइन मानने से पहले TCP जाँच करें।",
         "%s%% of the packets went missing. On a wired network that points at a cable or a port; on Wi-Fi, at range or interference.": "%s%% पैकेट खो गए। तार वाले नेटवर्क में यह केबल या पोर्ट की ओर, और वाई-फ़ाई में दूरी या व्यवधान की ओर इशारा करता है।",
@@ -714,8 +712,14 @@ OC.L10N.register(
         "The list of tools": "औज़ारों की सूची",
         "Drag the tools in the sidebar into the order you work in — or hold Alt and press the up and down arrows. The order is kept for your account.": "बग़ल की पट्टी में औज़ारों को अपने काम के क्रम में खींचें — या Alt दबाकर ऊपर-नीचे तीर दबाएँ। क्रम आपके खाते के लिए सहेजा जाता है।",
         "Put them back in the original order": "मूल क्रम में लौटाएँ",
-        "This device's own page will be shown in full. It can then reach NetBase in this browser, though nothing outside the device windows. Do this only for a device you trust.": "इस उपकरण का पृष्ठ पूरा दिखाया जाएगा। तब वह इस ब्राउज़र में NetBase तक पहुँच सकता है, पर उपकरण खिड़कियों के बाहर कुछ नहीं। केवल भरोसेमंद उपकरण के लिए करें।",
-        "Shown in full, because you agreed to it for this device. Click to undo.": "आपने इस उपकरण हेतु सहमति दी थी, इसलिए पूरा दिखाया जा रहा है। पूर्ववत करने हेतु क्लिक करें।"
+        "Shown in full, because you agreed to it for this device. Click to undo.": "आपने इस उपकरण हेतु सहमति दी थी, इसलिए पूरा दिखाया जा रहा है। पूर्ववत करने हेतु क्लिक करें।",
+        "This page is built from frames, which a window kept away from Nextcloud cannot load. Showing it in full lets the page reach NetBase in this browser, but nothing outside the device windows.": "यह पृष्ठ फ़्रेम से बना है, जिन्हें Nextcloud से अलग रखी विंडो लोड नहीं कर सकती। पूरा दिखाने पर पृष्ठ इस ब्राउज़र में NetBase तक पहुँच सकता है, पर उपकरण खिड़कियों के बाहर कुछ नहीं।",
+        "Show it in full, and remember this device": "पूरा दिखाएँ और यह उपकरण याद रखें",
+        "Not now": "अभी नहीं",
+        "Devices shown in full": "पूरे दिखाए जाने वाले उपकरण",
+        "A device page built from frames only works when shown in full. These are the ones you have agreed to; the rest are kept at arm's length from Nextcloud.": "फ़्रेम से बना उपकरण-पृष्ठ केवल पूरा दिखाने पर चलता है। ये वे हैं जिन्हें आपने स्वीकारा; बाक़ी Nextcloud से अलग रखे जाते हैं।",
+        "None yet.": "अभी कोई नहीं।",
+        "Undo": "पूर्ववत"
     },
     "nplurals=2; plural=(n != 1);"
 );

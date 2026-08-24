@@ -697,8 +697,6 @@ OC.L10N.register(
         "Device web pages — open them in a window through this server, or as a picture": "صفحه‌های وب دستگاه‌ها — در پنجره از راه این کارساز، یا به شکل تصویر",
         "Connecting…": "در حال اتصال…",
         "Fill the screen": "پر کردن صفحه",
-        "This page is built from frames, which a window kept away from Nextcloud cannot load.": "این صفحه از قاب ساخته شده و پنجره‌ای جدا از نکست‌کلاد نمی‌تواند آن‌ها را بار کند.",
-        "Show it anyway": "با این حال نمایش بده",
         "No answer at all — the name may not resolve, or nothing on the way let the request through.": "هیچ پاسخی نیامد — یا نام حل نمی‌شود یا درخواست در راه سد شده است.",
         "Nothing came back. Many devices and firewalls ignore ping while still answering on a port, so try the TCP check before calling it offline.": "چیزی بازنگشت. بسیاری از دستگاه‌ها و دیوارهای آتش پینگ را نادیده می‌گیرند ولی روی درگاه پاسخ می‌دهند؛ پیش از آفلاین خواندن، بررسی TCP را بیازمایید.",
         "%s%% of the packets went missing. On a wired network that points at a cable or a port; on Wi-Fi, at range or interference.": "%s%% بسته‌ها گم شد. در شبکهٔ سیمی به کابل یا درگاه اشاره دارد و در وای‌فای به فاصله یا تداخل.",
@@ -714,8 +712,14 @@ OC.L10N.register(
         "The list of tools": "فهرست ابزارها",
         "Drag the tools in the sidebar into the order you work in — or hold Alt and press the up and down arrows. The order is kept for your account.": "ابزارهای نوار کناری را به ترتیب کارتان بکشید — یا Alt را نگه دارید و کلیدهای بالا و پایین را بزنید. ترتیب برای حساب شما نگه داشته می‌شود.",
         "Put them back in the original order": "بازگرداندن به ترتیب اصلی",
-        "This device's own page will be shown in full. It can then reach NetBase in this browser, though nothing outside the device windows. Do this only for a device you trust.": "صفحهٔ این دستگاه به‌طور کامل نمایش داده می‌شود. آنگاه می‌تواند به نت‌بیس در همین مرورگر دست یابد، اما به بیرون از پنجره‌های دستگاه نه. تنها برای دستگاهی که به آن اعتماد دارید انجام دهید.",
-        "Shown in full, because you agreed to it for this device. Click to undo.": "چون برای این دستگاه پذیرفته‌اید، کامل نمایش داده می‌شود. برای لغو کلیک کنید."
+        "Shown in full, because you agreed to it for this device. Click to undo.": "چون برای این دستگاه پذیرفته‌اید، کامل نمایش داده می‌شود. برای لغو کلیک کنید.",
+        "This page is built from frames, which a window kept away from Nextcloud cannot load. Showing it in full lets the page reach NetBase in this browser, but nothing outside the device windows.": "این صفحه از قاب ساخته شده و پنجره‌ای جدا از نکست‌کلاد نمی‌تواند آن‌ها را بار کند. با نمایش کامل، صفحه به نت‌بیس در همین مرورگر دست می‌یابد، اما به بیرون از پنجره‌های دستگاه نه.",
+        "Show it in full, and remember this device": "کامل نمایش بده و این دستگاه را به یاد بسپار",
+        "Not now": "اکنون نه",
+        "Devices shown in full": "دستگاه‌هایی که کامل نمایش داده می‌شوند",
+        "A device page built from frames only works when shown in full. These are the ones you have agreed to; the rest are kept at arm's length from Nextcloud.": "صفحهٔ دستگاهی که از قاب ساخته شده تنها در نمایش کامل کار می‌کند. این‌ها همان‌هایی‌اند که پذیرفته‌اید؛ بقیه از نکست‌کلاد جدا نگه داشته می‌شوند.",
+        "None yet.": "هنوز هیچ‌کدام.",
+        "Undo": "لغو"
     },
     "nplurals=2; plural=(n > 1);"
 );
