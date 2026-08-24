@@ -177,11 +177,14 @@ class ProxyController extends Controller {
 	private function policy(): EmptyContentSecurityPolicy {
 		$here = $this->urls->getAbsoluteURL('/apps/netbase/proxy/');
 		$policy = new EmptyContentSecurityPolicy();
-		$policy->allowEvalScript(true);
-		$policy->allowEvalWasm(true);
 		$policy->allowInlineStyle(true);
 		$policy->addAllowedScriptDomain($here);
 		$policy->addAllowedScriptDomain("'unsafe-inline'");
+		// Written as sources rather than as allowEvalScript(), which Nextcloud 34
+		// no longer has: a device page that needs eval gets the same permission
+		// on every version NetBase supports.
+		$policy->addAllowedScriptDomain("'unsafe-eval'");
+		$policy->addAllowedScriptDomain("'wasm-unsafe-eval'");
 		$policy->addAllowedStyleDomain($here);
 		$policy->addAllowedStyleDomain("'unsafe-inline'");
 		foreach ([$here, 'data:', 'blob:'] as $source) {
@@ -192,7 +195,6 @@ class ProxyController extends Controller {
 		}
 		$policy->addAllowedConnectDomain($here);
 		$policy->addAllowedFrameDomain($here);
-		$policy->addAllowedChildSrcDomain($here);
 		$policy->addAllowedWorkerSrcDomain($here);
 		$policy->addAllowedWorkerSrcDomain('blob:');
 		$policy->addAllowedFormActionDomain($here);
