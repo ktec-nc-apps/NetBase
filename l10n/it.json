@@ -735,7 +735,10 @@
         "↓ CSV": "↓ CSV",
         "Download as a file": "Scarica come file",
         "Pick a well-known time server, or type any other.": "Scegli un server dell'ora noto, oppure scrivine un altro.",
-        "MAC address — type 001ba93f8dfe, the colons are added for you": "Indirizzo MAC — scrivi 001ba93f8dfe, i due punti li mette lui"
+        "MAC address — type 001ba93f8dfe, the colons are added for you": "Indirizzo MAC — scrivi 001ba93f8dfe, i due punti li mette lui",
+        "Pick one NetBase already knows": "Scegli uno che NetBase conosce già",
+        "Choose…": "Scegli…",
+        "Recent": "Recenti"
     },
     "pluralForm": "nplurals=2; plural=(n != 1);"
 }

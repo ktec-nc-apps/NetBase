@@ -735,7 +735,10 @@
         "↓ CSV": "↓ CSV",
         "Download as a file": "फ़ाइल के रूप में डाउनलोड",
         "Pick a well-known time server, or type any other.": "कोई जाना-माना समय सर्वर चुनें, या दूसरा टाइप करें।",
-        "MAC address — type 001ba93f8dfe, the colons are added for you": "MAC पता — 001ba93f8dfe लिखें, कोलन अपने आप जुड़ जाएँगे"
+        "MAC address — type 001ba93f8dfe, the colons are added for you": "MAC पता — 001ba93f8dfe लिखें, कोलन अपने आप जुड़ जाएँगे",
+        "Pick one NetBase already knows": "NetBase को पहले से ज्ञात में से चुनें",
+        "Choose…": "चुनें…",
+        "Recent": "हाल के"
     },
     "pluralForm": "nplurals=2; plural=(n != 1);"
 }

@@ -736,7 +736,10 @@ OC.L10N.register(
         "↓ CSV": "↓ CSV",
         "Download as a file": "Descargar como archivo",
         "Pick a well-known time server, or type any other.": "Elija un servidor de hora conocido o escriba cualquier otro.",
-        "MAC address — type 001ba93f8dfe, the colons are added for you": "Dirección MAC: escriba 001ba93f8dfe, los dos puntos se añaden solos"
+        "MAC address — type 001ba93f8dfe, the colons are added for you": "Dirección MAC: escriba 001ba93f8dfe, los dos puntos se añaden solos",
+        "Pick one NetBase already knows": "Elegir uno que NetBase ya conoce",
+        "Choose…": "Elegir…",
+        "Recent": "Recientes"
     },
     "nplurals=2; plural=(n != 1);"
 );

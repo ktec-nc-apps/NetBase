@@ -735,7 +735,10 @@
         "↓ CSV": "↓ CSV",
         "Download as a file": "Stáhnout jako soubor",
         "Pick a well-known time server, or type any other.": "Vyberte známý časový server, nebo napište jiný.",
-        "MAC address — type 001ba93f8dfe, the colons are added for you": "MAC adresa — napište 001ba93f8dfe, dvojtečky se doplní samy"
+        "MAC address — type 001ba93f8dfe, the colons are added for you": "MAC adresa — napište 001ba93f8dfe, dvojtečky se doplní samy",
+        "Pick one NetBase already knows": "Vyberte to, co NetBase už zná",
+        "Choose…": "Vybrat…",
+        "Recent": "Nedávné"
     },
     "pluralForm": "nplurals=4; plural=(n == 1 && n % 1 == 0) ? 0 : (n >= 2 && n <= 4 && n % 1 == 0) ? 1: (n % 1 != 0 ) ? 2 : 3;"
 }

@@ -735,7 +735,10 @@
         "↓ CSV": "↓ CSV",
         "Download as a file": "ดาวน์โหลดเป็นไฟล์",
         "Pick a well-known time server, or type any other.": "เลือกเซิร์ฟเวอร์เวลาที่รู้จักกันดี หรือพิมพ์เซิร์ฟเวอร์อื่น",
-        "MAC address — type 001ba93f8dfe, the colons are added for you": "ที่อยู่ MAC — พิมพ์ 001ba93f8dfe ได้เลย ระบบใส่ทวิภาคให้เอง"
+        "MAC address — type 001ba93f8dfe, the colons are added for you": "ที่อยู่ MAC — พิมพ์ 001ba93f8dfe ได้เลย ระบบใส่ทวิภาคให้เอง",
+        "Pick one NetBase already knows": "เลือกจากสิ่งที่ NetBase รู้จักอยู่แล้ว",
+        "Choose…": "เลือก…",
+        "Recent": "ใช้ล่าสุด"
     },
     "pluralForm": "nplurals=1; plural=0;"
 }

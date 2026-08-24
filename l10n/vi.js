@@ -736,7 +736,10 @@ OC.L10N.register(
         "↓ CSV": "↓ CSV",
         "Download as a file": "Tải xuống thành tệp",
         "Pick a well-known time server, or type any other.": "Chọn một máy chủ thời gian quen thuộc, hoặc gõ máy chủ khác.",
-        "MAC address — type 001ba93f8dfe, the colons are added for you": "Địa chỉ MAC — gõ 001ba93f8dfe, dấu hai chấm tự thêm"
+        "MAC address — type 001ba93f8dfe, the colons are added for you": "Địa chỉ MAC — gõ 001ba93f8dfe, dấu hai chấm tự thêm",
+        "Pick one NetBase already knows": "Chọn thứ NetBase đã biết",
+        "Choose…": "Chọn…",
+        "Recent": "Gần đây"
     },
     "nplurals=1; plural=0;"
 );

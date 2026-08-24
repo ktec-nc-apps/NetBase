@@ -383,6 +383,12 @@
         <section v-if="tab==='ping'">
           <div class="card tool-card">
             <div class="tool-row">
+              <select class="pick" :title="t('Pick one NetBase already knows')" @change="pickInto('pingHost', $event)">
+                <option value="">{{ t('Choose…') }}</option>
+                <optgroup v-for="g in hostChoices" :key="g.label" :label="t(g.label)">
+                  <option v-for="o in g.items" :key="o.value" :value="o.value">{{ o.text }}</option>
+                </optgroup>
+              </select>
               <input v-model="pingHost" :placeholder="t('Host name or IP address')" @keyup.enter="runPing">
               <button class="btn primary" :disabled="busy.ping" @click="runPing">{{ t('Ping') }}</button>
               <button class="btn" :disabled="busy.trace" @click="runTrace">{{ t('Traceroute') }}</button>
@@ -454,6 +460,12 @@
         <section v-if="tab==='ports'">
           <div class="card tool-card">
             <div class="tool-row">
+              <select class="pick" :title="t('Pick one NetBase already knows')" @change="pickInto('portHost', $event)">
+                <option value="">{{ t('Choose…') }}</option>
+                <optgroup v-for="g in hostChoices" :key="g.label" :label="t(g.label)">
+                  <option v-for="o in g.items" :key="o.value" :value="o.value">{{ o.text }}</option>
+                </optgroup>
+              </select>
               <input v-model="portHost" :placeholder="t('Host name or IP address')" @keyup.enter="runPorts">
               <input v-model="portList" class="narrow" :placeholder="t('22,80,443,8000-8100 (blank = common ports)')">
               <button class="btn primary" :disabled="busy.ports" @click="runPorts">{{ t('Check') }}</button>
@@ -650,6 +662,12 @@
         <section v-if="tab==='subnet'">
           <div class="card tool-card">
             <div class="tool-row">
+              <select class="pick" :title="t('Pick one NetBase already knows')" @change="pickInto('subnetInput', $event)">
+                <option value="">{{ t('Choose…') }}</option>
+                <optgroup v-for="g in networkChoices" :key="g.label" :label="t(g.label)">
+                  <option v-for="o in g.items" :key="o.value" :value="o.value">{{ o.text }}</option>
+                </optgroup>
+              </select>
               <input v-model="subnetInput" placeholder="192.168.1.10/24" @keyup.enter="runSubnet">
               <button class="btn primary" @click="runSubnet">{{ t('Calculate') }}</button>
             </div>
@@ -687,8 +705,18 @@
 
           <div class="card tool-card">
             <div class="tool-row">
-              <input :value="macQuery" :placeholder="t('MAC address — type 001ba93f8dfe, the colons are added for you')"
-                     @input="typeMac($event)" @keyup.enter="runMac">
+              <!-- Six pairs, because that is what a MAC address is. Two
+                   characters fill a box and move on; backspace in an empty box
+                   steps back. Pasting the whole address fills them all. -->
+              <div class="mac-boxes" :title="t('MAC address')">
+                <template v-for="(part, i) in macParts" :key="i">
+                  <input class="mac-box" ref="macBox" :value="part" maxlength="2" inputmode="text"
+                         spellcheck="false" autocomplete="off" :aria-label="t('MAC address') + ' ' + (i + 1)"
+                         @input="typeMacPart(i, $event)" @keydown="macKey(i, $event)"
+                         @paste="pasteMac($event)" @focus="$event.target.select()">
+                  <span v-if="i < 5" class="mac-sep">:</span>
+                </template>
+              </div>
               <button class="btn" @click="runMac">{{ t('Identify vendor') }}</button>
             </div>
             <div class="kv" v-if="macResult">
@@ -710,7 +738,13 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
           <template v-else>
             <div class="card tool-card">
               <div class="tool-row">
-                <input v-model="nmapTargets" :placeholder="t('Host, address or 192.168.1.0/24')" @keyup.enter="runNmap">
+                <select class="pick" :title="t('Pick one NetBase already knows')" @change="pickInto('nmapTargets', $event)">
+                <option value="">{{ t('Choose…') }}</option>
+                <optgroup v-for="g in targetChoices" :key="g.label" :label="t(g.label)">
+                  <option v-for="o in g.items" :key="o.value" :value="o.value">{{ o.text }}</option>
+                </optgroup>
+              </select>
+              <input v-model="nmapTargets" :placeholder="t('Host, address or 192.168.1.0/24')" @keyup.enter="runNmap">
                 <select v-model="nmapPreset">
                   <option v-for="(p,k) in status.nmap.presets" :key="k" :value="k">{{ t(p.label) }}</option>
                 </select>
@@ -1101,6 +1135,12 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         <section v-if="tab==='ssh'">
           <div class="card tool-card">
             <div class="tool-row">
+              <select class="pick" :title="t('Pick one NetBase already knows')" @change="pickInto('sshHost', $event)">
+                <option value="">{{ t('Choose…') }}</option>
+                <optgroup v-for="g in hostChoices" :key="g.label" :label="t(g.label)">
+                  <option v-for="o in g.items" :key="o.value" :value="o.value">{{ o.text }}</option>
+                </optgroup>
+              </select>
               <input v-model="sshHost" :placeholder="t('Host name or IP address')" @keyup.enter="runSsh">
               <input v-model.number="sshPort" type="number" class="tiny" min="1" max="65535">
               <button class="btn primary" :disabled="busy.ssh" @click="runSsh">{{ t('Inspect SSH') }}</button>
@@ -1736,7 +1776,8 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         pingHost: '', pingResult: null, traceResult: null,
         portHost: '', portList: '', portResult: null,
         tlsHost: '', tlsPort: 443, tlsResult: null, httpResult: null,
-        subnetInput: '', subnetResult: null, macQuery: '', macResult: null,
+        subnetInput: '', subnetResult: null, macParts: ['', '', '', '', '', ''], macResult: null,
+        recentHosts: (() => { try { return JSON.parse(localStorage.getItem('netbase-recent-hosts') || '[]'); } catch (e) { return []; } })(),
         // saved connections (FTP / SFTP / mail accounts)
         connections: [], connKinds: {}, connCaps: {}, connModal: false, connNote: '',
         connForm: { id: 0, kind: 'sftp', name: '', host: '', port: 22, mode: 'ssh', username: '', secret: '', authType: 'password', privateKey: '', privateKeyPath: '', passphrase: '', from: '', path: '', passive: true, notes: '', hasSecret: false },
@@ -1786,7 +1827,49 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         const placed = order.map((id) => allowed.find((x) => x.id === id)).filter(Boolean);
         return placed.concat(allowed.filter((x) => !order.includes(x.id)));
       },
-      currentTab() { return TABS.find((x) => x.id === this.tab) || this.visibleTabs[0] || TABS[0]; },
+      currentTab() { return TABS.find((x) => x.id === this.tab) || TABS[0]; },
+      macQuery() {
+        // Trailing empty boxes are simply not typed yet, so they are not part
+        // of the address either.
+        const parts = [...this.macParts];
+        while (parts.length && parts[parts.length - 1] === '') parts.pop();
+        return parts.join(':');
+      },
+
+      /**
+       * Addresses NetBase already knows, so they need not be typed again:
+       * the devices it found, this server's own networks, and whatever was
+       * last asked about in this browser.
+       */
+      hostChoices() {
+        const groups = [];
+        const devices = (this.devices || []).filter((d) => d.ip);
+        if (devices.length) {
+          groups.push({
+            label: 'Devices',
+            items: devices.slice(0, 60).map((d) => ({
+              value: d.ip,
+              text: d.name && d.name !== d.ip ? d.name + ' — ' + d.ip : d.ip,
+            })),
+          });
+        }
+        const recent = this.recentHosts;
+        if (recent.length) {
+          groups.push({ label: 'Recent', items: recent.map((h) => ({ value: h, text: h })) });
+        }
+        return groups;
+      },
+      networkChoices() {
+        const targets = (this.status.targets || []).map((t2) => ({
+          value: t2.cidr,
+          text: t2.interface ? t2.cidr + ' — ' + t2.interface : t2.cidr,
+        }));
+        const groups = targets.length ? [{ label: 'This server', items: targets }] : [];
+        const recent = this.recentHosts.filter((h) => h.includes('/'));
+        if (recent.length) groups.push({ label: 'Recent', items: recent.map((h) => ({ value: h, text: h })) });
+        return groups;
+      },
+      targetChoices() { return this.networkChoices.concat(this.hostChoices); },
       hasResult() {
         // Reading the results makes the buttons wake up the moment one arrives.
         void [this.dnsResult, this.dnsQueryResult, this.dnsCompareResult, this.dnsTraceResult, this.axfrResult,
@@ -2477,7 +2560,8 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
       },
 
       // ---- SSH / Telnet / NTP ----
-      async runSsh() { this.sshResult = await this.guarded('ssh', () => api('probe/ssh?' + qs({ host: this.sshHost, port: this.sshPort || 22, authMethods: this.sshAuthMethods ? 1 : 0 }))); },
+      async runSsh() {
+        this.rememberHost(this.sshHost); this.sshResult = await this.guarded('ssh', () => api('probe/ssh?' + qs({ host: this.sshHost, port: this.sshPort || 22, authMethods: this.sshAuthMethods ? 1 : 0 }))); },
       async runTelnet() { this.telnetResult = await this.guarded('telnet', () => api('probe/telnet?' + qs({ host: this.sshHost, port: 23 }))); },
       async runNtp() { this.ntpResult = await this.guarded('ntp', () => api('probe/ntp?' + qs({ host: this.ntpHost }))); },
 
@@ -2581,9 +2665,11 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
 
       async runDns() { this.dnsResult = await this.guarded('dns', () => api('tools/dns?' + qs({ host: this.dnsHost, types: this.dnsWanted }))); },
       async runWhois() { this.whoisResult = await this.guarded('whois', () => api('tools/whois?' + qs({ query: this.whoisQuery }))); },
-      async runPing() { this.pingResult = await this.guarded('ping', () => api('tools/ping?' + qs({ host: this.pingHost }))); },
+      async runPing() {
+        this.rememberHost(this.pingHost); this.pingResult = await this.guarded('ping', () => api('tools/ping?' + qs({ host: this.pingHost }))); },
       async runTrace() { this.traceResult = await this.guarded('trace', () => api('tools/traceroute?' + qs({ host: this.pingHost }))); },
       async runPorts() {
+        this.rememberHost(this.portHost);
         // The server understands "22,80,8000-8100"; sending the text as typed
         // keeps ranges intact.
         this.portResult = await this.guarded('ports', () => api('tools/ports?' + qs({ host: this.portHost, spec: this.portList })));
@@ -2591,16 +2677,74 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
       async runTls() { this.tlsResult = await this.guarded('tls', () => api('tools/tls?' + qs({ host: this.tlsHost, port: this.tlsPort }))); },
       async runHttp() { this.httpResult = await this.guarded('http', () => api('tools/http?' + qs({ url: this.tlsHost }))); },
       async runSubnet() { this.subnetResult = await this.guarded('subnet', () => api('tools/subnet?' + qs({ cidr: this.subnetInput }))); },
-      /**
-       * A MAC is six pairs of hex, and that is all it can be — so the field
-       * takes the twelve characters and puts the colons in itself. Pasting one
-       * that already has colons, or dashes, or dots, works the same way.
-       */
-      typeMac(event) {
-        const hex = String(event.target.value || '').replace(/[^0-9a-fA-F]/g, '').slice(0, 12).toLowerCase();
-        this.macQuery = (hex.match(/.{1,2}/g) || []).join(':');
-        // The field is bound to the tidied value, so put it back either way.
-        this.$nextTick(() => { event.target.value = this.macQuery; });
+      /** Choosing from the list fills the field beside it and runs nothing. */
+      pickInto(field, event) {
+        const value = event.target.value;
+        if (!value) return;
+        this[field] = value;
+        event.target.value = '';
+        this.rememberHost(value);
+      },
+      rememberHost(value) {
+        const host = String(value || '').trim();
+        if (!host) return;
+        const list = [host, ...this.recentHosts.filter((h) => h !== host)].slice(0, 12);
+        this.recentHosts = list;
+        // Per browser, not per account: it is a convenience, not a setting.
+        try { localStorage.setItem('netbase-recent-hosts', JSON.stringify(list)); } catch (e) { /* private window */ }
+      },
+
+      // ---- the six boxes of a MAC address ---------------------------------
+      macBoxAt(index) {
+        const boxes = this.$refs.macBox;
+        return Array.isArray(boxes) ? boxes[index] : null;
+      },
+      focusMacBox(index, atEnd) {
+        const box = this.macBoxAt(index);
+        if (!box) return;
+        box.focus();
+        if (atEnd) this.$nextTick(() => box.setSelectionRange(box.value.length, box.value.length));
+      },
+      typeMacPart(index, event) {
+        const hex = String(event.target.value || '').replace(/[^0-9a-fA-F]/g, '').slice(0, 2).toLowerCase();
+        const parts = [...this.macParts];
+        parts[index] = hex;
+        this.macParts = parts;
+        // Put back the cleaned value, in case something else was typed.
+        this.$nextTick(() => { event.target.value = hex; });
+        // A full pair moves on, which is what typing an address feels like.
+        if (hex.length === 2 && index < 5) this.focusMacBox(index + 1, false);
+      },
+      macKey(index, event) {
+        if (event.key === 'Backspace' && event.target.value === '' && index > 0) {
+          event.preventDefault();
+          const parts = [...this.macParts];
+          parts[index - 1] = '';
+          this.macParts = parts;
+          this.focusMacBox(index - 1, true);
+          return;
+        }
+        if (event.key === 'ArrowLeft' && event.target.selectionStart === 0 && index > 0) {
+          event.preventDefault();
+          this.focusMacBox(index - 1, true);
+        }
+        if (event.key === 'ArrowRight' && event.target.selectionStart === event.target.value.length && index < 5) {
+          event.preventDefault();
+          this.focusMacBox(index + 1, false);
+        }
+        if (event.key === 'Enter') this.runMac();
+      },
+      pasteMac(event) {
+        const text = (event.clipboardData || window.clipboardData).getData('text') || '';
+        const hex = text.replace(/[^0-9a-fA-F]/g, '').slice(0, 12).toLowerCase();
+        if (hex.length < 3) return;
+        event.preventDefault();
+        const pairs = hex.match(/.{1,2}/g) || [];
+        this.macParts = Array.from({ length: 6 }, (unused, i) => pairs[i] || '');
+        this.$nextTick(() => {
+          this.macParts.forEach((part, i) => { const box = this.macBoxAt(i); if (box) box.value = part; });
+          this.focusMacBox(Math.min(pairs.length, 5), true);
+        });
       },
       async runMac() { this.macResult = await this.guarded('mac', () => api('tools/mac?' + qs({ mac: this.macQuery }))); },
       hasTool(id) {
