@@ -712,14 +712,7 @@ OC.L10N.register(
         "The list of tools": "도구 목록",
         "Drag the tools in the sidebar into the order you work in — or hold Alt and press the up and down arrows. The order is kept for your account.": "사이드바의 도구를 작업 순서대로 끌어 놓거나, Alt를 누른 채 위아래 화살표로 옮기세요. 순서는 계정별로 저장됩니다.",
         "Put them back in the original order": "원래 순서로 되돌리기",
-        "Shown in full, because you agreed to it for this device. Click to undo.": "이 장치에 대해 동의했기에 그대로 표시됩니다. 눌러서 해제할 수 있습니다.",
-        "This page is built from frames, which a window kept away from Nextcloud cannot load. Showing it in full lets the page reach NetBase in this browser, but nothing outside the device windows.": "이 페이지는 프레임으로 구성되어 있어 Nextcloud와 분리된 창에서는 불러올 수 없습니다. 그대로 표시하면 페이지가 이 브라우저의 NetBase에 접근할 수 있지만, 장치 창 밖으로는 통신할 수 없습니다.",
-        "Show it in full, and remember this device": "그대로 표시하고 이 장치를 기억",
-        "Not now": "지금은 안 함",
-        "Devices shown in full": "그대로 표시하는 장치",
-        "A device page built from frames only works when shown in full. These are the ones you have agreed to; the rest are kept at arm's length from Nextcloud.": "프레임으로 만든 장치 페이지는 그대로 표시해야 동작합니다. 아래는 동의한 장치이며, 나머지는 Nextcloud와 분리해 표시합니다.",
-        "None yet.": "아직 없습니다.",
-        "Undo": "해제"
+        "This window shows the device's own page, fetched by this server. The page reaches nothing but this window.": "이 창은 이 서버가 가져온 장치의 화면을 그대로 보여 줍니다. 페이지는 이 창 밖으로 나가지 못합니다."
     },
     "nplurals=1; plural=0;"
 );

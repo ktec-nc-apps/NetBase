@@ -69,11 +69,22 @@ switch ($path) {
 		return;
 
 	case '/frame-menu':
-		$page('メニュー枠', '<p><a href="/frame-main" target="main">本文を差し替え</a></p>', false);
+		// The menu says nothing about where its links open: the <base> does,
+		// which is how plenty of device interfaces are built.
+		header('Content-Type: text/html');
+		echo '<html><head><base target="main"><title>メニュー枠</title></head><body>'
+			. '<h1>メニュー枠</h1>'
+			. '<p><a href="/frame-swapped">本文を差し替え（base target 頼み）</a></p>'
+			. '<p><a href="/frame-swapped" target="main">本文を差し替え（明示）</a></p>'
+			. '</body></html>';
 		return;
 
 	case '/frame-main':
 		$page('本文枠', '<p>フレームが読み込めている。</p>', false);
+		return;
+
+	case '/frame-swapped':
+		$page('差し替え後の本文', '<p>メニューからの指定が正しい枠に届いた。</p>', false);
 		return;
 
 	case '/secret':

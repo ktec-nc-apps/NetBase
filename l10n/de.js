@@ -712,14 +712,7 @@ OC.L10N.register(
         "The list of tools": "Die Liste der Werkzeuge",
         "Drag the tools in the sidebar into the order you work in — or hold Alt and press the up and down arrows. The order is kept for your account.": "Ziehen Sie die Werkzeuge in der Seitenleiste in Ihre Arbeitsreihenfolge — oder halten Sie Alt und benutzen Sie die Pfeiltasten. Die Reihenfolge bleibt für Ihr Konto erhalten.",
         "Put them back in the original order": "Ursprüngliche Reihenfolge wiederherstellen",
-        "Shown in full, because you agreed to it for this device. Click to undo.": "Wird vollständig angezeigt, weil Sie dem für dieses Gerät zugestimmt haben. Klicken zum Aufheben.",
-        "This page is built from frames, which a window kept away from Nextcloud cannot load. Showing it in full lets the page reach NetBase in this browser, but nothing outside the device windows.": "Diese Seite besteht aus Frames, die ein von Nextcloud abgeschirmtes Fenster nicht laden kann. Vollständig angezeigt erreicht die Seite NetBase in diesem Browser, aber nichts außerhalb der Gerätefenster.",
-        "Show it in full, and remember this device": "Vollständig anzeigen und Gerät merken",
-        "Not now": "Jetzt nicht",
-        "Devices shown in full": "Vollständig angezeigte Geräte",
-        "A device page built from frames only works when shown in full. These are the ones you have agreed to; the rest are kept at arm's length from Nextcloud.": "Eine aus Frames gebaute Geräteseite funktioniert nur vollständig angezeigt. Dies sind die Geräte, denen Sie zugestimmt haben; alle anderen bleiben von Nextcloud abgeschirmt.",
-        "None yet.": "Noch keine.",
-        "Undo": "Aufheben"
+        "This window shows the device's own page, fetched by this server. The page reaches nothing but this window.": "Dieses Fenster zeigt die Seite des Geräts, von diesem Server geholt. Die Seite erreicht nichts außerhalb dieses Fensters."
     },
     "nplurals=2; plural=(n != 1);"
 );

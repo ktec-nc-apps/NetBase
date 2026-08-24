@@ -712,14 +712,7 @@ OC.L10N.register(
         "The list of tools": "The list of tools",
         "Drag the tools in the sidebar into the order you work in — or hold Alt and press the up and down arrows. The order is kept for your account.": "Drag the tools in the sidebar into the order you work in — or hold Alt and press the up and down arrows. The order is kept for your account.",
         "Put them back in the original order": "Put them back in the original order",
-        "Shown in full, because you agreed to it for this device. Click to undo.": "Shown in full, because you agreed to it for this device. Click to undo.",
-        "This page is built from frames, which a window kept away from Nextcloud cannot load. Showing it in full lets the page reach NetBase in this browser, but nothing outside the device windows.": "This page is built from frames, which a window kept away from Nextcloud cannot load. Showing it in full lets the page reach NetBase in this browser, but nothing outside the device windows.",
-        "Show it in full, and remember this device": "Show it in full, and remember this device",
-        "Not now": "Not now",
-        "Devices shown in full": "Devices shown in full",
-        "A device page built from frames only works when shown in full. These are the ones you have agreed to; the rest are kept at arm's length from Nextcloud.": "A device page built from frames only works when shown in full. These are the ones you have agreed to; the rest are kept at arm's length from Nextcloud.",
-        "None yet.": "None yet.",
-        "Undo": "Undo"
+        "This window shows the device's own page, fetched by this server. The page reaches nothing but this window.": "This window shows the device's own page, fetched by this server. The page reaches nothing but this window."
     },
     "nplurals=2; plural=(n != 1);"
 );

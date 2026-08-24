@@ -712,14 +712,7 @@ OC.L10N.register(
         "The list of tools": "قائمة الأدوات",
         "Drag the tools in the sidebar into the order you work in — or hold Alt and press the up and down arrows. The order is kept for your account.": "اسحب الأدوات في الشريط الجانبي إلى ترتيب عملك، أو اضغط Alt مع سهمي أعلى وأسفل. يُحفظ الترتيب لحسابك.",
         "Put them back in the original order": "أعِدها إلى الترتيب الأصلي",
-        "Shown in full, because you agreed to it for this device. Click to undo.": "تُعرض كاملة لأنك وافقت على ذلك لهذا الجهاز. انقر للتراجع.",
-        "This page is built from frames, which a window kept away from Nextcloud cannot load. Showing it in full lets the page reach NetBase in this browser, but nothing outside the device windows.": "تتكوّن هذه الصفحة من إطارات لا تستطيع نافذة معزولة عن نكستكلاود تحميلها. وعند عرضها كاملة تصل إلى نِت‌بيس في هذا المتصفح، لكن لا شيء خارج نوافذ الأجهزة.",
-        "Show it in full, and remember this device": "اعرضها كاملة وتذكّر هذا الجهاز",
-        "Not now": "ليس الآن",
-        "Devices shown in full": "الأجهزة المعروضة كاملة",
-        "A device page built from frames only works when shown in full. These are the ones you have agreed to; the rest are kept at arm's length from Nextcloud.": "صفحة الجهاز المبنية من إطارات لا تعمل إلا معروضة كاملة. هذه هي التي وافقت عليها، وما عداها يبقى بعيدًا عن نكستكلاود.",
-        "None yet.": "لا شيء بعد.",
-        "Undo": "تراجع"
+        "This window shows the device's own page, fetched by this server. The page reaches nothing but this window.": "تعرض هذه النافذة صفحة الجهاز كما جلبها هذا الخادم. ولا تصل الصفحة إلى شيء خارج هذه النافذة."
     },
     "nplurals=6; plural=(n==0 ? 0 : n==1 ? 1 : n==2 ? 2 : n%100>=3 && n%100<=10 ? 3 : n%100>=11 && n%100<=99 ? 4 : 5);"
 );

@@ -712,14 +712,7 @@ OC.L10N.register(
         "The list of tools": "รายการเครื่องมือ",
         "Drag the tools in the sidebar into the order you work in — or hold Alt and press the up and down arrows. The order is kept for your account.": "ลากเครื่องมือในแถบข้างให้เรียงตามลำดับที่คุณใช้ หรือกด Alt ค้างแล้วใช้ลูกศรขึ้นลง ลำดับจะถูกเก็บไว้กับบัญชีของคุณ",
         "Put them back in the original order": "คืนลำดับเดิม",
-        "Shown in full, because you agreed to it for this device. Click to undo.": "แสดงเต็มรูปแบบเพราะคุณยินยอมไว้สำหรับอุปกรณ์นี้ คลิกเพื่อยกเลิก",
-        "This page is built from frames, which a window kept away from Nextcloud cannot load. Showing it in full lets the page reach NetBase in this browser, but nothing outside the device windows.": "หน้านี้สร้างด้วยเฟรม ซึ่งหน้าต่างที่แยกจาก Nextcloud โหลดไม่ได้ เมื่อแสดงเต็มรูปแบบ หน้าจะเข้าถึง NetBase ในเบราว์เซอร์นี้ได้ แต่ออกไปนอกหน้าต่างอุปกรณ์ไม่ได้",
-        "Show it in full, and remember this device": "แสดงเต็มรูปแบบและจดจำอุปกรณ์นี้",
-        "Not now": "ยังไม่ตอนนี้",
-        "Devices shown in full": "อุปกรณ์ที่แสดงเต็มรูปแบบ",
-        "A device page built from frames only works when shown in full. These are the ones you have agreed to; the rest are kept at arm's length from Nextcloud.": "หน้าอุปกรณ์ที่สร้างด้วยเฟรมจะทำงานได้เมื่อแสดงเต็มรูปแบบเท่านั้น นี่คืออุปกรณ์ที่คุณยินยอมไว้ ส่วนที่เหลือยังคงแยกจาก Nextcloud",
-        "None yet.": "ยังไม่มี",
-        "Undo": "ยกเลิก"
+        "This window shows the device's own page, fetched by this server. The page reaches nothing but this window.": "หน้าต่างนี้แสดงหน้าของอุปกรณ์ที่เซิร์ฟเวอร์นี้ดึงมา หน้าดังกล่าวเข้าถึงสิ่งใดนอกหน้าต่างนี้ไม่ได้"
     },
     "nplurals=1; plural=0;"
 );

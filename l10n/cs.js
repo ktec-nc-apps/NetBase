@@ -712,14 +712,7 @@ OC.L10N.register(
         "The list of tools": "Seznam nástrojů",
         "Drag the tools in the sidebar into the order you work in — or hold Alt and press the up and down arrows. The order is kept for your account.": "Přetáhněte nástroje v postranním panelu do pořadí, ve kterém pracujete — nebo podržte Alt a použijte šipky. Pořadí zůstane uložené pro váš účet.",
         "Put them back in the original order": "Vrátit původní pořadí",
-        "Shown in full, because you agreed to it for this device. Click to undo.": "Zobrazuje se celá, protože jste to pro toto zařízení schválili. Klepnutím zrušíte.",
-        "This page is built from frames, which a window kept away from Nextcloud cannot load. Showing it in full lets the page reach NetBase in this browser, but nothing outside the device windows.": "Tato stránka se skládá z rámů, které okno oddělené od Nextcloudu nedokáže načíst. Zobrazena celá dosáhne na NetBase v tomto prohlížeči, ale nic mimo okna zařízení.",
-        "Show it in full, and remember this device": "Zobrazit celou a zapamatovat si zařízení",
-        "Not now": "Teď ne",
-        "Devices shown in full": "Zařízení zobrazovaná celá",
-        "A device page built from frames only works when shown in full. These are the ones you have agreed to; the rest are kept at arm's length from Nextcloud.": "Stránka zařízení složená z rámů funguje jen zobrazená celá. Toto jsou ta, která jste schválili; ostatní zůstávají stranou od Nextcloudu.",
-        "None yet.": "Zatím žádná.",
-        "Undo": "Zrušit"
+        "This window shows the device's own page, fetched by this server. The page reaches nothing but this window.": "Toto okno ukazuje stránku zařízení, kterou stáhl tento server. Stránka nedosáhne na nic mimo toto okno."
     },
     "nplurals=4; plural=(n == 1 && n % 1 == 0) ? 0 : (n >= 2 && n <= 4 && n % 1 == 0) ? 1: (n % 1 != 0 ) ? 2 : 3;"
 );

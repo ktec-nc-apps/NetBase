@@ -411,17 +411,17 @@
 }
 .devwin-note.error { color: var(--color-error, #c0392b); }
 
-/* Why a window cannot show a page, and what to do about it. */
-.devwin-bar {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 8px 12px;
-  font-size: .85em;
-  background: var(--color-warning, #f5b800);
-  color: #2b2200;
+/* What this window is, in one reversed line under its title bar. */
+.devwin-line {
+  padding: 5px 12px;
+  font-size: .78em;
+  line-height: 1.5;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  background: var(--color-primary-element, #2970e2);
+  color: var(--color-primary-element-text, #fff);
 }
-.devwin-bar span { flex: 1; }
 
 /* While a window is being moved or resized the pointer must stay with the
    window, not disappear into the page it is showing. */

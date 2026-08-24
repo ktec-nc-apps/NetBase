@@ -711,14 +711,7 @@
         "The list of tools": "औज़ारों की सूची",
         "Drag the tools in the sidebar into the order you work in — or hold Alt and press the up and down arrows. The order is kept for your account.": "बग़ल की पट्टी में औज़ारों को अपने काम के क्रम में खींचें — या Alt दबाकर ऊपर-नीचे तीर दबाएँ। क्रम आपके खाते के लिए सहेजा जाता है।",
         "Put them back in the original order": "मूल क्रम में लौटाएँ",
-        "Shown in full, because you agreed to it for this device. Click to undo.": "आपने इस उपकरण हेतु सहमति दी थी, इसलिए पूरा दिखाया जा रहा है। पूर्ववत करने हेतु क्लिक करें।",
-        "This page is built from frames, which a window kept away from Nextcloud cannot load. Showing it in full lets the page reach NetBase in this browser, but nothing outside the device windows.": "यह पृष्ठ फ़्रेम से बना है, जिन्हें Nextcloud से अलग रखी विंडो लोड नहीं कर सकती। पूरा दिखाने पर पृष्ठ इस ब्राउज़र में NetBase तक पहुँच सकता है, पर उपकरण खिड़कियों के बाहर कुछ नहीं।",
-        "Show it in full, and remember this device": "पूरा दिखाएँ और यह उपकरण याद रखें",
-        "Not now": "अभी नहीं",
-        "Devices shown in full": "पूरे दिखाए जाने वाले उपकरण",
-        "A device page built from frames only works when shown in full. These are the ones you have agreed to; the rest are kept at arm's length from Nextcloud.": "फ़्रेम से बना उपकरण-पृष्ठ केवल पूरा दिखाने पर चलता है। ये वे हैं जिन्हें आपने स्वीकारा; बाक़ी Nextcloud से अलग रखे जाते हैं।",
-        "None yet.": "अभी कोई नहीं।",
-        "Undo": "पूर्ववत"
+        "This window shows the device's own page, fetched by this server. The page reaches nothing but this window.": "यह विंडो इस सर्वर द्वारा लाया गया उपकरण का अपना पृष्ठ दिखाती है। पृष्ठ इस विंडो के बाहर कुछ नहीं पहुँच सकता।"
     },
     "pluralForm": "nplurals=2; plural=(n != 1);"
 }

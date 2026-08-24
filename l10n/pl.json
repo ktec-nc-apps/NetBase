@@ -711,14 +711,7 @@
         "The list of tools": "Lista narzędzi",
         "Drag the tools in the sidebar into the order you work in — or hold Alt and press the up and down arrows. The order is kept for your account.": "Przeciągnij narzędzia na pasku bocznym w swoją kolejność pracy albo przytrzymaj Alt i użyj strzałek. Kolejność zostaje zapamiętana dla Twojego konta.",
         "Put them back in the original order": "Przywróć pierwotną kolejność",
-        "Shown in full, because you agreed to it for this device. Click to undo.": "Pokazywana w całości, bo zgodziłeś się na to dla tego urządzenia. Kliknij, aby cofnąć.",
-        "This page is built from frames, which a window kept away from Nextcloud cannot load. Showing it in full lets the page reach NetBase in this browser, but nothing outside the device windows.": "Ta strona składa się z ramek, których okno odseparowane od Nextcloud nie może wczytać. Pokazana w całości sięga do NetBase w tej przeglądarce, ale poza okna urządzeń już nie.",
-        "Show it in full, and remember this device": "Pokaż w całości i zapamiętaj to urządzenie",
-        "Not now": "Nie teraz",
-        "Devices shown in full": "Urządzenia pokazywane w całości",
-        "A device page built from frames only works when shown in full. These are the ones you have agreed to; the rest are kept at arm's length from Nextcloud.": "Strona urządzenia zbudowana z ramek działa tylko pokazana w całości. Oto te, na które się zgodziłeś; reszta pozostaje z dala od Nextcloud.",
-        "None yet.": "Jeszcze żadnych.",
-        "Undo": "Cofnij"
+        "This window shows the device's own page, fetched by this server. The page reaches nothing but this window.": "To okno pokazuje stronę urządzenia pobraną przez ten serwer. Strona nie sięga niczego poza tym oknem."
     },
     "pluralForm": "nplurals=4; plural=(n==1 ? 0 : (n%10>=2 && n%10<=4) && (n%100<12 || n%100>14) ? 1 : n!=1 && (n%10>=0 && n%10<=1) || (n%10>=5 && n%10<=9) || (n%100>=12 && n%100<=14) ? 2 : 3);"
 }
