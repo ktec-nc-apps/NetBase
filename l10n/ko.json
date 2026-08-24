@@ -142,7 +142,6 @@
         "Usable hosts": "사용 가능한 호스트",
         "Total addresses": "전체 주소 수",
         "Private range": "사설 대역",
-        "MAC address, e.g. 00:1b:a9:3f:8d:fe": "MAC 주소, 예: 00:1b:a9:3f:8d:fe",
         "Identify vendor": "제조사 확인",
         "Prefix": "접두사",
         "Host name": "호스트 이름",
@@ -734,7 +733,9 @@
         "This is what makes an all-administrators setup vanish from other people's menus.": "모두 관리자 전용으로 두었을 때 다른 사람의 메뉴에서 사라지는 것은 이 설정 때문입니다.",
         "Copy": "복사",
         "↓ CSV": "↓ CSV",
-        "Download as a file": "파일로 내려받기"
+        "Download as a file": "파일로 내려받기",
+        "Pick a well-known time server, or type any other.": "잘 알려진 시간 서버를 고르거나, 다른 서버를 입력하세요.",
+        "MAC address — type 001ba93f8dfe, the colons are added for you": "MAC 주소 — 001ba93f8dfe 처럼 구분자 없이 입력하면 콜론이 자동으로 들어갑니다"
     },
     "pluralForm": "nplurals=1; plural=0;"
 }

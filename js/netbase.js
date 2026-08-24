@@ -258,6 +258,9 @@
               <div class="tool-row">
                 <input v-model="dnsHost" :placeholder="t('example.com')" @keyup.enter="runDnsQuery">
                 <select v-model="dnsType" class="tiny"><option v-for="ty in dnsAllTypes" :key="ty" :value="ty">{{ ty }}</option></select>
+                <select v-model="dnsServer" class="short">
+                  <option v-for="r in knownResolvers" :key="r.host || 'self'" :value="r.host">{{ r.host ? r.host + ' — ' + r.label : t('This server') }}</option>
+                </select>
                 <input v-model="dnsServer" class="short" :placeholder="t('Resolver (blank = this server)')">
                 <button class="btn primary" :disabled="busy.dnsq" @click="runDnsQuery">{{ t('Ask') }}</button>
               </div>
@@ -684,7 +687,8 @@
 
           <div class="card tool-card">
             <div class="tool-row">
-              <input v-model="macQuery" :placeholder="t('MAC address, e.g. 00:1b:a9:3f:8d:fe')" @keyup.enter="runMac">
+              <input :value="macQuery" :placeholder="t('MAC address — type 001ba93f8dfe, the colons are added for you')"
+                     @input="typeMac($event)" @keyup.enter="runMac">
               <button class="btn" @click="runMac">{{ t('Identify vendor') }}</button>
             </div>
             <div class="kv" v-if="macResult">
@@ -972,9 +976,13 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
             <h3>{{ t('Clock check (NTP)') }}</h3>
             <p class="dim">{{ t('A clock that has drifted is behind more certificate and sign-in failures than anything else.') }}</p>
             <div class="tool-row">
+              <select v-model="ntpHost" class="short">
+                <option v-for="s in ntpServers" :key="s.host" :value="s.host">{{ s.host }} — {{ s.label }}</option>
+              </select>
               <input v-model="ntpHost" :placeholder="t('pool.ntp.org')" @keyup.enter="runNtp">
               <button class="btn" :disabled="busy.ntp" @click="runNtp">{{ t('Compare clocks') }}</button>
             </div>
+            <p class="dim tiny">{{ t('Pick a well-known time server, or type any other.') }}</p>
             <div v-if="ntpResult">
               <div v-for="(f,i) in (ntpResult.findings||[])" :key="i" class="finding" :class="f.level">
                 <span class="pill" :class="f.level">{{ t(levelLabel(f.level)) }}</span><div><strong>{{ f.area }}</strong> · {{ f.text }}</div>
@@ -1611,6 +1619,43 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
     5061, 5432, 5900, 5901, 5902, 6379, 9100, 11211, 27017,
   ]);
 
+  // Time servers worth offering: the pools, the big anycast ones, and the
+  // national services people in each region actually use.
+  const NTP_SERVERS = [
+    { host: 'pool.ntp.org', label: 'NTP Pool (worldwide)' },
+    { host: 'time.cloudflare.com', label: 'Cloudflare' },
+    { host: 'time.google.com', label: 'Google' },
+    { host: 'time.windows.com', label: 'Microsoft' },
+    { host: 'time.apple.com', label: 'Apple' },
+    { host: 'time.nist.gov', label: 'NIST (United States)' },
+    { host: 'ntp.nict.jp', label: 'NICT (Japan)' },
+    { host: 'ntp.jst.mfeed.ad.jp', label: 'INTERNET MULTIFEED (Japan)' },
+    { host: 'ptbtime1.ptb.de', label: 'PTB (Germany)' },
+    { host: 'ntp1.npl.co.uk', label: 'NPL (United Kingdom)' },
+    { host: 'europe.pool.ntp.org', label: 'NTP Pool (Europe)' },
+    { host: 'asia.pool.ntp.org', label: 'NTP Pool (Asia)' },
+    { host: 'north-america.pool.ntp.org', label: 'NTP Pool (North America)' },
+    { host: 'oceania.pool.ntp.org', label: 'NTP Pool (Oceania)' },
+    { host: 'south-america.pool.ntp.org', label: 'NTP Pool (South America)' },
+    { host: 'africa.pool.ntp.org', label: 'NTP Pool (Africa)' },
+  ];
+
+  // Resolvers to ask by name rather than by remembering an address.
+  const KNOWN_RESOLVERS = [
+    { host: '', label: 'This server' },
+    { host: '1.1.1.1', label: 'Cloudflare' },
+    { host: '1.0.0.1', label: 'Cloudflare (secondary)' },
+    { host: '8.8.8.8', label: 'Google' },
+    { host: '8.8.4.4', label: 'Google (secondary)' },
+    { host: '9.9.9.9', label: 'Quad9' },
+    { host: '149.112.112.112', label: 'Quad9 (secondary)' },
+    { host: '208.67.222.222', label: 'OpenDNS' },
+    { host: '208.67.220.220', label: 'OpenDNS (secondary)' },
+    { host: '94.140.14.14', label: 'AdGuard' },
+    { host: '76.76.2.0', label: 'Control D' },
+    { host: '185.228.168.9', label: 'CleanBrowsing' },
+  ];
+
   const WEB_PORTS = {
     80: 'http', 81: 'http', 591: 'http', 631: 'http', 2082: 'http', 3000: 'http', 5000: 'http',
     7080: 'http', 8000: 'http', 8008: 'http', 8080: 'http', 8081: 'http', 8888: 'http', 9000: 'http', 9090: 'http',
@@ -1710,7 +1755,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         adhoc: { kind: 'sftp', host: '', port: 22, username: '', secret: '', authType: 'password', privateKeyPath: '', passphrase: '', mode: 'ssh', passive: true, path: '' },
         // service probes
         sshHost: '', sshPort: 22, sshAuthMethods: false, sshResult: null, telnetResult: null,
-        ntpHost: 'pool.ntp.org', ntpResult: null,
+        ntpHost: 'pool.ntp.org', ntpResult: null, ntpServers: NTP_SERVERS, knownResolvers: KNOWN_RESOLVERS,
         locale: 0,
         picker: { open: false, title: '', path: '', parent: null, entries: [], foldersOnly: false, onPick: null },
         windows: [], windowSeq: 0, windowTop: 3000, drag: null,
@@ -2546,6 +2591,17 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
       async runTls() { this.tlsResult = await this.guarded('tls', () => api('tools/tls?' + qs({ host: this.tlsHost, port: this.tlsPort }))); },
       async runHttp() { this.httpResult = await this.guarded('http', () => api('tools/http?' + qs({ url: this.tlsHost }))); },
       async runSubnet() { this.subnetResult = await this.guarded('subnet', () => api('tools/subnet?' + qs({ cidr: this.subnetInput }))); },
+      /**
+       * A MAC is six pairs of hex, and that is all it can be — so the field
+       * takes the twelve characters and puts the colons in itself. Pasting one
+       * that already has colons, or dashes, or dots, works the same way.
+       */
+      typeMac(event) {
+        const hex = String(event.target.value || '').replace(/[^0-9a-fA-F]/g, '').slice(0, 12).toLowerCase();
+        this.macQuery = (hex.match(/.{1,2}/g) || []).join(':');
+        // The field is bound to the tidied value, so put it back either way.
+        this.$nextTick(() => { event.target.value = this.macQuery; });
+      },
       async runMac() { this.macResult = await this.guarded('mac', () => api('tools/mac?' + qs({ mac: this.macQuery }))); },
       hasTool(id) {
         if (!this.requirements) return false;

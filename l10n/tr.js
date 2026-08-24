@@ -143,7 +143,6 @@ OC.L10N.register(
         "Usable hosts": "Kullanılabilir makine",
         "Total addresses": "Toplam adres",
         "Private range": "Özel aralık",
-        "MAC address, e.g. 00:1b:a9:3f:8d:fe": "MAC adresi, örn. 00:1b:a9:3f:8d:fe",
         "Identify vendor": "Üreticiyi belirle",
         "Prefix": "Ön ek",
         "Host name": "Makine adı",
@@ -735,7 +734,9 @@ OC.L10N.register(
         "This is what makes an all-administrators setup vanish from other people's menus.": "Yalnızca yöneticilere ayarlı bir kurulumu başkalarının menüsünden kaldıran işte budur.",
         "Copy": "Kopyala",
         "↓ CSV": "↓ CSV",
-        "Download as a file": "Dosya olarak indir"
+        "Download as a file": "Dosya olarak indir",
+        "Pick a well-known time server, or type any other.": "Bilinen bir zaman sunucusu seçin ya da başka birini yazın.",
+        "MAC address — type 001ba93f8dfe, the colons are added for you": "MAC adresi — 001ba93f8dfe yazın, iki nokta kendiliğinden eklenir"
     },
     "nplurals=2; plural=(n > 1);"
 );

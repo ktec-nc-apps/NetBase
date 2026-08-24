@@ -142,7 +142,6 @@
         "Usable hosts": "उपयोग योग्य होस्ट",
         "Total addresses": "कुल पते",
         "Private range": "निजी परिसर",
-        "MAC address, e.g. 00:1b:a9:3f:8d:fe": "MAC पता, जैसे 00:1b:a9:3f:8d:fe",
         "Identify vendor": "निर्माता पहचानें",
         "Prefix": "उपसर्ग",
         "Host name": "होस्ट नाम",
@@ -734,7 +733,9 @@
         "This is what makes an all-administrators setup vanish from other people's menus.": "सब कुछ केवल प्रशासकों के लिए होने पर दूसरों के मेन्यू से गायब होना इसी सेटिंग से होता है।",
         "Copy": "कॉपी",
         "↓ CSV": "↓ CSV",
-        "Download as a file": "फ़ाइल के रूप में डाउनलोड"
+        "Download as a file": "फ़ाइल के रूप में डाउनलोड",
+        "Pick a well-known time server, or type any other.": "कोई जाना-माना समय सर्वर चुनें, या दूसरा टाइप करें।",
+        "MAC address — type 001ba93f8dfe, the colons are added for you": "MAC पता — 001ba93f8dfe लिखें, कोलन अपने आप जुड़ जाएँगे"
     },
     "pluralForm": "nplurals=2; plural=(n != 1);"
 }

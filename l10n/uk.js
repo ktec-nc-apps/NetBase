@@ -143,7 +143,6 @@ OC.L10N.register(
         "Usable hosts": "Придатних вузлів",
         "Total addresses": "Усього адрес",
         "Private range": "Приватний діапазон",
-        "MAC address, e.g. 00:1b:a9:3f:8d:fe": "MAC-адреса, напр. 00:1b:a9:3f:8d:fe",
         "Identify vendor": "Визначити виробника",
         "Prefix": "Префікс",
         "Host name": "Ім'я вузла",
@@ -735,7 +734,9 @@ OC.L10N.register(
         "This is what makes an all-administrators setup vanish from other people's menus.": "Саме це прибирає конфігурацію «лише адміністратори» з чужих меню.",
         "Copy": "Копіювати",
         "↓ CSV": "↓ CSV",
-        "Download as a file": "Завантажити файлом"
+        "Download as a file": "Завантажити файлом",
+        "Pick a well-known time server, or type any other.": "Виберіть відомий сервер часу або впишіть будь-який інший.",
+        "MAC address — type 001ba93f8dfe, the colons are added for you": "MAC-адреса — введіть 001ba93f8dfe, двокрапки додадуться самі"
     },
     "nplurals=4; plural=(n % 1 == 0 && n % 10 == 1 && n % 100 != 11 ? 0 : n % 1 == 0 && n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14) ? 1 : n % 1 == 0 && (n % 10 ==0 || (n % 10 >=5 && n % 10 <=9) || (n % 100 >=11 && n % 100 <=14 )) ? 2: 3);"
 );

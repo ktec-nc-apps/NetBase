@@ -143,7 +143,6 @@ OC.L10N.register(
         "Usable hosts": "Số máy dùng được",
         "Total addresses": "Tổng số địa chỉ",
         "Private range": "Dải riêng",
-        "MAC address, e.g. 00:1b:a9:3f:8d:fe": "Địa chỉ MAC, ví dụ 00:1b:a9:3f:8d:fe",
         "Identify vendor": "Nhận diện nhà sản xuất",
         "Prefix": "Tiền tố",
         "Host name": "Tên máy",
@@ -735,7 +734,9 @@ OC.L10N.register(
         "This is what makes an all-administrators setup vanish from other people's menus.": "Chính tùy chọn này khiến cấu hình chỉ dành cho quản trị viên biến khỏi trình đơn của người khác.",
         "Copy": "Sao chép",
         "↓ CSV": "↓ CSV",
-        "Download as a file": "Tải xuống thành tệp"
+        "Download as a file": "Tải xuống thành tệp",
+        "Pick a well-known time server, or type any other.": "Chọn một máy chủ thời gian quen thuộc, hoặc gõ máy chủ khác.",
+        "MAC address — type 001ba93f8dfe, the colons are added for you": "Địa chỉ MAC — gõ 001ba93f8dfe, dấu hai chấm tự thêm"
     },
     "nplurals=1; plural=0;"
 );

@@ -142,7 +142,6 @@
         "Usable hosts": "Hos yang dapat dipakai",
         "Total addresses": "Total alamat",
         "Private range": "Rentang privat",
-        "MAC address, e.g. 00:1b:a9:3f:8d:fe": "Alamat MAC, misalnya 00:1b:a9:3f:8d:fe",
         "Identify vendor": "Kenali pabrikan",
         "Prefix": "Awalan",
         "Host name": "Nama hos",
@@ -734,7 +733,9 @@
         "This is what makes an all-administrators setup vanish from other people's menus.": "Inilah yang membuat penyetelan khusus administrator lenyap dari menu orang lain.",
         "Copy": "Salin",
         "↓ CSV": "↓ CSV",
-        "Download as a file": "Unduh sebagai berkas"
+        "Download as a file": "Unduh sebagai berkas",
+        "Pick a well-known time server, or type any other.": "Pilih peladen waktu yang dikenal, atau ketik yang lain.",
+        "MAC address — type 001ba93f8dfe, the colons are added for you": "Alamat MAC — ketik 001ba93f8dfe, titik duanya ditambahkan sendiri"
     },
     "pluralForm": "nplurals=1; plural=0;"
 }

@@ -143,7 +143,6 @@ OC.L10N.register(
         "Usable hosts": "Equipos utilizables",
         "Total addresses": "Direcciones totales",
         "Private range": "Rango privado",
-        "MAC address, e.g. 00:1b:a9:3f:8d:fe": "Dirección MAC, p. ej. 00:1b:a9:3f:8d:fe",
         "Identify vendor": "Identificar el fabricante",
         "Prefix": "Prefijo",
         "Host name": "Nombre de equipo",
@@ -735,7 +734,9 @@ OC.L10N.register(
         "This is what makes an all-administrators setup vanish from other people's menus.": "Es esto lo que hace que una configuración solo para administradores desaparezca de los menús de los demás.",
         "Copy": "Copiar",
         "↓ CSV": "↓ CSV",
-        "Download as a file": "Descargar como archivo"
+        "Download as a file": "Descargar como archivo",
+        "Pick a well-known time server, or type any other.": "Elija un servidor de hora conocido o escriba cualquier otro.",
+        "MAC address — type 001ba93f8dfe, the colons are added for you": "Dirección MAC: escriba 001ba93f8dfe, los dos puntos se añaden solos"
     },
     "nplurals=2; plural=(n != 1);"
 );

@@ -143,7 +143,6 @@ OC.L10N.register(
         "Usable hosts": "可用主机数",
         "Total addresses": "地址总数",
         "Private range": "私有地址段",
-        "MAC address, e.g. 00:1b:a9:3f:8d:fe": "MAC 地址，例如 00:1b:a9:3f:8d:fe",
         "Identify vendor": "识别厂商",
         "Prefix": "前缀",
         "Host name": "主机名",
@@ -735,7 +734,9 @@ OC.L10N.register(
         "This is what makes an all-administrators setup vanish from other people's menus.": "「全部仅管理员」时会从他人菜单消失，正是由此设置决定。",
         "Copy": "复制",
         "↓ CSV": "↓ CSV",
-        "Download as a file": "下载为文件"
+        "Download as a file": "下载为文件",
+        "Pick a well-known time server, or type any other.": "从常用时间服务器中选择，或自行输入。",
+        "MAC address — type 001ba93f8dfe, the colons are added for you": "MAC 地址 — 直接输入 001ba93f8dfe，冒号会自动补上"
     },
     "nplurals=1; plural=0;"
 );
