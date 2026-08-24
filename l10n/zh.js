@@ -712,7 +712,7 @@ OC.L10N.register(
         "The list of tools": "工具列表",
         "Drag the tools in the sidebar into the order you work in — or hold Alt and press the up and down arrows. The order is kept for your account.": "把侧边栏的工具拖成你惯用的顺序，或按住 Alt 键用上下方向键移动。顺序会保存在你的账户中。",
         "Put them back in the original order": "恢复原来的顺序",
-        "This window shows the device's own page, fetched by this server. The page reaches nothing but this window.": "本窗口显示由本服务器取回的设备页面。该页面无法触及此窗口之外的任何内容。"
+        "{host} — its own settings page, opened through this server, so it works from anywhere. Sign in and change settings as you would standing in front of it.": "{host} 的设置页面，经本服务器打开，因此在任何地方都能使用。可以像站在设备前一样登录并更改设置。"
     },
     "nplurals=1; plural=0;"
 );

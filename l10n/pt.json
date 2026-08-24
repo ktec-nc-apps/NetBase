@@ -711,7 +711,7 @@
         "The list of tools": "A lista de ferramentas",
         "Drag the tools in the sidebar into the order you work in — or hold Alt and press the up and down arrows. The order is kept for your account.": "Arraste as ferramentas da barra lateral para a ordem em que trabalha — ou mantenha Alt e use as setas. A ordem fica guardada na sua conta.",
         "Put them back in the original order": "Repor a ordem original",
-        "This window shows the device's own page, fetched by this server. The page reaches nothing but this window.": "Esta janela mostra a página do aparelho, obtida por este servidor. A página não alcança nada fora desta janela."
+        "{host} — its own settings page, opened through this server, so it works from anywhere. Sign in and change settings as you would standing in front of it.": "{host} — a página de definições do próprio aparelho, aberta através deste servidor, pelo que funciona de qualquer lugar. Inicie sessão e altere definições como se estivesse à frente dele."
     },
     "pluralForm": "nplurals=2; plural=(n > 1);"
 }

@@ -712,7 +712,7 @@ OC.L10N.register(
         "The list of tools": "Список инструментов",
         "Drag the tools in the sidebar into the order you work in — or hold Alt and press the up and down arrows. The order is kept for your account.": "Перетащите инструменты на боковой панели в удобный порядок — или удерживайте Alt и нажимайте стрелки. Порядок сохраняется для вашей учётной записи.",
         "Put them back in the original order": "Вернуть исходный порядок",
-        "This window shows the device's own page, fetched by this server. The page reaches nothing but this window.": "В этом окне — страница устройства, полученная этим сервером. Дальше окна она не достаёт."
+        "{host} — its own settings page, opened through this server, so it works from anywhere. Sign in and change settings as you would standing in front of it.": "{host} — собственная страница настроек устройства, открытая через этот сервер, поэтому доступна откуда угодно. Входите и меняйте настройки так же, как стоя перед ним."
     },
     "nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);"
 );

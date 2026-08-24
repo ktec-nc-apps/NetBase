@@ -712,7 +712,7 @@ OC.L10N.register(
         "The list of tools": "ツールの並び",
         "Drag the tools in the sidebar into the order you work in — or hold Alt and press the up and down arrows. The order is kept for your account.": "左のツールをドラッグして、使う順に並べ替えられます。Altキーを押しながら上下矢印でも移動できます。並び順はアカウントごとに保存されます。",
         "Put them back in the original order": "元の順序に戻す",
-        "This window shows the device's own page, fetched by this server. The page reaches nothing but this window.": "このウィンドウは、このサーバーが取得した機器の画面をそのまま表示しています。ページはこのウィンドウの外へ通信できません。"
+        "{host} — its own settings page, opened through this server, so it works from anywhere. Sign in and change settings as you would standing in front of it.": "{host} の設定画面です。このサーバー経由で開いているので、外出先からでも、機器の前にいるときと同じようにログインや設定変更ができます。"
     },
     "nplurals=1; plural=0;"
 );

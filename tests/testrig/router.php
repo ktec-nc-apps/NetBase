@@ -98,6 +98,21 @@ switch ($path) {
 		$page('認証が通った', '<p>Authorization ヘッダーが届いている。</p>', false);
 		return;
 
+	case '/upload':
+		$name = $_FILES['blob']['name'] ?? '(none)';
+		$size = (int)($_FILES['blob']['size'] ?? 0);
+		$note = (string)($_POST['note'] ?? '');
+		$page('受け取ったファイル', '<p>名前: <b>' . htmlspecialchars($name) . '</b></p>'
+			. '<p>大きさ: <b>' . $size . '</b> バイト</p>'
+			. '<p>メモ: <b>' . htmlspecialchars($note) . '</b></p>', false);
+		return;
+
+	case '/upload-form':
+		$page('ファイル送信', '<form method="post" action="/upload" enctype="multipart/form-data">'
+			. '<input type="file" name="blob"><input name="note" value="ファーム更新">'
+			. '<button type="submit">送信</button></form>', false);
+		return;
+
 	case '/style.css':
 		header('Content-Type: text/css');
 		echo "body{font-family:sans-serif;padding:20px;background:#eef}h1{color:#036}"

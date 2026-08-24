@@ -712,7 +712,7 @@ OC.L10N.register(
         "The list of tools": "도구 목록",
         "Drag the tools in the sidebar into the order you work in — or hold Alt and press the up and down arrows. The order is kept for your account.": "사이드바의 도구를 작업 순서대로 끌어 놓거나, Alt를 누른 채 위아래 화살표로 옮기세요. 순서는 계정별로 저장됩니다.",
         "Put them back in the original order": "원래 순서로 되돌리기",
-        "This window shows the device's own page, fetched by this server. The page reaches nothing but this window.": "이 창은 이 서버가 가져온 장치의 화면을 그대로 보여 줍니다. 페이지는 이 창 밖으로 나가지 못합니다."
+        "{host} — its own settings page, opened through this server, so it works from anywhere. Sign in and change settings as you would standing in front of it.": "{host} 의 설정 화면입니다. 이 서버를 통해 열었으므로 어디서든 사용할 수 있고, 장치 앞에 있을 때처럼 로그인하고 설정을 바꿀 수 있습니다."
     },
     "nplurals=1; plural=0;"
 );

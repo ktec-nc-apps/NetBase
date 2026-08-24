@@ -711,7 +711,7 @@
         "The list of tools": "Araç listesi",
         "Drag the tools in the sidebar into the order you work in — or hold Alt and press the up and down arrows. The order is kept for your account.": "Kenar çubuğundaki araçları çalıştığınız sıraya sürükleyin ya da Alt'a basılı tutup yön tuşlarını kullanın. Sıra hesabınız için saklanır.",
         "Put them back in the original order": "Özgün sıraya geri döndür",
-        "This window shows the device's own page, fetched by this server. The page reaches nothing but this window.": "Bu pencere, cihazın kendi sayfasını bu sunucunun getirdiği haliyle gösterir. Sayfa bu pencerenin dışına erişemez."
+        "{host} — its own settings page, opened through this server, so it works from anywhere. Sign in and change settings as you would standing in front of it.": "{host} — cihazın kendi ayar sayfası, bu sunucu üzerinden açıldığı için her yerden çalışır. Karşısındaymışsınız gibi oturum açıp ayarları değiştirin."
     },
     "pluralForm": "nplurals=2; plural=(n > 1);"
 }

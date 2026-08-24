@@ -711,7 +711,7 @@
         "The list of tools": "قائمة الأدوات",
         "Drag the tools in the sidebar into the order you work in — or hold Alt and press the up and down arrows. The order is kept for your account.": "اسحب الأدوات في الشريط الجانبي إلى ترتيب عملك، أو اضغط Alt مع سهمي أعلى وأسفل. يُحفظ الترتيب لحسابك.",
         "Put them back in the original order": "أعِدها إلى الترتيب الأصلي",
-        "This window shows the device's own page, fetched by this server. The page reaches nothing but this window.": "تعرض هذه النافذة صفحة الجهاز كما جلبها هذا الخادم. ولا تصل الصفحة إلى شيء خارج هذه النافذة."
+        "{host} — its own settings page, opened through this server, so it works from anywhere. Sign in and change settings as you would standing in front of it.": "{host} — صفحة إعداداته الخاصة، مفتوحة عبر هذا الخادم فتعمل من أي مكان. سجّل الدخول وغيّر الإعدادات كما لو كنت أمامه."
     },
     "pluralForm": "nplurals=6; plural=(n==0 ? 0 : n==1 ? 1 : n==2 ? 2 : n%100>=3 && n%100<=10 ? 3 : n%100>=11 && n%100<=99 ? 4 : 5);"
 }

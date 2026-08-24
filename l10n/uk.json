@@ -711,7 +711,7 @@
         "The list of tools": "Список інструментів",
         "Drag the tools in the sidebar into the order you work in — or hold Alt and press the up and down arrows. The order is kept for your account.": "Перетягніть інструменти на бічній панелі у зручний порядок — або утримуйте Alt і натискайте стрілки вгору й униз. Порядок зберігається для вашого облікового запису.",
         "Put them back in the original order": "Повернути початковий порядок",
-        "This window shows the device's own page, fetched by this server. The page reaches nothing but this window.": "У цьому вікні — сторінка пристрою, отримана цим сервером. Далі вікна вона не дістає."
+        "{host} — its own settings page, opened through this server, so it works from anywhere. Sign in and change settings as you would standing in front of it.": "{host} — власна сторінка налаштувань пристрою, відкрита через цей сервер, тож доступна звідусіль. Заходьте й змінюйте налаштування, як стоячи перед ним."
     },
     "pluralForm": "nplurals=4; plural=(n % 1 == 0 && n % 10 == 1 && n % 100 != 11 ? 0 : n % 1 == 0 && n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14) ? 1 : n % 1 == 0 && (n % 10 ==0 || (n % 10 >=5 && n % 10 <=9) || (n % 100 >=11 && n % 100 <=14 )) ? 2: 3);"
 }

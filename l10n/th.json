@@ -711,7 +711,7 @@
         "The list of tools": "รายการเครื่องมือ",
         "Drag the tools in the sidebar into the order you work in — or hold Alt and press the up and down arrows. The order is kept for your account.": "ลากเครื่องมือในแถบข้างให้เรียงตามลำดับที่คุณใช้ หรือกด Alt ค้างแล้วใช้ลูกศรขึ้นลง ลำดับจะถูกเก็บไว้กับบัญชีของคุณ",
         "Put them back in the original order": "คืนลำดับเดิม",
-        "This window shows the device's own page, fetched by this server. The page reaches nothing but this window.": "หน้าต่างนี้แสดงหน้าของอุปกรณ์ที่เซิร์ฟเวอร์นี้ดึงมา หน้าดังกล่าวเข้าถึงสิ่งใดนอกหน้าต่างนี้ไม่ได้"
+        "{host} — its own settings page, opened through this server, so it works from anywhere. Sign in and change settings as you would standing in front of it.": "{host} — หน้าตั้งค่าของอุปกรณ์เอง เปิดผ่านเซิร์ฟเวอร์นี้จึงใช้ได้จากทุกที่ เข้าสู่ระบบและเปลี่ยนการตั้งค่าได้เหมือนยืนอยู่หน้าเครื่อง"
     },
     "pluralForm": "nplurals=1; plural=0;"
 }

@@ -68,7 +68,13 @@ class ProxyController extends Controller {
 				);
 			}
 
-			$result = $this->proxy->fetch($ticket['base'], $path, $query, $ticket['userId'], $prefix, $post, (string)$this->request->getHeader('Authorization'));
+			$result = $this->proxy->fetch(
+				$ticket['base'], $path, $query, $ticket['userId'], $prefix, $post,
+				(string)$this->request->getHeader('Authorization'),
+				// Every file the form carried; the request object exposes them one
+				// name at a time, and a device form may use any name it likes.
+				$this->request->getMethod() === 'POST' ? (array)($_FILES ?? []) : [],
+			);
 		} catch (\InvalidArgumentException $e) {
 			return $this->problem($e->getMessage(), Http::STATUS_BAD_REQUEST);
 		} catch (\RuntimeException $e) {

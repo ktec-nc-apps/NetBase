@@ -711,7 +711,7 @@
         "The list of tools": "فهرست ابزارها",
         "Drag the tools in the sidebar into the order you work in — or hold Alt and press the up and down arrows. The order is kept for your account.": "ابزارهای نوار کناری را به ترتیب کارتان بکشید — یا Alt را نگه دارید و کلیدهای بالا و پایین را بزنید. ترتیب برای حساب شما نگه داشته می‌شود.",
         "Put them back in the original order": "بازگرداندن به ترتیب اصلی",
-        "This window shows the device's own page, fetched by this server. The page reaches nothing but this window.": "این پنجره صفحهٔ خود دستگاه را که این کارساز گرفته نشان می‌دهد. صفحه به بیرون از این پنجره دست نمی‌یابد."
+        "{host} — its own settings page, opened through this server, so it works from anywhere. Sign in and change settings as you would standing in front of it.": "{host} — صفحهٔ تنظیمات خود دستگاه، از راه این کارساز باز شده و از هر جا کار می‌کند. مانند وقتی روبه‌روی آن ایستاده‌اید وارد شوید و تنظیمات را تغییر دهید."
     },
     "pluralForm": "nplurals=2; plural=(n > 1);"
 }

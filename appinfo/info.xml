@@ -38,7 +38,7 @@ Features:
 - このサーバー自身のネットワーク情報 ― インターフェース・経路・DNSサーバー・待受ソケット（システム情報の中に表示）
 - nmapのフロントエンド ― プリセットと厳格な引数許可リスト（nmap導入時）
 - 20言語に対応（英語・日本語・ドイツ語・スペイン語・フランス語・イタリア語・ポルトガル語・ロシア語・中国語・韓国語・アラビア語・ヒンディー語・トルコ語・インドネシア語・ベトナム語・タイ語・ペルシャ語・ポーランド語・ウクライナ語・チェコ語）]]></description>
-	<version>0.2.17</version>
+	<version>0.2.18</version>
 	<licence>agpl</licence>
 	<author>KTEC</author>
 	<namespace>NetBase</namespace>

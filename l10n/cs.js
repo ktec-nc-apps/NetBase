@@ -712,7 +712,7 @@ OC.L10N.register(
         "The list of tools": "Seznam nástrojů",
         "Drag the tools in the sidebar into the order you work in — or hold Alt and press the up and down arrows. The order is kept for your account.": "Přetáhněte nástroje v postranním panelu do pořadí, ve kterém pracujete — nebo podržte Alt a použijte šipky. Pořadí zůstane uložené pro váš účet.",
         "Put them back in the original order": "Vrátit původní pořadí",
-        "This window shows the device's own page, fetched by this server. The page reaches nothing but this window.": "Toto okno ukazuje stránku zařízení, kterou stáhl tento server. Stránka nedosáhne na nic mimo toto okno."
+        "{host} — its own settings page, opened through this server, so it works from anywhere. Sign in and change settings as you would standing in front of it.": "{host} — vlastní stránka nastavení zařízení, otevřená přes tento server, takže funguje odkudkoli. Přihlaste se a měňte nastavení jako přímo u něj."
     },
     "nplurals=4; plural=(n == 1 && n % 1 == 0) ? 0 : (n >= 2 && n <= 4 && n % 1 == 0) ? 1: (n % 1 != 0 ) ? 2 : 3;"
 );
