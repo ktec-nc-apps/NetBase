@@ -711,7 +711,17 @@
         "The list of tools": "ツールの並び",
         "Drag the tools in the sidebar into the order you work in — or hold Alt and press the up and down arrows. The order is kept for your account.": "左のツールをドラッグして、使う順に並べ替えられます。Altキーを押しながら上下矢印でも移動できます。並び順はアカウントごとに保存されます。",
         "Put them back in the original order": "元の順序に戻す",
-        "{host} — its own settings page, opened through this server, so it works from anywhere. Sign in and change settings as you would standing in front of it.": "{host} の設定画面です。このサーバー経由で開いているので、外出先からでも、機器の前にいるときと同じようにログインや設定変更ができます。"
+        "{host} — its own settings page, opened through this server, so it works from anywhere. Sign in and change settings as you would standing in front of it.": "{host} の設定画面です。このサーバー経由で開いているので、外出先からでも、機器の前にいるときと同じようにログインや設定変更ができます。",
+        "What this window can and cannot do": "このウィンドウでできること・できないこと",
+        "What works here": "できること",
+        "What does not": "できないこと",
+        "Sign in and change settings, exactly as you would in front of the device": "ログインと設定変更（機器の前にいるときと同じ）",
+        "Send files to it — new firmware, a saved configuration": "機器へファイルを送る（ファームウェア更新、設定の復元）",
+        "Take files from it — a backup, a log — whatever their size": "機器からファイルを取る（設定バックアップ、ログ。大きさの制限なし）",
+        "Older interfaces built out of frames": "フレーム構成の古い管理画面",
+        "Its password, remembered for you after the first time": "機器のパスワード（一度入れれば次回から自動）",
+        "A console that stays connected, which some switches offer": "つなぎっぱなしのコンソール（一部のスイッチにある機能）",
+        "Anything needing Java or ActiveX in the browser": "ブラウザで Java や ActiveX を使う機能"
     },
     "pluralForm": "nplurals=1; plural=0;"
 }

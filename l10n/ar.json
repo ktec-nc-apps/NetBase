@@ -711,7 +711,17 @@
         "The list of tools": "قائمة الأدوات",
         "Drag the tools in the sidebar into the order you work in — or hold Alt and press the up and down arrows. The order is kept for your account.": "اسحب الأدوات في الشريط الجانبي إلى ترتيب عملك، أو اضغط Alt مع سهمي أعلى وأسفل. يُحفظ الترتيب لحسابك.",
         "Put them back in the original order": "أعِدها إلى الترتيب الأصلي",
-        "{host} — its own settings page, opened through this server, so it works from anywhere. Sign in and change settings as you would standing in front of it.": "{host} — صفحة إعداداته الخاصة، مفتوحة عبر هذا الخادم فتعمل من أي مكان. سجّل الدخول وغيّر الإعدادات كما لو كنت أمامه."
+        "{host} — its own settings page, opened through this server, so it works from anywhere. Sign in and change settings as you would standing in front of it.": "{host} — صفحة إعداداته الخاصة، مفتوحة عبر هذا الخادم فتعمل من أي مكان. سجّل الدخول وغيّر الإعدادات كما لو كنت أمامه.",
+        "What this window can and cannot do": "ما تستطيعه هذه النافذة وما لا تستطيعه",
+        "What works here": "ما يعمل هنا",
+        "What does not": "وما لا يعمل",
+        "Sign in and change settings, exactly as you would in front of the device": "تسجيل الدخول وتغيير الإعدادات تمامًا كما لو كنت أمام الجهاز",
+        "Send files to it — new firmware, a saved configuration": "إرسال ملفات إليه — برنامج ثابت جديد أو إعداد محفوظ",
+        "Take files from it — a backup, a log — whatever their size": "جلب ملفات منه — نسخة احتياطية أو سجل — مهما كان حجمها",
+        "Older interfaces built out of frames": "الواجهات القديمة المبنية من إطارات",
+        "Its password, remembered for you after the first time": "كلمة مروره، تُحفظ بعد أول مرة",
+        "A console that stays connected, which some switches offer": "طرفية تبقى متصلة، كما توفّرها بعض المبدّلات",
+        "Anything needing Java or ActiveX in the browser": "كل ما يحتاج إلى جافا أو أكتف‌إكس في المتصفح"
     },
     "pluralForm": "nplurals=6; plural=(n==0 ? 0 : n==1 ? 1 : n==2 ? 2 : n%100>=3 && n%100<=10 ? 3 : n%100>=11 && n%100<=99 ? 4 : 5);"
 }

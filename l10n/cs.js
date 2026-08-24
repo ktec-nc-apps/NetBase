@@ -712,7 +712,17 @@ OC.L10N.register(
         "The list of tools": "Seznam nástrojů",
         "Drag the tools in the sidebar into the order you work in — or hold Alt and press the up and down arrows. The order is kept for your account.": "Přetáhněte nástroje v postranním panelu do pořadí, ve kterém pracujete — nebo podržte Alt a použijte šipky. Pořadí zůstane uložené pro váš účet.",
         "Put them back in the original order": "Vrátit původní pořadí",
-        "{host} — its own settings page, opened through this server, so it works from anywhere. Sign in and change settings as you would standing in front of it.": "{host} — vlastní stránka nastavení zařízení, otevřená přes tento server, takže funguje odkudkoli. Přihlaste se a měňte nastavení jako přímo u něj."
+        "{host} — its own settings page, opened through this server, so it works from anywhere. Sign in and change settings as you would standing in front of it.": "{host} — vlastní stránka nastavení zařízení, otevřená přes tento server, takže funguje odkudkoli. Přihlaste se a měňte nastavení jako přímo u něj.",
+        "What this window can and cannot do": "Co toto okno umí a co ne",
+        "What works here": "Co zde funguje",
+        "What does not": "Co nefunguje",
+        "Sign in and change settings, exactly as you would in front of the device": "Přihlášení a změna nastavení, přesně jako přímo u zařízení",
+        "Send files to it — new firmware, a saved configuration": "Posílat mu soubory — nový firmware, uloženou konfiguraci",
+        "Take files from it — a backup, a log — whatever their size": "Stahovat z něj soubory — zálohu, protokol — jakkoli velké",
+        "Older interfaces built out of frames": "Starší rozhraní složená z rámů",
+        "Its password, remembered for you after the first time": "Jeho heslo, zapamatované po prvním zadání",
+        "A console that stays connected, which some switches offer": "Konzole, která zůstává připojená, jakou nabízejí některé přepínače",
+        "Anything needing Java or ActiveX in the browser": "Cokoli, co v prohlížeči vyžaduje Javu nebo ActiveX"
     },
     "nplurals=4; plural=(n == 1 && n % 1 == 0) ? 0 : (n >= 2 && n <= 4 && n % 1 == 0) ? 1: (n % 1 != 0 ) ? 2 : 3;"
 );

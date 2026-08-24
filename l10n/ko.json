@@ -711,7 +711,17 @@
         "The list of tools": "도구 목록",
         "Drag the tools in the sidebar into the order you work in — or hold Alt and press the up and down arrows. The order is kept for your account.": "사이드바의 도구를 작업 순서대로 끌어 놓거나, Alt를 누른 채 위아래 화살표로 옮기세요. 순서는 계정별로 저장됩니다.",
         "Put them back in the original order": "원래 순서로 되돌리기",
-        "{host} — its own settings page, opened through this server, so it works from anywhere. Sign in and change settings as you would standing in front of it.": "{host} 의 설정 화면입니다. 이 서버를 통해 열었으므로 어디서든 사용할 수 있고, 장치 앞에 있을 때처럼 로그인하고 설정을 바꿀 수 있습니다."
+        "{host} — its own settings page, opened through this server, so it works from anywhere. Sign in and change settings as you would standing in front of it.": "{host} 의 설정 화면입니다. 이 서버를 통해 열었으므로 어디서든 사용할 수 있고, 장치 앞에 있을 때처럼 로그인하고 설정을 바꿀 수 있습니다.",
+        "What this window can and cannot do": "이 창에서 되는 것과 안 되는 것",
+        "What works here": "할 수 있는 것",
+        "What does not": "할 수 없는 것",
+        "Sign in and change settings, exactly as you would in front of the device": "로그인과 설정 변경(장치 앞에 있을 때와 동일)",
+        "Send files to it — new firmware, a saved configuration": "장치로 파일 보내기(펌웨어 업데이트, 설정 복원)",
+        "Take files from it — a backup, a log — whatever their size": "장치에서 파일 받기(설정 백업, 로그. 크기 제한 없음)",
+        "Older interfaces built out of frames": "프레임으로 만든 오래된 관리 화면",
+        "Its password, remembered for you after the first time": "장치 비밀번호(한 번 입력하면 다음부터 자동)",
+        "A console that stays connected, which some switches offer": "계속 연결된 콘솔(일부 스위치가 제공하는 기능)",
+        "Anything needing Java or ActiveX in the browser": "브라우저에서 Java나 ActiveX가 필요한 기능"
     },
     "pluralForm": "nplurals=1; plural=0;"
 }

@@ -11,6 +11,7 @@ All notable changes to NetBase are documented here.
   - Addresses inside the page — links, stylesheets, scripts, forms, redirects, meta refreshes and the ones its own scripts build while it runs — are pointed back through the server, and the page's character set is preserved, so Japanese device interfaces read correctly.
   - A device interface built out of frames works like the device means it to: its menu fills the frame it names, `<base target>` included, and its "replace everything" links fill the window. A sandboxed page may navigate only itself, so the window's own document does the navigating on behalf of whichever frame asked.
   - A line under the window's title says whose settings page this is and that it works from anywhere — written for whoever opens the window, not for whoever built it.
+  - A **?** in the window's corner lists what works here and what does not, in as many words as that takes.
   - Files can be sent to a device through the window — new firmware, a saved configuration — which is one of the things people open a device's page for.
   - Anything that is not a page passes straight through as it arrives rather than being held in memory first, so a firmware image or a backup of any size downloads, a request for part of a file is answered as one, and a camera's picture stream keeps running.
   - The window carries the whole request: any method a device interface uses, a body of its own making — JSON and the rest — and the parts of the browser's request a device may care about, including what language to answer in.

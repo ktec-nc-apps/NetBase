@@ -711,7 +711,17 @@
         "The list of tools": "工具列表",
         "Drag the tools in the sidebar into the order you work in — or hold Alt and press the up and down arrows. The order is kept for your account.": "把侧边栏的工具拖成你惯用的顺序，或按住 Alt 键用上下方向键移动。顺序会保存在你的账户中。",
         "Put them back in the original order": "恢复原来的顺序",
-        "{host} — its own settings page, opened through this server, so it works from anywhere. Sign in and change settings as you would standing in front of it.": "{host} 的设置页面，经本服务器打开，因此在任何地方都能使用。可以像站在设备前一样登录并更改设置。"
+        "{host} — its own settings page, opened through this server, so it works from anywhere. Sign in and change settings as you would standing in front of it.": "{host} 的设置页面，经本服务器打开，因此在任何地方都能使用。可以像站在设备前一样登录并更改设置。",
+        "What this window can and cannot do": "本窗口能做与不能做的事",
+        "What works here": "可以做的事",
+        "What does not": "做不到的事",
+        "Sign in and change settings, exactly as you would in front of the device": "登录并更改设置，与在设备前操作相同",
+        "Send files to it — new firmware, a saved configuration": "向设备发送文件——新固件、已保存的配置",
+        "Take files from it — a backup, a log — whatever their size": "从设备取回文件——备份、日志，不限大小",
+        "Older interfaces built out of frames": "由框架构成的旧式管理界面",
+        "Its password, remembered for you after the first time": "设备密码，首次输入后自动记住",
+        "A console that stays connected, which some switches offer": "保持连接的控制台（部分交换机提供）",
+        "Anything needing Java or ActiveX in the browser": "需要浏览器 Java 或 ActiveX 的功能"
     },
     "pluralForm": "nplurals=1; plural=0;"
 }

@@ -712,7 +712,17 @@ OC.L10N.register(
         "The list of tools": "A lista de ferramentas",
         "Drag the tools in the sidebar into the order you work in — or hold Alt and press the up and down arrows. The order is kept for your account.": "Arraste as ferramentas da barra lateral para a ordem em que trabalha — ou mantenha Alt e use as setas. A ordem fica guardada na sua conta.",
         "Put them back in the original order": "Repor a ordem original",
-        "{host} — its own settings page, opened through this server, so it works from anywhere. Sign in and change settings as you would standing in front of it.": "{host} — a página de definições do próprio aparelho, aberta através deste servidor, pelo que funciona de qualquer lugar. Inicie sessão e altere definições como se estivesse à frente dele."
+        "{host} — its own settings page, opened through this server, so it works from anywhere. Sign in and change settings as you would standing in front of it.": "{host} — a página de definições do próprio aparelho, aberta através deste servidor, pelo que funciona de qualquer lugar. Inicie sessão e altere definições como se estivesse à frente dele.",
+        "What this window can and cannot do": "O que esta janela pode e não pode fazer",
+        "What works here": "O que funciona aqui",
+        "What does not": "O que não funciona",
+        "Sign in and change settings, exactly as you would in front of the device": "Iniciar sessão e alterar definições, tal como à frente do aparelho",
+        "Send files to it — new firmware, a saved configuration": "Enviar-lhe ficheiros — novo firmware, uma configuração guardada",
+        "Take files from it — a backup, a log — whatever their size": "Obter ficheiros — uma cópia de segurança, um registo — de qualquer tamanho",
+        "Older interfaces built out of frames": "Interfaces antigas feitas de frames",
+        "Its password, remembered for you after the first time": "A palavra-passe dele, guardada após a primeira vez",
+        "A console that stays connected, which some switches offer": "Uma consola que fica ligada, como oferecem alguns comutadores",
+        "Anything needing Java or ActiveX in the browser": "Tudo o que precise de Java ou ActiveX no navegador"
     },
     "nplurals=2; plural=(n > 1);"
 );

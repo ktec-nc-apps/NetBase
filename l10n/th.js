@@ -712,7 +712,17 @@ OC.L10N.register(
         "The list of tools": "รายการเครื่องมือ",
         "Drag the tools in the sidebar into the order you work in — or hold Alt and press the up and down arrows. The order is kept for your account.": "ลากเครื่องมือในแถบข้างให้เรียงตามลำดับที่คุณใช้ หรือกด Alt ค้างแล้วใช้ลูกศรขึ้นลง ลำดับจะถูกเก็บไว้กับบัญชีของคุณ",
         "Put them back in the original order": "คืนลำดับเดิม",
-        "{host} — its own settings page, opened through this server, so it works from anywhere. Sign in and change settings as you would standing in front of it.": "{host} — หน้าตั้งค่าของอุปกรณ์เอง เปิดผ่านเซิร์ฟเวอร์นี้จึงใช้ได้จากทุกที่ เข้าสู่ระบบและเปลี่ยนการตั้งค่าได้เหมือนยืนอยู่หน้าเครื่อง"
+        "{host} — its own settings page, opened through this server, so it works from anywhere. Sign in and change settings as you would standing in front of it.": "{host} — หน้าตั้งค่าของอุปกรณ์เอง เปิดผ่านเซิร์ฟเวอร์นี้จึงใช้ได้จากทุกที่ เข้าสู่ระบบและเปลี่ยนการตั้งค่าได้เหมือนยืนอยู่หน้าเครื่อง",
+        "What this window can and cannot do": "สิ่งที่หน้าต่างนี้ทำได้และทำไม่ได้",
+        "What works here": "สิ่งที่ทำได้",
+        "What does not": "สิ่งที่ทำไม่ได้",
+        "Sign in and change settings, exactly as you would in front of the device": "เข้าสู่ระบบและเปลี่ยนการตั้งค่า เหมือนอยู่หน้าเครื่อง",
+        "Send files to it — new firmware, a saved configuration": "ส่งไฟล์ไปยังอุปกรณ์ — เฟิร์มแวร์ใหม่ หรือค่าที่บันทึกไว้",
+        "Take files from it — a backup, a log — whatever their size": "ดึงไฟล์จากอุปกรณ์ — ข้อมูลสำรอง บันทึกการทำงาน — ไม่จำกัดขนาด",
+        "Older interfaces built out of frames": "หน้าจอจัดการรุ่นเก่าที่สร้างด้วยเฟรม",
+        "Its password, remembered for you after the first time": "รหัสผ่านของอุปกรณ์ จำไว้ให้หลังใส่ครั้งแรก",
+        "A console that stays connected, which some switches offer": "คอนโซลที่เชื่อมต่อค้างไว้ ซึ่งสวิตช์บางรุ่นมีให้",
+        "Anything needing Java or ActiveX in the browser": "สิ่งที่ต้องใช้ Java หรือ ActiveX ในเบราว์เซอร์"
     },
     "nplurals=1; plural=0;"
 );

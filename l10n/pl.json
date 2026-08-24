@@ -711,7 +711,17 @@
         "The list of tools": "Lista narzędzi",
         "Drag the tools in the sidebar into the order you work in — or hold Alt and press the up and down arrows. The order is kept for your account.": "Przeciągnij narzędzia na pasku bocznym w swoją kolejność pracy albo przytrzymaj Alt i użyj strzałek. Kolejność zostaje zapamiętana dla Twojego konta.",
         "Put them back in the original order": "Przywróć pierwotną kolejność",
-        "{host} — its own settings page, opened through this server, so it works from anywhere. Sign in and change settings as you would standing in front of it.": "{host} — własna strona ustawień urządzenia, otwarta przez ten serwer, więc działa z dowolnego miejsca. Zaloguj się i zmieniaj ustawienia jak przy samym urządzeniu."
+        "{host} — its own settings page, opened through this server, so it works from anywhere. Sign in and change settings as you would standing in front of it.": "{host} — własna strona ustawień urządzenia, otwarta przez ten serwer, więc działa z dowolnego miejsca. Zaloguj się i zmieniaj ustawienia jak przy samym urządzeniu.",
+        "What this window can and cannot do": "Co to okno potrafi, a czego nie",
+        "What works here": "Co tu działa",
+        "What does not": "Co nie działa",
+        "Sign in and change settings, exactly as you would in front of the device": "Logowanie i zmiana ustawień, dokładnie jak przy urządzeniu",
+        "Send files to it — new firmware, a saved configuration": "Wysyłanie do niego plików — nowego oprogramowania, zapisanej konfiguracji",
+        "Take files from it — a backup, a log — whatever their size": "Pobieranie z niego plików — kopii zapasowej, dziennika — dowolnej wielkości",
+        "Older interfaces built out of frames": "Starsze interfejsy zbudowane z ramek",
+        "Its password, remembered for you after the first time": "Jego hasło, zapamiętane po pierwszym razie",
+        "A console that stays connected, which some switches offer": "Konsola utrzymująca połączenie, jaką oferują niektóre przełączniki",
+        "Anything needing Java or ActiveX in the browser": "Wszystko, co wymaga Javy lub ActiveX w przeglądarce"
     },
     "pluralForm": "nplurals=4; plural=(n==1 ? 0 : (n%10>=2 && n%10<=4) && (n%100<12 || n%100>14) ? 1 : n!=1 && (n%10>=0 && n%10<=1) || (n%10>=5 && n%10<=9) || (n%100>=12 && n%100<=14) ? 2 : 3);"
 }

@@ -712,7 +712,17 @@ OC.L10N.register(
         "The list of tools": "فهرست ابزارها",
         "Drag the tools in the sidebar into the order you work in — or hold Alt and press the up and down arrows. The order is kept for your account.": "ابزارهای نوار کناری را به ترتیب کارتان بکشید — یا Alt را نگه دارید و کلیدهای بالا و پایین را بزنید. ترتیب برای حساب شما نگه داشته می‌شود.",
         "Put them back in the original order": "بازگرداندن به ترتیب اصلی",
-        "{host} — its own settings page, opened through this server, so it works from anywhere. Sign in and change settings as you would standing in front of it.": "{host} — صفحهٔ تنظیمات خود دستگاه، از راه این کارساز باز شده و از هر جا کار می‌کند. مانند وقتی روبه‌روی آن ایستاده‌اید وارد شوید و تنظیمات را تغییر دهید."
+        "{host} — its own settings page, opened through this server, so it works from anywhere. Sign in and change settings as you would standing in front of it.": "{host} — صفحهٔ تنظیمات خود دستگاه، از راه این کارساز باز شده و از هر جا کار می‌کند. مانند وقتی روبه‌روی آن ایستاده‌اید وارد شوید و تنظیمات را تغییر دهید.",
+        "What this window can and cannot do": "آنچه این پنجره می‌تواند و نمی‌تواند",
+        "What works here": "آنچه اینجا کار می‌کند",
+        "What does not": "آنچه کار نمی‌کند",
+        "Sign in and change settings, exactly as you would in front of the device": "ورود و تغییر تنظیمات، درست مانند وقتی روبه‌روی دستگاه هستید",
+        "Send files to it — new firmware, a saved configuration": "فرستادن پرونده به آن — میان‌افزار تازه، پیکربندی ذخیره‌شده",
+        "Take files from it — a backup, a log — whatever their size": "گرفتن پرونده از آن — پشتیبان، گزارش — هر اندازه‌ای که باشد",
+        "Older interfaces built out of frames": "رابط‌های قدیمی ساخته‌شده از قاب",
+        "Its password, remembered for you after the first time": "گذرواژهٔ آن، پس از نخستین بار به یاد سپرده می‌شود",
+        "A console that stays connected, which some switches offer": "کنسولی که پیوسته متصل می‌ماند و برخی سوییچ‌ها دارند",
+        "Anything needing Java or ActiveX in the browser": "هر چیزی که در مرورگر به جاوا یا اکتیوایکس نیاز دارد"
     },
     "nplurals=2; plural=(n > 1);"
 );

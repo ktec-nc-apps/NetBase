@@ -712,7 +712,17 @@ OC.L10N.register(
         "The list of tools": "Danh sách công cụ",
         "Drag the tools in the sidebar into the order you work in — or hold Alt and press the up and down arrows. The order is kept for your account.": "Kéo các công cụ ở thanh bên theo thứ tự bạn làm việc — hoặc giữ Alt và bấm mũi tên lên xuống. Thứ tự được lưu cho tài khoản của bạn.",
         "Put them back in the original order": "Trả lại thứ tự ban đầu",
-        "{host} — its own settings page, opened through this server, so it works from anywhere. Sign in and change settings as you would standing in front of it.": "{host} — trang cài đặt của chính thiết bị, mở qua máy chủ này nên dùng được từ bất cứ đâu. Hãy đăng nhập và đổi cài đặt như khi đứng trước nó."
+        "{host} — its own settings page, opened through this server, so it works from anywhere. Sign in and change settings as you would standing in front of it.": "{host} — trang cài đặt của chính thiết bị, mở qua máy chủ này nên dùng được từ bất cứ đâu. Hãy đăng nhập và đổi cài đặt như khi đứng trước nó.",
+        "What this window can and cannot do": "Cửa sổ này làm được gì và không làm được gì",
+        "What works here": "Những gì dùng được",
+        "What does not": "Những gì không dùng được",
+        "Sign in and change settings, exactly as you would in front of the device": "Đăng nhập và đổi cài đặt, y như khi đứng trước thiết bị",
+        "Send files to it — new firmware, a saved configuration": "Gửi tệp tới thiết bị — phần mềm mới, cấu hình đã lưu",
+        "Take files from it — a backup, a log — whatever their size": "Lấy tệp từ thiết bị — bản sao lưu, nhật ký — dù lớn đến đâu",
+        "Older interfaces built out of frames": "Giao diện cũ dựng bằng khung",
+        "Its password, remembered for you after the first time": "Mật khẩu của thiết bị, nhớ sau lần đầu",
+        "A console that stays connected, which some switches offer": "Bảng điều khiển giữ kết nối liên tục, có ở một số bộ chuyển mạch",
+        "Anything needing Java or ActiveX in the browser": "Bất cứ thứ gì cần Java hay ActiveX trong trình duyệt"
     },
     "nplurals=1; plural=0;"
 );

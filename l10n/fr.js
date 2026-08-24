@@ -712,7 +712,17 @@ OC.L10N.register(
         "The list of tools": "La liste des outils",
         "Drag the tools in the sidebar into the order you work in — or hold Alt and press the up and down arrows. The order is kept for your account.": "Faites glisser les outils de la barre latérale dans votre ordre de travail — ou maintenez Alt et utilisez les flèches. L'ordre est conservé pour votre compte.",
         "Put them back in the original order": "Rétablir l'ordre d'origine",
-        "{host} — its own settings page, opened through this server, so it works from anywhere. Sign in and change settings as you would standing in front of it.": "{host} — sa propre page de réglages, ouverte via ce serveur, donc utilisable de partout. Connectez-vous et modifiez les réglages comme devant l'appareil."
+        "{host} — its own settings page, opened through this server, so it works from anywhere. Sign in and change settings as you would standing in front of it.": "{host} — sa propre page de réglages, ouverte via ce serveur, donc utilisable de partout. Connectez-vous et modifiez les réglages comme devant l'appareil.",
+        "What this window can and cannot do": "Ce que cette fenêtre peut et ne peut pas faire",
+        "What works here": "Ce qui fonctionne ici",
+        "What does not": "Ce qui ne fonctionne pas",
+        "Sign in and change settings, exactly as you would in front of the device": "Se connecter et modifier les réglages, comme devant l'appareil",
+        "Send files to it — new firmware, a saved configuration": "Lui envoyer des fichiers — nouveau micrologiciel, une configuration sauvegardée",
+        "Take files from it — a backup, a log — whatever their size": "Récupérer des fichiers — une sauvegarde, un journal — quelle que soit leur taille",
+        "Older interfaces built out of frames": "Les anciennes interfaces faites de cadres",
+        "Its password, remembered for you after the first time": "Son mot de passe, retenu après la première fois",
+        "A console that stays connected, which some switches offer": "Une console qui reste connectée, comme en proposent certains commutateurs",
+        "Anything needing Java or ActiveX in the browser": "Tout ce qui exige Java ou ActiveX dans le navigateur"
     },
     "nplurals=2; plural=(n > 1);"
 );
