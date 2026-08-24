@@ -739,7 +739,21 @@ OC.L10N.register(
         "MAC address — type 001ba93f8dfe, the colons are added for you": "نشانی مک — 001ba93f8dfe را بنویسید، دونقطه‌ها خودکار افزوده می‌شوند",
         "Pick one NetBase already knows": "یکی از آنچه نت‌بیس می‌شناسد را برگزینید",
         "Choose…": "برگزینید…",
-        "Recent": "اخیر"
+        "Recent": "اخیر",
+        "What does this network cover?": "این شبکه چه گستره‌ای دارد؟",
+        "An address and a prefix in, and out come the network and broadcast addresses, the usable range, and how many hosts fit.": "نشانی و پیشوند بدهید تا نشانی شبکه و همه‌پخشی، بازهٔ قابل استفاده و شمار میزبان‌ها را ببینید.",
+        "Type it myself (IPv6, or a mask like 255.255.255.0)": "خودم می‌نویسم (IPv6 یا ماسکی مثل 255.255.255.0)",
+        "Add a row for each network you have. NetBase works out the smallest set of blocks that covers them all — the shortest firewall rule that still means the same thing.": "برای هر شبکه یک ردیف بیفزایید. نت‌بیس کوچک‌ترین مجموعه بلوک‌هایی را می‌یابد که همه را می‌پوشاند — کوتاه‌ترین قاعدهٔ دیوار آتش با همان معنا.",
+        "Type them myself (ranges, IPv6)": "خودم می‌نویسم (بازه‌ها، IPv6)",
+        "Add a row below": "افزودن ردیف در پایین",
+        "Remove this row": "حذف این ردیف",
+        "Whose equipment is this?": "این دستگاه از کیست؟",
+        "The first half of a MAC address says who made the device. NetBase looks it up in the bundled IEEE registry, so nothing leaves this server.": "نیمهٔ نخست نشانی مک سازنده را می‌گوید. نت‌بیس آن را در فهرست IEEE همراه برنامه می‌جوید؛ چیزی از این کارساز بیرون نمی‌رود.",
+        "Fill in at least one network first.": "دست‌کم یک شبکه وارد کنید.",
+        "Fill in an address first.": "نخست نشانی را وارد کنید.",
+        "One network in, and the equal parts it divides into — with the range and host count of each.": "یک شبکه بدهید تا بخش‌های برابر آن را با بازه و شمار میزبان هر کدام ببینید.",
+        "into": "به",
+        "Into networks of": "به شبکه‌هایی با اندازهٔ"
     },
     "nplurals=2; plural=(n > 1);"
 );

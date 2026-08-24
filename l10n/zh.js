@@ -739,7 +739,21 @@ OC.L10N.register(
         "MAC address — type 001ba93f8dfe, the colons are added for you": "MAC 地址 — 直接输入 001ba93f8dfe，冒号会自动补上",
         "Pick one NetBase already knows": "从 NetBase 已知的目标中选择",
         "Choose…": "选择…",
-        "Recent": "最近使用"
+        "Recent": "最近使用",
+        "What does this network cover?": "这个网络覆盖哪些地址？",
+        "An address and a prefix in, and out come the network and broadcast addresses, the usable range, and how many hosts fit.": "输入地址和前缀，得到网络地址、广播地址、可用范围以及可容纳的主机数。",
+        "Type it myself (IPv6, or a mask like 255.255.255.0)": "自行输入（IPv6，或 255.255.255.0 形式的掩码）",
+        "Add a row for each network you have. NetBase works out the smallest set of blocks that covers them all — the shortest firewall rule that still means the same thing.": "每个网络加一行。NetBase 会算出覆盖它们的最小地址块集合——含义不变但最短的防火墙规则。",
+        "Type them myself (ranges, IPv6)": "自行输入（范围、IPv6）",
+        "Add a row below": "在下方添加一行",
+        "Remove this row": "删除此行",
+        "Whose equipment is this?": "这是谁家的设备？",
+        "The first half of a MAC address says who made the device. NetBase looks it up in the bundled IEEE registry, so nothing leaves this server.": "MAC 地址的前半段表示制造商。NetBase 使用内置的 IEEE 登记库查询，数据不会离开本服务器。",
+        "Fill in at least one network first.": "请先填写至少一个网络。",
+        "Fill in an address first.": "请先填写地址。",
+        "One network in, and the equal parts it divides into — with the range and host count of each.": "输入一个网络，列出等分后的各子网及其范围与主机数。",
+        "into": "→",
+        "Into networks of": "分割为"
     },
     "nplurals=1; plural=0;"
 );

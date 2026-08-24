@@ -739,7 +739,21 @@ OC.L10N.register(
         "MAC address — type 001ba93f8dfe, the colons are added for you": "MAC adresi — 001ba93f8dfe yazın, iki nokta kendiliğinden eklenir",
         "Pick one NetBase already knows": "NetBase'in zaten bildiği birini seç",
         "Choose…": "Seç…",
-        "Recent": "Son kullanılanlar"
+        "Recent": "Son kullanılanlar",
+        "What does this network cover?": "Bu ağ neyi kapsıyor?",
+        "An address and a prefix in, and out come the network and broadcast addresses, the usable range, and how many hosts fit.": "Adres ve önek girin; ağ ve yayın adresi, kullanılabilir aralık ve kaç makine sığdığı çıksın.",
+        "Type it myself (IPv6, or a mask like 255.255.255.0)": "Kendim yazayım (IPv6 ya da 255.255.255.0 gibi bir maske)",
+        "Add a row for each network you have. NetBase works out the smallest set of blocks that covers them all — the shortest firewall rule that still means the same thing.": "Her ağ için bir satır ekleyin. NetBase hepsini kapsayan en küçük blok kümesini bulur — aynı anlama gelen en kısa güvenlik duvarı kuralı.",
+        "Type them myself (ranges, IPv6)": "Kendim yazayım (aralıklar, IPv6)",
+        "Add a row below": "Aşağıya satır ekle",
+        "Remove this row": "Bu satırı kaldır",
+        "Whose equipment is this?": "Bu cihaz kimin?",
+        "The first half of a MAC address says who made the device. NetBase looks it up in the bundled IEEE registry, so nothing leaves this server.": "MAC adresinin ilk yarısı üreticiyi söyler. NetBase bunu gömülü IEEE kaydında arar; hiçbir şey bu sunucudan çıkmaz.",
+        "Fill in at least one network first.": "Önce en az bir ağ girin.",
+        "Fill in an address first.": "Önce bir adres girin.",
+        "One network in, and the equal parts it divides into — with the range and host count of each.": "Bir ağ girin, eşit parçaları çıksın — her birinin aralığı ve makine sayısıyla.",
+        "into": "→",
+        "Into networks of": "Şu boyutta ağlara"
     },
     "nplurals=2; plural=(n > 1);"
 );

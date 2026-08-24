@@ -738,7 +738,21 @@
         "MAC address — type 001ba93f8dfe, the colons are added for you": "MAC 주소 — 001ba93f8dfe 처럼 구분자 없이 입력하면 콜론이 자동으로 들어갑니다",
         "Pick one NetBase already knows": "NetBase가 이미 아는 대상에서 고르기",
         "Choose…": "고르기…",
-        "Recent": "최근 사용"
+        "Recent": "최근 사용",
+        "What does this network cover?": "이 네트워크의 범위는?",
+        "An address and a prefix in, and out come the network and broadcast addresses, the usable range, and how many hosts fit.": "주소와 프리픽스를 넣으면 네트워크 주소·브로드캐스트·사용 가능 범위와 호스트 수를 보여 줍니다.",
+        "Type it myself (IPv6, or a mask like 255.255.255.0)": "직접 입력(IPv6 또는 255.255.255.0 형식)",
+        "Add a row for each network you have. NetBase works out the smallest set of blocks that covers them all — the shortest firewall rule that still means the same thing.": "네트워크마다 한 줄씩 추가하세요. 이를 모두 덮는 최소한의 블록을 계산합니다 — 뜻은 같되 가장 짧은 방화벽 규칙입니다.",
+        "Type them myself (ranges, IPv6)": "직접 입력(범위, IPv6)",
+        "Add a row below": "아래에 행 추가",
+        "Remove this row": "이 행 삭제",
+        "Whose equipment is this?": "이 장치는 어디 제품인가",
+        "The first half of a MAC address says who made the device. NetBase looks it up in the bundled IEEE registry, so nothing leaves this server.": "MAC 주소의 앞부분은 제조사를 나타냅니다. 내장된 IEEE 등록부에서 조회하므로 외부로 나가는 정보는 없습니다.",
+        "Fill in at least one network first.": "네트워크를 하나 이상 입력하세요.",
+        "Fill in an address first.": "먼저 주소를 입력하세요.",
+        "One network in, and the equal parts it divides into — with the range and host count of each.": "네트워크를 넣으면 같은 크기로 나눈 각 네트워크를 범위와 수용 수와 함께 보여 줍니다.",
+        "into": "→",
+        "Into networks of": "나눌 프리픽스"
     },
     "pluralForm": "nplurals=1; plural=0;"
 }

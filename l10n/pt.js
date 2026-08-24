@@ -739,7 +739,21 @@ OC.L10N.register(
         "MAC address — type 001ba93f8dfe, the colons are added for you": "Endereço MAC — escreva 001ba93f8dfe, os dois pontos são acrescentados",
         "Pick one NetBase already knows": "Escolher um que o NetBase já conhece",
         "Choose…": "Escolher…",
-        "Recent": "Recentes"
+        "Recent": "Recentes",
+        "What does this network cover?": "O que abrange esta rede?",
+        "An address and a prefix in, and out come the network and broadcast addresses, the usable range, and how many hosts fit.": "Endereço e prefixo à entrada; à saída, os endereços de rede e difusão, o intervalo utilizável e quantos anfitriões cabem.",
+        "Type it myself (IPv6, or a mask like 255.255.255.0)": "Escrever eu (IPv6, ou uma máscara como 255.255.255.0)",
+        "Add a row for each network you have. NetBase works out the smallest set of blocks that covers them all — the shortest firewall rule that still means the same thing.": "Uma linha por rede. O NetBase calcula o menor conjunto de blocos que as cobre — a regra de firewall mais curta com o mesmo significado.",
+        "Type them myself (ranges, IPv6)": "Escrevê-las eu (intervalos, IPv6)",
+        "Add a row below": "Acrescentar uma linha abaixo",
+        "Remove this row": "Remover esta linha",
+        "Whose equipment is this?": "De quem é este equipamento?",
+        "The first half of a MAC address says who made the device. NetBase looks it up in the bundled IEEE registry, so nothing leaves this server.": "A primeira metade de um MAC indica o fabricante. O NetBase procura-a no registo IEEE incluído, pelo que nada sai deste servidor.",
+        "Fill in at least one network first.": "Introduza pelo menos uma rede.",
+        "Fill in an address first.": "Introduza primeiro um endereço.",
+        "One network in, and the equal parts it divides into — with the range and host count of each.": "Uma rede e as partes iguais em que se divide — com o intervalo e o número de anfitriões de cada uma.",
+        "into": "em",
+        "Into networks of": "Em redes de"
     },
     "nplurals=2; plural=(n > 1);"
 );

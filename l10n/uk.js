@@ -739,7 +739,21 @@ OC.L10N.register(
         "MAC address — type 001ba93f8dfe, the colons are added for you": "MAC-адреса — введіть 001ba93f8dfe, двокрапки додадуться самі",
         "Pick one NetBase already knows": "Вибрати з того, що NetBase уже знає",
         "Choose…": "Вибрати…",
-        "Recent": "Нещодавні"
+        "Recent": "Нещодавні",
+        "What does this network cover?": "Що охоплює ця мережа?",
+        "An address and a prefix in, and out come the network and broadcast addresses, the usable range, and how many hosts fit.": "Уведіть адресу й префікс — отримаєте адресу мережі та широкомовну, придатний діапазон і кількість вузлів.",
+        "Type it myself (IPv6, or a mask like 255.255.255.0)": "Введу сам (IPv6 або маска на кшталт 255.255.255.0)",
+        "Add a row for each network you have. NetBase works out the smallest set of blocks that covers them all — the shortest firewall rule that still means the same thing.": "Додайте рядок для кожної мережі. NetBase обчислить найменший набір блоків, що покриває їх усі, — найкоротше правило брандмауера з тим самим змістом.",
+        "Type them myself (ranges, IPv6)": "Введу сам (діапазони, IPv6)",
+        "Add a row below": "Додати рядок нижче",
+        "Remove this row": "Вилучити цей рядок",
+        "Whose equipment is this?": "Чиє це обладнання?",
+        "The first half of a MAC address says who made the device. NetBase looks it up in the bundled IEEE registry, so nothing leaves this server.": "Перша половина MAC-адреси вказує виробника. NetBase шукає її у вбудованому реєстрі IEEE — нічого не залишає цей сервер.",
+        "Fill in at least one network first.": "Уведіть принаймні одну мережу.",
+        "Fill in an address first.": "Спершу вкажіть адресу.",
+        "One network in, and the equal parts it divides into — with the range and host count of each.": "Мережа на вході — рівні частини на виході, з діапазоном і кількістю вузлів кожної.",
+        "into": "на",
+        "Into networks of": "На мережі розміром"
     },
     "nplurals=4; plural=(n % 1 == 0 && n % 10 == 1 && n % 100 != 11 ? 0 : n % 1 == 0 && n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14) ? 1 : n % 1 == 0 && (n % 10 ==0 || (n % 10 >=5 && n % 10 <=9) || (n % 100 >=11 && n % 100 <=14 )) ? 2: 3);"
 );

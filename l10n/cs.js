@@ -739,7 +739,21 @@ OC.L10N.register(
         "MAC address — type 001ba93f8dfe, the colons are added for you": "MAC adresa — napište 001ba93f8dfe, dvojtečky se doplní samy",
         "Pick one NetBase already knows": "Vyberte to, co NetBase už zná",
         "Choose…": "Vybrat…",
-        "Recent": "Nedávné"
+        "Recent": "Nedávné",
+        "What does this network cover?": "Co tato síť pokrývá?",
+        "An address and a prefix in, and out come the network and broadcast addresses, the usable range, and how many hosts fit.": "Zadejte adresu a prefix a dostanete adresu sítě i všesměrovou, použitelný rozsah a počet stanic.",
+        "Type it myself (IPv6, or a mask like 255.255.255.0)": "Napíšu sám (IPv6 nebo maska jako 255.255.255.0)",
+        "Add a row for each network you have. NetBase works out the smallest set of blocks that covers them all — the shortest firewall rule that still means the same thing.": "Přidejte řádek pro každou síť. NetBase spočítá nejmenší sadu bloků, která je pokryje — nejkratší pravidlo firewallu se stejným významem.",
+        "Type them myself (ranges, IPv6)": "Napíšu sám (rozsahy, IPv6)",
+        "Add a row below": "Přidat řádek níže",
+        "Remove this row": "Odebrat tento řádek",
+        "Whose equipment is this?": "Čí je to zařízení?",
+        "The first half of a MAC address says who made the device. NetBase looks it up in the bundled IEEE registry, so nothing leaves this server.": "První polovina MAC adresy určuje výrobce. NetBase ji hledá v přiloženém registru IEEE, takže nic neopouští tento server.",
+        "Fill in at least one network first.": "Zadejte alespoň jednu síť.",
+        "Fill in an address first.": "Nejprve zadejte adresu.",
+        "One network in, and the equal parts it divides into — with the range and host count of each.": "Jedna síť dovnitř a stejné části ven — s rozsahem a počtem stanic u každé.",
+        "into": "na",
+        "Into networks of": "Na sítě velikosti"
     },
     "nplurals=4; plural=(n == 1 && n % 1 == 0) ? 0 : (n >= 2 && n <= 4 && n % 1 == 0) ? 1: (n % 1 != 0 ) ? 2 : 3;"
 );

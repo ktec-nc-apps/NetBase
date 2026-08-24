@@ -738,7 +738,21 @@
         "MAC address — type 001ba93f8dfe, the colons are added for you": "Dirección MAC: escriba 001ba93f8dfe, los dos puntos se añaden solos",
         "Pick one NetBase already knows": "Elegir uno que NetBase ya conoce",
         "Choose…": "Elegir…",
-        "Recent": "Recientes"
+        "Recent": "Recientes",
+        "What does this network cover?": "¿Qué abarca esta red?",
+        "An address and a prefix in, and out come the network and broadcast addresses, the usable range, and how many hosts fit.": "Introduzca dirección y prefijo, y obtendrá la dirección de red y de difusión, el rango utilizable y cuántos equipos caben.",
+        "Type it myself (IPv6, or a mask like 255.255.255.0)": "Escribirlo yo (IPv6, o una máscara como 255.255.255.0)",
+        "Add a row for each network you have. NetBase works out the smallest set of blocks that covers them all — the shortest firewall rule that still means the same thing.": "Añada una fila por red. NetBase calcula el conjunto de bloques más pequeño que las cubre: la regla de cortafuegos más corta con el mismo significado.",
+        "Type them myself (ranges, IPv6)": "Escribirlas yo (rangos, IPv6)",
+        "Add a row below": "Añadir una fila debajo",
+        "Remove this row": "Quitar esta fila",
+        "Whose equipment is this?": "¿De quién es este equipo?",
+        "The first half of a MAC address says who made the device. NetBase looks it up in the bundled IEEE registry, so nothing leaves this server.": "La primera mitad de una MAC indica el fabricante. NetBase la busca en el registro IEEE incluido, así que nada sale de este servidor.",
+        "Fill in at least one network first.": "Introduzca al menos una red.",
+        "Fill in an address first.": "Introduzca una dirección.",
+        "One network in, and the equal parts it divides into — with the range and host count of each.": "Una red y las partes iguales en que se divide, con el rango y el número de equipos de cada una.",
+        "into": "en",
+        "Into networks of": "En redes de"
     },
     "pluralForm": "nplurals=2; plural=(n != 1);"
 }

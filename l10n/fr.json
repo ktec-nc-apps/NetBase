@@ -738,7 +738,21 @@
         "MAC address — type 001ba93f8dfe, the colons are added for you": "Adresse MAC — tapez 001ba93f8dfe, les deux-points sont ajoutés",
         "Pick one NetBase already knows": "Choisir une adresse que NetBase connaît déjà",
         "Choose…": "Choisir…",
-        "Recent": "Récents"
+        "Recent": "Récents",
+        "What does this network cover?": "Que couvre ce réseau ?",
+        "An address and a prefix in, and out come the network and broadcast addresses, the usable range, and how many hosts fit.": "Une adresse et un préfixe, et vous obtenez l'adresse réseau, celle de diffusion, la plage utilisable et le nombre d'hôtes.",
+        "Type it myself (IPv6, or a mask like 255.255.255.0)": "Saisir moi-même (IPv6, ou un masque comme 255.255.255.0)",
+        "Add a row for each network you have. NetBase works out the smallest set of blocks that covers them all — the shortest firewall rule that still means the same thing.": "Une ligne par réseau. NetBase calcule le plus petit ensemble de blocs qui les couvre — la règle de pare-feu la plus courte, de sens identique.",
+        "Type them myself (ranges, IPv6)": "Les saisir moi-même (plages, IPv6)",
+        "Add a row below": "Ajouter une ligne en dessous",
+        "Remove this row": "Supprimer cette ligne",
+        "Whose equipment is this?": "De qui est cet appareil ?",
+        "The first half of a MAC address says who made the device. NetBase looks it up in the bundled IEEE registry, so nothing leaves this server.": "La première moitié d'une adresse MAC désigne le fabricant. NetBase la cherche dans le registre IEEE fourni : rien ne quitte ce serveur.",
+        "Fill in at least one network first.": "Renseignez au moins un réseau.",
+        "Fill in an address first.": "Renseignez d'abord une adresse.",
+        "One network in, and the equal parts it divides into — with the range and host count of each.": "Un réseau, et les parts égales qu'il donne — avec la plage et le nombre d'hôtes de chacune.",
+        "into": "en",
+        "Into networks of": "En réseaux de"
     },
     "pluralForm": "nplurals=2; plural=(n > 1);"
 }

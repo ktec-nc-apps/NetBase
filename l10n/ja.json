@@ -738,7 +738,21 @@
         "MAC address — type 001ba93f8dfe, the colons are added for you": "MACアドレス ― 001ba93f8dfe のように区切りなしで入力できます（コロンは自動で入ります）",
         "Pick one NetBase already knows": "NetBaseが把握している宛先から選ぶ",
         "Choose…": "選ぶ…",
-        "Recent": "最近使った宛先"
+        "Recent": "最近使った宛先",
+        "What does this network cover?": "このネットワークの範囲を調べる",
+        "An address and a prefix in, and out come the network and broadcast addresses, the usable range, and how many hosts fit.": "アドレスとプレフィックスを入れると、ネットワークアドレス・ブロードキャスト・使えるアドレスの範囲と数を表示します。",
+        "Type it myself (IPv6, or a mask like 255.255.255.0)": "自分で入力する（IPv6や 255.255.255.0 形式）",
+        "Add a row for each network you have. NetBase works out the smallest set of blocks that covers them all — the shortest firewall rule that still means the same thing.": "ネットワークごとに行を追加してください。すべてを覆う最小のブロックにまとめます（同じ意味のまま、最短のファイアウォール規則になります）。",
+        "Type them myself (ranges, IPv6)": "自分で入力する（範囲指定・IPv6）",
+        "Add a row below": "下に行を追加",
+        "Remove this row": "この行を削除",
+        "Whose equipment is this?": "この機器はどこ製か",
+        "The first half of a MAC address says who made the device. NetBase looks it up in the bundled IEEE registry, so nothing leaves this server.": "MACアドレスの前半は製造元を示します。同梱のIEEE登録簿で照合するため、外部には一切送信しません。",
+        "Fill in at least one network first.": "ネットワークを1つ以上入力してください。",
+        "Fill in an address first.": "アドレスを入力してください。",
+        "One network in, and the equal parts it divides into — with the range and host count of each.": "ネットワークを入れると、等分した各ネットワークを範囲と収容数つきで一覧します。",
+        "into": "→",
+        "Into networks of": "分割後のプレフィックス"
     },
     "pluralForm": "nplurals=1; plural=0;"
 }

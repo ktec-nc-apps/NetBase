@@ -738,7 +738,21 @@
         "MAC address — type 001ba93f8dfe, the colons are added for you": "MAC address — type 001ba93f8dfe, the colons are added for you",
         "Pick one NetBase already knows": "Pick one NetBase already knows",
         "Choose…": "Choose…",
-        "Recent": "Recent"
+        "Recent": "Recent",
+        "What does this network cover?": "What does this network cover?",
+        "An address and a prefix in, and out come the network and broadcast addresses, the usable range, and how many hosts fit.": "An address and a prefix in, and out come the network and broadcast addresses, the usable range, and how many hosts fit.",
+        "Type it myself (IPv6, or a mask like 255.255.255.0)": "Type it myself (IPv6, or a mask like 255.255.255.0)",
+        "Add a row for each network you have. NetBase works out the smallest set of blocks that covers them all — the shortest firewall rule that still means the same thing.": "Add a row for each network you have. NetBase works out the smallest set of blocks that covers them all — the shortest firewall rule that still means the same thing.",
+        "Type them myself (ranges, IPv6)": "Type them myself (ranges, IPv6)",
+        "Add a row below": "Add a row below",
+        "Remove this row": "Remove this row",
+        "Whose equipment is this?": "Whose equipment is this?",
+        "The first half of a MAC address says who made the device. NetBase looks it up in the bundled IEEE registry, so nothing leaves this server.": "The first half of a MAC address says who made the device. NetBase looks it up in the bundled IEEE registry, so nothing leaves this server.",
+        "Fill in at least one network first.": "Fill in at least one network first.",
+        "Fill in an address first.": "Fill in an address first.",
+        "One network in, and the equal parts it divides into — with the range and host count of each.": "One network in, and the equal parts it divides into — with the range and host count of each.",
+        "into": "into",
+        "Into networks of": "Into networks of"
     },
     "pluralForm": "nplurals=2; plural=(n != 1);"
 }

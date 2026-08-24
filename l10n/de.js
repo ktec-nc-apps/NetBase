@@ -739,7 +739,21 @@ OC.L10N.register(
         "MAC address — type 001ba93f8dfe, the colons are added for you": "MAC-Adresse — einfach 001ba93f8dfe tippen, die Doppelpunkte kommen von selbst",
         "Pick one NetBase already knows": "Eines wählen, das NetBase schon kennt",
         "Choose…": "Wählen …",
-        "Recent": "Zuletzt verwendet"
+        "Recent": "Zuletzt verwendet",
+        "What does this network cover?": "Was deckt dieses Netz ab?",
+        "An address and a prefix in, and out come the network and broadcast addresses, the usable range, and how many hosts fit.": "Adresse und Präfix hinein, heraus kommen Netz- und Broadcast-Adresse, der nutzbare Bereich und wie viele Hosts hineinpassen.",
+        "Type it myself (IPv6, or a mask like 255.255.255.0)": "Selbst eintippen (IPv6 oder eine Maske wie 255.255.255.0)",
+        "Add a row for each network you have. NetBase works out the smallest set of blocks that covers them all — the shortest firewall rule that still means the same thing.": "Für jedes Netz eine Zeile. NetBase findet die kleinste Menge an Blöcken, die alle abdeckt — die kürzeste Firewall-Regel mit derselben Bedeutung.",
+        "Type them myself (ranges, IPv6)": "Selbst eintippen (Bereiche, IPv6)",
+        "Add a row below": "Zeile darunter hinzufügen",
+        "Remove this row": "Diese Zeile entfernen",
+        "Whose equipment is this?": "Von wem ist dieses Gerät?",
+        "The first half of a MAC address says who made the device. NetBase looks it up in the bundled IEEE registry, so nothing leaves this server.": "Die erste Hälfte einer MAC-Adresse nennt den Hersteller. NetBase schlägt sie im mitgelieferten IEEE-Register nach; nichts verlässt diesen Server.",
+        "Fill in at least one network first.": "Bitte zuerst mindestens ein Netz eintragen.",
+        "Fill in an address first.": "Bitte zuerst eine Adresse eintragen.",
+        "One network in, and the equal parts it divides into — with the range and host count of each.": "Ein Netz hinein, und die gleich großen Teile heraus — mit Bereich und Hostzahl je Teil.",
+        "into": "in",
+        "Into networks of": "In Netze von"
     },
     "nplurals=2; plural=(n != 1);"
 );
