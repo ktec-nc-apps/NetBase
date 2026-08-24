@@ -1359,7 +1359,8 @@ return function render(_ctx, _cache) {
         }), 128 /* KEYED_FRAGMENT */))
       ], 32 /* NEED_HYDRATION */),
       _createElementVNode("div", _hoisted_12, [
-        (_ctx.status.canScan)
+        _createCommentVNode(" The device list carries its own Start button, so this one would only\n             repeat it. It stays for the rare account that may sweep the network\n             without being allowed to see the result, which would otherwise have\n             no way to begin. "),
+        (_ctx.status.canScan && !_ctx.allowed('devices'))
           ? (_openBlock(), _createElementBlock("button", {
               key: 0,
               class: "btn primary block",
