@@ -36,6 +36,9 @@ All notable changes to NetBase are documented here.
 ### Added
 - **Keeping what you found**: every tool's results can be copied to the clipboard, downloaded as a text file, or written straight into a **NetBase** folder in your own Nextcloud files — named by tool and time, never over the top of an earlier one.
 - The tools in the sidebar can be dragged into whatever order you work in; Alt with the arrow keys does the same without a mouse.
+- Addresses are typed as what they are. A MAC goes into six boxes, an IPv4 address into four and a prefix: a full pair or three digits moves to the next box, backspace in an empty one steps back, and pasting a whole address fills the row. Combining networks takes a row per network, with **+** and **−**. Ranges and IPv6 keep a plain text box, one tick away.
+- Beside each address field is a list of what NetBase already knows — the devices it found, this server's own networks, and what was last asked about. The clock check lists sixteen public time servers, and the DNS tools list the public resolvers by name.
+- Every card in the subnet tools now says what it answers, rather than showing a box and leaving you to guess.
 
 ### Changed
 - The README and the store description are organised around what each part is built on and what it is for, rather than a list of features.

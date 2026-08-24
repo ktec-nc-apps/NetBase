@@ -712,8 +712,9 @@
                 </select>
               </span>
               <span class="dim">{{ t('into') }}</span>
+              <span class="ip-slash">/</span>
               <select v-model.number="splitPrefix" class="ip-prefix" :aria-label="t('Into networks of')">
-                <option v-for="p in splitPrefixes" :key="p" :value="p">/{{ p }}</option>
+                <option v-for="p in splitPrefixes" :key="p" :value="p">{{ p }}</option>
               </select>
               <button class="btn" :disabled="busy.split" @click="runSplit">{{ t('Split') }}</button>
             </div>
