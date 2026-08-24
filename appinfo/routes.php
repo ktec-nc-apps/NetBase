@@ -8,6 +8,7 @@ return [
 
 		// a device's own web interface, served on this origin so it can be shown
 		// in a window; the path mirrors the device's so relative links work
+		['name' => 'api#saveResult', 'url' => '/api/save', 'verb' => 'POST'],
 		['name' => 'api#proxyTicket', 'url' => '/api/proxy/ticket', 'verb' => 'POST'],
 		['name' => 'proxy#open', 'url' => '/proxy/{token}/{path}', 'verb' => 'GET', 'requirements' => ['path' => '.*'], 'defaults' => ['path' => '']],
 		['name' => 'proxy#open', 'url' => '/proxy/{token}/{path}', 'verb' => 'POST', 'postfix' => 'post', 'requirements' => ['path' => '.*'], 'defaults' => ['path' => '']],

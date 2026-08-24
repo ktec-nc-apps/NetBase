@@ -722,7 +722,16 @@ OC.L10N.register(
         "Older interfaces built out of frames": "프레임으로 만든 오래된 관리 화면",
         "Its password, remembered for you after the first time": "장치 비밀번호(한 번 입력하면 다음부터 자동)",
         "A console that stays connected, which some switches offer": "계속 연결된 콘솔(일부 스위치가 제공하는 기능)",
-        "Anything needing Java or ActiveX in the browser": "브라우저에서 Java나 ActiveX가 필요한 기능"
+        "Anything needing Java or ActiveX in the browser": "브라우저에서 Java나 ActiveX가 필요한 기능",
+        "Copy what this tool found": "이 결과를 복사",
+        "Download what this tool found": "이 결과를 내려받기",
+        "Save it to your Nextcloud files": "Nextcloud 파일에 저장",
+        "Copied": "복사했습니다",
+        "Saved to {path}": "{path} 에 저장했습니다",
+        "TLS versions": "TLS 버전",
+        "Aggregate": "집약",
+        "Console": "콘솔",
+        "Listing": "목록"
     },
     "nplurals=1; plural=0;"
 );

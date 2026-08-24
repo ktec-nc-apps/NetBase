@@ -722,7 +722,16 @@ OC.L10N.register(
         "Older interfaces built out of frames": "Antarmuka lama yang tersusun dari bingkai",
         "Its password, remembered for you after the first time": "Kata sandinya, diingat setelah pertama kali",
         "A console that stays connected, which some switches offer": "Konsol yang terus tersambung, seperti pada sebagian saklar jaringan",
-        "Anything needing Java or ActiveX in the browser": "Apa pun yang butuh Java atau ActiveX di peramban"
+        "Anything needing Java or ActiveX in the browser": "Apa pun yang butuh Java atau ActiveX di peramban",
+        "Copy what this tool found": "Salin hasil perkakas ini",
+        "Download what this tool found": "Unduh hasil perkakas ini",
+        "Save it to your Nextcloud files": "Simpan ke berkas Nextcloud Anda",
+        "Copied": "Tersalin",
+        "Saved to {path}": "Disimpan ke {path}",
+        "TLS versions": "Versi TLS",
+        "Aggregate": "Penggabungan",
+        "Console": "Konsol",
+        "Listing": "Daftar"
     },
     "nplurals=1; plural=0;"
 );

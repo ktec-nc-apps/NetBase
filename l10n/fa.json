@@ -721,7 +721,16 @@
         "Older interfaces built out of frames": "رابط‌های قدیمی ساخته‌شده از قاب",
         "Its password, remembered for you after the first time": "گذرواژهٔ آن، پس از نخستین بار به یاد سپرده می‌شود",
         "A console that stays connected, which some switches offer": "کنسولی که پیوسته متصل می‌ماند و برخی سوییچ‌ها دارند",
-        "Anything needing Java or ActiveX in the browser": "هر چیزی که در مرورگر به جاوا یا اکتیوایکس نیاز دارد"
+        "Anything needing Java or ActiveX in the browser": "هر چیزی که در مرورگر به جاوا یا اکتیوایکس نیاز دارد",
+        "Copy what this tool found": "رونوشت از یافتهٔ این ابزار",
+        "Download what this tool found": "بارگیری یافتهٔ این ابزار",
+        "Save it to your Nextcloud files": "ذخیره در پرونده‌های نکست‌کلاد شما",
+        "Copied": "رونوشت شد",
+        "Saved to {path}": "در {path} ذخیره شد",
+        "TLS versions": "نسخه‌های TLS",
+        "Aggregate": "تجمیع",
+        "Console": "کنسول",
+        "Listing": "فهرست"
     },
     "pluralForm": "nplurals=2; plural=(n > 1);"
 }

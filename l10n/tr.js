@@ -722,7 +722,16 @@ OC.L10N.register(
         "Older interfaces built out of frames": "Çerçevelerden kurulu eski arayüzler",
         "Its password, remembered for you after the first time": "Parolası, ilk seferden sonra hatırlanır",
         "A console that stays connected, which some switches offer": "Bazı anahtarların sunduğu, bağlı kalan konsol",
-        "Anything needing Java or ActiveX in the browser": "Tarayıcıda Java ya da ActiveX isteyen her şey"
+        "Anything needing Java or ActiveX in the browser": "Tarayıcıda Java ya da ActiveX isteyen her şey",
+        "Copy what this tool found": "Bu aracın bulduğunu kopyala",
+        "Download what this tool found": "Bu aracın bulduğunu indir",
+        "Save it to your Nextcloud files": "Nextcloud dosyalarınıza kaydedin",
+        "Copied": "Kopyalandı",
+        "Saved to {path}": "{path} konumuna kaydedildi",
+        "TLS versions": "TLS sürümleri",
+        "Aggregate": "Birleştirme",
+        "Console": "Konsol",
+        "Listing": "Liste"
     },
     "nplurals=2; plural=(n > 1);"
 );

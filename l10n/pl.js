@@ -722,7 +722,16 @@ OC.L10N.register(
         "Older interfaces built out of frames": "Starsze interfejsy zbudowane z ramek",
         "Its password, remembered for you after the first time": "Jego hasło, zapamiętane po pierwszym razie",
         "A console that stays connected, which some switches offer": "Konsola utrzymująca połączenie, jaką oferują niektóre przełączniki",
-        "Anything needing Java or ActiveX in the browser": "Wszystko, co wymaga Javy lub ActiveX w przeglądarce"
+        "Anything needing Java or ActiveX in the browser": "Wszystko, co wymaga Javy lub ActiveX w przeglądarce",
+        "Copy what this tool found": "Skopiuj to, co znalazło narzędzie",
+        "Download what this tool found": "Pobierz to, co znalazło narzędzie",
+        "Save it to your Nextcloud files": "Zapisz w swoich plikach Nextcloud",
+        "Copied": "Skopiowano",
+        "Saved to {path}": "Zapisano w {path}",
+        "TLS versions": "Wersje TLS",
+        "Aggregate": "Agregacja",
+        "Console": "Konsola",
+        "Listing": "Lista"
     },
     "nplurals=4; plural=(n==1 ? 0 : (n%10>=2 && n%10<=4) && (n%100<12 || n%100>14) ? 1 : n!=1 && (n%10>=0 && n%10<=1) || (n%10>=5 && n%10<=9) || (n%100>=12 && n%100<=14) ? 2 : 3);"
 );

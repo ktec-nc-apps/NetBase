@@ -29,6 +29,8 @@ class AdminSection implements IIconSection {
 	}
 
 	public function getIcon(): string {
-		return $this->urlGenerator->imagePath(Application::APP_ID, 'app.svg');
+		// The settings list draws its icons dark and inverts them for a dark
+		// theme; the app menu wants the white one. They are not the same file.
+		return $this->urlGenerator->imagePath(Application::APP_ID, 'app-dark.svg');
 	}
 }

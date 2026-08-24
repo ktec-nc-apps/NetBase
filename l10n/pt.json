@@ -721,7 +721,16 @@
         "Older interfaces built out of frames": "Interfaces antigas feitas de frames",
         "Its password, remembered for you after the first time": "A palavra-passe dele, guardada após a primeira vez",
         "A console that stays connected, which some switches offer": "Uma consola que fica ligada, como oferecem alguns comutadores",
-        "Anything needing Java or ActiveX in the browser": "Tudo o que precise de Java ou ActiveX no navegador"
+        "Anything needing Java or ActiveX in the browser": "Tudo o que precise de Java ou ActiveX no navegador",
+        "Copy what this tool found": "Copiar o que esta ferramenta encontrou",
+        "Download what this tool found": "Descarregar o que esta ferramenta encontrou",
+        "Save it to your Nextcloud files": "Guardar nos seus ficheiros do Nextcloud",
+        "Copied": "Copiado",
+        "Saved to {path}": "Guardado em {path}",
+        "TLS versions": "Versões de TLS",
+        "Aggregate": "Agregar",
+        "Console": "Consola",
+        "Listing": "Listagem"
     },
     "pluralForm": "nplurals=2; plural=(n > 1);"
 }

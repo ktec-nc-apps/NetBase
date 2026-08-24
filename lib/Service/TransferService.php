@@ -417,6 +417,51 @@ class TransferService {
 	 *
 	 * @return array<string, mixed>
 	 */
+	/**
+	 * Keep a result in the person's own Nextcloud files.
+	 *
+	 * A finding is worth little if it only lives on the screen it appeared on.
+	 * This writes it where the rest of their work is, next to the ticket or the
+	 * report it belongs to, and never over something already there.
+	 *
+	 * @return array{path: string, name: string, bytes: int}
+	 */
+	public function saveToFiles(string $userId, string $folder, string $name, string $content): array {
+		if (strlen($content) > 33554432) {
+			throw new \InvalidArgumentException('That is too large to save');
+		}
+		$name = trim(str_replace(['/', '\\', "\0"], '', $name));
+		if ($name === '' || str_starts_with($name, '.')) {
+			throw new \InvalidArgumentException('Not a valid file name');
+		}
+		$userFolder = $this->rootFolder->getUserFolder($userId);
+		$folder = trim(str_replace(['..', '\\'], '', $folder), '/');
+		$target = $folder === '' ? $userFolder : (
+			$userFolder->nodeExists($folder)
+				? $userFolder->get($folder)
+				: $userFolder->newFolder($folder)
+		);
+		if (!$target instanceof \OCP\Files\Folder) {
+			throw new \InvalidArgumentException('That is not a folder');
+		}
+
+		// Never over the top of something already saved.
+		$final = $name;
+		$stem = pathinfo($name, PATHINFO_FILENAME);
+		$extension = pathinfo($name, PATHINFO_EXTENSION);
+		for ($n = 2; $target->nodeExists($final) && $n < 200; $n++) {
+			$final = $stem . ' (' . $n . ')' . ($extension !== '' ? '.' . $extension : '');
+		}
+		$file = $target->newFile($final);
+		$file->putContent($content);
+
+		return [
+			'path' => ltrim(substr($file->getPath(), strlen($userFolder->getPath())), '/'),
+			'name' => $final,
+			'bytes' => strlen($content),
+		];
+	}
+
 	public function browseNextcloud(string $userId, string $path = '', bool $foldersOnly = false): array {
 		$userFolder = $this->rootFolder->getUserFolder($userId);
 		$path = trim($path, '/');

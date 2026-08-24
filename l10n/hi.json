@@ -721,7 +721,16 @@
         "Older interfaces built out of frames": "फ़्रेम से बने पुराने इंटरफ़ेस",
         "Its password, remembered for you after the first time": "उसका कूटशब्द, पहली बार के बाद याद रखा जाता है",
         "A console that stays connected, which some switches offer": "लगातार जुड़ा रहने वाला कंसोल, जो कुछ स्विच देते हैं",
-        "Anything needing Java or ActiveX in the browser": "ब्राउज़र में Java या ActiveX माँगने वाली कोई भी चीज़"
+        "Anything needing Java or ActiveX in the browser": "ब्राउज़र में Java या ActiveX माँगने वाली कोई भी चीज़",
+        "Copy what this tool found": "इस औज़ार का परिणाम कॉपी करें",
+        "Download what this tool found": "इस औज़ार का परिणाम डाउनलोड करें",
+        "Save it to your Nextcloud files": "अपनी Nextcloud फ़ाइलों में सहेजें",
+        "Copied": "कॉपी हो गया",
+        "Saved to {path}": "{path} में सहेजा गया",
+        "TLS versions": "TLS संस्करण",
+        "Aggregate": "समुच्चय",
+        "Console": "कंसोल",
+        "Listing": "सूची"
     },
     "pluralForm": "nplurals=2; plural=(n != 1);"
 }
