@@ -731,7 +731,9 @@ OC.L10N.register(
         "TLS versions": "รุ่นของ TLS",
         "Aggregate": "การรวม",
         "Console": "คอนโซล",
-        "Listing": "รายการ"
+        "Listing": "รายการ",
+        "Set every tool to administrators only and NetBase disappears from everyone else's app menu, and its page answers 403 — rather than showing them a door that will not open. The setting below turns that off if you would rather they saw it.": "หากตั้งให้ทุกเครื่องมือเป็นเฉพาะผู้ดูแล NetBase จะหายไปจากเมนูแอปของคนอื่น และหน้าเว็บจะตอบ 403 แทนที่จะให้เห็นประตูที่เปิดไม่ได้ ปิดการทำงานนี้ได้จากการตั้งค่าด้านล่าง",
+        "This is what makes an all-administrators setup vanish from other people's menus.": "การตั้งค่านี้เองที่ทำให้การกำหนดแบบเฉพาะผู้ดูแลหายไปจากเมนูของคนอื่น"
     },
     "nplurals=1; plural=0;"
 );

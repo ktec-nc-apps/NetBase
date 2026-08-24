@@ -731,7 +731,9 @@ OC.L10N.register(
         "TLS versions": "إصدارات TLS",
         "Aggregate": "التجميع",
         "Console": "الطرفية",
-        "Listing": "القائمة"
+        "Listing": "القائمة",
+        "Set every tool to administrators only and NetBase disappears from everyone else's app menu, and its page answers 403 — rather than showing them a door that will not open. The setting below turns that off if you would rather they saw it.": "إذا جعلت كل الأدوات للمدراء فقط، يختفي نِت‌بيس من قائمة تطبيقات الآخرين وتردّ صفحته بـ403 — بدل أن يريهم بابًا لا يُفتح. الإعداد أدناه يوقف ذلك.",
+        "This is what makes an all-administrators setup vanish from other people's menus.": "هذا ما يجعل إعدادًا للمدراء فقط يختفي من قوائم الآخرين."
     },
     "nplurals=6; plural=(n==0 ? 0 : n==1 ? 1 : n==2 ? 2 : n%100>=3 && n%100<=10 ? 3 : n%100>=11 && n%100<=99 ? 4 : 5);"
 );

@@ -730,7 +730,9 @@
         "TLS versions": "Verze TLS",
         "Aggregate": "Sloučení",
         "Console": "Konzole",
-        "Listing": "Výpis"
+        "Listing": "Výpis",
+        "Set every tool to administrators only and NetBase disappears from everyone else's app menu, and its page answers 403 — rather than showing them a door that will not open. The setting below turns that off if you would rather they saw it.": "Nastavíte-li všechny nástroje jen pro správce, NetBase zmizí z nabídky aplikací ostatních a jeho stránka odpoví 403 — místo aby jim ukazoval dveře, které se neotevřou. Nastavení níže to vypne.",
+        "This is what makes an all-administrators setup vanish from other people's menus.": "Právě to způsobí, že nastavení jen pro správce zmizí z nabídek ostatních."
     },
     "pluralForm": "nplurals=4; plural=(n == 1 && n % 1 == 0) ? 0 : (n >= 2 && n <= 4 && n % 1 == 0) ? 1: (n % 1 != 0 ) ? 2 : 3;"
 }

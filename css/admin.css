@@ -47,3 +47,9 @@
 }
 #netbase-admin .nb-after { color: var(--color-text-maxcontrast); }
 #netbase-admin .nb-after code { font-size: 12.5px; word-break: break-all; }
+
+/* The sentence under the checkbox it explains. */
+#netbase-admin .nb-sub {
+  margin: 4px 0 0 26px;
+  font-size: .9em;
+}
