@@ -49,7 +49,6 @@ OC.L10N.register(
         "Filter by name, IP, MAC or vendor": "नाम, IP, MAC या निर्माता से छाँटें",
         "Online only": "केवल ऑनलाइन",
         "All records": "सभी रिकॉर्ड",
-        "⤓ CSV": "⤓ CSV",
         "Online": "ऑनलाइन",
         "Not seen in the last sweep": "पिछले स्कैन में नहीं मिला",
         "named": "नामित",
@@ -733,7 +732,10 @@ OC.L10N.register(
         "Console": "कंसोल",
         "Listing": "सूची",
         "Set every tool to administrators only and NetBase disappears from everyone else's app menu, and its page answers 403 — rather than showing them a door that will not open. The setting below turns that off if you would rather they saw it.": "सभी औज़ार केवल प्रशासकों के लिए कर दें तो NetBase बाकी सबके ऐप मेन्यू से हट जाता है और उसका पृष्ठ 403 देता है — न खुलने वाला दरवाज़ा दिखाने के बजाय। नीचे की सेटिंग इसे बंद कर देती है।",
-        "This is what makes an all-administrators setup vanish from other people's menus.": "सब कुछ केवल प्रशासकों के लिए होने पर दूसरों के मेन्यू से गायब होना इसी सेटिंग से होता है।"
+        "This is what makes an all-administrators setup vanish from other people's menus.": "सब कुछ केवल प्रशासकों के लिए होने पर दूसरों के मेन्यू से गायब होना इसी सेटिंग से होता है।",
+        "Copy": "कॉपी",
+        "↓ CSV": "↓ CSV",
+        "Download as a file": "फ़ाइल के रूप में डाउनलोड"
     },
     "nplurals=2; plural=(n != 1);"
 );

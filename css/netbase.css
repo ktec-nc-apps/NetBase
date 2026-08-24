@@ -88,10 +88,10 @@
   border-bottom: 1px solid var(--border); background: var(--surface); min-height: 62px;
 }
 #netbase-root .topbar .title { display: flex; align-items: baseline; gap: 10px; min-width: 0; }
-#netbase-root .topbar .title .nm { font-weight: 700; font-size: 17px; }
+#netbase-root .topbar .title .nm { font-weight: 700; font-size: 17px; white-space: nowrap; }
 #netbase-root .topbar .title .desc { color: var(--muted); font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 #netbase-root .spacer { flex: 1 1 auto; }
-#netbase-root .topbar-actions { display: flex; align-items: center; gap: 8px; }
+#netbase-root .topbar-actions { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; }
 #netbase-root .topbar-actions .filter { width: 260px; }
 #netbase-root .content { flex: 1 1 auto; overflow-y: auto; padding: 18px 20px 40px; }
 
@@ -171,8 +171,24 @@
 #netbase-root table.grid.compact { box-shadow: none; }
 #netbase-root table.grid.compact th, #netbase-root table.grid.compact td { padding: 6px 10px; font-size: 13px; cursor: default; }
 #netbase-root table.grid .c-dot { width: 26px; padding-right: 0; }
-#netbase-root .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--border); }
-#netbase-root .dot.on { background: var(--ok); box-shadow: 0 0 0 3px color-mix(in srgb, var(--ok) 20%, transparent); }
+/* A lamp: lit when the device answered the last sweep, dark when it did not. */
+#netbase-root .dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: transparent;
+  border: 2px solid color-mix(in srgb, var(--border) 70%, transparent);
+  box-shadow: none;
+}
+#netbase-root .dot.on {
+  background: var(--ok);
+  border-color: color-mix(in srgb, var(--ok) 70%, #000);
+  box-shadow:
+    0 0 0 3px color-mix(in srgb, var(--ok) 22%, transparent),
+    0 0 7px color-mix(in srgb, var(--ok) 75%, transparent),
+    inset 0 1px 1px color-mix(in srgb, #fff 55%, transparent);
+}
 #netbase-root .c-name { display: flex; align-items: center; gap: 8px; }
 #netbase-root .c-name .nm { font-weight: 600; }
 
@@ -469,3 +485,20 @@
 .devwin-help strong { display: block; margin-bottom: 4px; }
 .devwin-help ul { margin: 0 0 12px; padding-left: 1.2em; }
 .devwin-help li { list-style: disc; }
+
+/* Copy, download and save say what they are, until the room runs out. */
+.topbar-actions .btn.keep { display: inline-flex; align-items: center; gap: 5px; }
+.topbar-actions .btn.keep .ic { font-size: 1.05em; line-height: 1; }
+/* The width the sidebar leaves is what matters, so this gives up the words
+   well before the window itself runs out of room. */
+@media (max-width: 1500px) {
+  #netbase-root .topbar-actions .filter { width: 180px; }
+}
+@media (max-width: 1350px) {
+  /* The tab's one-line explanation goes before the buttons lose their words. */
+  #netbase-root .topbar .title .desc { display: none; }
+  #netbase-root .topbar-actions .filter { width: 150px; }
+}
+@media (max-width: 1120px) {
+  #netbase-root .topbar-actions .btn.keep .lb { display: none; }
+}

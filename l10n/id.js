@@ -49,7 +49,6 @@ OC.L10N.register(
         "Filter by name, IP, MAC or vendor": "Saring menurut nama, IP, MAC atau pabrikan",
         "Online only": "Hanya yang daring",
         "All records": "Semua rekaman",
-        "⤓ CSV": "⤓ CSV",
         "Online": "Daring",
         "Not seen in the last sweep": "Tidak terlihat pada pemindaian terakhir",
         "named": "dinamai",
@@ -733,7 +732,10 @@ OC.L10N.register(
         "Console": "Konsol",
         "Listing": "Daftar",
         "Set every tool to administrators only and NetBase disappears from everyone else's app menu, and its page answers 403 — rather than showing them a door that will not open. The setting below turns that off if you would rather they saw it.": "Bila semua perkakas disetel hanya untuk administrator, NetBase lenyap dari menu aplikasi orang lain dan halamannya menjawab 403 — alih-alih memperlihatkan pintu yang takkan terbuka. Setelan di bawah mematikannya.",
-        "This is what makes an all-administrators setup vanish from other people's menus.": "Inilah yang membuat penyetelan khusus administrator lenyap dari menu orang lain."
+        "This is what makes an all-administrators setup vanish from other people's menus.": "Inilah yang membuat penyetelan khusus administrator lenyap dari menu orang lain.",
+        "Copy": "Salin",
+        "↓ CSV": "↓ CSV",
+        "Download as a file": "Unduh sebagai berkas"
     },
     "nplurals=1; plural=0;"
 );

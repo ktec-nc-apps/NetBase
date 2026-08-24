@@ -125,13 +125,19 @@
           <template v-if="tab==='devices'">
             <input class="filter" v-model="filter" :placeholder="t('Filter by name, IP, MAC or vendor')">
             <button class="btn sm" @click="onlyOnline=!onlyOnline" :class="{active: onlyOnline}">{{ onlyOnline ? t('Online only') : t('All records') }}</button>
-            <button class="btn sm" @click="exportCsv" :disabled="!shownDevices.length">{{ t('⤓ CSV') }}</button>
+            <button class="btn sm" @click="exportCsv" :disabled="!shownDevices.length">{{ t('↓ CSV') }}</button>
           </template>
           <!-- Whatever this tool has found: onto the clipboard, into a file, or
                into the person's own Nextcloud folder. -->
-          <button class="btn sm" :title="t('Copy what this tool found')" :disabled="!hasResult" @click="copyResult">⧉</button>
-          <button class="btn sm" :title="t('Download what this tool found')" :disabled="!hasResult" @click="downloadResult">⤓</button>
-          <button class="btn sm" :title="t('Save it to your Nextcloud files')" :disabled="!hasResult" @click="saveResultToFiles">📁</button>
+          <button class="btn sm keep" :title="t('Copy what this tool found')" :disabled="!hasResult" @click="copyResult">
+            <span class="ic">📋</span><span class="lb">{{ t('Copy') }}</span>
+          </button>
+          <button class="btn sm keep" :title="t('Download what this tool found')" :disabled="!hasResult" @click="downloadResult">
+            <span class="ic">↓</span><span class="lb">{{ t('Download as a file') }}</span>
+          </button>
+          <button class="btn sm keep" :title="t('Save it to your Nextcloud files')" :disabled="!hasResult" @click="saveResultToFiles">
+            <span class="ic">📁</span><span class="lb">{{ t('Save') }}</span>
+          </button>
         </div>
       </div>
 
