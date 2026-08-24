@@ -711,7 +711,7 @@
         "The list of tools": "Lista narzędzi",
         "Drag the tools in the sidebar into the order you work in — or hold Alt and press the up and down arrows. The order is kept for your account.": "Przeciągnij narzędzia na pasku bocznym w swoją kolejność pracy albo przytrzymaj Alt i użyj strzałek. Kolejność zostaje zapamiętana dla Twojego konta.",
         "Put them back in the original order": "Przywróć pierwotną kolejność",
-        "This window shows the device's own page, fetched by this server. The page reaches nothing but this window.": "To okno pokazuje stronę urządzenia pobraną przez ten serwer. Strona nie sięga niczego poza tym oknem."
+        "{host} — its own settings page, opened through this server, so it works from anywhere. Sign in and change settings as you would standing in front of it.": "{host} — własna strona ustawień urządzenia, otwarta przez ten serwer, więc działa z dowolnego miejsca. Zaloguj się i zmieniaj ustawienia jak przy samym urządzeniu."
     },
     "pluralForm": "nplurals=4; plural=(n==1 ? 0 : (n%10>=2 && n%10<=4) && (n%100<12 || n%100>14) ? 1 : n!=1 && (n%10>=0 && n%10<=1) || (n%10>=5 && n%10<=9) || (n%100>=12 && n%100<=14) ? 2 : 3);"
 }

@@ -712,7 +712,7 @@ OC.L10N.register(
         "The list of tools": "Die Liste der Werkzeuge",
         "Drag the tools in the sidebar into the order you work in — or hold Alt and press the up and down arrows. The order is kept for your account.": "Ziehen Sie die Werkzeuge in der Seitenleiste in Ihre Arbeitsreihenfolge — oder halten Sie Alt und benutzen Sie die Pfeiltasten. Die Reihenfolge bleibt für Ihr Konto erhalten.",
         "Put them back in the original order": "Ursprüngliche Reihenfolge wiederherstellen",
-        "This window shows the device's own page, fetched by this server. The page reaches nothing but this window.": "Dieses Fenster zeigt die Seite des Geräts, von diesem Server geholt. Die Seite erreicht nichts außerhalb dieses Fensters."
+        "{host} — its own settings page, opened through this server, so it works from anywhere. Sign in and change settings as you would standing in front of it.": "{host} — die eigene Einstellungsseite des Geräts, über diesen Server geöffnet und daher von überall nutzbar. Anmelden und Einstellungen ändern wie direkt davor."
     },
     "nplurals=2; plural=(n != 1);"
 );

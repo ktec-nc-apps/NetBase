@@ -711,7 +711,7 @@
         "The list of tools": "The list of tools",
         "Drag the tools in the sidebar into the order you work in — or hold Alt and press the up and down arrows. The order is kept for your account.": "Drag the tools in the sidebar into the order you work in — or hold Alt and press the up and down arrows. The order is kept for your account.",
         "Put them back in the original order": "Put them back in the original order",
-        "This window shows the device's own page, fetched by this server. The page reaches nothing but this window.": "This window shows the device's own page, fetched by this server. The page reaches nothing but this window."
+        "{host} — its own settings page, opened through this server, so it works from anywhere. Sign in and change settings as you would standing in front of it.": "{host} — its own settings page, opened through this server, so it works from anywhere. Sign in and change settings as you would standing in front of it."
     },
     "pluralForm": "nplurals=2; plural=(n != 1);"
 }

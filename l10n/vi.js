@@ -712,7 +712,7 @@ OC.L10N.register(
         "The list of tools": "Danh sách công cụ",
         "Drag the tools in the sidebar into the order you work in — or hold Alt and press the up and down arrows. The order is kept for your account.": "Kéo các công cụ ở thanh bên theo thứ tự bạn làm việc — hoặc giữ Alt và bấm mũi tên lên xuống. Thứ tự được lưu cho tài khoản của bạn.",
         "Put them back in the original order": "Trả lại thứ tự ban đầu",
-        "This window shows the device's own page, fetched by this server. The page reaches nothing but this window.": "Cửa sổ này hiển thị trang của thiết bị do máy chủ lấy về. Trang không chạm tới bất cứ thứ gì ngoài cửa sổ này."
+        "{host} — its own settings page, opened through this server, so it works from anywhere. Sign in and change settings as you would standing in front of it.": "{host} — trang cài đặt của chính thiết bị, mở qua máy chủ này nên dùng được từ bất cứ đâu. Hãy đăng nhập và đổi cài đặt như khi đứng trước nó."
     },
     "nplurals=1; plural=0;"
 );

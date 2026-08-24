@@ -113,7 +113,7 @@ class ProxyService {
 	 * @param array<string, string> $post form fields to forward, if any
 	 * @return array{status: int, headers: array<string, string>, body: string, html: bool}
 	 */
-	public function fetch(string $base, string $path, string $query, string $userId, string $prefix, array $post = [], string $authorization = ''): array {
+	public function fetch(string $base, string $path, string $query, string $userId, string $prefix, array $post = [], string $authorization = '', array $files = []): array {
 		$base = $this->validateBase($base);
 		if ($authorization === '') {
 			// A device that asked for a password earlier is answered without
@@ -163,7 +163,29 @@ class ProxyService {
 			// this server's address; the answer is handed straight back to it.
 			curl_setopt($curl, CURLOPT_HTTPHEADER, ['Authorization: ' . $authorization]);
 		}
-		if ($post !== []) {
+		if ($files !== []) {
+			// Sending a file to a device — new firmware, a saved configuration —
+			// is one of the things people open its page for, so the upload is
+			// carried through as it came, field names and file names intact.
+			$fields = [];
+			foreach ($post as $name => $value) {
+				$fields[(string)$name] = is_array($value) ? (string)json_encode($value) : (string)$value;
+			}
+			foreach ($files as $name => $file) {
+				if (!is_array($file) || !is_uploaded_file((string)($file['tmp_name'] ?? '')) && !is_readable((string)($file['tmp_name'] ?? ''))) {
+					continue;
+				}
+				$fields[(string)$name] = new \CURLFile(
+					(string)$file['tmp_name'],
+					(string)($file['type'] ?? 'application/octet-stream'),
+					basename((string)($file['name'] ?? 'file')),
+				);
+			}
+			curl_setopt($curl, CURLOPT_POST, true);
+			curl_setopt($curl, CURLOPT_POSTFIELDS, $fields);
+			// A firmware image takes its time to be written.
+			curl_setopt($curl, CURLOPT_TIMEOUT, 300);
+		} elseif ($post !== []) {
 			curl_setopt($curl, CURLOPT_POST, true);
 			curl_setopt($curl, CURLOPT_POSTFIELDS, http_build_query($post));
 		}

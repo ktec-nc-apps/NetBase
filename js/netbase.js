@@ -1302,7 +1302,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         <button class="btn xs" :title="t('Fill the screen')" @click.stop="toggleFull(w)">⤢</button>
         <button class="btn xs" :title="t('Close')" @click.stop="closeWindow(w)">✕</button>
       </div>
-      <div class="devwin-line">{{ t('This window shows the device\'s own page, fetched by this server. The page reaches nothing but this window.') }}</div>
+      <div class="devwin-line">{{ t('{host} — its own settings page, opened through this server, so it works from anywhere. Sign in and change settings as you would standing in front of it.', { host: w.base.replace(/^https?:\/\//, '') }) }}</div>
       <div v-if="w.busy" class="devwin-note dim">{{ t('Connecting…') }}</div>
       <div v-else-if="w.error" class="devwin-note error">⚠ {{ w.error }}</div>
       <!-- The page is sandboxed against navigating anything but itself, so a device

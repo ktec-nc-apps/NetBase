@@ -712,7 +712,7 @@ OC.L10N.register(
         "The list of tools": "औज़ारों की सूची",
         "Drag the tools in the sidebar into the order you work in — or hold Alt and press the up and down arrows. The order is kept for your account.": "बग़ल की पट्टी में औज़ारों को अपने काम के क्रम में खींचें — या Alt दबाकर ऊपर-नीचे तीर दबाएँ। क्रम आपके खाते के लिए सहेजा जाता है।",
         "Put them back in the original order": "मूल क्रम में लौटाएँ",
-        "This window shows the device's own page, fetched by this server. The page reaches nothing but this window.": "यह विंडो इस सर्वर द्वारा लाया गया उपकरण का अपना पृष्ठ दिखाती है। पृष्ठ इस विंडो के बाहर कुछ नहीं पहुँच सकता।"
+        "{host} — its own settings page, opened through this server, so it works from anywhere. Sign in and change settings as you would standing in front of it.": "{host} — उपकरण का अपना सेटिंग पृष्ठ, इस सर्वर के ज़रिए खुला है, इसलिए कहीं से भी चलता है। सामने खड़े होकर जैसे करते, वैसे ही लॉगिन और सेटिंग बदलें।"
     },
     "nplurals=2; plural=(n != 1);"
 );

@@ -712,7 +712,7 @@ OC.L10N.register(
         "The list of tools": "Daftar perkakas",
         "Drag the tools in the sidebar into the order you work in — or hold Alt and press the up and down arrows. The order is kept for your account.": "Seret perkakas di bilah sisi ke urutan kerja Anda — atau tahan Alt lalu tekan panah atas-bawah. Urutan disimpan untuk akun Anda.",
         "Put them back in the original order": "Kembalikan ke urutan semula",
-        "This window shows the device's own page, fetched by this server. The page reaches nothing but this window.": "Jendela ini menampilkan halaman perangkat yang diambil oleh peladen ini. Halaman itu tak menjangkau apa pun di luar jendela ini."
+        "{host} — its own settings page, opened through this server, so it works from anywhere. Sign in and change settings as you would standing in front of it.": "{host} — halaman pengaturan perangkat itu sendiri, dibuka lewat peladen ini sehingga bisa dipakai dari mana saja. Masuk dan ubah pengaturan seperti saat berdiri di depannya."
     },
     "nplurals=1; plural=0;"
 );

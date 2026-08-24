@@ -4816,7 +4816,7 @@ return function render(_ctx, _cache) {
             onClick: _withModifiers($event => (_ctx.closeWindow(w)), ["stop"])
           }, "✕", 8 /* PROPS */, _hoisted_693)
         ], 40 /* PROPS, NEED_HYDRATION */, _hoisted_684),
-        _createElementVNode("div", _hoisted_694, _toDisplayString(_ctx.t('This window shows the device\'s own page, fetched by this server. The page reaches nothing but this window.')), 1 /* TEXT */),
+        _createElementVNode("div", _hoisted_694, _toDisplayString(_ctx.t('{host} — its own settings page, opened through this server, so it works from anywhere. Sign in and change settings as you would standing in front of it.', { host: w.base.replace(/^https?:\/\//, '') })), 1 /* TEXT */),
         (w.busy)
           ? (_openBlock(), _createElementBlock("div", _hoisted_695, _toDisplayString(_ctx.t('Connecting…')), 1 /* TEXT */))
           : (w.error)
