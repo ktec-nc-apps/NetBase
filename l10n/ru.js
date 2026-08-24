@@ -739,7 +739,21 @@ OC.L10N.register(
         "MAC address — type 001ba93f8dfe, the colons are added for you": "MAC-адрес — введите 001ba93f8dfe, двоеточия добавятся сами",
         "Pick one NetBase already knows": "Выбрать из того, что NetBase уже знает",
         "Choose…": "Выбрать…",
-        "Recent": "Недавние"
+        "Recent": "Недавние",
+        "What does this network cover?": "Что охватывает эта сеть?",
+        "An address and a prefix in, and out come the network and broadcast addresses, the usable range, and how many hosts fit.": "Введите адрес и префикс — получите адрес сети и широковещательный, диапазон и число узлов.",
+        "Type it myself (IPv6, or a mask like 255.255.255.0)": "Ввести самому (IPv6 или маска вида 255.255.255.0)",
+        "Add a row for each network you have. NetBase works out the smallest set of blocks that covers them all — the shortest firewall rule that still means the same thing.": "Добавьте строку на каждую сеть. NetBase найдёт наименьший набор блоков, покрывающий их все, — самое короткое правило с тем же смыслом.",
+        "Type them myself (ranges, IPv6)": "Ввести самому (диапазоны, IPv6)",
+        "Add a row below": "Добавить строку ниже",
+        "Remove this row": "Убрать эту строку",
+        "Whose equipment is this?": "Чьё это оборудование?",
+        "The first half of a MAC address says who made the device. NetBase looks it up in the bundled IEEE registry, so nothing leaves this server.": "Первая половина MAC-адреса указывает производителя. NetBase ищет её во встроенном реестре IEEE — ничего не покидает сервер.",
+        "Fill in at least one network first.": "Укажите хотя бы одну сеть.",
+        "Fill in an address first.": "Сначала укажите адрес.",
+        "One network in, and the equal parts it divides into — with the range and host count of each.": "Сеть на входе — равные части на выходе, с диапазоном и числом узлов каждой.",
+        "into": "на",
+        "Into networks of": "На сети размером"
     },
     "nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);"
 );

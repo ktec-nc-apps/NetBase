@@ -661,16 +661,33 @@
         <!-- ============ subnet ============ -->
         <section v-if="tab==='subnet'">
           <div class="card tool-card">
+            <h3>{{ t('What does this network cover?') }}</h3>
+            <p class="dim">{{ t('An address and a prefix in, and out come the network and broadcast addresses, the usable range, and how many hosts fit.') }}</p>
             <div class="tool-row">
-              <select class="pick" :title="t('Pick one NetBase already knows')" @change="pickInto('subnetInput', $event)">
+              <select class="pick" :title="t('Pick one NetBase already knows')" @change="pickIntoAddress('calcAddress', $event)">
                 <option value="">{{ t('Choose…') }}</option>
                 <optgroup v-for="g in networkChoices" :key="g.label" :label="t(g.label)">
                   <option v-for="o in g.items" :key="o.value" :value="o.value">{{ o.text }}</option>
                 </optgroup>
               </select>
-              <input v-model="subnetInput" placeholder="192.168.1.10/24" @keyup.enter="runSubnet">
+              <span class="ip-boxes" v-if="!subnetFreeText">
+                <template v-for="(part, i) in calcAddress.octets" :key="i">
+                  <input class="ip-box" :value="part" maxlength="3" inputmode="numeric" spellcheck="false"
+                         autocomplete="off" data-group="calc" :data-col="i" :aria-label="t('Address') + ' ' + (i + 1)"
+                         @input="typeOctet(calcAddress, i, $event)" @keydown="octetKey(calcAddress, 'calc', i, $event, runSubnet)"
+                         @paste="pasteAddress(calcAddress, $event)" @focus="$event.target.select()">
+                  <span v-if="i < 3" class="ip-dot">.</span>
+                </template>
+                <span class="ip-slash">/</span>
+                <select v-model.number="calcAddress.prefix" class="ip-prefix" :aria-label="t('Prefix')">
+                  <option v-for="p in prefixes" :key="p" :value="p">{{ p }}</option>
+                </select>
+              </span>
+              <input v-else v-model="subnetInput" placeholder="2001:db8::1/64" @keyup.enter="runSubnet">
               <button class="btn primary" @click="runSubnet">{{ t('Calculate') }}</button>
             </div>
+            <label class="fl-check"><input type="checkbox" v-model="subnetFreeText">
+              <span>{{ t('Type it myself (IPv6, or a mask like 255.255.255.0)') }}</span></label>
           </div>
           <div class="card" v-if="subnetResult">
             <div class="kv">
@@ -679,9 +696,25 @@
           </div>
           <div class="card tool-card">
             <h3>{{ t('Split into smaller networks') }}</h3>
+            <p class="dim">{{ t('One network in, and the equal parts it divides into — with the range and host count of each.') }}</p>
             <div class="tool-row">
-              <input v-model="splitCidr" class="short" placeholder="192.168.0.0/16">
-              <select v-model.number="splitPrefix" class="tiny"><option v-for="p in splitPrefixes" :key="p" :value="p">/{{ p }}</option></select>
+              <span class="ip-boxes">
+                <template v-for="(part, i) in splitAddress.octets" :key="i">
+                  <input class="ip-box" :value="part" maxlength="3" inputmode="numeric" spellcheck="false"
+                         autocomplete="off" data-group="split" :data-col="i" :aria-label="t('Network') + ' ' + (i + 1)"
+                         @input="typeOctet(splitAddress, i, $event)" @keydown="octetKey(splitAddress, 'split', i, $event, runSplit)"
+                         @paste="pasteAddress(splitAddress, $event)" @focus="$event.target.select()">
+                  <span v-if="i < 3" class="ip-dot">.</span>
+                </template>
+                <span class="ip-slash">/</span>
+                <select v-model.number="splitAddress.prefix" class="ip-prefix" :aria-label="t('Prefix')">
+                  <option v-for="p in prefixes" :key="p" :value="p">{{ p }}</option>
+                </select>
+              </span>
+              <span class="dim">{{ t('into') }}</span>
+              <select v-model.number="splitPrefix" class="ip-prefix" :aria-label="t('Into networks of')">
+                <option v-for="p in splitPrefixes" :key="p" :value="p">/{{ p }}</option>
+              </select>
               <button class="btn" :disabled="busy.split" @click="runSplit">{{ t('Split') }}</button>
             </div>
             <table class="grid compact" v-if="splitResult">
@@ -692,9 +725,32 @@
 
           <div class="card tool-card">
             <h3>{{ t('Combine addresses into the fewest networks') }}</h3>
-            <textarea v-model="aggregateInput" rows="3" class="mono tiny" :placeholder="t('192.168.1.0/24, 192.168.2.0/24, 10.0.0.5, 10.0.0.8-10.0.0.20')"></textarea>
+            <p class="dim">{{ t('Add a row for each network you have. NetBase works out the smallest set of blocks that covers them all — the shortest firewall rule that still means the same thing.') }}</p>
+            <template v-if="!aggregateFreeText">
+              <div class="ip-row" v-for="(row, r) in ipRows" :key="r">
+                <span class="ip-boxes">
+                  <template v-for="(part, i) in row.octets" :key="i">
+                    <input class="ip-box" :value="part" maxlength="3" inputmode="numeric" spellcheck="false"
+                           autocomplete="off" :data-group="'agg' + r" :data-col="i"
+                           :aria-label="t('Network') + ' ' + (r + 1) + ' — ' + (i + 1)"
+                           @input="typeOctet(row, i, $event)" @keydown="octetKey(row, 'agg' + r, i, $event, runAggregate)"
+                           @paste="pasteAddress(row, $event)" @focus="$event.target.select()">
+                    <span v-if="i < 3" class="ip-dot">.</span>
+                  </template>
+                  <span class="ip-slash">/</span>
+                  <select v-model.number="row.prefix" class="ip-prefix" :aria-label="t('Prefix')">
+                    <option v-for="p in prefixes" :key="p" :value="p">{{ p }}</option>
+                  </select>
+                </span>
+                <button class="btn xs" :title="t('Add a row below')" @click="addIpRow(r)">＋</button>
+                <button class="btn xs" :disabled="ipRows.length < 2" :title="t('Remove this row')" @click="removeIpRow(r)">−</button>
+              </div>
+            </template>
+            <textarea v-else v-model="aggregateInput" rows="3" class="mono tiny" :placeholder="t('192.168.1.0/24, 10.0.0.5, 10.0.0.8-10.0.0.20, 2001:db8::/48')"></textarea>
             <div class="tool-row">
               <button class="btn" :disabled="busy.aggregate" @click="runAggregate">{{ t('Combine') }}</button>
+              <label class="fl-check"><input type="checkbox" v-model="aggregateFreeText">
+                <span>{{ t('Type them myself (ranges, IPv6)') }}</span></label>
             </div>
             <div class="kv" v-if="aggregateResult">
               <div><span>{{ t('Blocks') }}</span><code class="wrap">{{ aggregateResult.blocks.join(', ') }}</code></div>
@@ -704,6 +760,8 @@
           </div>
 
           <div class="card tool-card">
+            <h3>{{ t('Whose equipment is this?') }}</h3>
+            <p class="dim">{{ t('The first half of a MAC address says who made the device. NetBase looks it up in the bundled IEEE registry, so nothing leaves this server.') }}</p>
             <div class="tool-row">
               <!-- Six pairs, because that is what a MAC address is. Two
                    characters fill a box and move on; backspace in an empty box
@@ -1777,6 +1835,13 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         portHost: '', portList: '', portResult: null,
         tlsHost: '', tlsPort: 443, tlsResult: null, httpResult: null,
         subnetInput: '', subnetResult: null, macParts: ['', '', '', '', '', ''], macResult: null,
+        // An address is four numbers and a prefix; typing it that way beats
+        // typing punctuation. The free-text boxes stay for IPv6 and ranges.
+        calcAddress: { octets: ['', '', '', ''], prefix: 24 },
+        subnetFreeText: false, aggregateFreeText: false,
+        ipRows: [{ octets: ['', '', '', ''], prefix: 24 }],
+        splitAddress: { octets: ['', '', '', ''], prefix: 16 },
+        prefixes: Array.from({ length: 33 }, (unused, i) => i),
         recentHosts: (() => { try { return JSON.parse(localStorage.getItem('netbase-recent-hosts') || '[]'); } catch (e) { return []; } })(),
         // saved connections (FTP / SFTP / mail accounts)
         connections: [], connKinds: {}, connCaps: {}, connModal: false, connNote: '',
@@ -2580,8 +2645,19 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
       async runTlsVersions() { this.tlsVersionsResult = await this.guarded('tlsver', () => api('tools/tls-versions?' + qs({ host: this.tlsHost, port: this.tlsPort }))); },
       async runTcpPing() { this.tcpPingResult = await this.guarded('tcpping', () => api('tools/tcp-ping?' + qs({ host: this.pingHost, port: this.tcpPingPort || 443 }))); },
       async runMtu() { this.mtuResult = await this.guarded('mtu', () => api('tools/mtu?' + qs({ host: this.pingHost }))); },
-      async runSplit() { this.splitResult = await this.guarded('split', () => api('tools/subnet-split?' + qs({ cidr: this.splitCidr || this.subnetInput, prefix: this.splitPrefix }))); },
-      async runAggregate() { this.aggregateResult = await this.guarded('aggregate', () => api('tools/subnet-aggregate?' + qs({ input: this.aggregateInput }))); },
+      async runSplit() {
+        const cidr = this.addressOf(this.splitAddress) || this.splitCidr || this.subnetInput;
+        if (!cidr) { this.note(T('Fill in an address first.')); return; }
+        this.splitResult = await this.guarded('split', () => api('tools/subnet-split?' + qs({ cidr, prefix: this.splitPrefix })));
+      },
+      async runAggregate() {
+        // Either the rows, or whatever was typed instead of them.
+        const input = this.aggregateFreeText
+          ? this.aggregateInput
+          : this.ipRows.map((row) => this.addressOf(row)).filter(Boolean).join(', ');
+        if (!input) { this.note(T('Fill in at least one network first.')); return; }
+        this.aggregateResult = await this.guarded('aggregate', () => api('tools/subnet-aggregate?' + qs({ input })));
+      },
       // ---- choosing a file or folder from the user's own Nextcloud files ----
       pickFile(title, onPick, foldersOnly = false, start = '') {
         this.picker = { open: true, title, path: '', parent: null, entries: [], foldersOnly, onPick };
@@ -2676,7 +2752,94 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
       },
       async runTls() { this.tlsResult = await this.guarded('tls', () => api('tools/tls?' + qs({ host: this.tlsHost, port: this.tlsPort }))); },
       async runHttp() { this.httpResult = await this.guarded('http', () => api('tools/http?' + qs({ url: this.tlsHost }))); },
-      async runSubnet() { this.subnetResult = await this.guarded('subnet', () => api('tools/subnet?' + qs({ cidr: this.subnetInput }))); },
+      async runSubnet() {
+        const cidr = this.subnetFreeText ? this.subnetInput : this.addressOf(this.calcAddress);
+        if (!cidr) { this.note(T('Fill in an address first.')); return; }
+        this.rememberHost(cidr);
+        this.subnetResult = await this.guarded('subnet', () => api('tools/subnet?' + qs({ cidr })));
+      },
+      // ---- an address, in the four numbers it is made of -------------------
+      octetBox(group, col) {
+        return document.querySelector('.ip-box[data-group="' + group + '"][data-col="' + col + '"]');
+      },
+      focusOctet(group, col, atEnd) {
+        const box = this.octetBox(group, col);
+        if (!box) return;
+        box.focus();
+        this.$nextTick(() => {
+          if (atEnd) box.setSelectionRange(box.value.length, box.value.length);
+          else box.select();
+        });
+      },
+      typeOctet(row, index, event) {
+        let value = String(event.target.value || '').replace(/[^0-9]/g, '').slice(0, 3);
+        if (value !== '' && Number(value) > 255) value = '255';
+        row.octets[index] = value;
+        this.$nextTick(() => { event.target.value = value; });
+        // Three digits can only be one number, so move along.
+        const group = event.target.getAttribute('data-group');
+        if (value.length === 3 && index < 3) this.focusOctet(group, index + 1, false);
+      },
+      octetKey(row, group, index, event, run) {
+        if (event.key === '.' || event.key === ' ') {
+          event.preventDefault();
+          // Three digits already moved the caret on by themselves; the dot that
+          // follows would otherwise skip a box and leave a hole.
+          if (event.target.value !== '' && index < 3) this.focusOctet(group, index + 1, false);
+          return;
+        }
+        if (event.key === 'Backspace' && event.target.value === '' && index > 0) {
+          event.preventDefault();
+          row.octets[index - 1] = '';
+          this.focusOctet(group, index - 1, true);
+          return;
+        }
+        if (event.key === 'ArrowLeft' && event.target.selectionStart === 0 && index > 0) {
+          event.preventDefault();
+          this.focusOctet(group, index - 1, true);
+        }
+        if (event.key === 'ArrowRight' && event.target.selectionStart === event.target.value.length && index < 3) {
+          event.preventDefault();
+          this.focusOctet(group, index + 1, false);
+        }
+        if (event.key === 'Enter' && typeof run === 'function') run();
+      },
+      /** A whole address pasted into any box fills the row. */
+      pasteAddress(row, event) {
+        const text = ((event.clipboardData || window.clipboardData).getData('text') || '').trim();
+        const match = text.match(/(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})(?:\s*\/\s*(\d{1,2}))?/);
+        if (!match) return;
+        event.preventDefault();
+        row.octets = [1, 2, 3, 4].map((n) => String(Math.min(255, Number(match[n]))));
+        if (match[5] !== undefined) row.prefix = Math.min(32, Number(match[5]));
+      },
+      addressOf(row) {
+        return row.octets.every((o) => o !== '') ? row.octets.join('.') + '/' + row.prefix : '';
+      },
+      addIpRow(index) {
+        const rows = [...this.ipRows];
+        rows.splice(index + 1, 0, { octets: ['', '', '', ''], prefix: 24 });
+        this.ipRows = rows;
+        this.$nextTick(() => this.focusOctet('agg' + (index + 1), 0, false));
+      },
+      removeIpRow(index) {
+        if (this.ipRows.length < 2) return;
+        const rows = [...this.ipRows];
+        rows.splice(index, 1);
+        this.ipRows = rows;
+      },
+      /** The chooser fills the boxes, not just a text field. */
+      pickIntoAddress(target, event) {
+        const value = event.target.value;
+        event.target.value = '';
+        if (!value) return;
+        const match = value.match(/(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})(?:\s*\/\s*(\d{1,2}))?/);
+        if (!match) { this.subnetFreeText = true; this.subnetInput = value; return; }
+        this[target].octets = [1, 2, 3, 4].map((n) => String(Math.min(255, Number(match[n]))));
+        if (match[5] !== undefined) this[target].prefix = Math.min(32, Number(match[5]));
+        this.rememberHost(value);
+      },
+
       /** Choosing from the list fills the field beside it and runs nothing. */
       pickInto(field, event) {
         const value = event.target.value;

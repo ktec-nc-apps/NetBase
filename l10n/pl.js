@@ -739,7 +739,21 @@ OC.L10N.register(
         "MAC address — type 001ba93f8dfe, the colons are added for you": "Adres MAC — wpisz 001ba93f8dfe, dwukropki dodadzą się same",
         "Pick one NetBase already knows": "Wybierz coś, co NetBase już zna",
         "Choose…": "Wybierz…",
-        "Recent": "Ostatnie"
+        "Recent": "Ostatnie",
+        "What does this network cover?": "Co obejmuje ta sieć?",
+        "An address and a prefix in, and out come the network and broadcast addresses, the usable range, and how many hosts fit.": "Podaj adres i prefiks, a otrzymasz adres sieci i rozgłoszeniowy, zakres użyteczny i liczbę hostów.",
+        "Type it myself (IPv6, or a mask like 255.255.255.0)": "Wpiszę sam (IPv6 albo maska typu 255.255.255.0)",
+        "Add a row for each network you have. NetBase works out the smallest set of blocks that covers them all — the shortest firewall rule that still means the same thing.": "Dodaj wiersz dla każdej sieci. NetBase wyliczy najmniejszy zbiór bloków obejmujący wszystkie — najkrótszą regułę zapory o tym samym znaczeniu.",
+        "Type them myself (ranges, IPv6)": "Wpiszę sam (zakresy, IPv6)",
+        "Add a row below": "Dodaj wiersz poniżej",
+        "Remove this row": "Usuń ten wiersz",
+        "Whose equipment is this?": "Czyj to sprzęt?",
+        "The first half of a MAC address says who made the device. NetBase looks it up in the bundled IEEE registry, so nothing leaves this server.": "Pierwsza połowa adresu MAC wskazuje producenta. NetBase sprawdza ją w dołączonym rejestrze IEEE, więc nic nie opuszcza tego serwera.",
+        "Fill in at least one network first.": "Podaj najpierw co najmniej jedną sieć.",
+        "Fill in an address first.": "Najpierw podaj adres.",
+        "One network in, and the equal parts it divides into — with the range and host count of each.": "Jedna sieć na wejściu, równe części na wyjściu — z zakresem i liczbą hostów każdej.",
+        "into": "na",
+        "Into networks of": "Na sieci o"
     },
     "nplurals=4; plural=(n==1 ? 0 : (n%10>=2 && n%10<=4) && (n%100<12 || n%100>14) ? 1 : n!=1 && (n%10>=0 && n%10<=1) || (n%10>=5 && n%10<=9) || (n%100>=12 && n%100<=14) ? 2 : 3);"
 );

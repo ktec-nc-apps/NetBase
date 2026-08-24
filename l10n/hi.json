@@ -738,7 +738,21 @@
         "MAC address — type 001ba93f8dfe, the colons are added for you": "MAC पता — 001ba93f8dfe लिखें, कोलन अपने आप जुड़ जाएँगे",
         "Pick one NetBase already knows": "NetBase को पहले से ज्ञात में से चुनें",
         "Choose…": "चुनें…",
-        "Recent": "हाल के"
+        "Recent": "हाल के",
+        "What does this network cover?": "यह नेटवर्क क्या-क्या समेटता है?",
+        "An address and a prefix in, and out come the network and broadcast addresses, the usable range, and how many hosts fit.": "पता और प्रीफ़िक्स दें — नेटवर्क व ब्रॉडकास्ट पता, उपयोग-योग्य दायरा और कितने होस्ट समाएँगे, मिल जाएगा।",
+        "Type it myself (IPv6, or a mask like 255.255.255.0)": "स्वयं लिखूँगा (IPv6, या 255.255.255.0 जैसा मास्क)",
+        "Add a row for each network you have. NetBase works out the smallest set of blocks that covers them all — the shortest firewall rule that still means the same thing.": "हर नेटवर्क के लिए एक पंक्ति जोड़ें। NetBase सबको समेटने वाले सबसे कम ब्लॉक निकालता है — वही अर्थ, सबसे छोटा फ़ायरवॉल नियम।",
+        "Type them myself (ranges, IPv6)": "स्वयं लिखूँगा (रेंज, IPv6)",
+        "Add a row below": "नीचे एक पंक्ति जोड़ें",
+        "Remove this row": "यह पंक्ति हटाएँ",
+        "Whose equipment is this?": "यह उपकरण किसका है?",
+        "The first half of a MAC address says who made the device. NetBase looks it up in the bundled IEEE registry, so nothing leaves this server.": "MAC पते का पहला भाग निर्माता बताता है। NetBase साथ आए IEEE रजिस्ट्री में देखता है, इसलिए कुछ भी सर्वर से बाहर नहीं जाता।",
+        "Fill in at least one network first.": "कम से कम एक नेटवर्क भरें।",
+        "Fill in an address first.": "पहले एक पता भरें।",
+        "One network in, and the equal parts it divides into — with the range and host count of each.": "एक नेटवर्क दें और उसके बराबर हिस्से पाएँ — हर एक की रेंज और होस्ट संख्या सहित।",
+        "into": "→",
+        "Into networks of": "इन नेटवर्कों में"
     },
     "pluralForm": "nplurals=2; plural=(n != 1);"
 }

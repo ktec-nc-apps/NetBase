@@ -738,7 +738,21 @@
         "MAC address — type 001ba93f8dfe, the colons are added for you": "Địa chỉ MAC — gõ 001ba93f8dfe, dấu hai chấm tự thêm",
         "Pick one NetBase already knows": "Chọn thứ NetBase đã biết",
         "Choose…": "Chọn…",
-        "Recent": "Gần đây"
+        "Recent": "Gần đây",
+        "What does this network cover?": "Mạng này bao gồm những gì?",
+        "An address and a prefix in, and out come the network and broadcast addresses, the usable range, and how many hosts fit.": "Nhập địa chỉ và tiền tố, nhận về địa chỉ mạng và quảng bá, dải dùng được và số máy chứa được.",
+        "Type it myself (IPv6, or a mask like 255.255.255.0)": "Tự gõ (IPv6, hoặc mặt nạ kiểu 255.255.255.0)",
+        "Add a row for each network you have. NetBase works out the smallest set of blocks that covers them all — the shortest firewall rule that still means the same thing.": "Thêm một dòng cho mỗi mạng. NetBase tính ra tập khối nhỏ nhất bao hết — quy tắc tường lửa ngắn nhất mà nghĩa vẫn vậy.",
+        "Type them myself (ranges, IPv6)": "Tự gõ (dải, IPv6)",
+        "Add a row below": "Thêm dòng bên dưới",
+        "Remove this row": "Xóa dòng này",
+        "Whose equipment is this?": "Thiết bị này của hãng nào?",
+        "The first half of a MAC address says who made the device. NetBase looks it up in the bundled IEEE registry, so nothing leaves this server.": "Nửa đầu địa chỉ MAC cho biết nhà sản xuất. NetBase tra trong sổ đăng ký IEEE kèm theo, nên không gì rời khỏi máy chủ này.",
+        "Fill in at least one network first.": "Hãy nhập ít nhất một mạng.",
+        "Fill in an address first.": "Hãy nhập địa chỉ trước.",
+        "One network in, and the equal parts it divides into — with the range and host count of each.": "Nhập một mạng, nhận các phần bằng nhau — kèm dải và số máy của từng phần.",
+        "into": "thành",
+        "Into networks of": "Thành các mạng"
     },
     "pluralForm": "nplurals=1; plural=0;"
 }

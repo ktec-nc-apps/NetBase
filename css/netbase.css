@@ -522,3 +522,17 @@
 /* The little chooser that sits beside an address field. */
 #netbase-root .tool-row .pick { max-width: 12em; flex: 0 0 auto; }
 @media (max-width: 900px) { #netbase-root .tool-row .pick { max-width: 8em; } }
+
+/* An address, in the four numbers and the prefix it is made of. */
+#netbase-root .ip-boxes { display: inline-flex; align-items: center; gap: 3px; }
+#netbase-root .ip-box {
+  width: 3.4em;
+  padding: 8px 0;
+  text-align: center;
+  font-family: var(--mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+}
+#netbase-root .ip-dot, #netbase-root .ip-slash { color: var(--muted); font-weight: 700; }
+#netbase-root .ip-slash { margin: 0 3px; }
+#netbase-root .ip-prefix { width: 4.6em; }
+#netbase-root .ip-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+#netbase-root .fl-check { display: inline-flex; align-items: center; gap: 6px; font-size: .85em; color: var(--muted); }

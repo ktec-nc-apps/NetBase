@@ -738,7 +738,21 @@
         "MAC address — type 001ba93f8dfe, the colons are added for you": "عنوان MAC — اكتب 001ba93f8dfe وستُضاف النقطتان تلقائيًا",
         "Pick one NetBase already knows": "اختر ما يعرفه نِت‌بيس بالفعل",
         "Choose…": "اختر…",
-        "Recent": "الأخيرة"
+        "Recent": "الأخيرة",
+        "What does this network cover?": "ما الذي تغطيه هذه الشبكة؟",
+        "An address and a prefix in, and out come the network and broadcast addresses, the usable range, and how many hosts fit.": "أدخل عنوانًا وبادئة، لتحصل على عنوان الشبكة والبث، والمدى القابل للاستخدام، وعدد المضيفين.",
+        "Type it myself (IPv6, or a mask like 255.255.255.0)": "سأكتبه بنفسي (IPv6 أو قناع مثل 255.255.255.0)",
+        "Add a row for each network you have. NetBase works out the smallest set of blocks that covers them all — the shortest firewall rule that still means the same thing.": "أضف سطرًا لكل شبكة. يحسب نِت‌بيس أصغر مجموعة كتل تغطيها جميعًا — أقصر قاعدة جدار ناري بالمعنى نفسه.",
+        "Type them myself (ranges, IPv6)": "سأكتبها بنفسي (نطاقات، IPv6)",
+        "Add a row below": "أضف سطرًا أدناه",
+        "Remove this row": "احذف هذا السطر",
+        "Whose equipment is this?": "لمن هذا الجهاز؟",
+        "The first half of a MAC address says who made the device. NetBase looks it up in the bundled IEEE registry, so nothing leaves this server.": "يدل النصف الأول من عنوان MAC على الصانع. يبحث عنه نِت‌بيس في سجل IEEE المرفق، فلا يغادر شيء هذا الخادم.",
+        "Fill in at least one network first.": "أدخل شبكة واحدة على الأقل.",
+        "Fill in an address first.": "أدخل عنوانًا أولًا.",
+        "One network in, and the equal parts it divides into — with the range and host count of each.": "شبكة واحدة تدخل، وتخرج أجزاؤها المتساوية مع مدى كل جزء وعدد مضيفيه.",
+        "into": "إلى",
+        "Into networks of": "إلى شبكات بحجم"
     },
     "pluralForm": "nplurals=6; plural=(n==0 ? 0 : n==1 ? 1 : n==2 ? 2 : n%100>=3 && n%100<=10 ? 3 : n%100>=11 && n%100<=99 ? 4 : 5);"
 }

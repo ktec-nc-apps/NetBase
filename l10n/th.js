@@ -739,7 +739,21 @@ OC.L10N.register(
         "MAC address — type 001ba93f8dfe, the colons are added for you": "ที่อยู่ MAC — พิมพ์ 001ba93f8dfe ได้เลย ระบบใส่ทวิภาคให้เอง",
         "Pick one NetBase already knows": "เลือกจากสิ่งที่ NetBase รู้จักอยู่แล้ว",
         "Choose…": "เลือก…",
-        "Recent": "ใช้ล่าสุด"
+        "Recent": "ใช้ล่าสุด",
+        "What does this network cover?": "เครือข่ายนี้ครอบคลุมอะไรบ้าง",
+        "An address and a prefix in, and out come the network and broadcast addresses, the usable range, and how many hosts fit.": "ใส่ที่อยู่และพรีฟิกซ์ แล้วได้ที่อยู่เครือข่าย ที่อยู่บรอดแคสต์ ช่วงที่ใช้ได้ และจำนวนโฮสต์",
+        "Type it myself (IPv6, or a mask like 255.255.255.0)": "พิมพ์เอง (IPv6 หรือมาสก์แบบ 255.255.255.0)",
+        "Add a row for each network you have. NetBase works out the smallest set of blocks that covers them all — the shortest firewall rule that still means the same thing.": "เพิ่มหนึ่งแถวต่อหนึ่งเครือข่าย NetBase จะหาชุดบล็อกที่เล็กที่สุดซึ่งครอบคลุมทั้งหมด — กฎไฟร์วอลล์ที่สั้นที่สุดโดยความหมายเท่าเดิม",
+        "Type them myself (ranges, IPv6)": "พิมพ์เอง (ช่วง, IPv6)",
+        "Add a row below": "เพิ่มแถวด้านล่าง",
+        "Remove this row": "ลบแถวนี้",
+        "Whose equipment is this?": "อุปกรณ์นี้เป็นของใคร",
+        "The first half of a MAC address says who made the device. NetBase looks it up in the bundled IEEE registry, so nothing leaves this server.": "ครึ่งแรกของที่อยู่ MAC บอกผู้ผลิต NetBase ค้นจากทะเบียน IEEE ที่มากับตัวแอป จึงไม่มีข้อมูลออกจากเซิร์ฟเวอร์",
+        "Fill in at least one network first.": "กรอกอย่างน้อยหนึ่งเครือข่ายก่อน",
+        "Fill in an address first.": "กรอกที่อยู่ก่อน",
+        "One network in, and the equal parts it divides into — with the range and host count of each.": "ใส่เครือข่ายหนึ่ง แล้วได้ส่วนย่อยเท่า ๆ กัน พร้อมช่วงและจำนวนโฮสต์ของแต่ละส่วน",
+        "into": "→",
+        "Into networks of": "แบ่งเป็นเครือข่ายขนาด"
     },
     "nplurals=1; plural=0;"
 );

@@ -738,7 +738,21 @@
         "MAC address — type 001ba93f8dfe, the colons are added for you": "Alamat MAC — ketik 001ba93f8dfe, titik duanya ditambahkan sendiri",
         "Pick one NetBase already knows": "Pilih yang sudah dikenal NetBase",
         "Choose…": "Pilih…",
-        "Recent": "Terkini"
+        "Recent": "Terkini",
+        "What does this network cover?": "Jaringan ini mencakup apa?",
+        "An address and a prefix in, and out come the network and broadcast addresses, the usable range, and how many hosts fit.": "Masukkan alamat dan prefiks; keluar alamat jaringan dan siaran, rentang yang bisa dipakai, dan berapa host yang muat.",
+        "Type it myself (IPv6, or a mask like 255.255.255.0)": "Saya ketik sendiri (IPv6, atau mask seperti 255.255.255.0)",
+        "Add a row for each network you have. NetBase works out the smallest set of blocks that covers them all — the shortest firewall rule that still means the same thing.": "Tambahkan satu baris tiap jaringan. NetBase menghitung himpunan blok terkecil yang mencakup semuanya — aturan tembok api terpendek dengan makna sama.",
+        "Type them myself (ranges, IPv6)": "Saya ketik sendiri (rentang, IPv6)",
+        "Add a row below": "Tambah baris di bawah",
+        "Remove this row": "Hapus baris ini",
+        "Whose equipment is this?": "Perangkat siapa ini?",
+        "The first half of a MAC address says who made the device. NetBase looks it up in the bundled IEEE registry, so nothing leaves this server.": "Separuh awal alamat MAC menunjukkan pembuatnya. NetBase mencarinya di daftar IEEE bawaan, jadi tak ada yang keluar dari peladen ini.",
+        "Fill in at least one network first.": "Isi setidaknya satu jaringan.",
+        "Fill in an address first.": "Isi alamat dahulu.",
+        "One network in, and the equal parts it divides into — with the range and host count of each.": "Satu jaringan masuk, bagian-bagian samanya keluar — lengkap dengan rentang dan jumlah host.",
+        "into": "jadi",
+        "Into networks of": "Menjadi jaringan"
     },
     "pluralForm": "nplurals=1; plural=0;"
 }

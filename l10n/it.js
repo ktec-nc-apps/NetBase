@@ -739,7 +739,21 @@ OC.L10N.register(
         "MAC address — type 001ba93f8dfe, the colons are added for you": "Indirizzo MAC — scrivi 001ba93f8dfe, i due punti li mette lui",
         "Pick one NetBase already knows": "Scegli uno che NetBase conosce già",
         "Choose…": "Scegli…",
-        "Recent": "Recenti"
+        "Recent": "Recenti",
+        "What does this network cover?": "Che cosa copre questa rete?",
+        "An address and a prefix in, and out come the network and broadcast addresses, the usable range, and how many hosts fit.": "Indirizzo e prefisso in ingresso; in uscita indirizzo di rete e di broadcast, l'intervallo utilizzabile e quanti host ci stanno.",
+        "Type it myself (IPv6, or a mask like 255.255.255.0)": "Scrivo io (IPv6, o una maschera come 255.255.255.0)",
+        "Add a row for each network you have. NetBase works out the smallest set of blocks that covers them all — the shortest firewall rule that still means the same thing.": "Una riga per ogni rete. NetBase calcola il minor numero di blocchi che le copre tutte: la regola firewall più corta con lo stesso significato.",
+        "Type them myself (ranges, IPv6)": "Le scrivo io (intervalli, IPv6)",
+        "Add a row below": "Aggiungi una riga sotto",
+        "Remove this row": "Rimuovi questa riga",
+        "Whose equipment is this?": "Di chi è questo apparecchio?",
+        "The first half of a MAC address says who made the device. NetBase looks it up in the bundled IEEE registry, so nothing leaves this server.": "La prima metà di un MAC indica il produttore. NetBase la cerca nel registro IEEE incluso: nulla lascia questo server.",
+        "Fill in at least one network first.": "Inserisci almeno una rete.",
+        "Fill in an address first.": "Inserisci prima un indirizzo.",
+        "One network in, and the equal parts it divides into — with the range and host count of each.": "Una rete e le parti uguali in cui si divide, con intervallo e numero di host di ciascuna.",
+        "into": "in",
+        "Into networks of": "In reti da"
     },
     "nplurals=2; plural=(n != 1);"
 );
