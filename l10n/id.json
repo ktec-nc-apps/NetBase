@@ -696,8 +696,6 @@
         "Device web pages — open them in a window through this server, or as a picture": "Halaman web perangkat — di jendela lewat peladen ini, atau sebagai gambar",
         "Connecting…": "Menghubungkan…",
         "Fill the screen": "Penuhi layar",
-        "This page is built from frames, which a window kept away from Nextcloud cannot load.": "Halaman ini tersusun dari bingkai, yang tak dapat dimuat jendela terpisah dari Nextcloud.",
-        "Show it anyway": "Tetap tampilkan",
         "No answer at all — the name may not resolve, or nothing on the way let the request through.": "Sama sekali tidak ada jawaban — nama tak dapat diterjemahkan, atau permintaan dihadang di jalan.",
         "Nothing came back. Many devices and firewalls ignore ping while still answering on a port, so try the TCP check before calling it offline.": "Tak ada yang kembali. Banyak perangkat dan tembok api mengabaikan ping tapi tetap menjawab di porta; coba pemeriksaan TCP sebelum menyebutnya mati.",
         "%s%% of the packets went missing. On a wired network that points at a cable or a port; on Wi-Fi, at range or interference.": "%s%% paket hilang. Di jaringan kabel itu menunjuk ke kabel atau porta; di Wi-Fi, ke jarak atau gangguan.",
@@ -713,8 +711,14 @@
         "The list of tools": "Daftar perkakas",
         "Drag the tools in the sidebar into the order you work in — or hold Alt and press the up and down arrows. The order is kept for your account.": "Seret perkakas di bilah sisi ke urutan kerja Anda — atau tahan Alt lalu tekan panah atas-bawah. Urutan disimpan untuk akun Anda.",
         "Put them back in the original order": "Kembalikan ke urutan semula",
-        "This device's own page will be shown in full. It can then reach NetBase in this browser, though nothing outside the device windows. Do this only for a device you trust.": "Halaman perangkat ini akan ditampilkan utuh. Ia lalu dapat menjangkau NetBase di peramban ini, tetapi tidak apa pun di luar jendela perangkat. Lakukan hanya untuk perangkat tepercaya.",
-        "Shown in full, because you agreed to it for this device. Click to undo.": "Ditampilkan utuh karena Anda menyetujuinya untuk perangkat ini. Klik untuk membatalkan."
+        "Shown in full, because you agreed to it for this device. Click to undo.": "Ditampilkan utuh karena Anda menyetujuinya untuk perangkat ini. Klik untuk membatalkan.",
+        "This page is built from frames, which a window kept away from Nextcloud cannot load. Showing it in full lets the page reach NetBase in this browser, but nothing outside the device windows.": "Halaman ini tersusun dari bingkai, yang tak dapat dimuat jendela terpisah dari Nextcloud. Bila ditampilkan utuh, halaman menjangkau NetBase di peramban ini, tetapi tidak apa pun di luar jendela perangkat.",
+        "Show it in full, and remember this device": "Tampilkan utuh dan ingat perangkat ini",
+        "Not now": "Jangan sekarang",
+        "Devices shown in full": "Perangkat yang ditampilkan utuh",
+        "A device page built from frames only works when shown in full. These are the ones you have agreed to; the rest are kept at arm's length from Nextcloud.": "Halaman perangkat yang tersusun dari bingkai hanya bekerja bila ditampilkan utuh. Inilah yang Anda setujui; sisanya tetap dijauhkan dari Nextcloud.",
+        "None yet.": "Belum ada.",
+        "Undo": "Batalkan"
     },
     "pluralForm": "nplurals=1; plural=0;"
 }

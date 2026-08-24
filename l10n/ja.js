@@ -697,8 +697,6 @@ OC.L10N.register(
         "Device web pages — open them in a window through this server, or as a picture": "機器のWeb画面 ― このサーバー経由でウィンドウ表示、または画像表示",
         "Connecting…": "接続しています…",
         "Fill the screen": "画面いっぱいに",
-        "This page is built from frames, which a window kept away from Nextcloud cannot load.": "このページはフレーム構成のため、Nextcloudから隔離した表示ではフレームを読み込めません。",
-        "Show it anyway": "それでも表示する",
         "No answer at all — the name may not resolve, or nothing on the way let the request through.": "まったく応答がありません。名前が解決できないか、経路上のどこかで遮断されています。",
         "Nothing came back. Many devices and firewalls ignore ping while still answering on a port, so try the TCP check before calling it offline.": "応答がありません。ping を無視する機器やファイアウォールは多く、ポートには応答することがあります。オフラインと判断する前に TCP 確認をお試しください。",
         "%s%% of the packets went missing. On a wired network that points at a cable or a port; on Wi-Fi, at range or interference.": "パケットの %s%% が失われました。有線ならケーブルやポート、無線なら距離や電波干渉が疑われます。",
@@ -714,8 +712,14 @@ OC.L10N.register(
         "The list of tools": "ツールの並び",
         "Drag the tools in the sidebar into the order you work in — or hold Alt and press the up and down arrows. The order is kept for your account.": "左のツールをドラッグして、使う順に並べ替えられます。Altキーを押しながら上下矢印でも移動できます。並び順はアカウントごとに保存されます。",
         "Put them back in the original order": "元の順序に戻す",
-        "This device's own page will be shown in full. It can then reach NetBase in this browser, though nothing outside the device windows. Do this only for a device you trust.": "この機器の画面をそのまま表示します。表示中のページはこのブラウザ内のNetBaseに触れられますが、機器ウィンドウの外へは一切通信できません。信頼できる機器にだけ使ってください。",
-        "Shown in full, because you agreed to it for this device. Click to undo.": "この機器はそのまま表示する設定です。クリックで解除できます。"
+        "Shown in full, because you agreed to it for this device. Click to undo.": "この機器はそのまま表示する設定です。クリックで解除できます。",
+        "This page is built from frames, which a window kept away from Nextcloud cannot load. Showing it in full lets the page reach NetBase in this browser, but nothing outside the device windows.": "このページはフレーム構成のため、Nextcloudから隔離した表示では読み込めません。そのまま表示すると、ページはこのブラウザ内のNetBaseに触れられますが、機器ウィンドウの外へは一切通信できません。",
+        "Show it in full, and remember this device": "そのまま表示（この機器は次回から自動）",
+        "Not now": "今はしない",
+        "Devices shown in full": "そのまま表示する機器",
+        "A device page built from frames only works when shown in full. These are the ones you have agreed to; the rest are kept at arm's length from Nextcloud.": "フレーム構成の機器画面は、そのまま表示でないと動きません。ここに並ぶのは承諾済みの機器で、それ以外はNextcloudから隔離したまま表示します。",
+        "None yet.": "まだありません。",
+        "Undo": "解除"
     },
     "nplurals=1; plural=0;"
 );

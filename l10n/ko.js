@@ -697,8 +697,6 @@ OC.L10N.register(
         "Device web pages — open them in a window through this server, or as a picture": "장치 웹 페이지 — 이 서버를 통해 창으로 열거나 이미지로 표시",
         "Connecting…": "연결하는 중…",
         "Fill the screen": "화면 가득",
-        "This page is built from frames, which a window kept away from Nextcloud cannot load.": "이 페이지는 프레임으로 구성되어 있어, Nextcloud와 분리된 창에서는 불러올 수 없습니다.",
-        "Show it anyway": "그래도 표시",
         "No answer at all — the name may not resolve, or nothing on the way let the request through.": "응답이 전혀 없습니다. 이름이 확인되지 않거나, 경로 어딘가에서 차단되었습니다.",
         "Nothing came back. Many devices and firewalls ignore ping while still answering on a port, so try the TCP check before calling it offline.": "아무 응답도 없습니다. 많은 장치와 방화벽은 ping을 무시하면서도 포트에는 응답합니다. 오프라인이라 단정하기 전에 TCP 확인을 해 보세요.",
         "%s%% of the packets went missing. On a wired network that points at a cable or a port; on Wi-Fi, at range or interference.": "패킷의 %s%%가 사라졌습니다. 유선이면 케이블이나 포트, 무선이면 거리나 간섭을 의심하세요.",
@@ -714,8 +712,14 @@ OC.L10N.register(
         "The list of tools": "도구 목록",
         "Drag the tools in the sidebar into the order you work in — or hold Alt and press the up and down arrows. The order is kept for your account.": "사이드바의 도구를 작업 순서대로 끌어 놓거나, Alt를 누른 채 위아래 화살표로 옮기세요. 순서는 계정별로 저장됩니다.",
         "Put them back in the original order": "원래 순서로 되돌리기",
-        "This device's own page will be shown in full. It can then reach NetBase in this browser, though nothing outside the device windows. Do this only for a device you trust.": "이 장치의 페이지를 그대로 표시합니다. 표시된 페이지는 이 브라우저의 NetBase에 접근할 수 있지만, 장치 창 밖으로는 통신할 수 없습니다. 신뢰하는 장치에만 사용하세요.",
-        "Shown in full, because you agreed to it for this device. Click to undo.": "이 장치에 대해 동의했기에 그대로 표시됩니다. 눌러서 해제할 수 있습니다."
+        "Shown in full, because you agreed to it for this device. Click to undo.": "이 장치에 대해 동의했기에 그대로 표시됩니다. 눌러서 해제할 수 있습니다.",
+        "This page is built from frames, which a window kept away from Nextcloud cannot load. Showing it in full lets the page reach NetBase in this browser, but nothing outside the device windows.": "이 페이지는 프레임으로 구성되어 있어 Nextcloud와 분리된 창에서는 불러올 수 없습니다. 그대로 표시하면 페이지가 이 브라우저의 NetBase에 접근할 수 있지만, 장치 창 밖으로는 통신할 수 없습니다.",
+        "Show it in full, and remember this device": "그대로 표시하고 이 장치를 기억",
+        "Not now": "지금은 안 함",
+        "Devices shown in full": "그대로 표시하는 장치",
+        "A device page built from frames only works when shown in full. These are the ones you have agreed to; the rest are kept at arm's length from Nextcloud.": "프레임으로 만든 장치 페이지는 그대로 표시해야 동작합니다. 아래는 동의한 장치이며, 나머지는 Nextcloud와 분리해 표시합니다.",
+        "None yet.": "아직 없습니다.",
+        "Undo": "해제"
     },
     "nplurals=1; plural=0;"
 );

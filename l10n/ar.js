@@ -697,8 +697,6 @@ OC.L10N.register(
         "Device web pages — open them in a window through this server, or as a picture": "صفحات الأجهزة — في نافذة عبر هذا الخادم أو كصورة",
         "Connecting…": "جارٍ الاتصال…",
         "Fill the screen": "ملء الشاشة",
-        "This page is built from frames, which a window kept away from Nextcloud cannot load.": "تتكوّن هذه الصفحة من إطارات لا تستطيع نافذة معزولة عن نكستكلاود تحميلها.",
-        "Show it anyway": "اعرضها على أي حال",
         "No answer at all — the name may not resolve, or nothing on the way let the request through.": "لا يوجد أي رد — إمّا أن الاسم لا يُترجم، أو أن شيئًا في الطريق منع الطلب.",
         "Nothing came back. Many devices and firewalls ignore ping while still answering on a port, so try the TCP check before calling it offline.": "لم يعد أي شيء. كثير من الأجهزة والجدران النارية تتجاهل ping بينما تردّ على منفذ، فجرّب فحص TCP قبل اعتباره غير متصل.",
         "%s%% of the packets went missing. On a wired network that points at a cable or a port; on Wi-Fi, at range or interference.": "ضاع %s%% من الحزم. في الشبكة السلكية يشير ذلك إلى كبل أو منفذ، وفي اللاسلكية إلى المسافة أو التشويش.",
@@ -714,8 +712,14 @@ OC.L10N.register(
         "The list of tools": "قائمة الأدوات",
         "Drag the tools in the sidebar into the order you work in — or hold Alt and press the up and down arrows. The order is kept for your account.": "اسحب الأدوات في الشريط الجانبي إلى ترتيب عملك، أو اضغط Alt مع سهمي أعلى وأسفل. يُحفظ الترتيب لحسابك.",
         "Put them back in the original order": "أعِدها إلى الترتيب الأصلي",
-        "This device's own page will be shown in full. It can then reach NetBase in this browser, though nothing outside the device windows. Do this only for a device you trust.": "ستُعرض صفحة الجهاز كاملة. عندها يمكنها الوصول إلى نِت‌بيس في هذا المتصفح، لكن لا شيء خارج نوافذ الأجهزة. لا تفعل ذلك إلا مع جهاز تثق به.",
-        "Shown in full, because you agreed to it for this device. Click to undo.": "تُعرض كاملة لأنك وافقت على ذلك لهذا الجهاز. انقر للتراجع."
+        "Shown in full, because you agreed to it for this device. Click to undo.": "تُعرض كاملة لأنك وافقت على ذلك لهذا الجهاز. انقر للتراجع.",
+        "This page is built from frames, which a window kept away from Nextcloud cannot load. Showing it in full lets the page reach NetBase in this browser, but nothing outside the device windows.": "تتكوّن هذه الصفحة من إطارات لا تستطيع نافذة معزولة عن نكستكلاود تحميلها. وعند عرضها كاملة تصل إلى نِت‌بيس في هذا المتصفح، لكن لا شيء خارج نوافذ الأجهزة.",
+        "Show it in full, and remember this device": "اعرضها كاملة وتذكّر هذا الجهاز",
+        "Not now": "ليس الآن",
+        "Devices shown in full": "الأجهزة المعروضة كاملة",
+        "A device page built from frames only works when shown in full. These are the ones you have agreed to; the rest are kept at arm's length from Nextcloud.": "صفحة الجهاز المبنية من إطارات لا تعمل إلا معروضة كاملة. هذه هي التي وافقت عليها، وما عداها يبقى بعيدًا عن نكستكلاود.",
+        "None yet.": "لا شيء بعد.",
+        "Undo": "تراجع"
     },
     "nplurals=6; plural=(n==0 ? 0 : n==1 ? 1 : n==2 ? 2 : n%100>=3 && n%100<=10 ? 3 : n%100>=11 && n%100<=99 ? 4 : 5);"
 );

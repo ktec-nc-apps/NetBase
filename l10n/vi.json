@@ -696,8 +696,6 @@
         "Device web pages — open them in a window through this server, or as a picture": "Trang web của thiết bị — trong cửa sổ qua máy chủ này, hoặc dưới dạng ảnh",
         "Connecting…": "Đang kết nối…",
         "Fill the screen": "Đầy màn hình",
-        "This page is built from frames, which a window kept away from Nextcloud cannot load.": "Trang này được dựng bằng khung, mà cửa sổ tách khỏi Nextcloud không thể tải.",
-        "Show it anyway": "Vẫn hiển thị",
         "No answer at all — the name may not resolve, or nothing on the way let the request through.": "Không có phản hồi nào — tên không phân giải được, hoặc yêu cầu bị chặn trên đường đi.",
         "Nothing came back. Many devices and firewalls ignore ping while still answering on a port, so try the TCP check before calling it offline.": "Không có gì trả về. Nhiều thiết bị và tường lửa bỏ qua ping nhưng vẫn trả lời trên cổng; hãy thử kiểm tra TCP trước khi coi là ngoại tuyến.",
         "%s%% of the packets went missing. On a wired network that points at a cable or a port; on Wi-Fi, at range or interference.": "%s%% gói tin bị mất. Trên mạng dây, điều đó chỉ tới cáp hoặc cổng; trên Wi-Fi là khoảng cách hoặc nhiễu.",
@@ -713,8 +711,14 @@
         "The list of tools": "Danh sách công cụ",
         "Drag the tools in the sidebar into the order you work in — or hold Alt and press the up and down arrows. The order is kept for your account.": "Kéo các công cụ ở thanh bên theo thứ tự bạn làm việc — hoặc giữ Alt và bấm mũi tên lên xuống. Thứ tự được lưu cho tài khoản của bạn.",
         "Put them back in the original order": "Trả lại thứ tự ban đầu",
-        "This device's own page will be shown in full. It can then reach NetBase in this browser, though nothing outside the device windows. Do this only for a device you trust.": "Trang của thiết bị sẽ hiển thị đầy đủ. Khi đó nó có thể chạm tới NetBase trong trình duyệt này, nhưng không ra ngoài các cửa sổ thiết bị. Chỉ làm vậy với thiết bị bạn tin tưởng.",
-        "Shown in full, because you agreed to it for this device. Click to undo.": "Hiển thị đầy đủ vì bạn đã đồng ý cho thiết bị này. Bấm để hoàn tác."
+        "Shown in full, because you agreed to it for this device. Click to undo.": "Hiển thị đầy đủ vì bạn đã đồng ý cho thiết bị này. Bấm để hoàn tác.",
+        "This page is built from frames, which a window kept away from Nextcloud cannot load. Showing it in full lets the page reach NetBase in this browser, but nothing outside the device windows.": "Trang này được dựng bằng khung, mà cửa sổ tách khỏi Nextcloud không thể tải. Khi hiển thị đầy đủ, trang chạm tới NetBase trong trình duyệt này, nhưng không ra ngoài các cửa sổ thiết bị.",
+        "Show it in full, and remember this device": "Hiển thị đầy đủ và nhớ thiết bị này",
+        "Not now": "Để sau",
+        "Devices shown in full": "Thiết bị hiển thị đầy đủ",
+        "A device page built from frames only works when shown in full. These are the ones you have agreed to; the rest are kept at arm's length from Nextcloud.": "Trang thiết bị dựng bằng khung chỉ hoạt động khi hiển thị đầy đủ. Đây là những thiết bị bạn đã đồng ý; số còn lại vẫn tách khỏi Nextcloud.",
+        "None yet.": "Chưa có.",
+        "Undo": "Hoàn tác"
     },
     "pluralForm": "nplurals=1; plural=0;"
 }

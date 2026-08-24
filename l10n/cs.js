@@ -697,8 +697,6 @@ OC.L10N.register(
         "Device web pages — open them in a window through this server, or as a picture": "Webové stránky zařízení — v okně přes tento server, nebo jako obrázek",
         "Connecting…": "Připojování…",
         "Fill the screen": "Vyplnit obrazovku",
-        "This page is built from frames, which a window kept away from Nextcloud cannot load.": "Tato stránka se skládá z rámů, které okno oddělené od Nextcloudu nedokáže načíst.",
-        "Show it anyway": "Přesto zobrazit",
         "No answer at all — the name may not resolve, or nothing on the way let the request through.": "Žádná odpověď — název se nepřekládá, nebo byl požadavek cestou zablokován.",
         "Nothing came back. Many devices and firewalls ignore ping while still answering on a port, so try the TCP check before calling it offline.": "Nic se nevrátilo. Mnoho zařízení a firewallů ping ignoruje, ale na portu odpoví — než je prohlásíte za nedostupné, zkuste kontrolu TCP.",
         "%s%% of the packets went missing. On a wired network that points at a cable or a port; on Wi-Fi, at range or interference.": "Ztratilo se %s%% paketů. V kabelové síti to ukazuje na kabel nebo port, u Wi-Fi na dosah či rušení.",
@@ -714,8 +712,14 @@ OC.L10N.register(
         "The list of tools": "Seznam nástrojů",
         "Drag the tools in the sidebar into the order you work in — or hold Alt and press the up and down arrows. The order is kept for your account.": "Přetáhněte nástroje v postranním panelu do pořadí, ve kterém pracujete — nebo podržte Alt a použijte šipky. Pořadí zůstane uložené pro váš účet.",
         "Put them back in the original order": "Vrátit původní pořadí",
-        "This device's own page will be shown in full. It can then reach NetBase in this browser, though nothing outside the device windows. Do this only for a device you trust.": "Stránka zařízení se zobrazí celá. Bude pak moci dosáhnout na NetBase v tomto prohlížeči, ale nic mimo okna zařízení. Dělejte to jen u zařízení, kterému věříte.",
-        "Shown in full, because you agreed to it for this device. Click to undo.": "Zobrazuje se celá, protože jste to pro toto zařízení schválili. Klepnutím zrušíte."
+        "Shown in full, because you agreed to it for this device. Click to undo.": "Zobrazuje se celá, protože jste to pro toto zařízení schválili. Klepnutím zrušíte.",
+        "This page is built from frames, which a window kept away from Nextcloud cannot load. Showing it in full lets the page reach NetBase in this browser, but nothing outside the device windows.": "Tato stránka se skládá z rámů, které okno oddělené od Nextcloudu nedokáže načíst. Zobrazena celá dosáhne na NetBase v tomto prohlížeči, ale nic mimo okna zařízení.",
+        "Show it in full, and remember this device": "Zobrazit celou a zapamatovat si zařízení",
+        "Not now": "Teď ne",
+        "Devices shown in full": "Zařízení zobrazovaná celá",
+        "A device page built from frames only works when shown in full. These are the ones you have agreed to; the rest are kept at arm's length from Nextcloud.": "Stránka zařízení složená z rámů funguje jen zobrazená celá. Toto jsou ta, která jste schválili; ostatní zůstávají stranou od Nextcloudu.",
+        "None yet.": "Zatím žádná.",
+        "Undo": "Zrušit"
     },
     "nplurals=4; plural=(n == 1 && n % 1 == 0) ? 0 : (n >= 2 && n <= 4 && n % 1 == 0) ? 1: (n % 1 != 0 ) ? 2 : 3;"
 );
