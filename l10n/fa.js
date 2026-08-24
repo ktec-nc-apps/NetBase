@@ -712,14 +712,7 @@ OC.L10N.register(
         "The list of tools": "فهرست ابزارها",
         "Drag the tools in the sidebar into the order you work in — or hold Alt and press the up and down arrows. The order is kept for your account.": "ابزارهای نوار کناری را به ترتیب کارتان بکشید — یا Alt را نگه دارید و کلیدهای بالا و پایین را بزنید. ترتیب برای حساب شما نگه داشته می‌شود.",
         "Put them back in the original order": "بازگرداندن به ترتیب اصلی",
-        "Shown in full, because you agreed to it for this device. Click to undo.": "چون برای این دستگاه پذیرفته‌اید، کامل نمایش داده می‌شود. برای لغو کلیک کنید.",
-        "This page is built from frames, which a window kept away from Nextcloud cannot load. Showing it in full lets the page reach NetBase in this browser, but nothing outside the device windows.": "این صفحه از قاب ساخته شده و پنجره‌ای جدا از نکست‌کلاد نمی‌تواند آن‌ها را بار کند. با نمایش کامل، صفحه به نت‌بیس در همین مرورگر دست می‌یابد، اما به بیرون از پنجره‌های دستگاه نه.",
-        "Show it in full, and remember this device": "کامل نمایش بده و این دستگاه را به یاد بسپار",
-        "Not now": "اکنون نه",
-        "Devices shown in full": "دستگاه‌هایی که کامل نمایش داده می‌شوند",
-        "A device page built from frames only works when shown in full. These are the ones you have agreed to; the rest are kept at arm's length from Nextcloud.": "صفحهٔ دستگاهی که از قاب ساخته شده تنها در نمایش کامل کار می‌کند. این‌ها همان‌هایی‌اند که پذیرفته‌اید؛ بقیه از نکست‌کلاد جدا نگه داشته می‌شوند.",
-        "None yet.": "هنوز هیچ‌کدام.",
-        "Undo": "لغو"
+        "This window shows the device's own page, fetched by this server. The page reaches nothing but this window.": "این پنجره صفحهٔ خود دستگاه را که این کارساز گرفته نشان می‌دهد. صفحه به بیرون از این پنجره دست نمی‌یابد."
     },
     "nplurals=2; plural=(n > 1);"
 );

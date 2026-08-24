@@ -1278,16 +1278,6 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
           </label>
           <p class="dim">{{ t('NetBase can speak a different language from the rest of Nextcloud — handy when the interface language and the language you think in are not the same.') }}</p>
 
-          <h3>{{ t('Devices shown in full') }}</h3>
-          <p class="dim">{{ t('A device page built from frames only works when shown in full. These are the ones you have agreed to; the rest are kept at arm\'s length from Nextcloud.') }}</p>
-          <div v-if="(settings.trustedDevices || []).length" class="kv">
-            <div v-for="d in settings.trustedDevices" :key="d">
-              <span class="mono">{{ d }}</span>
-              <code><button class="btn xs" @click="rememberTrust(d, false)">{{ t('Undo') }}</button></code>
-            </div>
-          </div>
-          <p v-else class="dim">{{ t('None yet.') }}</p>
-
           <h3>{{ t('The list of tools') }}</h3>
           <p class="dim">{{ t('Drag the tools in the sidebar into the order you work in — or hold Alt and press the up and down arrows. The order is kept for your account.') }}</p>
           <button class="btn sm" :disabled="!(settings.tabOrder || []).length" @click="resetTabOrder">{{ t('Put them back in the original order') }}</button>
@@ -1306,28 +1296,22 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         <strong class="nm">{{ w.title }}</strong>
         <span class="dim mono tiny addr">{{ w.base }}{{ w.path ? '/' + w.path : '' }}</span>
         <span class="spacer"></span>
-        <button class="btn xs trust" v-if="w.trusted" :title="t('Shown in full, because you agreed to it for this device. Click to undo.')" @click.stop="untrustWindow(w)">🔓</button>
         <button class="btn xs" :title="t('Back')" :disabled="w.trailAt < 1" @click.stop="backWindow(w)">←</button>
         <button class="btn xs" :title="t('Front page')" @click.stop="homeWindow(w)">⌂</button>
         <button class="btn xs" :title="t('Reload')" @click.stop="reloadWindow(w)">⟳</button>
         <button class="btn xs" :title="t('Fill the screen')" @click.stop="toggleFull(w)">⤢</button>
         <button class="btn xs" :title="t('Close')" @click.stop="closeWindow(w)">✕</button>
       </div>
-      <div v-if="w.framed && !w.trusted" class="devwin-bar">
-        <span>{{ t('This page is built from frames, which a window kept away from Nextcloud cannot load. Showing it in full lets the page reach NetBase in this browser, but nothing outside the device windows.') }}</span>
-        <button class="btn xs" @click.stop="trustWindow(w)">{{ t('Show it in full, and remember this device') }}</button>
-        <button class="btn xs" :title="t('Not now')" @click.stop="w.framed = false">✕</button>
-      </div>
+      <div class="devwin-line">{{ t('This window shows the device\'s own page, fetched by this server. The page reaches nothing but this window.') }}</div>
       <div v-if="w.busy" class="devwin-note dim">{{ t('Connecting…') }}</div>
       <div v-else-if="w.error" class="devwin-note error">⚠ {{ w.error }}</div>
-      <!-- Even shown in full, the page stays sandboxed against navigating anything
-           but itself, so a device that tries to break out of frames cannot take
-           the browser with it. Its own "replace everything" links are carried to
-           the window's own document by the shim inside the page. -->
-      <iframe v-else-if="w.trusted" key="trusted" :src="w.src" class="devwin-frame" :title="w.title" name="_netbase_window"
+      <!-- The page is sandboxed against navigating anything but itself, so a device
+           that tries to break out of frames cannot take the browser with it, and a
+           policy pins everything it loads or sends to the proxy path, so it cannot
+           reach a Nextcloud endpoint. The name is how its own "replace everything"
+           links find this window. -->
+      <iframe v-else :src="w.src" class="devwin-frame" :title="w.title" name="_netbase_window"
               sandbox="allow-scripts allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox allow-downloads allow-same-origin"></iframe>
-      <iframe v-else key="sandboxed" :src="w.src" class="devwin-frame" :title="w.title" name="_netbase_window"
-              sandbox="allow-scripts allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox allow-downloads"></iframe>
       <div class="devwin-grip" @mousedown.prevent.stop="startResize(w, $event)"></div>
     </div>
 
@@ -1993,7 +1977,6 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         const offset = (this.windows.length % 6) * 28;
         const w = {
           id: ++this.windowSeq, base, url: '', src: '', error: '', busy: true, full: false,
-          framed: false, trusted: (this.settings.trustedDevices || []).includes(base),
           here: '', trail: [], trailAt: -1, rewinding: false, z: ++this.windowTop,
           title: (device.name || device.ip) + ' · ' + port,
           x: Math.max(20, Math.round(window.innerWidth / 2 - 520) + offset),
@@ -2015,27 +1998,6 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         live.busy = false;
       },
       focusWindow(w) { w.z = ++this.windowTop; },
-      trustWindow(w) {
-        // Said once, in the bar, and remembered: this is a device on the
-        // administrator's own network, not a decision worth a dialog every time.
-        w.trusted = true;
-        w.framed = false;
-        this.rememberTrust(w.base, true);
-        this.reloadWindow(w);
-      },
-      untrustWindow(w) {
-        w.trusted = false;
-        this.rememberTrust(w.base, false);
-        this.reloadWindow(w);
-      },
-      async rememberTrust(base, trusted) {
-        const list = (this.settings.trustedDevices || []).filter((x) => x !== base);
-        if (trusted) list.push(base);
-        this.settings = { ...this.settings, trustedDevices: list };
-        try {
-          await api('settings', { method: 'POST', body: JSON.stringify({ settings: { trustedDevices: list } }) });
-        } catch (e) { this.fail(e); }
-      },
       onWindowMessage(event) {
         const data = event && event.data;
         if (!data || (data.netbase !== 'frames' && data.netbase !== 'here')) return;
@@ -2060,7 +2022,6 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
             w.trailAt = w.trail.length - 1;
           }
         }
-        if (data.netbase === 'frames' && !w.trusted) w.framed = true;
       },
       closeWindow(w) { this.windows = this.windows.filter((x) => x.id !== w.id); },
       backWindow(w) {

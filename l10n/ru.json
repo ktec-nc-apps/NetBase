@@ -711,14 +711,7 @@
         "The list of tools": "Список инструментов",
         "Drag the tools in the sidebar into the order you work in — or hold Alt and press the up and down arrows. The order is kept for your account.": "Перетащите инструменты на боковой панели в удобный порядок — или удерживайте Alt и нажимайте стрелки. Порядок сохраняется для вашей учётной записи.",
         "Put them back in the original order": "Вернуть исходный порядок",
-        "Shown in full, because you agreed to it for this device. Click to undo.": "Показывается полностью, потому что вы согласились на это для данного устройства. Нажмите, чтобы отменить.",
-        "This page is built from frames, which a window kept away from Nextcloud cannot load. Showing it in full lets the page reach NetBase in this browser, but nothing outside the device windows.": "Страница состоит из фреймов, которые окно, отделённое от Nextcloud, загрузить не может. Показанная полностью, она достаёт до NetBase в этом браузере, но не дальше окон устройств.",
-        "Show it in full, and remember this device": "Показать полностью и запомнить устройство",
-        "Not now": "Не сейчас",
-        "Devices shown in full": "Устройства, показываемые полностью",
-        "A device page built from frames only works when shown in full. These are the ones you have agreed to; the rest are kept at arm's length from Nextcloud.": "Страница устройства из фреймов работает только при полном показе. Это те, на которые вы согласились; остальные держатся в стороне от Nextcloud.",
-        "None yet.": "Пока нет.",
-        "Undo": "Отменить"
+        "This window shows the device's own page, fetched by this server. The page reaches nothing but this window.": "В этом окне — страница устройства, полученная этим сервером. Дальше окна она не достаёт."
     },
     "pluralForm": "nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);"
 }

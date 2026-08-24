@@ -711,14 +711,7 @@
         "The list of tools": "Список інструментів",
         "Drag the tools in the sidebar into the order you work in — or hold Alt and press the up and down arrows. The order is kept for your account.": "Перетягніть інструменти на бічній панелі у зручний порядок — або утримуйте Alt і натискайте стрілки вгору й униз. Порядок зберігається для вашого облікового запису.",
         "Put them back in the original order": "Повернути початковий порядок",
-        "Shown in full, because you agreed to it for this device. Click to undo.": "Показується повністю, бо ви погодилися на це для цього пристрою. Натисніть, щоб скасувати.",
-        "This page is built from frames, which a window kept away from Nextcloud cannot load. Showing it in full lets the page reach NetBase in this browser, but nothing outside the device windows.": "Ця сторінка складається з фреймів, які вікно, відокремлене від Nextcloud, не може завантажити. Показана повністю, вона дістається NetBase у цьому браузері, але не далі вікон пристроїв.",
-        "Show it in full, and remember this device": "Показати повністю й запам’ятати пристрій",
-        "Not now": "Не зараз",
-        "Devices shown in full": "Пристрої, що показуються повністю",
-        "A device page built from frames only works when shown in full. These are the ones you have agreed to; the rest are kept at arm's length from Nextcloud.": "Сторінка пристрою з фреймів працює лише показана повністю. Це ті, на які ви погодилися; решта тримається осторонь від Nextcloud.",
-        "None yet.": "Поки немає.",
-        "Undo": "Скасувати"
+        "This window shows the device's own page, fetched by this server. The page reaches nothing but this window.": "У цьому вікні — сторінка пристрою, отримана цим сервером. Далі вікна вона не дістає."
     },
     "pluralForm": "nplurals=4; plural=(n % 1 == 0 && n % 10 == 1 && n % 100 != 11 ? 0 : n % 1 == 0 && n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14) ? 1 : n % 1 == 0 && (n % 10 ==0 || (n % 10 >=5 && n % 10 <=9) || (n % 100 >=11 && n % 100 <=14 )) ? 2: 3);"
 }

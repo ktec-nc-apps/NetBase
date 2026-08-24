@@ -406,7 +406,19 @@ class ProxyService {
 
 	/** Everything the page points at has to come back through this server. */
 	private function rewriteHtml(string $body, string $base, string $prefix, string $path): string {
-		$body = preg_replace('#<base\b[^>]*>#i', '', $body) ?? $body;
+		// The address in a <base> would send the page's own links back to the
+		// device, so it goes — but a frameset often says <base target="content">
+		// there, and that is the only thing telling a menu link which frame to
+		// fill. Drop the address, keep where things are meant to open.
+		$body = preg_replace_callback(
+			'#<base\b([^>]*)>#i',
+			static function (array $m): string {
+				return preg_match('#\btarget\s*=\s*(["\']?)([^"\'\s>]+)\1#i', $m[1], $t) === 1
+					? '<base target="' . htmlspecialchars($t[2], ENT_QUOTES) . '">'
+					: '';
+			},
+			$body,
+		) ?? $body;
 
 		// Absolute paths would otherwise hit Nextcloud itself.
 		$body = preg_replace_callback(
@@ -569,10 +581,24 @@ class ProxyService {
 	// on behalf of whichever of its frames asked: the call runs here, in the
 	// window's own document, which is allowed to go where it likes.
 	window.__netbaseGo = function (href) { location.href = href; };
-	window.__netbaseSubmit = function (action, method, fields) {
+	// A frameset's menu fills a named frame beside it. A sandboxed page may
+	// navigate itself and what is inside it, never a neighbour — so the window's
+	// own document, which contains them all, does it on the menu's behalf.
+	window.__netbaseTarget = function (name, href) {
+		var target = frames[name];
+		if (!target) {
+			var element = document.getElementsByName(name)[0];
+			target = element && element.contentWindow ? element.contentWindow : null;
+		}
+		if (target && target !== window) { target.location.href = href; return true; }
+		location.href = href;
+		return true;
+	};
+	window.__netbaseSubmit = function (action, method, fields, name) {
 		var form = document.createElement('form');
 		form.action = action;
 		form.method = method || 'get';
+		if (name) { form.target = name; }
 		for (var i = 0; i < fields.length; i++) {
 			var input = document.createElement('input');
 			input.type = 'hidden';
@@ -590,22 +616,40 @@ class ProxyService {
 		} catch (e) { /* a document we may not read is not one of ours */ }
 		return w;
 	}
+	// Where a link means to open: its own target, or the one the document set
+	// for everything in it with <base target>.
+	function aimOf(node) {
+		var aim = node.getAttribute('target');
+		if (!aim) {
+			var base = document.querySelector('base[target]');
+			aim = base ? base.getAttribute('target') : '';
+		}
+		return (aim || '').trim();
+	}
 	document.addEventListener('click', function (event) {
-		var link = event.target && event.target.closest ? event.target.closest('a[target]') : null;
-		if (!link || link.getAttribute('target') !== W || !link.href) { return; }
+		var link = event.target && event.target.closest ? event.target.closest('a[href]') : null;
+		if (!link || !link.href) { return; }
+		var aim = aimOf(link);
+		if (!aim || aim === '_self') { return; }
 		var root = windowRoot();
+		if (root === window && aim !== W) { return; }
 		event.preventDefault();
-		if (root === window || typeof root.__netbaseGo !== 'function') { location.href = link.href; return; }
-		root.__netbaseGo(link.href);
+		if (aim === W) {
+			if (root === window || typeof root.__netbaseGo !== 'function') { location.href = link.href; return; }
+			root.__netbaseGo(link.href);
+			return;
+		}
+		if (typeof root.__netbaseTarget === 'function') { root.__netbaseTarget(aim, link.href); return; }
+		location.href = link.href;
 	}, true);
 	document.addEventListener('submit', function (event) {
 		var form = event.target;
-		if (!form || form.getAttribute('target') !== W) { return; }
+		if (!form) { return; }
+		var aim = aimOf(form);
+		if (!aim || aim === '_self') { return; }
 		var root = windowRoot();
-		if (root === window || typeof root.__netbaseSubmit !== 'function') {
-			form.setAttribute('target', '_self');
-			return;
-		}
+		if (root === window && aim === W) { form.setAttribute('target', '_self'); return; }
+		if (root === window || typeof root.__netbaseSubmit !== 'function') { return; }
 		event.preventDefault();
 		var fields = [];
 		for (var i = 0; i < form.elements.length; i++) {
@@ -614,7 +658,7 @@ class ProxyService {
 			if ((el.type === 'checkbox' || el.type === 'radio') && !el.checked) { continue; }
 			fields.push([el.name, el.value]);
 		}
-		root.__netbaseSubmit(form.action, form.method, fields);
+		root.__netbaseSubmit(form.action, form.method, fields, aim === W ? '' : aim);
 	}, true);
 	// A page built out of frames cannot load them while the window has no
 	// origin of its own — the browser refuses, and there is no policy that

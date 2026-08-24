@@ -712,14 +712,7 @@ OC.L10N.register(
         "The list of tools": "工具列表",
         "Drag the tools in the sidebar into the order you work in — or hold Alt and press the up and down arrows. The order is kept for your account.": "把侧边栏的工具拖成你惯用的顺序，或按住 Alt 键用上下方向键移动。顺序会保存在你的账户中。",
         "Put them back in the original order": "恢复原来的顺序",
-        "Shown in full, because you agreed to it for this device. Click to undo.": "因为你已对该设备同意，故完整显示。点击可撤销。",
-        "This page is built from frames, which a window kept away from Nextcloud cannot load. Showing it in full lets the page reach NetBase in this browser, but nothing outside the device windows.": "该页面由框架构成，与 Nextcloud 隔离的窗口无法加载。完整显示后，页面可以触及本浏览器中的 NetBase，但无法访问设备窗口之外的任何内容。",
-        "Show it in full, and remember this device": "完整显示，并记住该设备",
-        "Not now": "暂不",
-        "Devices shown in full": "完整显示的设备",
-        "A device page built from frames only works when shown in full. These are the ones you have agreed to; the rest are kept at arm's length from Nextcloud.": "由框架构成的设备页面只有完整显示才能正常工作。以下是你已同意的设备，其余仍与 Nextcloud 隔离。",
-        "None yet.": "暂无。",
-        "Undo": "撤销"
+        "This window shows the device's own page, fetched by this server. The page reaches nothing but this window.": "本窗口显示由本服务器取回的设备页面。该页面无法触及此窗口之外的任何内容。"
     },
     "nplurals=1; plural=0;"
 );

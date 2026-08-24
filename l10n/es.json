@@ -711,14 +711,7 @@
         "The list of tools": "La lista de herramientas",
         "Drag the tools in the sidebar into the order you work in — or hold Alt and press the up and down arrows. The order is kept for your account.": "Arrastre las herramientas de la barra lateral al orden en que trabaja, o mantenga Alt y use las flechas. El orden se guarda para su cuenta.",
         "Put them back in the original order": "Volver al orden original",
-        "Shown in full, because you agreed to it for this device. Click to undo.": "Se muestra completa porque lo aceptó para este dispositivo. Pulse para deshacer.",
-        "This page is built from frames, which a window kept away from Nextcloud cannot load. Showing it in full lets the page reach NetBase in this browser, but nothing outside the device windows.": "Esta página usa marcos, que una ventana aislada de Nextcloud no puede cargar. Mostrada completa, la página alcanza NetBase en este navegador, pero nada fuera de las ventanas de dispositivo.",
-        "Show it in full, and remember this device": "Mostrar completa y recordar este dispositivo",
-        "Not now": "Ahora no",
-        "Devices shown in full": "Dispositivos mostrados completos",
-        "A device page built from frames only works when shown in full. These are the ones you have agreed to; the rest are kept at arm's length from Nextcloud.": "Una página de dispositivo hecha con marcos solo funciona mostrada completa. Estos son los que ha aceptado; el resto se mantiene apartado de Nextcloud.",
-        "None yet.": "Todavía ninguno.",
-        "Undo": "Deshacer"
+        "This window shows the device's own page, fetched by this server. The page reaches nothing but this window.": "Esta ventana muestra la página del dispositivo, obtenida por este servidor. La página no alcanza nada fuera de esta ventana."
     },
     "pluralForm": "nplurals=2; plural=(n != 1);"
 }

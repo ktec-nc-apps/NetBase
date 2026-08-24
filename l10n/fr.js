@@ -712,14 +712,7 @@ OC.L10N.register(
         "The list of tools": "La liste des outils",
         "Drag the tools in the sidebar into the order you work in — or hold Alt and press the up and down arrows. The order is kept for your account.": "Faites glisser les outils de la barre latérale dans votre ordre de travail — ou maintenez Alt et utilisez les flèches. L'ordre est conservé pour votre compte.",
         "Put them back in the original order": "Rétablir l'ordre d'origine",
-        "Shown in full, because you agreed to it for this device. Click to undo.": "Affichée entièrement parce que vous l'avez accepté pour cet appareil. Cliquez pour annuler.",
-        "This page is built from frames, which a window kept away from Nextcloud cannot load. Showing it in full lets the page reach NetBase in this browser, but nothing outside the device windows.": "Cette page est faite de cadres, qu'une fenêtre isolée de Nextcloud ne peut pas charger. Affichée entièrement, elle atteint NetBase dans ce navigateur, mais rien en dehors des fenêtres d'appareil.",
-        "Show it in full, and remember this device": "Afficher entièrement et retenir cet appareil",
-        "Not now": "Pas maintenant",
-        "Devices shown in full": "Appareils affichés entièrement",
-        "A device page built from frames only works when shown in full. These are the ones you have agreed to; the rest are kept at arm's length from Nextcloud.": "Une page d'appareil faite de cadres ne fonctionne qu'affichée entièrement. Voici ceux que vous avez acceptés ; les autres restent tenus à l'écart de Nextcloud.",
-        "None yet.": "Aucun pour l'instant.",
-        "Undo": "Annuler"
+        "This window shows the device's own page, fetched by this server. The page reaches nothing but this window.": "Cette fenêtre affiche la page de l'appareil, récupérée par ce serveur. La page n'atteint rien en dehors de cette fenêtre."
     },
     "nplurals=2; plural=(n > 1);"
 );

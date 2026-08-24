@@ -712,14 +712,7 @@ OC.L10N.register(
         "The list of tools": "Daftar perkakas",
         "Drag the tools in the sidebar into the order you work in — or hold Alt and press the up and down arrows. The order is kept for your account.": "Seret perkakas di bilah sisi ke urutan kerja Anda — atau tahan Alt lalu tekan panah atas-bawah. Urutan disimpan untuk akun Anda.",
         "Put them back in the original order": "Kembalikan ke urutan semula",
-        "Shown in full, because you agreed to it for this device. Click to undo.": "Ditampilkan utuh karena Anda menyetujuinya untuk perangkat ini. Klik untuk membatalkan.",
-        "This page is built from frames, which a window kept away from Nextcloud cannot load. Showing it in full lets the page reach NetBase in this browser, but nothing outside the device windows.": "Halaman ini tersusun dari bingkai, yang tak dapat dimuat jendela terpisah dari Nextcloud. Bila ditampilkan utuh, halaman menjangkau NetBase di peramban ini, tetapi tidak apa pun di luar jendela perangkat.",
-        "Show it in full, and remember this device": "Tampilkan utuh dan ingat perangkat ini",
-        "Not now": "Jangan sekarang",
-        "Devices shown in full": "Perangkat yang ditampilkan utuh",
-        "A device page built from frames only works when shown in full. These are the ones you have agreed to; the rest are kept at arm's length from Nextcloud.": "Halaman perangkat yang tersusun dari bingkai hanya bekerja bila ditampilkan utuh. Inilah yang Anda setujui; sisanya tetap dijauhkan dari Nextcloud.",
-        "None yet.": "Belum ada.",
-        "Undo": "Batalkan"
+        "This window shows the device's own page, fetched by this server. The page reaches nothing but this window.": "Jendela ini menampilkan halaman perangkat yang diambil oleh peladen ini. Halaman itu tak menjangkau apa pun di luar jendela ini."
     },
     "nplurals=1; plural=0;"
 );

@@ -712,14 +712,7 @@ OC.L10N.register(
         "The list of tools": "ツールの並び",
         "Drag the tools in the sidebar into the order you work in — or hold Alt and press the up and down arrows. The order is kept for your account.": "左のツールをドラッグして、使う順に並べ替えられます。Altキーを押しながら上下矢印でも移動できます。並び順はアカウントごとに保存されます。",
         "Put them back in the original order": "元の順序に戻す",
-        "Shown in full, because you agreed to it for this device. Click to undo.": "この機器はそのまま表示する設定です。クリックで解除できます。",
-        "This page is built from frames, which a window kept away from Nextcloud cannot load. Showing it in full lets the page reach NetBase in this browser, but nothing outside the device windows.": "このページはフレーム構成のため、Nextcloudから隔離した表示では読み込めません。そのまま表示すると、ページはこのブラウザ内のNetBaseに触れられますが、機器ウィンドウの外へは一切通信できません。",
-        "Show it in full, and remember this device": "そのまま表示（この機器は次回から自動）",
-        "Not now": "今はしない",
-        "Devices shown in full": "そのまま表示する機器",
-        "A device page built from frames only works when shown in full. These are the ones you have agreed to; the rest are kept at arm's length from Nextcloud.": "フレーム構成の機器画面は、そのまま表示でないと動きません。ここに並ぶのは承諾済みの機器で、それ以外はNextcloudから隔離したまま表示します。",
-        "None yet.": "まだありません。",
-        "Undo": "解除"
+        "This window shows the device's own page, fetched by this server. The page reaches nothing but this window.": "このウィンドウは、このサーバーが取得した機器の画面をそのまま表示しています。ページはこのウィンドウの外へ通信できません。"
     },
     "nplurals=1; plural=0;"
 );
