@@ -142,7 +142,6 @@
         "Usable hosts": "Nutzbare Hosts",
         "Total addresses": "Adressen insgesamt",
         "Private range": "Privater Bereich",
-        "MAC address, e.g. 00:1b:a9:3f:8d:fe": "MAC-Adresse, z. B. 00:1b:a9:3f:8d:fe",
         "Identify vendor": "Hersteller bestimmen",
         "Prefix": "Präfix",
         "Host name": "Hostname",
@@ -734,7 +733,9 @@
         "This is what makes an all-administrators setup vanish from other people's menus.": "Genau dies lässt eine Nur-Administratoren-Einrichtung aus fremden Menüs verschwinden.",
         "Copy": "Kopieren",
         "↓ CSV": "↓ CSV",
-        "Download as a file": "Als Datei speichern"
+        "Download as a file": "Als Datei speichern",
+        "Pick a well-known time server, or type any other.": "Einen bekannten Zeitserver wählen oder einen beliebigen eintippen.",
+        "MAC address — type 001ba93f8dfe, the colons are added for you": "MAC-Adresse — einfach 001ba93f8dfe tippen, die Doppelpunkte kommen von selbst"
     },
     "pluralForm": "nplurals=2; plural=(n != 1);"
 }

@@ -142,7 +142,6 @@
         "Usable hosts": "Použitelných hostů",
         "Total addresses": "Adres celkem",
         "Private range": "Soukromý rozsah",
-        "MAC address, e.g. 00:1b:a9:3f:8d:fe": "MAC adresa, např. 00:1b:a9:3f:8d:fe",
         "Identify vendor": "Zjistit výrobce",
         "Prefix": "Předpona",
         "Host name": "Název hostitele",
@@ -734,7 +733,9 @@
         "This is what makes an all-administrators setup vanish from other people's menus.": "Právě to způsobí, že nastavení jen pro správce zmizí z nabídek ostatních.",
         "Copy": "Kopírovat",
         "↓ CSV": "↓ CSV",
-        "Download as a file": "Stáhnout jako soubor"
+        "Download as a file": "Stáhnout jako soubor",
+        "Pick a well-known time server, or type any other.": "Vyberte známý časový server, nebo napište jiný.",
+        "MAC address — type 001ba93f8dfe, the colons are added for you": "MAC adresa — napište 001ba93f8dfe, dvojtečky se doplní samy"
     },
     "pluralForm": "nplurals=4; plural=(n == 1 && n % 1 == 0) ? 0 : (n >= 2 && n <= 4 && n % 1 == 0) ? 1: (n % 1 != 0 ) ? 2 : 3;"
 }

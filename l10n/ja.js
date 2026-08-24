@@ -143,7 +143,6 @@ OC.L10N.register(
         "Usable hosts": "利用可能ホスト数",
         "Total addresses": "総アドレス数",
         "Private range": "プライベート範囲",
-        "MAC address, e.g. 00:1b:a9:3f:8d:fe": "MACアドレス（例：00:1b:a9:3f:8d:fe）",
         "Identify vendor": "ベンダーを判別",
         "Prefix": "プレフィックス",
         "Host name": "ホスト名",
@@ -735,7 +734,9 @@ OC.L10N.register(
         "This is what makes an all-administrators setup vanish from other people's menus.": "すべて管理者のみにした場合に、他の利用者のメニューから消えるのはこの設定によるものです。",
         "Copy": "コピー",
         "↓ CSV": "↓ CSV",
-        "Download as a file": "ダウンロード"
+        "Download as a file": "ダウンロード",
+        "Pick a well-known time server, or type any other.": "よく使われる時刻サーバーから選ぶか、任意のサーバーを入力できます。",
+        "MAC address — type 001ba93f8dfe, the colons are added for you": "MACアドレス ― 001ba93f8dfe のように区切りなしで入力できます（コロンは自動で入ります）"
     },
     "nplurals=1; plural=0;"
 );

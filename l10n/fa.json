@@ -142,7 +142,6 @@
         "Usable hosts": "میزبان‌های قابل استفاده",
         "Total addresses": "کل نشانی‌ها",
         "Private range": "بازهٔ خصوصی",
-        "MAC address, e.g. 00:1b:a9:3f:8d:fe": "نشانی MAC، مثلاً 00:1b:a9:3f:8d:fe",
         "Identify vendor": "شناسایی سازنده",
         "Prefix": "پیشوند",
         "Host name": "نام میزبان",
@@ -734,7 +733,9 @@
         "This is what makes an all-administrators setup vanish from other people's menus.": "همین گزینه است که پیکربندی «تنها مدیران» را از فهرست دیگران ناپدید می‌کند.",
         "Copy": "رونوشت",
         "↓ CSV": "↓ CSV",
-        "Download as a file": "بارگیری به‌صورت پرونده"
+        "Download as a file": "بارگیری به‌صورت پرونده",
+        "Pick a well-known time server, or type any other.": "یک کارساز زمان شناخته‌شده برگزینید یا نشانی دیگری بنویسید.",
+        "MAC address — type 001ba93f8dfe, the colons are added for you": "نشانی مک — 001ba93f8dfe را بنویسید، دونقطه‌ها خودکار افزوده می‌شوند"
     },
     "pluralForm": "nplurals=2; plural=(n > 1);"
 }

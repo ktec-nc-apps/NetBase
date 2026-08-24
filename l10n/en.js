@@ -143,7 +143,6 @@ OC.L10N.register(
         "Usable hosts": "Usable hosts",
         "Total addresses": "Total addresses",
         "Private range": "Private range",
-        "MAC address, e.g. 00:1b:a9:3f:8d:fe": "MAC address, e.g. 00:1b:a9:3f:8d:fe",
         "Identify vendor": "Identify vendor",
         "Prefix": "Prefix",
         "Host name": "Host name",
@@ -735,7 +734,9 @@ OC.L10N.register(
         "This is what makes an all-administrators setup vanish from other people's menus.": "This is what makes an all-administrators setup vanish from other people's menus.",
         "Copy": "Copy",
         "↓ CSV": "↓ CSV",
-        "Download as a file": "Download as a file"
+        "Download as a file": "Download as a file",
+        "Pick a well-known time server, or type any other.": "Pick a well-known time server, or type any other.",
+        "MAC address — type 001ba93f8dfe, the colons are added for you": "MAC address — type 001ba93f8dfe, the colons are added for you"
     },
     "nplurals=2; plural=(n != 1);"
 );

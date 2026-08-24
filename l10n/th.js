@@ -143,7 +143,6 @@ OC.L10N.register(
         "Usable hosts": "โฮสต์ที่ใช้ได้",
         "Total addresses": "หมายเลขทั้งหมด",
         "Private range": "ช่วงส่วนตัว",
-        "MAC address, e.g. 00:1b:a9:3f:8d:fe": "หมายเลข MAC เช่น 00:1b:a9:3f:8d:fe",
         "Identify vendor": "ระบุผู้ผลิต",
         "Prefix": "คำนำหน้า",
         "Host name": "ชื่อโฮสต์",
@@ -735,7 +734,9 @@ OC.L10N.register(
         "This is what makes an all-administrators setup vanish from other people's menus.": "การตั้งค่านี้เองที่ทำให้การกำหนดแบบเฉพาะผู้ดูแลหายไปจากเมนูของคนอื่น",
         "Copy": "คัดลอก",
         "↓ CSV": "↓ CSV",
-        "Download as a file": "ดาวน์โหลดเป็นไฟล์"
+        "Download as a file": "ดาวน์โหลดเป็นไฟล์",
+        "Pick a well-known time server, or type any other.": "เลือกเซิร์ฟเวอร์เวลาที่รู้จักกันดี หรือพิมพ์เซิร์ฟเวอร์อื่น",
+        "MAC address — type 001ba93f8dfe, the colons are added for you": "ที่อยู่ MAC — พิมพ์ 001ba93f8dfe ได้เลย ระบบใส่ทวิภาคให้เอง"
     },
     "nplurals=1; plural=0;"
 );
