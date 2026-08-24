@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace OCA\NetBase\Service;
 
 use OCA\NetBase\Db\DeviceMapper;
+use OCP\AppFramework\Http\IOutput;
 use OCP\IConfig;
 use OCP\Security\ICrypto;
 use Psr\Log\LoggerInterface;
@@ -26,7 +27,9 @@ class ProxyService {
 	public const WINDOW_NAME = '_netbase_window';
 
 	private const MAX_BYTES = 16777216;
-	private const TIMEOUT = 20;
+	private const TIMEOUT = 30;
+	/** Writing a firmware image takes as long as it takes. */
+	private const UPLOAD_TIMEOUT = 600;
 
 	/** Headers that belong to the hop, not to the content. */
 	private const DROP_HEADERS = [
@@ -107,32 +110,64 @@ class ProxyService {
 		return (string)base64_decode($padded, true);
 	}
 
+	/** Requests from the browser that a device may need to see. */
+	private const PASS_REQUEST_HEADERS = [
+		'accept', 'accept-language', 'range', 'if-none-match', 'if-modified-since',
+		'x-requested-with', 'content-type',
+	];
+
 	/**
-	 * Fetch one resource and return it ready to be handed to the browser.
+	 * Fetch one resource and hand it back for rewriting.
 	 *
-	 * @param array<string, string> $post form fields to forward, if any
-	 * @return array{status: int, headers: array<string, string>, body: string, html: bool}
+	 * @param array<string, mixed> $request method, post, files, body and headers
+	 * @return array{status: int, headers: array<string, string>, body: string, html: bool, needsPassword: bool, realm: string, streamed: bool}
 	 */
-	public function fetch(string $base, string $path, string $query, string $userId, string $prefix, array $post = [], string $authorization = '', array $files = []): array {
+	public function fetch(string $base, string $path, string $query, string $userId, string $prefix, array $request = []): array {
+		return $this->deliver($base, $path, $query, $userId, $prefix, $request, null);
+	}
+
+	/**
+	 * Fetch one resource, streaming it to the browser when it is not a page.
+	 *
+	 * A page has to be read whole before the browser sees it, because every
+	 * address inside it is rewritten first. Everything else — a firmware image,
+	 * a configuration backup, a camera's picture stream — is passed through as
+	 * it arrives, so nothing is capped by what fits in memory and a stream that
+	 * never ends keeps running.
+	 *
+	 * @param array<string, mixed> $request
+	 * @return array{status: int, headers: array<string, string>, body: string, html: bool, needsPassword: bool, realm: string, streamed: bool}
+	 */
+	public function deliver(string $base, string $path, string $query, string $userId, string $prefix, array $request, ?IOutput $output): array {
 		$base = $this->validateBase($base);
-		if ($authorization === '') {
-			// A device that asked for a password earlier is answered without
-			// asking the person again.
-			$authorization = $this->recallAuth($base, $userId);
-		}
 		if (!$this->available()) {
 			throw new \RuntimeException('The PHP curl extension is not installed on this server');
 		}
+
+		$method = strtoupper((string)($request['method'] ?? 'GET'));
+		$post = (array)($request['post'] ?? []);
+		$files = (array)($request['files'] ?? []);
+		$rawBody = (string)($request['body'] ?? '');
+		$given = (array)($request['headers'] ?? []);
+		$authorization = (string)($request['authorization'] ?? '');
+		// A device that asked for a password earlier is answered without asking
+		// the person again.
+		$credentials = $this->recallAuth($base, $userId);
+
 		$url = $base . '/' . ltrim($path, '/');
 		if ($query !== '') {
 			$url .= '?' . $query;
 		}
 
-		$curl = curl_init($url);
 		$headers = [];
+		$status = 0;
+		$streaming = false;
+		$buffer = '';
+		$sendHeaders = null;
+
+		$curl = curl_init($url);
 		curl_setopt_array($curl, [
-			CURLOPT_RETURNTRANSFER => true,
-			CURLOPT_TIMEOUT => self::TIMEOUT,
+			CURLOPT_TIMEOUT => $files !== [] ? self::UPLOAD_TIMEOUT : self::TIMEOUT,
 			CURLOPT_CONNECTTIMEOUT => 8,
 			// Device interfaces almost always have a self-signed certificate,
 			// and the connection stays inside the local network.
@@ -144,25 +179,61 @@ class ProxyService {
 			// An empty file name starts the cookie engine without one: a device's
 			// session cookie has no expiry, and those are never written to a
 			// cookie file — the sign-in would be forgotten between one page and
-			// the next. They are kept by hand instead, just below.
+			// the next. They are kept by hand instead.
 			CURLOPT_COOKIEFILE => '',
-			CURLOPT_USERAGENT => 'Mozilla/5.0 (compatible; NetBase for Nextcloud)',
-			CURLOPT_HEADERFUNCTION => function ($handle, string $line) use (&$headers) {
+			CURLOPT_USERAGENT => (string)($given['user-agent'] ?? 'Mozilla/5.0 (compatible; NetBase for Nextcloud)'),
+			CURLOPT_HEADERFUNCTION => function ($handle, string $line) use (&$headers, &$status) {
+				if (preg_match('#^HTTP/[\d.]+\s+(\d{3})#', $line, $m) === 1) {
+					// A redirect chain or a 100-continue starts the headers over.
+					$status = (int)$m[1];
+					$headers = [];
+					return strlen($line);
+				}
 				$parts = explode(':', $line, 2);
 				if (count($parts) === 2) {
 					$headers[strtolower(trim($parts[0]))] = trim($parts[1]);
 				}
 				return strlen($line);
 			},
+			CURLOPT_WRITEFUNCTION => function ($handle, string $chunk) use (&$streaming, &$buffer, &$sendHeaders, &$headers, &$status, $output) {
+				if ($sendHeaders === null) {
+					$streaming = $output !== null && $this->passesThrough($status, $headers);
+					$sendHeaders = true;
+					if ($streaming) {
+						$this->sendHeaders($output, $status, $headers);
+					}
+				}
+				if ($streaming) {
+					echo $chunk;
+					flush();
+					return strlen($chunk);
+				}
+				$buffer .= $chunk;
+				return strlen($buffer) > self::MAX_BYTES ? 0 : strlen($chunk);
+			},
 		]);
+
+		$send = [];
+		foreach (self::PASS_REQUEST_HEADERS as $name) {
+			$value = (string)($given[$name] ?? '');
+			if ($value !== '' && $files === [] && !($name === 'content-type' && $post !== [])) {
+				$send[] = ucfirst($name) . ': ' . $value;
+			}
+		}
+		if ($authorization !== '') {
+			// A device that asks the browser directly is answered directly.
+			$send[] = 'Authorization: ' . $authorization;
+		} elseif ($credentials !== null) {
+			curl_setopt($curl, CURLOPT_USERPWD, $credentials['user'] . ':' . $credentials['password']);
+			curl_setopt($curl, CURLOPT_HTTPAUTH, CURLAUTH_ANY);
+		}
+		if ($send !== []) {
+			curl_setopt($curl, CURLOPT_HTTPHEADER, $send);
+		}
 		foreach ($this->loadCookies($userId, $base) as $cookie) {
 			curl_setopt($curl, CURLOPT_COOKIELIST, $cookie);
 		}
-		if ($authorization !== '') {
-			// A device that asks for a password does so through the browser, on
-			// this server's address; the answer is handed straight back to it.
-			curl_setopt($curl, CURLOPT_HTTPHEADER, ['Authorization: ' . $authorization]);
-		}
+
 		if ($files !== []) {
 			// Sending a file to a device — new firmware, a saved configuration —
 			// is one of the things people open its page for, so the upload is
@@ -172,7 +243,7 @@ class ProxyService {
 				$fields[(string)$name] = is_array($value) ? (string)json_encode($value) : (string)$value;
 			}
 			foreach ($files as $name => $file) {
-				if (!is_array($file) || !is_uploaded_file((string)($file['tmp_name'] ?? '')) && !is_readable((string)($file['tmp_name'] ?? ''))) {
+				if (!is_array($file) || !is_readable((string)($file['tmp_name'] ?? ''))) {
 					continue;
 				}
 				$fields[(string)$name] = new \CURLFile(
@@ -183,30 +254,38 @@ class ProxyService {
 			}
 			curl_setopt($curl, CURLOPT_POST, true);
 			curl_setopt($curl, CURLOPT_POSTFIELDS, $fields);
-			// A firmware image takes its time to be written.
-			curl_setopt($curl, CURLOPT_TIMEOUT, 300);
+		} elseif ($rawBody !== '') {
+			// A page that speaks to its device in JSON, or with anything else of
+			// its own making, is carried word for word.
+			curl_setopt($curl, CURLOPT_POSTFIELDS, $rawBody);
 		} elseif ($post !== []) {
-			curl_setopt($curl, CURLOPT_POST, true);
 			curl_setopt($curl, CURLOPT_POSTFIELDS, http_build_query($post));
 		}
-		$body = curl_exec($curl);
-		$status = (int)curl_getinfo($curl, CURLINFO_RESPONSE_CODE);
+		if ($method === 'HEAD') {
+			curl_setopt($curl, CURLOPT_NOBODY, true);
+		} elseif ($method !== 'GET') {
+			curl_setopt($curl, CURLOPT_CUSTOMREQUEST, $method);
+		}
+
+		$ok = curl_exec($curl);
+		$status = $status ?: (int)curl_getinfo($curl, CURLINFO_RESPONSE_CODE);
 		$error = curl_error($curl);
 		$this->saveCookies($userId, $base, (array)curl_getinfo($curl, CURLINFO_COOKIELIST));
 		curl_close($curl);
 
-		if (!is_string($body)) {
+		if ($streaming) {
+			return ['status' => $status, 'headers' => [], 'body' => '', 'html' => false, 'needsPassword' => false, 'realm' => '', 'streamed' => true];
+		}
+		if ($ok === false && $buffer === '') {
 			throw new \RuntimeException($error !== '' ? $error : 'The device did not answer');
 		}
-		if (strlen($body) > self::MAX_BYTES) {
-			$body = substr($body, 0, self::MAX_BYTES);
-		}
+		$body = $buffer;
 
 		// A sandboxed window gets no sign-in box from the browser, so NetBase
 		// has to ask on the device's behalf.
 		$challenge = $headers['www-authenticate'] ?? '';
-		$needsPassword = $status === 401 && stripos($challenge, 'basic') !== false;
-		if ($needsPassword && $authorization !== '') {
+		$needsPassword = $status === 401 && $challenge !== '';
+		if ($needsPassword && ($authorization !== '' || $credentials !== null)) {
 			// What was remembered is no longer accepted; ask again.
 			$this->forgetAuth($base, $userId);
 		}
@@ -229,23 +308,20 @@ class ProxyService {
 			if (!str_contains(strtolower($type), 'charset') && preg_match('#charset\s*=\s*["\']?([a-z0-9_-]+)#i', substr($body, 0, 4096), $m) === 1) {
 				$type = 'text/html; charset=' . $m[1];
 			}
-			$body = $this->rewriteHtml($body, $base, $prefix, $path);
+			$body = $this->rewriteHtml($body, $base, $prefix, $path, $userId);
 		} elseif (str_contains(strtolower($type), 'css')) {
 			$body = $this->rewriteCss($body, $prefix);
 		}
 
 		$out = [];
 		foreach ($headers as $name => $value) {
-			if (in_array($name, self::DROP_HEADERS, true)) {
+			if (in_array($name, self::DROP_HEADERS, true) || $name === 'set-cookie') {
+				// The jar already holds the cookie; passing it on would set one
+				// on Nextcloud's own domain.
 				continue;
 			}
 			if ($name === 'location') {
-				$value = $this->rewriteUrl($value, $base, $prefix, $path);
-			}
-			if ($name === 'set-cookie') {
-				// The jar already holds it; passing it on would set a cookie on
-				// Nextcloud's own domain.
-				continue;
+				$value = $this->rewriteUrl($value, $base, $prefix, $path, $userId);
 			}
 			$out[$name] = $value;
 		}
@@ -258,7 +334,46 @@ class ProxyService {
 			'html' => $isHtml,
 			'needsPassword' => $needsPassword,
 			'realm' => $this->realm($challenge),
+			'streamed' => false,
 		];
+	}
+
+	/** Enough of the status phrases for the ones a device actually sends. */
+	private const REASONS = [
+		200 => 'OK', 201 => 'Created', 202 => 'Accepted', 204 => 'No Content',
+		206 => 'Partial Content', 301 => 'Moved Permanently', 302 => 'Found',
+		303 => 'See Other', 304 => 'Not Modified', 307 => 'Temporary Redirect',
+		308 => 'Permanent Redirect', 400 => 'Bad Request', 403 => 'Forbidden',
+		404 => 'Not Found', 405 => 'Method Not Allowed', 416 => 'Range Not Satisfiable',
+	];
+
+	/** Whether an answer goes straight through rather than being read whole. */
+	private function passesThrough(int $status, array $headers): bool {
+		if ($status === 401 || $status >= 500) {
+			return false;
+		}
+		$type = strtolower((string)($headers['content-type'] ?? ''));
+		if ($type === '') {
+			return false;
+		}
+		return !str_contains($type, 'html') && !str_contains($type, 'css');
+	}
+
+	/** @param array<string, string> $headers */
+	private function sendHeaders(IOutput $output, int $status, array $headers): void {
+		$status = $status ?: 200;
+		// The status is set with the status line itself: by the time a device's
+		// answer starts arriving, Nextcloud has already decided this response is
+		// a 200, and a partial answer has to say so or a resumed download and a
+		// seek in a video both break.
+		$output->setHeader('HTTP/1.1 ' . $status . ' ' . (self::REASONS[$status] ?? 'Status'));
+		$output->setHttpResponseCode($status);
+		foreach ($headers as $name => $value) {
+			if (in_array($name, self::DROP_HEADERS, true) || $name === 'set-cookie') {
+				continue;
+			}
+			$output->setHeader($name . ': ' . $value);
+		}
 	}
 
 	// ------------------------------------------------------------------ safety
@@ -307,8 +422,11 @@ class ProxyService {
 
 	/** Keep what the device asked for, for as long as the window may live. */
 	public function rememberAuth(string $base, string $userId, string $user, string $password): void {
-		$header = 'Basic ' . base64_encode($user . ':' . $password);
-		@file_put_contents($this->authFile($userId, $base), $this->crypto->encrypt($header), LOCK_EX);
+		// The pair is kept, not a ready-made header: a device may ask in the
+		// plain way or the digest way, and only curl knows which until it has
+		// been asked.
+		$secret = (string)json_encode(['u' => $user, 'p' => $password]);
+		@file_put_contents($this->authFile($userId, $base), $this->crypto->encrypt($secret), LOCK_EX);
 		@chmod($this->authFile($userId, $base), 0600);
 	}
 
@@ -316,17 +434,24 @@ class ProxyService {
 		@unlink($this->authFile($userId, $base));
 	}
 
-	private function recallAuth(string $base, string $userId): string {
+	/** @return array{user: string, password: string}|null */
+	private function recallAuth(string $base, string $userId): ?array {
 		$file = $this->authFile($userId, $base);
 		if (!is_readable($file)) {
-			return '';
+			return null;
 		}
 		try {
-			return (string)$this->crypto->decrypt((string)file_get_contents($file));
+			$stored = (string)$this->crypto->decrypt((string)file_get_contents($file));
 		} catch (\Throwable $e) {
 			@unlink($file);
-			return '';
+			return null;
 		}
+		$pair = json_decode($stored, true);
+		if (!is_array($pair) || !isset($pair['u'])) {
+			@unlink($file);
+			return null;
+		}
+		return ['user' => (string)$pair['u'], 'password' => (string)($pair['p'] ?? '')];
 	}
 
 	private function authFile(string $userId, string $base): string {
@@ -427,7 +552,7 @@ class ProxyService {
 	// ------------------------------------------------------------------ rewriting
 
 	/** Everything the page points at has to come back through this server. */
-	private function rewriteHtml(string $body, string $base, string $prefix, string $path): string {
+	private function rewriteHtml(string $body, string $base, string $prefix, string $path, string $userId = ''): string {
 		// The address in a <base> would send the page's own links back to the
 		// device, so it goes — but a frameset often says <base target="content">
 		// there, and that is the only thing telling a menu link which frame to
@@ -449,9 +574,16 @@ class ProxyService {
 			$body,
 		) ?? $body;
 
-		// Absolute URLs that point back at the same device.
-		$quoted = preg_quote($base, '#');
-		$body = preg_replace('#(["\'(])' . $quoted . '(/[^"\')]*)?#i', '$1' . $prefix . '$2', $body) ?? $body;
+		// Absolute addresses: the ones on this device, and the ones on another
+		// device this server can also reach — a controller linking to what it
+		// manages. Anything further afield is left exactly as it is.
+		$body = preg_replace_callback(
+			'#(["\'(])(https?://[^"\'()\s]+)#i',
+			function (array $m) use ($base, $prefix, $path, $userId): string {
+				return $m[1] . $this->rewriteUrl($m[2], $base, $prefix, $path, $userId);
+			},
+			$body,
+		) ?? $body;
 
 		// A device page often aims its links at the whole browser window — the
 		// frameset habit of _top and _parent, which on the device means "replace
@@ -466,10 +598,10 @@ class ProxyService {
 		// and printers, and the address inside it needs the same treatment.
 		$body = preg_replace_callback(
 			'#(<meta[^>]*http-equiv\s*=\s*["\']?refresh["\']?[^>]*content\s*=\s*["\'])([^"\']*)#i',
-			function (array $m) use ($base, $prefix, $path) {
+			function (array $m) use ($base, $prefix, $path, $userId) {
 				return $m[1] . preg_replace_callback(
 					'#(url\s*=\s*)(\S+)#i',
-					fn (array $u) => $u[1] . $this->rewriteUrl(trim($u[2], '\'"'), $base, $prefix, $path),
+					fn (array $u) => $u[1] . $this->rewriteUrl(trim($u[2], '\'"'), $base, $prefix, $path, $userId),
 					$m[2],
 				);
 			},
@@ -503,9 +635,22 @@ class ProxyService {
 	var P = __PREFIX__;
 	function fix(u) {
 		if (typeof u !== 'string' || !u) { return u; }
-		if (u.charAt(0) !== '/' || u.charAt(1) === '/') { return u; }
 		if (u.lastIndexOf(P, 0) === 0) { return u; }
-		return P + u;
+		if (u.charAt(0) === '/' && u.charAt(1) !== '/') { return P + u; }
+		// A page that builds its own addresses out of where it thinks it is —
+		// location.origin, location.host — now says this server, and would walk
+		// straight out of the window without this.
+		var here = location.origin + '/';
+		if (u.lastIndexOf(here, 0) === 0) {
+			var rest = u.slice(location.origin.length);
+			return rest.lastIndexOf(P, 0) === 0 ? u : location.origin + P + rest;
+		}
+		var loose = '//' + location.host + '/';
+		if (u.lastIndexOf(loose, 0) === 0) {
+			var tail = u.slice(loose.length - 1);
+			return tail.lastIndexOf(P, 0) === 0 ? u : loose.slice(0, -1) + P + tail;
+		}
+		return u;
 	}
 	var escapes = { _top: 1, _parent: 1, _blank: 1 };
 	var W = __WINDOW__;
@@ -712,12 +857,25 @@ JS;
 		return preg_replace('#url\(\s*(["\']?)/(?!/)#i', 'url($1' . $prefix . '/', $body) ?? $body;
 	}
 
-	private function rewriteUrl(string $url, string $base, string $prefix, string $path): string {
+	private function rewriteUrl(string $url, string $base, string $prefix, string $path, string $userId = ''): string {
 		if (str_starts_with($url, $base)) {
 			return $prefix . substr($url, strlen($base));
 		}
 		if (str_starts_with($url, '/')) {
 			return $prefix . $url;
+		}
+		// A device that sends you to another one — a controller to the access
+		// point it manages, a page to the device's own name rather than its
+		// address — should not send you out of the window. If NetBase may open
+		// that address too, it gets a window's worth of ticket of its own.
+		if ($userId !== '' && preg_match('#^(https?://[^/]+)(/.*)?$#i', $url, $m) === 1) {
+			try {
+				$elsewhere = $this->issue($m[1], $userId);
+			} catch (\Throwable $e) {
+				return $url;
+			}
+			$root = substr($prefix, 0, (int)strrpos($prefix, '/') + 1);
+			return $root . $elsewhere . '/' . ltrim($m[2] ?? '', '/');
 		}
 		return $url;
 	}

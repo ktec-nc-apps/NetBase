@@ -11,6 +11,12 @@ return [
 		['name' => 'api#proxyTicket', 'url' => '/api/proxy/ticket', 'verb' => 'POST'],
 		['name' => 'proxy#open', 'url' => '/proxy/{token}/{path}', 'verb' => 'GET', 'requirements' => ['path' => '.*'], 'defaults' => ['path' => '']],
 		['name' => 'proxy#open', 'url' => '/proxy/{token}/{path}', 'verb' => 'POST', 'postfix' => 'post', 'requirements' => ['path' => '.*'], 'defaults' => ['path' => '']],
+		// A device page may speak any method its own interface uses.
+		['name' => 'proxy#open', 'url' => '/proxy/{token}/{path}', 'verb' => 'PUT', 'postfix' => 'put', 'requirements' => ['path' => '.*'], 'defaults' => ['path' => '']],
+		['name' => 'proxy#open', 'url' => '/proxy/{token}/{path}', 'verb' => 'PATCH', 'postfix' => 'patch', 'requirements' => ['path' => '.*'], 'defaults' => ['path' => '']],
+		['name' => 'proxy#open', 'url' => '/proxy/{token}/{path}', 'verb' => 'DELETE', 'postfix' => 'delete', 'requirements' => ['path' => '.*'], 'defaults' => ['path' => '']],
+		['name' => 'proxy#open', 'url' => '/proxy/{token}/{path}', 'verb' => 'HEAD', 'postfix' => 'head', 'requirements' => ['path' => '.*'], 'defaults' => ['path' => '']],
+		['name' => 'proxy#open', 'url' => '/proxy/{token}/{path}', 'verb' => 'OPTIONS', 'postfix' => 'options', 'requirements' => ['path' => '.*'], 'defaults' => ['path' => '']],
 
 		// status & settings
 		['name' => 'api#status', 'url' => '/api/status', 'verb' => 'GET'],

@@ -1568,6 +1568,15 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
   ];
 
   // Ports a browser can open directly, and what scheme to use.
+  // Ports that answer something other than a web page: opening a window on one
+  // would only ever show an error, so the number stays a number.
+  const NOT_WEB_PORTS = new Set([
+    21, 22, 23, 25, 53, 67, 68, 69, 110, 111, 119, 123, 135, 137, 138, 139, 143, 161, 162,
+    179, 389, 427, 445, 465, 514, 515, 543, 544, 548, 554, 587, 593, 623, 636, 873, 993,
+    995, 1080, 1194, 1433, 1521, 1723, 1812, 1813, 1900, 2049, 3260, 3306, 3389, 5060,
+    5061, 5432, 5900, 5901, 5902, 6379, 9100, 11211, 27017,
+  ]);
+
   const WEB_PORTS = {
     80: 'http', 81: 'http', 591: 'http', 631: 'http', 2082: 'http', 3000: 'http', 5000: 'http',
     7080: 'http', 8000: 'http', 8008: 'http', 8080: 'http', 8081: 'http', 8888: 'http', 9000: 'http', 9090: 'http',
@@ -2085,7 +2094,10 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
       /** A device's own web interface, when the port says it has one. */
       /** The device's own address for a web port, whoever is asking. */
       webUrl(device, port) {
-        const scheme = WEB_PORTS[port];
+        // A device interface can sit on any port its maker felt like. Anything
+        // that is not a known service of another kind is worth trying, rather
+        // than hiding a working page behind an unfamiliar number.
+        const scheme = WEB_PORTS[port] || (NOT_WEB_PORTS.has(Number(port)) ? null : 'http');
         if (!scheme || !device || !device.ip) return null;
         const host = device.ip.includes(':') ? '[' + device.ip + ']' : device.ip;
         return scheme + '://' + host + (port === 80 || port === 443 ? '' : ':' + port);
