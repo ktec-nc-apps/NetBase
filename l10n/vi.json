@@ -721,7 +721,16 @@
         "Older interfaces built out of frames": "Giao diện cũ dựng bằng khung",
         "Its password, remembered for you after the first time": "Mật khẩu của thiết bị, nhớ sau lần đầu",
         "A console that stays connected, which some switches offer": "Bảng điều khiển giữ kết nối liên tục, có ở một số bộ chuyển mạch",
-        "Anything needing Java or ActiveX in the browser": "Bất cứ thứ gì cần Java hay ActiveX trong trình duyệt"
+        "Anything needing Java or ActiveX in the browser": "Bất cứ thứ gì cần Java hay ActiveX trong trình duyệt",
+        "Copy what this tool found": "Sao chép kết quả của công cụ này",
+        "Download what this tool found": "Tải kết quả của công cụ này",
+        "Save it to your Nextcloud files": "Lưu vào tệp Nextcloud của bạn",
+        "Copied": "Đã sao chép",
+        "Saved to {path}": "Đã lưu vào {path}",
+        "TLS versions": "Phiên bản TLS",
+        "Aggregate": "Gộp",
+        "Console": "Bảng điều khiển",
+        "Listing": "Danh sách"
     },
     "pluralForm": "nplurals=1; plural=0;"
 }

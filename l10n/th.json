@@ -721,7 +721,16 @@
         "Older interfaces built out of frames": "หน้าจอจัดการรุ่นเก่าที่สร้างด้วยเฟรม",
         "Its password, remembered for you after the first time": "รหัสผ่านของอุปกรณ์ จำไว้ให้หลังใส่ครั้งแรก",
         "A console that stays connected, which some switches offer": "คอนโซลที่เชื่อมต่อค้างไว้ ซึ่งสวิตช์บางรุ่นมีให้",
-        "Anything needing Java or ActiveX in the browser": "สิ่งที่ต้องใช้ Java หรือ ActiveX ในเบราว์เซอร์"
+        "Anything needing Java or ActiveX in the browser": "สิ่งที่ต้องใช้ Java หรือ ActiveX ในเบราว์เซอร์",
+        "Copy what this tool found": "คัดลอกผลลัพธ์",
+        "Download what this tool found": "ดาวน์โหลดผลลัพธ์",
+        "Save it to your Nextcloud files": "บันทึกลงไฟล์ Nextcloud ของคุณ",
+        "Copied": "คัดลอกแล้ว",
+        "Saved to {path}": "บันทึกไว้ที่ {path}",
+        "TLS versions": "รุ่นของ TLS",
+        "Aggregate": "การรวม",
+        "Console": "คอนโซล",
+        "Listing": "รายการ"
     },
     "pluralForm": "nplurals=1; plural=0;"
 }

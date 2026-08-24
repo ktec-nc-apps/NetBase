@@ -121,10 +121,17 @@
       <div class="topbar">
         <div class="title"><span class="ic">{{ currentTab.icon }}</span><span class="nm">{{ t(currentTab.label) }}</span><span class="desc">{{ t(currentTab.hint) }}</span></div>
         <div class="spacer"></div>
-        <div class="topbar-actions" v-if="tab==='devices'">
-          <input class="filter" v-model="filter" :placeholder="t('Filter by name, IP, MAC or vendor')">
-          <button class="btn sm" @click="onlyOnline=!onlyOnline" :class="{active: onlyOnline}">{{ onlyOnline ? t('Online only') : t('All records') }}</button>
-          <button class="btn sm" @click="exportCsv" :disabled="!shownDevices.length">{{ t('⤓ CSV') }}</button>
+        <div class="topbar-actions">
+          <template v-if="tab==='devices'">
+            <input class="filter" v-model="filter" :placeholder="t('Filter by name, IP, MAC or vendor')">
+            <button class="btn sm" @click="onlyOnline=!onlyOnline" :class="{active: onlyOnline}">{{ onlyOnline ? t('Online only') : t('All records') }}</button>
+            <button class="btn sm" @click="exportCsv" :disabled="!shownDevices.length">{{ t('⤓ CSV') }}</button>
+          </template>
+          <!-- Whatever this tool has found: onto the clipboard, into a file, or
+               into the person's own Nextcloud folder. -->
+          <button class="btn sm" :title="t('Copy what this tool found')" :disabled="!hasResult" @click="copyResult">⧉</button>
+          <button class="btn sm" :title="t('Download what this tool found')" :disabled="!hasResult" @click="downloadResult">⤓</button>
+          <button class="btn sm" :title="t('Save it to your Nextcloud files')" :disabled="!hasResult" @click="saveResultToFiles">📁</button>
         </div>
       </div>
 
@@ -1725,6 +1732,18 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         return placed.concat(allowed.filter((x) => !order.includes(x.id)));
       },
       currentTab() { return TABS.find((x) => x.id === this.tab) || this.visibleTabs[0] || TABS[0]; },
+      hasResult() {
+        // Reading the results makes the buttons wake up the moment one arrives.
+        void [this.dnsResult, this.dnsQueryResult, this.dnsCompareResult, this.dnsTraceResult, this.axfrResult,
+          this.whoisResult, this.pingResult, this.traceResult, this.tcpPingResult, this.mtuResult,
+          this.portResult, this.tlsResult, this.tlsVersionsResult, this.httpResult, this.subnetResult,
+          this.splitResult, this.aggregateResult, this.macResult, this.speedResult, this.iperfResult,
+          this.dnsBench, this.timingResult, this.pathResult, this.mailAudit, this.mailProbeResult,
+          this.relayResult, this.blResult, this.sendResult, this.mailboxResult, this.filesData,
+          this.sshResult, this.telnetResult, this.sshRunResult, this.ntpResult, this.nmapResult,
+          this.devices.length, this.term.lines.length];
+        return !!this.resultBundle();
+      },
       onlineCount() { return this.devices.filter((d) => d.online).length; },
       speedEndpoint() { return (this.speedResult && this.speedResult.endpoint) || 'speed.cloudflare.com'; },
       fileConnections() { return this.connections.filter((c) => c.kind === 'ftp' || c.kind === 'sftp'); },
@@ -2604,6 +2623,121 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
           method: 'POST',
           body: JSON.stringify({ targets, preset: this.nmapPreset, extra: this.nmapExtra ? [this.nmapExtra] : [] }),
         }));
+      },
+      /** Everything the tab in front of you has found, gathered as plain text. */
+      resultBundle() {
+        const named = (label, value) => (value ? { label, value } : null);
+        const parts = {
+          devices: () => [named(T('Devices'), this.shownDevices.length ? this.devicesAsText() : null)],
+          dns: () => [
+            named(T('Records'), this.dnsResult), named(T('Any type, any resolver'), this.dnsQueryResult),
+            named(T('Resolver comparison'), this.dnsCompareResult), named(T('Delegation trace'), this.dnsTraceResult),
+            named(T('Zone transfer'), this.axfrResult),
+          ],
+          whois: () => [named(T('Whois'), this.whoisResult)],
+          ping: () => [
+            named(T('Ping'), this.pingResult), named(T('Traceroute'), this.traceResult),
+            named(T('TCP ping'), this.tcpPingResult), named('MTU', this.mtuResult),
+          ],
+          ports: () => [named(T('Ports'), this.portResult)],
+          tls: () => [
+            named(T('Certificate'), this.tlsResult), named(T('TLS versions'), this.tlsVersionsResult),
+            named('HTTP', this.httpResult),
+          ],
+          subnet: () => [
+            named(T('Subnet'), this.subnetResult), named(T('Split'), this.splitResult),
+            named(T('Aggregate'), this.aggregateResult), named(T('MAC address'), this.macResult),
+          ],
+          bench: () => [
+            named(T('Internet speed'), this.speedResult), named(T('LAN throughput'), this.iperfResult),
+            named(T('DNS resolvers'), this.dnsBench), named(T('Where the time goes'), this.timingResult),
+            named(T('Path quality'), this.pathResult),
+          ],
+          mail: () => [
+            named(T('Domain policy'), this.mailAudit), named(T('Server test'), this.mailProbeResult),
+            named(T('Open relay'), this.relayResult), named(T('Blocklists'), this.blResult),
+            named(T('Test message'), this.sendResult), named(T('Mailbox'), this.mailboxResult),
+          ],
+          files: () => [named(T('Listing'), this.filesData)],
+          ssh: () => [
+            named(T('SSH'), this.sshResult), named('Telnet', this.telnetResult),
+            named(T('Command'), this.sshRunResult),
+            named(T('Console'), this.term.lines.length ? this.term.lines.map((l) => l.text).join('\n') : null),
+          ],
+          ntp: () => [named(T('Clock check'), this.ntpResult)],
+          nmap: () => [named('nmap', this.nmapResult)],
+        };
+        const found = (parts[this.tab] ? parts[this.tab]() : []).filter(Boolean);
+        if (!found.length) return null;
+
+        const asText = (value) => {
+          if (typeof value === 'string') return value;
+          // Whois is a conversation with several servers; its own words are
+          // worth more than the shape NetBase parsed them into.
+          if (value && Array.isArray(value.chain) && value.chain.length) {
+            return value.chain.map((step) => '— ' + step.server + ' —\n' + (step.response || '')).join('\n\n');
+          }
+          if (value && typeof value.output === 'string' && value.output.trim()) {
+            const rest = { ...value };
+            delete rest.output;
+            return value.output.trimEnd() + '\n\n' + JSON.stringify(rest, null, 2);
+          }
+          return JSON.stringify(value, null, 2);
+        };
+        const when = new Date();
+        const pad = (n) => String(n).padStart(2, '0');
+        const stampText = when.getFullYear() + '-' + pad(when.getMonth() + 1) + '-' + pad(when.getDate())
+          + ' ' + pad(when.getHours()) + ':' + pad(when.getMinutes());
+        const head = 'NetBase — ' + T(this.currentTab.label) + '  (' + stampText + ')';
+        const body = found.map((p) => '## ' + p.label + '\n' + asText(p.value)).join('\n\n');
+        const file = 'netbase-' + this.tab + '-' + when.getFullYear() + pad(when.getMonth() + 1) + pad(when.getDate())
+          + '-' + pad(when.getHours()) + pad(when.getMinutes()) + '.txt';
+        return { name: file, text: head + '\n\n' + body + '\n' };
+      },
+      devicesAsText() {
+        const rows = this.shownDevices.map((d) => [
+          d.online ? '●' : '○', d.ip, d.name || '', d.mac || '', this.vendorText(d) || '',
+          this.t(TYPE_LABEL[d.type] || d.type || ''), (d.ports || []).join(' '),
+        ].join('\t'));
+        return ['status\tip\tname\tmac\tvendor\ttype\tports', ...rows].join('\n');
+      },
+      async copyResult() {
+        const bundle = this.resultBundle();
+        if (!bundle) return;
+        try {
+          await navigator.clipboard.writeText(bundle.text);
+          this.note(T('Copied'));
+        } catch (e) {
+          // Clipboard permission is not always given; a selection always is.
+          const box = document.createElement('textarea');
+          box.value = bundle.text;
+          document.body.appendChild(box);
+          box.select();
+          document.execCommand('copy');
+          box.remove();
+          this.note(T('Copied'));
+        }
+      },
+      downloadResult() {
+        const bundle = this.resultBundle();
+        if (!bundle) return;
+        const blob = new Blob([bundle.text], { type: 'text/plain;charset=utf-8' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = bundle.name;
+        a.click();
+        setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+      },
+      async saveResultToFiles() {
+        const bundle = this.resultBundle();
+        if (!bundle) return;
+        try {
+          const saved = await api('save', {
+            method: 'POST',
+            body: JSON.stringify({ name: bundle.name, content: bundle.text, folder: 'NetBase' }),
+          });
+          this.note(T('Saved to {path}', { path: saved.path }));
+        } catch (e) { this.fail(e); }
       },
       exportCsv() {
         const head = ['name', 'ip', 'mac', 'vendor', 'type', 'ports', 'workgroup', 'tags', 'firstSeen', 'lastSeen', 'online'];

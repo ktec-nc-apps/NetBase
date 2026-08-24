@@ -721,7 +721,16 @@
         "Older interfaces built out of frames": "フレーム構成の古い管理画面",
         "Its password, remembered for you after the first time": "機器のパスワード（一度入れれば次回から自動）",
         "A console that stays connected, which some switches offer": "つなぎっぱなしのコンソール（一部のスイッチにある機能）",
-        "Anything needing Java or ActiveX in the browser": "ブラウザで Java や ActiveX を使う機能"
+        "Anything needing Java or ActiveX in the browser": "ブラウザで Java や ActiveX を使う機能",
+        "Copy what this tool found": "この結果をコピー",
+        "Download what this tool found": "この結果をダウンロード",
+        "Save it to your Nextcloud files": "Nextcloudのファイルに保存",
+        "Copied": "コピーしました",
+        "Saved to {path}": "{path} に保存しました",
+        "TLS versions": "TLSバージョン",
+        "Aggregate": "集約",
+        "Console": "コンソール",
+        "Listing": "一覧"
     },
     "pluralForm": "nplurals=1; plural=0;"
 }

@@ -722,7 +722,16 @@ OC.L10N.register(
         "Older interfaces built out of frames": "Старі інтерфейси з фреймів",
         "Its password, remembered for you after the first time": "Його пароль — запам’ятовується після першого разу",
         "A console that stays connected, which some switches offer": "Консоль із постійним з’єднанням, яку мають деякі комутатори",
-        "Anything needing Java or ActiveX in the browser": "Усе, що потребує Java чи ActiveX у браузері"
+        "Anything needing Java or ActiveX in the browser": "Усе, що потребує Java чи ActiveX у браузері",
+        "Copy what this tool found": "Копіювати знайдене",
+        "Download what this tool found": "Завантажити знайдене",
+        "Save it to your Nextcloud files": "Зберегти у ваші файли Nextcloud",
+        "Copied": "Скопійовано",
+        "Saved to {path}": "Збережено у {path}",
+        "TLS versions": "Версії TLS",
+        "Aggregate": "Об’єднання",
+        "Console": "Консоль",
+        "Listing": "Список"
     },
     "nplurals=4; plural=(n % 1 == 0 && n % 10 == 1 && n % 100 != 11 ? 0 : n % 1 == 0 && n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14) ? 1 : n % 1 == 0 && (n % 10 ==0 || (n % 10 >=5 && n % 10 <=9) || (n % 100 >=11 && n % 100 <=14 )) ? 2: 3);"
 );

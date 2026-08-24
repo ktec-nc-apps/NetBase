@@ -721,7 +721,16 @@
         "Older interfaces built out of frames": "Older interfaces built out of frames",
         "Its password, remembered for you after the first time": "Its password, remembered for you after the first time",
         "A console that stays connected, which some switches offer": "A console that stays connected, which some switches offer",
-        "Anything needing Java or ActiveX in the browser": "Anything needing Java or ActiveX in the browser"
+        "Anything needing Java or ActiveX in the browser": "Anything needing Java or ActiveX in the browser",
+        "Copy what this tool found": "Copy what this tool found",
+        "Download what this tool found": "Download what this tool found",
+        "Save it to your Nextcloud files": "Save it to your Nextcloud files",
+        "Copied": "Copied",
+        "Saved to {path}": "Saved to {path}",
+        "TLS versions": "TLS versions",
+        "Aggregate": "Aggregate",
+        "Console": "Console",
+        "Listing": "Listing"
     },
     "pluralForm": "nplurals=2; plural=(n != 1);"
 }

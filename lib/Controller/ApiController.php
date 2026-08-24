@@ -487,6 +487,28 @@ class ApiController extends Controller {
 		return $this->guard(fn () => ['ip' => $ip, 'results' => $this->mail->blocklists($ip)], 'mail');
 	}
 
+	// ---------------------------------------------------------------- keeping results
+
+	/**
+	 * Put what a tool found into the person's own Nextcloud files.
+	 */
+	#[NoAdminRequired]
+	public function saveResult(string $name, string $content, string $folder = 'NetBase'): JSONResponse {
+		$uid = $this->permissions->uid();
+		if ($uid === null) {
+			return new JSONResponse(['error' => 'Not signed in'], Http::STATUS_UNAUTHORIZED);
+		}
+		try {
+			$saved = $this->transfer->saveToFiles($uid, $folder, $name, $content);
+		} catch (\InvalidArgumentException $e) {
+			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_BAD_REQUEST);
+		} catch (\Throwable $e) {
+			$this->logger->error('NetBase: ' . $e->getMessage(), ['exception' => $e, 'app' => 'netbase']);
+			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_INTERNAL_SERVER_ERROR);
+		}
+		return new JSONResponse($saved);
+	}
+
 	// ---------------------------------------------------------------- device windows
 
 	/**

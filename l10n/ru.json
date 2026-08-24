@@ -721,7 +721,16 @@
         "Older interfaces built out of frames": "Старые интерфейсы из фреймов",
         "Its password, remembered for you after the first time": "Его пароль — запоминается после первого раза",
         "A console that stays connected, which some switches offer": "Консоль с постоянным соединением, какая бывает у некоторых коммутаторов",
-        "Anything needing Java or ActiveX in the browser": "Всё, что требует Java или ActiveX в браузере"
+        "Anything needing Java or ActiveX in the browser": "Всё, что требует Java или ActiveX в браузере",
+        "Copy what this tool found": "Скопировать найденное",
+        "Download what this tool found": "Скачать найденное",
+        "Save it to your Nextcloud files": "Сохранить в свои файлы Nextcloud",
+        "Copied": "Скопировано",
+        "Saved to {path}": "Сохранено в {path}",
+        "TLS versions": "Версии TLS",
+        "Aggregate": "Объединение",
+        "Console": "Консоль",
+        "Listing": "Список"
     },
     "pluralForm": "nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);"
 }

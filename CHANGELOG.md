@@ -31,6 +31,16 @@ All notable changes to NetBase are documented here.
 - The device list now defaults to administrators. It is not a lookup like whois or ping but the inventory of a private network — what is on it, what it answers on, what it is called — and that belongs to whoever runs the network. Every instance can still hand it to a group, or to everyone, in the app's admin settings.
 - A web port is shown as a link only to an account that may open a device window; to anyone else it is plain text rather than a link that can only be refused.
 
+## 0.3.0 — 2026-08-24
+
+### Added
+- **Keeping what you found**: every tool's results can be copied to the clipboard, downloaded as a text file, or written straight into a **NetBase** folder in your own Nextcloud files — named by tool and time, never over the top of an earlier one.
+- The tools in the sidebar can be dragged into whatever order you work in; Alt with the arrow keys does the same without a mouse.
+
+### Changed
+- The README and the store description are organised around what each part is built on and what it is for, rather than a list of features.
+- The settings list gets its own dark icon, so NetBase looks like every other entry there rather than a white gap.
+
 ## 0.1.0 — 2026-08-22
 
 First working version.

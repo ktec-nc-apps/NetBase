@@ -721,7 +721,16 @@
         "Older interfaces built out of frames": "Starší rozhraní složená z rámů",
         "Its password, remembered for you after the first time": "Jeho heslo, zapamatované po prvním zadání",
         "A console that stays connected, which some switches offer": "Konzole, která zůstává připojená, jakou nabízejí některé přepínače",
-        "Anything needing Java or ActiveX in the browser": "Cokoli, co v prohlížeči vyžaduje Javu nebo ActiveX"
+        "Anything needing Java or ActiveX in the browser": "Cokoli, co v prohlížeči vyžaduje Javu nebo ActiveX",
+        "Copy what this tool found": "Zkopírovat, co nástroj našel",
+        "Download what this tool found": "Stáhnout, co nástroj našel",
+        "Save it to your Nextcloud files": "Uložit do vašich souborů v Nextcloudu",
+        "Copied": "Zkopírováno",
+        "Saved to {path}": "Uloženo do {path}",
+        "TLS versions": "Verze TLS",
+        "Aggregate": "Sloučení",
+        "Console": "Konzole",
+        "Listing": "Výpis"
     },
     "pluralForm": "nplurals=4; plural=(n == 1 && n % 1 == 0) ? 0 : (n >= 2 && n <= 4 && n % 1 == 0) ? 1: (n % 1 != 0 ) ? 2 : 3;"
 }

@@ -721,7 +721,16 @@
         "Older interfaces built out of frames": "الواجهات القديمة المبنية من إطارات",
         "Its password, remembered for you after the first time": "كلمة مروره، تُحفظ بعد أول مرة",
         "A console that stays connected, which some switches offer": "طرفية تبقى متصلة، كما توفّرها بعض المبدّلات",
-        "Anything needing Java or ActiveX in the browser": "كل ما يحتاج إلى جافا أو أكتف‌إكس في المتصفح"
+        "Anything needing Java or ActiveX in the browser": "كل ما يحتاج إلى جافا أو أكتف‌إكس في المتصفح",
+        "Copy what this tool found": "انسخ ما وجدته هذه الأداة",
+        "Download what this tool found": "نزّل ما وجدته هذه الأداة",
+        "Save it to your Nextcloud files": "احفظه في ملفاتك على نكستكلاود",
+        "Copied": "نُسخ",
+        "Saved to {path}": "حُفظ في {path}",
+        "TLS versions": "إصدارات TLS",
+        "Aggregate": "التجميع",
+        "Console": "الطرفية",
+        "Listing": "القائمة"
     },
     "pluralForm": "nplurals=6; plural=(n==0 ? 0 : n==1 ? 1 : n==2 ? 2 : n%100>=3 && n%100<=10 ? 3 : n%100>=11 && n%100<=99 ? 4 : 5);"
 }

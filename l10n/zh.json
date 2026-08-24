@@ -721,7 +721,16 @@
         "Older interfaces built out of frames": "由框架构成的旧式管理界面",
         "Its password, remembered for you after the first time": "设备密码，首次输入后自动记住",
         "A console that stays connected, which some switches offer": "保持连接的控制台（部分交换机提供）",
-        "Anything needing Java or ActiveX in the browser": "需要浏览器 Java 或 ActiveX 的功能"
+        "Anything needing Java or ActiveX in the browser": "需要浏览器 Java 或 ActiveX 的功能",
+        "Copy what this tool found": "复制此工具的结果",
+        "Download what this tool found": "下载此工具的结果",
+        "Save it to your Nextcloud files": "保存到你的 Nextcloud 文件",
+        "Copied": "已复制",
+        "Saved to {path}": "已保存到 {path}",
+        "TLS versions": "TLS 版本",
+        "Aggregate": "聚合",
+        "Console": "控制台",
+        "Listing": "列表"
     },
     "pluralForm": "nplurals=1; plural=0;"
 }

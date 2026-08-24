@@ -2,30 +2,105 @@
 
 Network toolbox for Nextcloud — fast LAN device discovery with vendor lookup, plus DNS, whois, ping, port, TLS and nmap tools.
 
-NetBase turns your Nextcloud into a network console. It finds every device on your LAN in seconds and tells you what each one is, then keeps the everyday lookup tools on the same screen.
+NetBase turns your Nextcloud into a network console. It finds every device on your LAN, tells you what each one is, opens each one's own settings page from inside Nextcloud, and keeps the everyday lookup tools on the same screen.
 
-Discovery needs no root, no agent and no extra packages. Nextcloud runs unprivileged, so raw sockets — and therefore ARP scanning in PHP — are not available. NetBase makes the kernel do the work instead: sending a datagram to an on-link address forces the kernel to resolve it, and the result lands in the neighbour table, which is world readable. Names then come from the devices themselves over NetBIOS, mDNS, WS-Discovery and SSDP, all plain UDP.
+## What each part is built on, and what it is for
 
-## Features
+### Device windows
 
-- **Fast LAN sweep** — name, IPv4, MAC, vendor, device type and open ports, with live progress. A /24 takes about twenty seconds; a /16 finishes in well under a minute.
-- **Offline vendor database** — the bundled IEEE MA-L / MA-M / MA-S registries cover more than 53,000 prefixes, so no MAC address is ever sent anywhere. Randomised (privacy) addresses are labelled as such rather than reported as unknown.
-- **Names from the devices themselves** — NetBIOS node status, mDNS reverse lookup, WS-Discovery, SSDP and reverse DNS. Devices that stay silent during the sweep are asked again, more slowly, once the network is quiet.
-- **Device inventory** — rename, classify, tag and annotate devices; first-seen and last-seen are tracked, and the list can be exported as CSV.
-- **Open ports are links** — a web port opens the device's own page **in a window inside NetBase, fetched through the server**, so it works from outside that network, where a link to 192.168.x.y never would; several windows can be open at once, and each can be moved, resized and reloaded; an FTP, SSH or mail port opens the matching NetBase tool with the address already filled in. Where a headless Chromium is installed, **Show the page** renders that page on the server and displays it as a picture, so a device only the server can reach is still visible.
-- **DNS toolkit** — any record type (including TLSA, DS, DNSKEY, SSHFP, CAA and SVCB) asked of any resolver, with the reply's flags; a side-by-side resolver comparison for propagation; a delegation trace from the root servers; and a zone-transfer test that tells you whether your name servers hand the whole zone to strangers.
-- **Whois** for domains and IP addresses, following IANA referrals to the registry and then the registrar. No `whois` binary required.
-- **Ping, traceroute, TCP port check** with banner grab and port ranges, plus a TCP ping for hosts that drop ICMP, path-MTU discovery, and Wake-on-LAN.
-- **TLS and HTTP inspector** — certificate subject, issuer, expiry, SANs and chain; which TLS versions the server still accepts; the redirect chain and a security-header assessment.
-- **Subnet calculator** for IPv4 and IPv6, splitting a network into smaller ones and combining scattered addresses into the fewest CIDR blocks.
-- **This server's own network** — interfaces, addresses, routes, resolvers and listening sockets, shown inside **System information** (administrators).
-- **nmap front end** — presets from host discovery to service detection, with results parsed from nmap's XML output. Available when nmap is installed.
-- **Mail server testing** — the DNS side of a domain (MX, SPF, DKIM, DMARC, MTA-STS, DANE, blocklists) and the servers themselves (SMTP, IMAP, POP3), ending in a plain-language list of what to fix.
-- **FTP and SFTP** — browse a remote server and move files between it and your own Nextcloud folders, with the connection details saved and encrypted.
-- **SSH** — a credential-free probe (host key fingerprint, offered algorithms, sign-in methods) and, on a saved connection, running a command with a password or a private key.
-- **Benchmarks** — see below.
-- **Light or dark, per user** — NetBase follows the Nextcloud theme by default, and **Theme** at the bottom of the sidebar pins it to light or dark for that account alone. Nothing else in Nextcloud changes.
-- **Twenty languages** — English, Japanese, German, Spanish, French, Italian, Portuguese, Russian, Chinese, Korean, Arabic, Hindi, Turkish, Indonesian, Vietnamese, Thai, Persian, Polish, Ukrainian and Czech, including the findings the server writes. NetBase can also be set to a different language from the rest of Nextcloud, per account.
+**How it works.** The server fetches the device's own page and rewrites every address inside it — links, stylesheets, scripts, forms, redirects, meta refreshes, and the ones the page's scripts build while it runs — so the whole interface arrives on Nextcloud's address instead of the device's. Each window carries a signed ticket naming the address, the person and an expiry, and the device's session is held on the server, so signing in survives from page to page. Only addresses on this server's own networks, or hosts a scan has actually seen, can be opened; the page is pinned by policy to the proxy's own path, and sandboxed against navigating anything but itself.
+
+**What it is for.** Changing a branch router's settings from somewhere else entirely. Reading a printer's toner levels and its tray configuration. Sending new firmware or restoring a saved configuration. Supporting a customer's equipment without a VPN, a jump host or a site visit. Several windows can be open at once, moved and resized, each remembering where it has been.
+
+### Device discovery and inventory
+
+**How it works.** Nextcloud runs unprivileged, so raw sockets — and therefore ARP scanning in PHP — are not available. NetBase makes the kernel do the work instead: sending a datagram to an on-link address forces the kernel to resolve it, and the result lands in the neighbour table, which is world readable. Names come from the devices themselves over NetBIOS, mDNS, WS-Discovery and SSDP, all plain UDP, and vendors from the bundled IEEE registries — more than 53,000 prefixes, so no MAC address is ever sent anywhere.
+
+**What it is for.** Building the asset list a site never quite had. Finding the device nobody remembers installing. Seeing which addresses are free before assigning one. Exporting the lot as CSV for an inventory that lives outside Nextcloud.
+
+### DNS
+
+**How it works.** Queries are built as raw DNS packets, so record types PHP's own resolver cannot return — TLSA, DS, DNSKEY, SSHFP, CAA, SVCB — come back with the reply's flags intact. The same question can be put to several resolvers at once, traced down from the root servers, or asked as a zone transfer.
+
+**What it is for.** Watching a migration take effect. Explaining why one office resolves a name differently from another. Checking that your name servers do not hand the whole zone to strangers.
+
+### Whois
+
+**How it works.** IANA is asked first, then the registry it names, then the registrar it names — the referral chain followed to the end, over plain sockets. No `whois` binary is required.
+
+**What it is for.** Expiry dates before they surprise you. Who to contact about an address that is causing trouble. Which registrar a domain actually sits at, before a transfer.
+
+### Reachability: ping, traceroute, ports, MTU
+
+**How it works.** `ping`, `traceroute` and `mtr` are the system's own; the port check opens a TCP connection and reads the banner; the TCP ping times connections for hosts that ignore ICMP; path MTU is found by sending probes that must not be fragmented.
+
+**What it is for.** Deciding whether the problem is the device, the path or the firewall. Proving a device is up when it refuses to answer ping. Explaining a VPN that works until a file is large.
+
+### TLS and HTTP
+
+**How it works.** The certificate, its chain and its expiry are read from the negotiated stream; each TLS version is offered separately to see which are still accepted; the redirect chain and the response headers are fetched and assessed.
+
+**What it is for.** Certificate expiry before the browser shouts about it. Old TLS versions that fail an audit. Finding out where a redirect really ends.
+
+### Subnet and MAC
+
+**How it works.** Address arithmetic for IPv4 and IPv6, including splitting a network into smaller ones and reducing a scattered list to the fewest CIDR blocks. MAC lookups use the same bundled registries as discovery.
+
+**What it is for.** Planning a re-addressing. Writing a firewall rule that covers exactly what it should. Identifying equipment from a MAC address in a log.
+
+### Benchmarks
+
+**How it works.** Interface counters are read from the kernel and differentiated in the browser; the LAN test drives `iperf3`; the internet test measures the path to a public endpoint; resolvers are timed side by side; one HTTP request is broken into DNS, connect, TLS, waiting and transfer.
+
+**What it is for.** Turning "the network is slow" into a number. Telling a slow switch port from a slow internet connection. Before-and-after evidence when equipment or a provider changes.
+
+### Mail
+
+**How it works.** SMTP, IMAP and POP3 are spoken directly over stream sockets, so `ext-imap` — which no longer ships with current PHP — is neither needed nor used. The DNS side reads MX, SPF, DKIM, DMARC, MTA-STS (fetching the policy file), TLS-RPT, BIMI and DANE, and checks each MX address against seven public blocklists.
+
+**What it is for.** Working out why mail is not arriving. Checking a migration before and after. Proving the anti-spoofing records are right, and that the server is not an open relay.
+
+### FTP and SFTP
+
+**How it works.** SFTP uses the phpseclib copy Nextcloud already ships for its external storages; FTP uses PHP's own extension, with or without TLS. Transfers stream through a file handle in both directions, so a large file never lands in PHP's memory. Connection details are encrypted with Nextcloud's `ICrypto`, and a connection can also be typed in on the spot.
+
+**What it is for.** Pushing a configuration file to a device or a server. Collecting logs. Moving files between a remote server and your own Nextcloud folders without a laptop in the middle.
+
+### SSH and Telnet
+
+**How it works.** The probe reads what a server offers before anything is encrypted — its identification string, its algorithm list, its host key fingerprint — so it needs no credentials at all. The signed-in half uses phpseclib with a password or a private key. PHP cannot hold a session open between requests, so the console reconnects for each line and carries the working directory across.
+
+**What it is for.** Checking a branch server's disk, failed services and pending updates without opening a terminal. Auditing which SSH algorithms are still offered. Seeing what a Telnet port exposes — and being told plainly what leaving it open means.
+
+### Clock check
+
+**How it works.** An NTP server is asked for the time over UDP and the offset is reported.
+
+**What it is for.** Ruling the clock in or out. A drifted clock is behind more certificate and sign-in failures than anything else.
+
+### nmap
+
+**How it works.** A front end over the installed `nmap`, with results parsed from its XML output. Options are restricted to an allow-list that refuses anything writing files, reading target lists or loading scripts.
+
+**What it is for.** Going deeper than NetBase's own port check when something warrants it — service versions, operating-system guesses, a UDP sweep.
+
+### System information
+
+**How it works.** This server's interfaces, addresses, routes, resolvers and listening sockets, alongside a list of which tools work right now and which would start working if a package were installed — with the install command for the package manager this machine actually has.
+
+**What it is for.** Knowing what you are standing on. Getting a dormant capability working without hunting through documentation.
+
+### Keeping what you found
+
+**How it works.** Every tool's findings can be copied to the clipboard, downloaded as a text file, or written straight into a **NetBase** folder in your own Nextcloud files — named by tool and timestamp, and never over the top of an earlier one. The device list also exports as CSV.
+
+**What it is for.** Attaching the evidence to a ticket. Keeping a before-and-after pair around a change. Handing a colleague the exact output rather than a description of it.
+
+### Access, appearance and language
+
+**How it works.** NetBase is an administrator's app, and everything that touches the local network — the device windows, the sweep, port checks, nmap, Wake-on-LAN, mail tests, FTP, SFTP, SSH, the device list itself — defaults to administrators. But every tool has its own level, set in **Administration settings → NetBase**: administrators only, administrators plus named groups, or every signed-in account. Any of them can be opened up, including the ones that ship closed. Where an account is allowed nothing at all, NetBase leaves itself out of that account's app menu rather than advertising a door that will not open. The theme and the language are per account, and the sidebar can be dragged into whatever order suits the work.
+
+**What it is for.** Letting the helpdesk run a whois or a ping without giving them the network. Opening the device list to a named group during a migration, and closing it again afterwards.
 
 ## Benchmarks
 
@@ -139,30 +214,105 @@ AGPL-3.0-or-later. The bundled vendor database is derived from the public IEEE r
 
 # NetBase（日本語）
 
-Nextcloud 用のネットワーク総合ツールです。LAN上の機器を高速に検出してベンダーまで判別し、DNS・whois・ping・ポート・TLS・nmap といった日常的な調査ツールを同じ画面に揃えます。
+Nextcloud 用のネットワーク総合ツールです。LAN上の機器を検出して種別まで判別し、各機器の設定画面を Nextcloud の中から開き、日常的な調査ツールを同じ画面に揃えます。
 
-検出に root 権限・エージェント・追加パッケージは必要ありません。Nextcloud は非特権で動作するため raw ソケット（つまり PHP からの ARP スキャン）は使えません。そこで NetBase はカーネルに仕事をさせます。同一リンク上のアドレスへデータグラムを送るとカーネルは必ずアドレス解決を行い、その結果が誰でも読める近隣テーブルに残ります。名前は NetBIOS・mDNS・WS-Discovery・SSDP という、いずれも素の UDP で機器自身に尋ねて取得します。
+## 各機能の仕組みと用途
 
-## 主な機能
+### 機器ウィンドウ（機器の設定画面）
 
-- **LAN高速スキャン** ― 機器名・IPv4・MAC・ベンダー・機器種別・開放ポートを進捗表示付きで一覧します。/24 で約20秒、/16 でも1分を大きく下回ります。
-- **オフラインのベンダーデータベース** ― IEEE の MA-L / MA-M / MA-S 登録簿（53,000件超）を同梱しているため、MACアドレスを外部へ送信することは一切ありません。ランダム化（プライバシー）MACは「不明」ではなく、その旨を明示します。
-- **機器自身が名乗る名前** ― NetBIOS ノードステータス、mDNS逆引き、WS-Discovery、SSDP、逆引きDNS。掃引中に応答しなかった機器へは、通信が静まってからゆっくり再度問い合わせます。
-- **機器台帳** ― 名称変更・種別変更・タグ・メモに対応し、初回検出と最終検出を記録します。CSV書き出しも可能です。
-- **開放ポートはリンク** ― Webポートは機器の管理画面を新しいタブで開き、FTP・SSH・メールのポートは対応するNetBaseのツールを（アドレス入力済みで）開きます。ヘッドレスChromiumを導入していれば、**「ページを表示」**でそのページをサーバー側で描画し、画像として表示できます。サーバーからしか届かない機器の画面も確認できます。
-- **DNSツール** ― 任意のレコード種別（TLSA・DS・DNSKEY・SSHFP・CAA・SVCB を含む）を任意のDNSサーバーへ問い合わせ、応答フラグまで表示。主要な公開DNSとの一括比較（浸透確認）、ルートからの委任追跡、ゾーン転送の可否検査も行えます。
-- **whois** ― ドメインとIPアドレス。IANA から各レジストリ、さらにレジストラへと委譲先を自動で追跡します。`whois` コマンドは不要です。
-- **ping・traceroute・TCPポート確認**（バナー取得・ポート範囲指定）に加え、ICMPが通らない相手向けの **TCP ping**、**経路MTUの測定**、**Wake-on-LAN**。
-- **TLS・HTTP検査** ― 証明書のサブジェクト・発行者・有効期限・SAN・チェーンに加え、受け付けているTLSバージョンの一覧、リダイレクト連鎖とセキュリティヘッダーの評価。
-- **サブネット計算**（IPv4／IPv6）。ネットワークの分割、散らばったアドレスの最小CIDRへの集約にも対応します。
-- **このサーバー自身のネットワーク情報** ― インターフェース・アドレス・経路・DNSサーバー・待受ソケット。**システム情報**の中に表示します（管理者向け）。
-- **nmap のフロントエンド** ― ホスト探索からサービス判定までのプリセットを用意し、結果は nmap の XML 出力を解析して表示します。nmap 導入時に利用できます。
-- **メールサーバー検査** ― ドメイン側の設定（MX・SPF・DKIM・DMARC・MTA-STS・DANE・ブロックリスト）とサーバー本体（SMTP・IMAP・POP3）を調べ、「何を直すべきか」を平易な文章で提示します。
-- **FTP・SFTP** ― リモートサーバーを閲覧し、Nextcloud内のフォルダーとの間でファイルを受け渡します。接続情報は暗号化して保存できます。
-- **SSH** ― 資格情報なしの調査（ホスト鍵のフィンガープリント・提示アルゴリズム・認証方式）に加え、保存済み接続先に対しパスワードまたは秘密鍵でサインインしてコマンドを実行できます。
-- **ベンチマーク** ― 下記をご覧ください。
-- **ライト／ダークの個別切り替え** ― 既定では Nextcloud のテーマに追従します。サイドバー下部の「表示テーマ」から、利用者ごとに常時ライト／常時ダークへ固定できます。Nextcloud 全体の設定には影響しません。
-- **20言語に対応** ― 英語・日本語・ドイツ語・スペイン語・フランス語・イタリア語・ポルトガル語・ロシア語・中国語・韓国語・アラビア語・ヒンディー語・トルコ語・インドネシア語・ベトナム語・タイ語・ペルシャ語・ポーランド語・ウクライナ語・チェコ語。サーバー側で生成する診断結果も翻訳されます。NetBaseだけをNextcloud本体と別の言語に設定することもできます（利用者ごと）。
+**仕組み** ― サーバーが機器のページを取得し、その中のアドレス（リンク、スタイルシート、スクリプト、フォーム、リダイレクト、meta refresh、ページのスクリプトが実行時に組み立てるものまで）をすべて書き換えて、機器のアドレスではなく Nextcloud のアドレスとして返します。ウィンドウごとに、対象アドレス・利用者・有効期限を記した署名付きの許可証を発行し、機器のログイン状態はサーバー側で保持するため、ページを移動してもログインが切れません。開けるのはこのサーバーが属するネットワーク上のアドレスと、検出済みの機器だけです。表示中のページは通信先がプロキシ経路に限定され、自分自身以外へは遷移できません。
+
+**用途** ― 外出先から拠点ルーターの設定変更。プリンタのトナー残量やトレイ構成の確認。ファームウェア更新や設定ファイルの復元。VPN も踏み台も訪問もなしでの顧客機器の遠隔サポート。複数のウィンドウを同時に開いて並べられ、それぞれが表示履歴を覚えています。
+
+### 機器の検出と台帳
+
+**仕組み** ― Nextcloud は非特権で動作するため raw ソケット（つまり PHP からの ARP スキャン）は使えません。そこでカーネルに仕事をさせます。同一リンク上のアドレスへデータグラムを送るとカーネルは必ずアドレス解決を行い、その結果が誰でも読める近隣テーブルに残ります。名前は NetBIOS・mDNS・WS-Discovery・SSDP という素の UDP で機器自身に尋ね、ベンダーは同梱の IEEE 登録簿（53,000件超）で判定します。MACアドレスを外部へ送ることはありません。
+
+**用途** ― 作りかけのまま放置されがちな機器台帳の整備。誰も覚えていない機器の発見。IPアドレス払い出し前の空き確認。CSV 書き出しによる社内資産管理との連携。
+
+### DNS 調査
+
+**仕組み** ― 問い合わせを生の DNS パケットとして組み立てるため、PHP 標準の関数では取得できない TLSA・DS・DNSKEY・SSHFP・CAA・SVCB も応答フラグ付きで取得できます。同じ問い合わせを複数のDNSサーバーへ同時に投げる比較、ルートからの委任追跡、ゾーン転送の要求も行えます。
+
+**用途** ― 移転作業の浸透確認。拠点ごとに名前の解決結果が違う理由の特定。自社の権威サーバーがゾーン全体を第三者に渡していないかの点検。
+
+### whois
+
+**仕組み** ― まず IANA に尋ね、示されたレジストリ、さらにレジストラへと、委譲の連鎖を最後まで自動で追跡します。素のソケットで行うため `whois` コマンドは不要です。
+
+**用途** ― ドメイン有効期限の事前把握。問題のあるアドレスの連絡先確認。移管前に、そのドメインが実際にどの登録業者にあるかの確認。
+
+### 疎通確認（ping・traceroute・ポート・MTU）
+
+**仕組み** ― ping・traceroute・mtr は OS のコマンドを利用。ポート確認は実際に TCP 接続してバナーを読み取り、TCP ping は ICMP を返さない相手向けに接続時間を計測、経路MTUは分割禁止の試験パケットで求めます。
+
+**用途** ― 原因が機器か経路かファイアウォールかの切り分け。ping に応答しない機器が「生きている」ことの証明。大きなファイルのときだけ失敗する VPN の説明。
+
+### TLS・HTTP 検査
+
+**仕組み** ― 確立した通信から証明書・チェーン・有効期限を読み取り、TLS のバージョンを一つずつ提示して受け付けるものを判定、リダイレクト連鎖と応答ヘッダーを取得して評価します。
+
+**用途** ― ブラウザに警告される前の証明書更新。監査で指摘される古い TLS の洗い出し。リダイレクトの最終到達先の確認。
+
+### IP計算・MACベンダー照会
+
+**仕組み** ― IPv4／IPv6 のアドレス計算。ネットワークの分割、散らばったアドレスの最小 CIDR への集約に対応します。MAC 照会は検出機能と同じ同梱データベースを使います。
+
+**用途** ― アドレス再設計。過不足のないファイアウォール規則の作成。ログに残った MAC からの機器特定。
+
+### 速度・品質のベンチマーク
+
+**仕組み** ― インターフェース統計はカーネルの値をブラウザ側で差分。LAN は iperf3、回線速度は公開エンドポイントとの実測、DNS は複数サーバーの応答時間比較、HTTP は1回の要求を DNS・接続・TLS・待ち時間・転送に分解します。
+
+**用途** ― 「ネットワークが遅い」を数値にする。遅いのがスイッチのポートか回線かの判別。機器交換や回線変更の前後比較。
+
+### メールサーバー診断
+
+**仕組み** ― SMTP・IMAP・POP3 を生のソケットで直接会話するため、現行 PHP に同梱されなくなった `ext-imap` を必要としません。DNS 側は MX・SPF・DKIM・DMARC・MTA-STS（ポリシーファイルの取得まで）・TLS-RPT・BIMI・DANE を読み、各 MX アドレスを7つの公開ブロックリストで照合します。
+
+**用途** ― メールが届かない原因の切り分け。サーバー移行の前後確認。なりすまし対策レコードの妥当性と、第三者中継になっていないことの確認。
+
+### FTP・SFTP
+
+**仕組み** ― SFTP は Nextcloud が外部ストレージ用に同梱している phpseclib、FTP は PHP 標準の拡張（TLS の有無どちらも）。転送は双方向ともファイルハンドルで流すため、大きなファイルが PHP のメモリに載ることはありません。接続情報は Nextcloud の `ICrypto` で暗号化して保存し、その場入力での接続もできます。
+
+**用途** ― 機器やサーバーへの設定ファイル配布。ログの回収。手元の PC を経由せずに、リモートサーバーと Nextcloud のフォルダー間でファイルを受け渡す。
+
+### SSH・Telnet
+
+**仕組み** ― 調査側は暗号化前にサーバーが名乗る識別文字列とアルゴリズム一覧、ホスト鍵のフィンガープリントを読むため、資格情報を一切必要としません。ログイン側は phpseclib でパスワードまたは秘密鍵を使います。PHP は要求をまたいで接続を保持できないため、コンソールは1行ごとに再接続し、作業ディレクトリを引き継ぎます。
+
+**用途** ― 端末を開かずに拠点サーバーの空き容量・停止サービス・保留更新を確認する。提示アルゴリズムの棚卸し。Telnet ポートが何を晒しているかの確認と、開けたままにする意味の提示。
+
+### 時刻確認
+
+**仕組み** ― NTP サーバーへ UDP で時刻を問い合わせ、ずれを表示します。
+
+**用途** ― 時刻ずれの切り分け。証明書エラーやログイン失敗の原因として、時刻ずれは最も多い部類です。
+
+### nmap
+
+**仕組み** ― 導入済みの `nmap` のフロントエンドで、結果は XML 出力を解析して表示します。オプションは許可リスト方式で、ファイル書き込み・対象リスト読み込み・スクリプト実行を伴うものは拒否します。
+
+**用途** ― NetBase 自身のポート確認より深く踏み込みたいとき（サービスのバージョン判定、OS 推定、UDP 掃引）。
+
+### システム情報
+
+**仕組み** ― このサーバーのインターフェース・アドレス・経路・DNSサーバー・待受ソケットに加え、「いま使える機能」と「何を入れれば使えるようになる機能」を、このマシンのパッケージ管理に合わせた導入コマンド付きで一覧します。
+
+**用途** ― 自分が立っている足場の把握。眠っている機能を、調べ回らずに動かす。
+
+### 結果の持ち出し
+
+**仕組み** ― どのツールの結果も、クリップボードへのコピー、テキストファイルのダウンロード、Nextcloud上の **NetBase** フォルダーへの保存ができます。ファイル名はツール名と日時で、既存のファイルを上書きしません。機器台帳は CSV 書き出しにも対応します。
+
+**用途** ― 対応記録への証跡添付。作業前後の記録の保管。説明ではなく実際の出力そのものを同僚へ渡す。
+
+### 公開範囲・表示・言語
+
+**仕組み** ― NetBase は管理者向けのアプリで、ローカルネットワークに触れる機能（機器ウィンドウ、スキャン、ポート確認、nmap、Wake-on-LAN、メール検査、FTP・SFTP、SSH、機器台帳そのもの）は既定で管理者のみです。ただし公開範囲はツール単位で、**管理設定 → NetBase** から「管理者のみ／指定グループ／全員」を選べます。既定で閉じている機能も含め、どれでも開放できます。何も許可されていない利用者には、開かない扉を見せないよう、アプリメニューにも表示しません。テーマと言語は利用者ごと、サイドバーの並び順もドラッグで変更できます。
+
+**用途** ― ネットワークそのものを渡さずに、ヘルプデスクに whois や疎通確認だけ使ってもらう。移行作業の期間だけ機器台帳を特定グループに開放し、終わったら閉じる。
 
 ## ベンチマーク
 
