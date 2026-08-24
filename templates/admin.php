@@ -6,6 +6,7 @@ declare(strict_types=1);
 <div id="netbase-admin" class="section">
 	<h2><?php p($l->t('NetBase')); ?></h2>
 	<p class="settings-hint"><?php p($l->t('Administrators always have every tool. Choose here what everyone else may reach.')); ?></p>
+	<p class="settings-hint"><?php p($l->t('Set every tool to administrators only and NetBase disappears from everyone else\'s app menu, and its page answers 403 — rather than showing them a door that will not open. The setting below turns that off if you would rather they saw it.')); ?></p>
 
 	<table class="nb-tools">
 		<thead>
@@ -53,6 +54,7 @@ declare(strict_types=1);
 	<div class="nb-field nb-check">
 		<input type="checkbox" id="nb-hide" class="checkbox"<?php p($_['hideEmptyMenu'] ? ' checked' : ''); ?>>
 		<label for="nb-hide"><?php p($l->t('Hide NetBase from the app menu for users who may not use any tool')); ?></label>
+		<p class="settings-hint nb-sub"><?php p($l->t('This is what makes an all-administrators setup vanish from other people\'s menus.')); ?></p>
 	</div>
 
 	<div class="nb-field nb-narrow">

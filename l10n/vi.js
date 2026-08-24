@@ -731,7 +731,9 @@ OC.L10N.register(
         "TLS versions": "Phiên bản TLS",
         "Aggregate": "Gộp",
         "Console": "Bảng điều khiển",
-        "Listing": "Danh sách"
+        "Listing": "Danh sách",
+        "Set every tool to administrators only and NetBase disappears from everyone else's app menu, and its page answers 403 — rather than showing them a door that will not open. The setting below turns that off if you would rather they saw it.": "Nếu đặt mọi công cụ chỉ cho quản trị viên, NetBase sẽ biến khỏi trình đơn ứng dụng của những người khác và trang của nó trả về 403 — thay vì cho họ thấy một cánh cửa không mở. Tùy chọn bên dưới tắt điều đó.",
+        "This is what makes an all-administrators setup vanish from other people's menus.": "Chính tùy chọn này khiến cấu hình chỉ dành cho quản trị viên biến khỏi trình đơn của người khác."
     },
     "nplurals=1; plural=0;"
 );

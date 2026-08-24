@@ -731,7 +731,9 @@ OC.L10N.register(
         "TLS versions": "Versões de TLS",
         "Aggregate": "Agregar",
         "Console": "Consola",
-        "Listing": "Listagem"
+        "Listing": "Listagem",
+        "Set every tool to administrators only and NetBase disappears from everyone else's app menu, and its page answers 403 — rather than showing them a door that will not open. The setting below turns that off if you would rather they saw it.": "Se todas as ferramentas ficarem só para administradores, o NetBase desaparece do menu de aplicações dos restantes e a sua página responde 403 — em vez de lhes mostrar uma porta que não abre. A definição abaixo desliga isso.",
+        "This is what makes an all-administrators setup vanish from other people's menus.": "É isto que faz uma configuração só de administradores desaparecer dos menus dos outros."
     },
     "nplurals=2; plural=(n > 1);"
 );

@@ -730,7 +730,9 @@
         "TLS versions": "TLS versions",
         "Aggregate": "Aggregate",
         "Console": "Console",
-        "Listing": "Listing"
+        "Listing": "Listing",
+        "Set every tool to administrators only and NetBase disappears from everyone else's app menu, and its page answers 403 — rather than showing them a door that will not open. The setting below turns that off if you would rather they saw it.": "Set every tool to administrators only and NetBase disappears from everyone else's app menu, and its page answers 403 — rather than showing them a door that will not open. The setting below turns that off if you would rather they saw it.",
+        "This is what makes an all-administrators setup vanish from other people's menus.": "This is what makes an all-administrators setup vanish from other people's menus."
     },
     "pluralForm": "nplurals=2; plural=(n != 1);"
 }

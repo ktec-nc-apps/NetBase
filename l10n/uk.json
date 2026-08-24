@@ -730,7 +730,9 @@
         "TLS versions": "Версії TLS",
         "Aggregate": "Об’єднання",
         "Console": "Консоль",
-        "Listing": "Список"
+        "Listing": "Список",
+        "Set every tool to administrators only and NetBase disappears from everyone else's app menu, and its page answers 403 — rather than showing them a door that will not open. The setting below turns that off if you would rather they saw it.": "Якщо всі інструменти залишити лише адміністраторам, NetBase зникне з меню застосунків в інших, а його сторінка відповість 403 — замість показувати двері, які не відчиняться. Налаштування нижче це вимикає.",
+        "This is what makes an all-administrators setup vanish from other people's menus.": "Саме це прибирає конфігурацію «лише адміністратори» з чужих меню."
     },
     "pluralForm": "nplurals=4; plural=(n % 1 == 0 && n % 10 == 1 && n % 100 != 11 ? 0 : n % 1 == 0 && n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14) ? 1 : n % 1 == 0 && (n % 10 ==0 || (n % 10 >=5 && n % 10 <=9) || (n % 100 >=11 && n % 100 <=14 )) ? 2: 3);"
 }
