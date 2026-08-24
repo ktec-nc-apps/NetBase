@@ -735,7 +735,10 @@
         "↓ CSV": "↓ CSV",
         "Download as a file": "Unduh sebagai berkas",
         "Pick a well-known time server, or type any other.": "Pilih peladen waktu yang dikenal, atau ketik yang lain.",
-        "MAC address — type 001ba93f8dfe, the colons are added for you": "Alamat MAC — ketik 001ba93f8dfe, titik duanya ditambahkan sendiri"
+        "MAC address — type 001ba93f8dfe, the colons are added for you": "Alamat MAC — ketik 001ba93f8dfe, titik duanya ditambahkan sendiri",
+        "Pick one NetBase already knows": "Pilih yang sudah dikenal NetBase",
+        "Choose…": "Pilih…",
+        "Recent": "Terkini"
     },
     "pluralForm": "nplurals=1; plural=0;"
 }

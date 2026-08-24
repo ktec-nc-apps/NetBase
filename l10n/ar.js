@@ -736,7 +736,10 @@ OC.L10N.register(
         "↓ CSV": "↓ CSV",
         "Download as a file": "تنزيل كملف",
         "Pick a well-known time server, or type any other.": "اختر خادم وقت معروفًا أو اكتب أي خادم آخر.",
-        "MAC address — type 001ba93f8dfe, the colons are added for you": "عنوان MAC — اكتب 001ba93f8dfe وستُضاف النقطتان تلقائيًا"
+        "MAC address — type 001ba93f8dfe, the colons are added for you": "عنوان MAC — اكتب 001ba93f8dfe وستُضاف النقطتان تلقائيًا",
+        "Pick one NetBase already knows": "اختر ما يعرفه نِت‌بيس بالفعل",
+        "Choose…": "اختر…",
+        "Recent": "الأخيرة"
     },
     "nplurals=6; plural=(n==0 ? 0 : n==1 ? 1 : n==2 ? 2 : n%100>=3 && n%100<=10 ? 3 : n%100>=11 && n%100<=99 ? 4 : 5);"
 );

@@ -736,7 +736,10 @@ OC.L10N.register(
         "↓ CSV": "↓ CSV",
         "Download as a file": "下载为文件",
         "Pick a well-known time server, or type any other.": "从常用时间服务器中选择，或自行输入。",
-        "MAC address — type 001ba93f8dfe, the colons are added for you": "MAC 地址 — 直接输入 001ba93f8dfe，冒号会自动补上"
+        "MAC address — type 001ba93f8dfe, the colons are added for you": "MAC 地址 — 直接输入 001ba93f8dfe，冒号会自动补上",
+        "Pick one NetBase already knows": "从 NetBase 已知的目标中选择",
+        "Choose…": "选择…",
+        "Recent": "最近使用"
     },
     "nplurals=1; plural=0;"
 );
