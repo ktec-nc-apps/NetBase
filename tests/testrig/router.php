@@ -113,6 +113,49 @@ switch ($path) {
 			. '<button type="submit">送信</button></form>', false);
 		return;
 
+	case '/big':
+		// A firmware image: too large to hold in memory, sent in pieces, and
+		// able to answer a request for part of it.
+		$total = 30 * 1024 * 1024;
+		$from = 0;
+		$to = $total - 1;
+		$partial = false;
+		if (preg_match('/bytes=(\d*)-(\d*)/', $_SERVER['HTTP_RANGE'] ?? '', $m) === 1) {
+			$from = $m[1] === '' ? 0 : (int)$m[1];
+			$to = $m[2] === '' ? $total - 1 : (int)$m[2];
+			$partial = true;
+		}
+		$length = $to - $from + 1;
+		header('Content-Type: application/octet-stream');
+		header('Accept-Ranges: bytes');
+		header('Content-Disposition: attachment; filename="firmware.bin"');
+		header('Content-Length: ' . $length);
+		if ($partial) {
+			http_response_code(206);
+			header("Content-Range: bytes $from-$to/$total");
+		}
+		$chunk = str_repeat('N', 65536);
+		$sent = 0;
+		while ($sent < $length) {
+			$piece = min(strlen($chunk), $length - $sent);
+			echo substr($chunk, 0, $piece);
+			$sent += $piece;
+			flush();
+		}
+		return;
+
+	case '/echo':
+		// Whatever the page sent, described back: method, type and body.
+		header('Content-Type: application/json');
+		echo json_encode([
+			'method' => $_SERVER['REQUEST_METHOD'],
+			'type' => $_SERVER['CONTENT_TYPE'] ?? '',
+			'body' => file_get_contents('php://input'),
+			'range' => $_SERVER['HTTP_RANGE'] ?? '',
+			'language' => $_SERVER['HTTP_ACCEPT_LANGUAGE'] ?? '',
+		]);
+		return;
+
 	case '/style.css':
 		header('Content-Type: text/css');
 		echo "body{font-family:sans-serif;padding:20px;background:#eef}h1{color:#036}"

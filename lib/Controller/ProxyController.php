@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace OCA\NetBase\Controller;
 
 use OCA\NetBase\AppInfo\Application;
+use OCA\NetBase\Http\ProxyResponse;
 use OCA\NetBase\Service\L10nService;
 use OCA\NetBase\Service\ProxyService;
 use OCP\AppFramework\Controller;
@@ -13,6 +14,7 @@ use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\Attribute\PublicPage;
 use OCP\AppFramework\Http\EmptyContentSecurityPolicy;
 use OCP\AppFramework\Http\DataDisplayResponse;
+use OCP\AppFramework\Http\IOutput;
 use OCP\AppFramework\Http\RedirectResponse;
 use OCP\IRequest;
 use OCP\IURLGenerator;
@@ -56,8 +58,14 @@ class ProxyController extends Controller {
 				explode('&', (string)($_SERVER['QUERY_STRING'] ?? '')),
 				static fn (string $pair) => $pair !== '' && !str_starts_with($pair, '_nb='),
 			));
-			$post = $this->request->getMethod() === 'POST' ? (array)$this->request->getParams() : [];
+			$method = strtoupper($this->request->getMethod());
+			$type = strtolower((string)$this->request->getHeader('Content-Type'));
+			$form = $type === '' || str_contains($type, 'form-urlencoded') || str_contains($type, 'multipart/');
+			$post = $method !== 'GET' && $form ? (array)$this->request->getParams() : [];
 			unset($post['token'], $post['path'], $post['_route']);
+			// A page that talks to its device in JSON, or in anything else of its
+			// own devising, is carried through untouched rather than rebuilt.
+			$body = $method !== 'GET' && !$form ? (string)file_get_contents('php://input') : '';
 
 			if (isset($post['__netbase_user'])) {
 				// The person answered the device's request for a password. It is
@@ -68,13 +76,35 @@ class ProxyController extends Controller {
 				);
 			}
 
-			$result = $this->proxy->fetch(
-				$ticket['base'], $path, $query, $ticket['userId'], $prefix, $post,
-				(string)$this->request->getHeader('Authorization'),
+			$forward = [
+				'method' => $method,
+				'post' => $post,
+				'body' => $body,
 				// Every file the form carried; the request object exposes them one
 				// name at a time, and a device form may use any name it likes.
-				$this->request->getMethod() === 'POST' ? (array)($_FILES ?? []) : [],
-			);
+				'files' => $method !== 'GET' ? (array)($_FILES ?? []) : [],
+				'headers' => $this->browserHeaders(),
+				'authorization' => (string)$this->request->getHeader('Authorization'),
+			];
+
+			// Anything that is not a page — a firmware image, a backup, a camera
+			// stream — goes straight through to the browser as it arrives.
+			$response = new ProxyResponse(function (IOutput $output) use ($ticket, $token, $path, $query, $prefix, $forward): void {
+				try {
+					$result = $this->proxy->deliver($ticket['base'], $path, $query, $ticket['userId'], $prefix, $forward, $output);
+				} catch (\Throwable $e) {
+					$this->logger->error('NetBase proxy: ' . $e->getMessage(), ['exception' => $e, 'app' => 'netbase']);
+					$output->setHttpResponseCode(Http::STATUS_BAD_GATEWAY);
+					$output->setHeader('Content-Type: text/html; charset=utf-8');
+					$output->setOutput($this->problemPage($e->getMessage()));
+					return;
+				}
+				if (!empty($result['streamed'])) {
+					return;
+				}
+				$this->writeBuffered($output, $result, $token, $path);
+			});
+			$result = null;
 		} catch (\InvalidArgumentException $e) {
 			return $this->problem($e->getMessage(), Http::STATUS_BAD_REQUEST);
 		} catch (\RuntimeException $e) {
@@ -84,18 +114,45 @@ class ProxyController extends Controller {
 			return $this->problem($e->getMessage(), Http::STATUS_BAD_GATEWAY);
 		}
 
-		if (!empty($result['needsPassword'])) {
-			return $this->askForPassword($token, $path, (string)($result['realm'] ?? ''));
-		}
-
-		$headers = $result['headers'];
-		// The window has no origin of its own, so anything it asks for itself
-		// counts as cross-origin; the ticket, not the origin, is what decides.
-		$headers['access-control-allow-origin'] = '*';
-		$response = new DataDisplayResponse($result['body'], $result['status'], $headers);
 		$response->setContentSecurityPolicy($this->policy());
 		$response->cacheFor(0);
 		return $response;
+	}
+
+	/**
+	 * A page, once it has been read whole and its addresses put right.
+	 *
+	 * @param array<string, mixed> $result
+	 */
+	private function writeBuffered(IOutput $output, array $result, string $token, string $path): void {
+		if (!empty($result['needsPassword'])) {
+			$page = $this->passwordPage($token, $path, (string)($result['realm'] ?? ''));
+			$output->setHttpResponseCode(Http::STATUS_OK);
+			$output->setHeader('Content-Type: text/html; charset=utf-8');
+			$output->setOutput($page);
+			return;
+		}
+		$output->setHttpResponseCode((int)$result['status'] ?: 200);
+		foreach ((array)$result['headers'] as $name => $value) {
+			$output->setHeader($name . ': ' . $value);
+		}
+		// The window has no origin of its own, so anything it asks for itself
+		// counts as cross-origin; the ticket, not the origin, is what decides.
+		$output->setHeader('Access-Control-Allow-Origin: *');
+		$output->setOutput((string)$result['body']);
+	}
+
+	/** What the browser asked for, as far as a device may need to know. */
+	private function browserHeaders(): array {
+		$wanted = ['accept', 'accept-language', 'range', 'if-none-match', 'if-modified-since', 'content-type', 'x-requested-with'];
+		$headers = [];
+		foreach ($wanted as $name) {
+			$value = (string)$this->request->getHeader($name);
+			if ($value !== '') {
+				$headers[$name] = $value;
+			}
+		}
+		return $headers;
 	}
 
 	/**
@@ -151,7 +208,7 @@ class ProxyController extends Controller {
 	 * refuse to show their sign-in box in one. So NetBase asks instead, and
 	 * keeps the answer for this person and this device only.
 	 */
-	private function askForPassword(string $token, string $path, string $realm): DataDisplayResponse {
+	private function passwordPage(string $token, string $path, string $realm): string {
 		$action = rtrim($this->urls->linkToRoute('netbase.proxy.open', ['token' => $token, 'path' => $path]), '/') . ($path === '' ? '/' : '');
 		$title = $this->l->t('This device is asking for a user name and password');
 		$hint = $realm !== ''
@@ -174,10 +231,7 @@ class ProxyController extends Controller {
 			. '<input name="__netbase_pass" type="password" autocomplete="current-password"></label>'
 			. '<button type="submit">' . htmlspecialchars($this->l->t('Sign in'), ENT_QUOTES) . '</button>'
 			. '</form>' . $this->locate();
-		$response = new DataDisplayResponse($html, Http::STATUS_OK, ['Content-Type' => 'text/html; charset=utf-8']);
-		$response->setContentSecurityPolicy($this->policy());
-		$response->cacheFor(0);
-		return $response;
+		return $html;
 	}
 
 	/** NetBase's own pages report their place, so the window's address line is right. */
@@ -187,15 +241,19 @@ class ProxyController extends Controller {
 
 	/** The window shows whatever comes back, so an error has to be readable. */
 	private function problem(string $message, int $status): DataDisplayResponse {
+		$response = new DataDisplayResponse($this->problemPage($message), $status, ['Content-Type' => 'text/html; charset=utf-8']);
+		$response->setContentSecurityPolicy($this->policy());
+		$response->cacheFor(0);
+		return $response;
+	}
+
+	private function problemPage(string $message): string {
 		$html = '<!doctype html><meta charset="utf-8"><style>'
 			. 'body{margin:0;display:flex;align-items:center;justify-content:center;height:100vh;'
 			. 'font:15px/1.6 -apple-system,BlinkMacSystemFont,"Noto Sans JP",sans-serif;background:#f4f6fb;color:#1e293b}'
 			. 'div{max-width:36em;padding:28px;background:#fff;border-radius:14px;box-shadow:0 1px 3px rgba(15,23,42,.1)}'
 			. 'b{display:block;margin-bottom:8px}</style><div><b>⚠</b>'
 			. htmlspecialchars($message, ENT_QUOTES) . '</div>' . $this->locate();
-		$response = new DataDisplayResponse($html, $status, ['Content-Type' => 'text/html; charset=utf-8']);
-		$response->setContentSecurityPolicy($this->policy());
-		$response->cacheFor(0);
-		return $response;
+		return $html;
 	}
 }
