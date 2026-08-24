@@ -9,7 +9,10 @@
 }
 #netbase-admin .nb-tools td { padding: 6px 8px; border-bottom: 1px solid var(--color-border); vertical-align: middle; }
 #netbase-admin .nb-tools td:first-child { width: 55%; }
-#netbase-admin .nb-tools select { width: 100%; max-width: 300px; margin: 0; }
+/* Wide enough for the longest of the three answers in any language, so the
+   setting can be read without opening it. */
+#netbase-admin .nb-tools select { width: 100%; min-width: 15em; max-width: 300px; margin: 0; }
+#netbase-admin .nb-tools td:last-child { width: 16em; }
 #netbase-admin .nb-pill { display: inline-block; padding: 1px 9px; border-radius: 999px; font-size: 12px; }
 /* Read against both themes: tint the background, keep the text at full
    contrast rather than relying on --color-primary-text. */

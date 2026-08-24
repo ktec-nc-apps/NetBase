@@ -98,6 +98,36 @@ switch ($path) {
 		$page('認証が通った', '<p>Authorization ヘッダーが届いている。</p>', false);
 		return;
 
+	case '/status':
+		// A plain device status page, in English, for the store screenshots.
+		header('Content-Type: text/html; charset=UTF-8');
+		echo '<!DOCTYPE html><html><head><title>Test device</title><style>'
+			. 'body{font:14px/1.6 -apple-system,Segoe UI,sans-serif;margin:0;color:#1f2937}'
+			. 'header{background:#14304f;color:#fff;padding:14px 22px;font-size:18px;font-weight:600}'
+			. 'nav{background:#eef2f7;padding:10px 22px;border-bottom:1px solid #d6dee8}'
+			. 'nav a{margin-right:18px;color:#14304f;text-decoration:none;font-weight:600}'
+			. 'main{padding:22px}h2{font-size:15px;margin:0 0 10px}'
+			. 'table{border-collapse:collapse;margin-bottom:22px;min-width:420px}'
+			. 'td,th{border:1px solid #d6dee8;padding:7px 12px;text-align:left}'
+			. 'th{background:#f6f8fb;font-weight:600;width:190px}</style></head><body>'
+			. '<header>Test device &mdash; status</header>'
+			. '<nav><a href="/status">Status</a><a href="/status">Network</a><a href="/status">Wireless</a>'
+			. '<a href="/upload-form">Firmware</a><a href="/status">Logs</a></nav><main>'
+			. '<h2>System</h2><table>'
+			. '<tr><th>Model</th><td>NetBase test rig</td></tr>'
+			. '<tr><th>Firmware</th><td>1.27</td></tr>'
+			. '<tr><th>Uptime</th><td>12 days, 4 hours</td></tr></table>'
+			. '<h2>Network</h2><table>'
+			. '<tr><th>IP address</th><td>192.168.1.1</td></tr>'
+			. '<tr><th>Subnet mask</th><td>255.255.255.0</td></tr>'
+			. '<tr><th>Default gateway</th><td>192.168.1.254</td></tr>'
+			. '<tr><th>DHCP server</th><td>Enabled</td></tr></table>'
+			. '<h2>Wireless</h2><table>'
+			. '<tr><th>2.4 GHz</th><td>Channel 6, 2 networks</td></tr>'
+			. '<tr><th>5 GHz</th><td>Channel 36, 2 networks</td></tr></table>'
+			. '</main></body></html>';
+		return;
+
 	case '/upload':
 		$name = $_FILES['blob']['name'] ?? '(none)';
 		$size = (int)($_FILES['blob']['size'] ?? 0);
