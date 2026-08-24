@@ -49,7 +49,6 @@ OC.L10N.register(
         "Filter by name, IP, MAC or vendor": "名前・IP・MAC・ベンダーで絞り込む",
         "Online only": "オンラインのみ",
         "All records": "すべての記録",
-        "⤓ CSV": "⤓ CSV",
         "Online": "オンライン",
         "Not seen in the last sweep": "直近の調査では応答なし",
         "named": "命名済",
@@ -733,7 +732,10 @@ OC.L10N.register(
         "Console": "コンソール",
         "Listing": "一覧",
         "Set every tool to administrators only and NetBase disappears from everyone else's app menu, and its page answers 403 — rather than showing them a door that will not open. The setting below turns that off if you would rather they saw it.": "すべてのツールを「管理者のみ」にすると、NetBase は管理者以外のアプリメニューから消え、URLを直接開いても 403 になります（開かない扉を見せないためです）。それでも表示させたい場合は、下の設定をオフにしてください。",
-        "This is what makes an all-administrators setup vanish from other people's menus.": "すべて管理者のみにした場合に、他の利用者のメニューから消えるのはこの設定によるものです。"
+        "This is what makes an all-administrators setup vanish from other people's menus.": "すべて管理者のみにした場合に、他の利用者のメニューから消えるのはこの設定によるものです。",
+        "Copy": "コピー",
+        "↓ CSV": "↓ CSV",
+        "Download as a file": "ダウンロード"
     },
     "nplurals=1; plural=0;"
 );

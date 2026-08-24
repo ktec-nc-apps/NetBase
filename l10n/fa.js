@@ -49,7 +49,6 @@ OC.L10N.register(
         "Filter by name, IP, MAC or vendor": "پالایش بر پایهٔ نام، IP، MAC یا سازنده",
         "Online only": "فقط برخط",
         "All records": "همهٔ رکوردها",
-        "⤓ CSV": "⤓ CSV",
         "Online": "برخط",
         "Not seen in the last sweep": "در پویش پیشین دیده نشد",
         "named": "نام‌گذاری‌شده",
@@ -733,7 +732,10 @@ OC.L10N.register(
         "Console": "کنسول",
         "Listing": "فهرست",
         "Set every tool to administrators only and NetBase disappears from everyone else's app menu, and its page answers 403 — rather than showing them a door that will not open. The setting below turns that off if you would rather they saw it.": "اگر همهٔ ابزارها را تنها برای مدیران بگذارید، نت‌بیس از فهرست برنامه‌های دیگران ناپدید می‌شود و صفحه‌اش ۴۰۳ پاسخ می‌دهد — به‌جای نشان‌دادن دری که باز نمی‌شود. تنظیم زیر این رفتار را خاموش می‌کند.",
-        "This is what makes an all-administrators setup vanish from other people's menus.": "همین گزینه است که پیکربندی «تنها مدیران» را از فهرست دیگران ناپدید می‌کند."
+        "This is what makes an all-administrators setup vanish from other people's menus.": "همین گزینه است که پیکربندی «تنها مدیران» را از فهرست دیگران ناپدید می‌کند.",
+        "Copy": "رونوشت",
+        "↓ CSV": "↓ CSV",
+        "Download as a file": "بارگیری به‌صورت پرونده"
     },
     "nplurals=2; plural=(n > 1);"
 );

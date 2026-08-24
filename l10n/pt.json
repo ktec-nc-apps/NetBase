@@ -48,7 +48,6 @@
         "Filter by name, IP, MAC or vendor": "Filtrar por nome, IP, MAC ou fabricante",
         "Online only": "Apenas online",
         "All records": "Todos os registos",
-        "⤓ CSV": "⤓ CSV",
         "Online": "Online",
         "Not seen in the last sweep": "Não apareceu na última exploração",
         "named": "com nome",
@@ -732,7 +731,10 @@
         "Console": "Consola",
         "Listing": "Listagem",
         "Set every tool to administrators only and NetBase disappears from everyone else's app menu, and its page answers 403 — rather than showing them a door that will not open. The setting below turns that off if you would rather they saw it.": "Se todas as ferramentas ficarem só para administradores, o NetBase desaparece do menu de aplicações dos restantes e a sua página responde 403 — em vez de lhes mostrar uma porta que não abre. A definição abaixo desliga isso.",
-        "This is what makes an all-administrators setup vanish from other people's menus.": "É isto que faz uma configuração só de administradores desaparecer dos menus dos outros."
+        "This is what makes an all-administrators setup vanish from other people's menus.": "É isto que faz uma configuração só de administradores desaparecer dos menus dos outros.",
+        "Copy": "Copiar",
+        "↓ CSV": "↓ CSV",
+        "Download as a file": "Descarregar como ficheiro"
     },
     "pluralForm": "nplurals=2; plural=(n > 1);"
 }

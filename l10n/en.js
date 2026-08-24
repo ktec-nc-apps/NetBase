@@ -49,7 +49,6 @@ OC.L10N.register(
         "Filter by name, IP, MAC or vendor": "Filter by name, IP, MAC or vendor",
         "Online only": "Online only",
         "All records": "All records",
-        "⤓ CSV": "⤓ CSV",
         "Online": "Online",
         "Not seen in the last sweep": "Not seen in the last sweep",
         "named": "named",
@@ -733,7 +732,10 @@ OC.L10N.register(
         "Console": "Console",
         "Listing": "Listing",
         "Set every tool to administrators only and NetBase disappears from everyone else's app menu, and its page answers 403 — rather than showing them a door that will not open. The setting below turns that off if you would rather they saw it.": "Set every tool to administrators only and NetBase disappears from everyone else's app menu, and its page answers 403 — rather than showing them a door that will not open. The setting below turns that off if you would rather they saw it.",
-        "This is what makes an all-administrators setup vanish from other people's menus.": "This is what makes an all-administrators setup vanish from other people's menus."
+        "This is what makes an all-administrators setup vanish from other people's menus.": "This is what makes an all-administrators setup vanish from other people's menus.",
+        "Copy": "Copy",
+        "↓ CSV": "↓ CSV",
+        "Download as a file": "Download as a file"
     },
     "nplurals=2; plural=(n != 1);"
 );

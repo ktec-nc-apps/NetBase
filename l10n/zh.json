@@ -48,7 +48,6 @@
         "Filter by name, IP, MAC or vendor": "按名称、IP、MAC 或厂商筛选",
         "Online only": "仅在线",
         "All records": "全部记录",
-        "⤓ CSV": "⤓ CSV",
         "Online": "在线",
         "Not seen in the last sweep": "上次扫描时未发现",
         "named": "已命名",
@@ -732,7 +731,10 @@
         "Console": "控制台",
         "Listing": "列表",
         "Set every tool to administrators only and NetBase disappears from everyone else's app menu, and its page answers 403 — rather than showing them a door that will not open. The setting below turns that off if you would rather they saw it.": "若把所有工具都设为仅管理员，NetBase 会从其他人的应用菜单中消失，页面也返回 403——而不是让他们看到一扇打不开的门。若仍希望显示，请关闭下面的设置。",
-        "This is what makes an all-administrators setup vanish from other people's menus.": "「全部仅管理员」时会从他人菜单消失，正是由此设置决定。"
+        "This is what makes an all-administrators setup vanish from other people's menus.": "「全部仅管理员」时会从他人菜单消失，正是由此设置决定。",
+        "Copy": "复制",
+        "↓ CSV": "↓ CSV",
+        "Download as a file": "下载为文件"
     },
     "pluralForm": "nplurals=1; plural=0;"
 }

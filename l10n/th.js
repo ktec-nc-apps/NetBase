@@ -49,7 +49,6 @@ OC.L10N.register(
         "Filter by name, IP, MAC or vendor": "กรองตามชื่อ IP MAC หรือผู้ผลิต",
         "Online only": "เฉพาะที่ออนไลน์",
         "All records": "ทุกระเบียน",
-        "⤓ CSV": "⤓ CSV",
         "Online": "ออนไลน์",
         "Not seen in the last sweep": "ไม่พบในการสแกนครั้งล่าสุด",
         "named": "ตั้งชื่อแล้ว",
@@ -733,7 +732,10 @@ OC.L10N.register(
         "Console": "คอนโซล",
         "Listing": "รายการ",
         "Set every tool to administrators only and NetBase disappears from everyone else's app menu, and its page answers 403 — rather than showing them a door that will not open. The setting below turns that off if you would rather they saw it.": "หากตั้งให้ทุกเครื่องมือเป็นเฉพาะผู้ดูแล NetBase จะหายไปจากเมนูแอปของคนอื่น และหน้าเว็บจะตอบ 403 แทนที่จะให้เห็นประตูที่เปิดไม่ได้ ปิดการทำงานนี้ได้จากการตั้งค่าด้านล่าง",
-        "This is what makes an all-administrators setup vanish from other people's menus.": "การตั้งค่านี้เองที่ทำให้การกำหนดแบบเฉพาะผู้ดูแลหายไปจากเมนูของคนอื่น"
+        "This is what makes an all-administrators setup vanish from other people's menus.": "การตั้งค่านี้เองที่ทำให้การกำหนดแบบเฉพาะผู้ดูแลหายไปจากเมนูของคนอื่น",
+        "Copy": "คัดลอก",
+        "↓ CSV": "↓ CSV",
+        "Download as a file": "ดาวน์โหลดเป็นไฟล์"
     },
     "nplurals=1; plural=0;"
 );
