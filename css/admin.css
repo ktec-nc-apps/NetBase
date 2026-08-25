@@ -56,3 +56,34 @@
   margin: 4px 0 0 26px;
   font-size: .9em;
 }
+
+/* ---------- narrow screens ----------
+   The settings page is read on a phone as often as anywhere else. The table
+   keeps its three columns down to a tablet; below that the middle one — a
+   yes/no that the tool's own description already explains — gives way so the
+   name and the setting stay side by side. */
+@media (max-width: 720px) {
+	#netbase-admin .nb-tools th:nth-child(2),
+	#netbase-admin .nb-tools td:nth-child(2) { display: none; }
+	/* A long tool name wraps rather than pushing the setting off the screen. */
+	#netbase-admin .nb-tools { table-layout: fixed; }
+	/* Nextcloud's own settings stylesheet keeps table cells on one line. */
+	#netbase-admin .nb-tools td:first-child { width: auto; white-space: normal; overflow-wrap: anywhere; }
+	#netbase-admin .nb-tools th:last-child, #netbase-admin .nb-tools td:last-child { width: 11.5em; }
+	#netbase-admin .nb-tools select { min-width: 0; max-width: none; }
+	#netbase-admin .nb-tools th, #netbase-admin .nb-tools td { padding: 6px 4px; }
+	#netbase-admin .nb-actions { flex-wrap: wrap; }
+	#netbase-admin .nb-field input[type='text'], #netbase-admin .nb-field input[type='number'] { max-width: none; }
+}
+
+@media (max-width: 480px) {
+	/* Narrower still: the setting goes under the name it belongs to, so both
+	   can be read in full. */
+	#netbase-admin .nb-tools, #netbase-admin .nb-tools tbody,
+	#netbase-admin .nb-tools tr, #netbase-admin .nb-tools td { display: block; width: auto; }
+	#netbase-admin .nb-tools thead { display: none; }
+	#netbase-admin .nb-tools tr { padding: 8px 0; border-bottom: 1px solid var(--color-border); }
+	#netbase-admin .nb-tools td { border: 0; padding: 2px 0; }
+	#netbase-admin .nb-tools td:last-child { width: auto; }
+	#netbase-admin .nb-tools select { width: 100%; max-width: none; }
+}
