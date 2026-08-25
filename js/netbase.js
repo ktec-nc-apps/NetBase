@@ -90,15 +90,16 @@
   }
 
   const TEMPLATE = `
-  <div class="layout">
-    <aside class="sidebar">
+  <div class="layout" :class="{'menu-open': menu}">
+    <div class="nav-backdrop" v-if="menu" @click="menu=false"></div>
+    <aside class="sidebar" :class="{open: menu}">
       <div class="brand"><span class="logo"><svg viewBox="333 400 1335 1030"><path d="M1040.38,1352.06c-3.65-4.48-4.91-9.8-3.78-15.97l115.97-542.87c1.12-6.16,4.33-11.48,9.66-15.97,5.32-4.48,11.06-6.72,17.23-6.72h262.19c37.53,0,69.33,7.14,95.38,21.43,26.05,14.29,45.51,33.06,58.4,56.3,12.88,23.25,19.33,47.77,19.33,73.53,0,12.33-1.13,22.98-3.36,31.93-5.61,28.02-15.27,50.57-28.99,67.65-13.73,17.1-27.31,30.12-40.76,39.08,25.21,20.73,37.82,47.62,37.82,80.67,0,12.89-1.68,27.46-5.04,43.7-7.85,35.29-19.05,65.42-33.61,90.34-14.57,24.93-37.12,45.1-67.65,60.5-30.54,15.42-71.01,23.11-121.43,23.11h-296.64c-6.17,0-11.07-2.23-14.71-6.72ZM1353.41,1228.53c19.04,0,35.15-6.16,48.32-18.49,13.16-12.32,19.75-27.17,19.75-44.54,0-11.76-4.2-21.28-12.6-28.57-8.4-7.27-19.62-10.92-33.61-10.92h-138.66l-21.85,102.52h138.66ZM1284.5,900.79l-20.17,95.8h130.25c16.81,0,30.53-4.2,41.18-12.61,10.64-8.4,17.36-20.17,20.17-35.29,1.12-6.72,1.68-11.2,1.68-13.45,0-11.2-3.65-19.75-10.92-25.63-7.29-5.88-17.94-8.82-31.93-8.82h-130.25Z" fill="none" stroke="#fff" stroke-width="100" stroke-linejoin="round" stroke-linecap="round"/><path d="M1040.38,1352.06c-3.65-4.48-4.91-9.8-3.78-15.97l115.97-542.87c1.12-6.16,4.33-11.48,9.66-15.97,5.32-4.48,11.06-6.72,17.23-6.72h262.19c37.53,0,69.33,7.14,95.38,21.43,26.05,14.29,45.51,33.06,58.4,56.3,12.88,23.25,19.33,47.77,19.33,73.53,0,12.33-1.13,22.98-3.36,31.93-5.61,28.02-15.27,50.57-28.99,67.65-13.73,17.1-27.31,30.12-40.76,39.08,25.21,20.73,37.82,47.62,37.82,80.67,0,12.89-1.68,27.46-5.04,43.7-7.85,35.29-19.05,65.42-33.61,90.34-14.57,24.93-37.12,45.1-67.65,60.5-30.54,15.42-71.01,23.11-121.43,23.11h-296.64c-6.17,0-11.07-2.23-14.71-6.72ZM1353.41,1228.53c19.04,0,35.15-6.16,48.32-18.49,13.16-12.32,19.75-27.17,19.75-44.54,0-11.76-4.2-21.28-12.6-28.57-8.4-7.27-19.62-10.92-33.61-10.92h-138.66l-21.85,102.52h138.66ZM1284.5,900.79l-20.17,95.8h130.25c16.81,0,30.53-4.2,41.18-12.61,10.64-8.4,17.36-20.17,20.17-35.29,1.12-6.72,1.68-11.2,1.68-13.45,0-11.2-3.65-19.75-10.92-25.63-7.29-5.88-17.94-8.82-31.93-8.82h-130.25Z" fill="#2e3192"/><path d="M902.67,1351.87c-6.55-6.05-12.12-13.83-16.73-23.34l-201.98-440.64-83.09,438.06c-1.55,9.5-5.97,17.72-13.28,24.62s-15.19,10.36-23.66,10.36h-151.2c-8.47,0-15.19-3.45-20.19-10.36s-6.73-15.12-5.2-24.62l159.28-837.22c1.53-9.5,5.95-17.72,13.27-24.62s15.2-10.38,23.67-10.38h96.95c19.22,0,33.08,9.94,41.55,29.81l204.28,443.23,83.11-438.05c1.53-9.5,5.95-17.72,13.27-24.62s15.19-10.38,23.66-10.38h151.2c8.45,0,15.19,3.47,20.19,10.38s6.73,15.12,5.2,24.62l-159.28,837.22c-1.55,9.5-5.97,17.72-13.28,24.62s-15.19,10.36-23.66,10.36h-96.94c-11.55,0-20.59-3.02-27.12-9.06Z" fill="none" stroke="#fff" stroke-width="100" stroke-linejoin="round" stroke-linecap="round"/><path d="M902.67,1351.87c-6.55-6.05-12.12-13.83-16.73-23.34l-201.98-440.64-83.09,438.06c-1.55,9.5-5.97,17.72-13.28,24.62s-15.19,10.36-23.66,10.36h-151.2c-8.47,0-15.19-3.45-20.19-10.36s-6.73-15.12-5.2-24.62l159.28-837.22c1.53-9.5,5.95-17.72,13.27-24.62s15.2-10.38,23.67-10.38h96.95c19.22,0,33.08,9.94,41.55,29.81l204.28,443.23,83.11-438.05c1.53-9.5,5.95-17.72,13.27-24.62s15.19-10.38,23.66-10.38h151.2c8.45,0,15.19,3.47,20.19,10.38s6.73,15.12,5.2,24.62l-159.28,837.22c-1.55,9.5-5.97,17.72-13.28,24.62s-15.19,10.36-23.66,10.36h-96.94c-11.55,0-20.59-3.02-27.12-9.06Z" fill="#2970e2"/></svg></span><span>NetBase</span><span class="tag" v-if="version">v{{ version }}</span></div>
       <nav class="nav-list" @dragover.prevent @drop.prevent="dropTab(null)">
         <button v-for="item in visibleTabs" :key="item.id" class="nav-item"
                 :class="{active: tab===item.id, dragged: dragTab===item.id, over: overTab===item.id}"
                 draggable="true"
                 :title="t('Drag to put the tools in the order you want')"
-                @click="tab=item.id"
+                @click="tab=item.id; menu=false"
                 @keydown="moveTabByKey(item, $event)"
                 @dragstart="startTabDrag(item, $event)"
                 @dragend="endTabDrag"
@@ -115,32 +116,36 @@
              repeat it. It stays for the rare account that may sweep the network
              without being allowed to see the result, which would otherwise have
              no way to begin. -->
-        <button class="btn primary block" v-if="status.canScan && !allowed('devices')" :disabled="scanning" @click="startScan()">{{ scanning ? t('Scanning…') : t('🛰️ Scan the network') }}</button>
-        <button class="btn sm block" v-if="status.isAdmin" @click="openSysInfo">{{ t('🖥 System information') }}</button>
-        <button class="btn sm block" @click="themeBox = true">{{ t('⚙ Settings') }}</button>
+        <button class="btn primary block" v-if="status.canScan && !allowed('devices')" :disabled="scanning" @click="menu=false; startScan()">{{ scanning ? t('Scanning…') : t('🛰️ Scan the network') }}</button>
+        <button class="btn sm block" v-if="status.isAdmin" @click="menu=false; openSysInfo()">{{ t('🖥 System information') }}</button>
+        <button class="btn sm block" @click="menu=false; themeBox = true">{{ t('⚙ Settings') }}</button>
       </div>
     </aside>
 
     <main class="main">
       <div class="topbar">
+        <!-- On a phone the tool list is a drawer, and this is its handle. -->
+        <button class="btn sm menu-btn" :title="t('The list of tools')" :aria-label="t('The list of tools')" @click="menu = !menu">☰</button>
         <div class="title"><span class="ic">{{ currentTab.icon }}</span><span class="nm">{{ t(currentTab.label) }}</span><span class="desc">{{ t(currentTab.hint) }}</span></div>
         <div class="spacer"></div>
         <div class="topbar-actions">
-          <template v-if="tab==='devices'">
+          <!-- What belongs to this tab alone. On a phone it takes a line of its
+               own, so the buttons every tab has keep their place beside the title. -->
+          <div class="tab-actions" v-if="tab==='devices'">
             <input class="filter" v-model="filter" :placeholder="t('Filter by name, IP, MAC or vendor')">
             <button class="btn sm" @click="onlyOnline=!onlyOnline" :class="{active: onlyOnline}">{{ onlyOnline ? t('Online only') : t('All records') }}</button>
-            <button class="btn sm" @click="exportCsv" :disabled="!shownDevices.length">{{ t('↓ CSV') }}</button>
-          </template>
+            <button class="btn sm keep" :title="t('Download what this tool found')" @click="exportCsv" :disabled="!shownDevices.length"><span class="ic"><svg viewBox="0 0 24 24"><path d="M12 3.5v11.5"/><path d="M7.5 10.5L12 15l4.5-4.5"/><path d="M4 17.5V19a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-1.5"/></svg></span><span class="lb">CSV</span></button>
+          </div>
           <!-- Whatever this tool has found: onto the clipboard, into a file, or
                into the person's own Nextcloud folder. -->
           <button class="btn sm keep" :title="t('Copy what this tool found')" :disabled="!hasResult" @click="copyResult">
-            <span class="ic">📋</span><span class="lb">{{ t('Copy') }}</span>
+            <span class="ic"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2.2"/><path d="M6 15.5H5.5A2.5 2.5 0 0 1 3 13V5.5A2.5 2.5 0 0 1 5.5 3H13a2.5 2.5 0 0 1 2.5 2.5V6"/></svg></span><span class="lb">{{ t('Copy') }}</span>
           </button>
           <button class="btn sm keep" :title="t('Download what this tool found')" :disabled="!hasResult" @click="downloadResult">
-            <span class="ic">↓</span><span class="lb">{{ t('Download as a file') }}</span>
+            <span class="ic"><svg viewBox="0 0 24 24"><path d="M12 3.5v11.5"/><path d="M7.5 10.5L12 15l4.5-4.5"/><path d="M4 17.5V19a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-1.5"/></svg></span><span class="lb">{{ t('Download as a file') }}</span>
           </button>
           <button class="btn sm keep" :title="t('Save it to your Nextcloud files')" :disabled="!hasResult" @click="saveResultToFiles">
-            <span class="ic">📁</span><span class="lb">{{ t('Save') }}</span>
+            <span class="ic"><svg viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2.5h8a2 2 0 0 1 2 2V18a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M12 10.5v5"/><path d="M9.8 13.3l2.2 2.2 2.2-2.2"/></svg></span><span class="lb">{{ t('Save') }}</span>
           </button>
         </div>
       </div>
@@ -148,7 +153,7 @@
       <div class="content">
         <div v-if="banner" class="banner" :class="banner.kind">
           <span>{{ banner.text }}</span>
-          <button class="btn xs" @click="banner=null">✕</button>
+          <button class="btn xs ib" :title="t('Close')" :aria-label="t('Close')" @click="banner=null"><svg viewBox="0 0 24 24"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg></button>
         </div>
 
         <!-- ============ devices ============ -->
@@ -193,11 +198,11 @@
                 <th class="c-dot"></th>
                 <th @click="sortBy('name')" :class="sortClass('name')">{{ t('Name') }}</th>
                 <th @click="sortBy('ip')" :class="sortClass('ip')">{{ t('IPv4') }}</th>
-                <th @click="sortBy('mac')" :class="sortClass('mac')">{{ t('MAC address') }}</th>
-                <th @click="sortBy('vendor')" :class="sortClass('vendor')">{{ t('Vendor') }}</th>
-                <th @click="sortBy('type')" :class="sortClass('type')">{{ t('Type') }}</th>
+                <th class="c-extra" @click="sortBy('mac')" :class="sortClass('mac')">{{ t('MAC address') }}</th>
+                <th class="c-extra" @click="sortBy('vendor')" :class="sortClass('vendor')">{{ t('Vendor') }}</th>
+                <th class="c-extra" @click="sortBy('type')" :class="sortClass('type')">{{ t('Type') }}</th>
                 <th>{{ t('Open ports') }}</th>
-                <th @click="sortBy('lastSeen')" :class="sortClass('lastSeen')">{{ t('Last seen') }}</th>
+                <th class="c-extra" @click="sortBy('lastSeen')" :class="sortClass('lastSeen')">{{ t('Last seen') }}</th>
               </tr>
             </thead>
             <tbody>
@@ -205,9 +210,9 @@
                 <td class="c-dot"><span class="dot" :class="{on: d.online}" :title="d.online ? t('Online') : t('Not seen in the last sweep')"></span></td>
                 <td class="c-name"><span class="ic">{{ icon(d) }}</span><span class="nm">{{ d.name }}</span><span class="badge" v-if="d.label">{{ t('named') }}</span></td>
                 <td class="mono">{{ d.ip }}</td>
-                <td class="mono dim">{{ d.mac || '—' }}</td>
-                <td>{{ vendorText(d) }}</td>
-                <td>{{ t(typeLabel(d.type)) }}</td>
+                <td class="mono dim c-extra">{{ d.mac || '—' }}</td>
+                <td class="c-extra">{{ vendorText(d) }}</td>
+                <td class="c-extra">{{ t(typeLabel(d.type)) }}</td>
                 <td class="mono dim ports-cell" @click.stop>
                   <template v-for="(p,i) in d.ports" :key="p">
                     <a v-if="portLink(d, p)" href="#" :title="portLink(d, p).title" @click.prevent="openDeviceWindow(d, p)">{{ p }}</a>
@@ -216,7 +221,7 @@
                   </template>
                   <span v-if="!d.ports.length">—</span>
                 </td>
-                <td class="dim">{{ ago(d.lastSeen) }}</td>
+                <td class="dim c-extra">{{ ago(d.lastSeen) }}</td>
               </tr>
             </tbody>
           </table>
@@ -1306,7 +1311,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
           <span class="ic big">🖥</span>
           <div><strong>{{ t('System information') }}</strong><div class="dim">{{ t('What this server can do, and what it could do') }}</div></div>
           <span class="spacer"></span>
-          <button class="btn xs" @click="sysInfo=false">✕</button>
+          <button class="btn xs ib" :title="t('Close')" :aria-label="t('Close')" @click="sysInfo=false"><svg viewBox="0 0 24 24"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg></button>
         </div>
         <div class="drawer-body">
           <h3>{{ t('Basics') }}</h3>
@@ -1380,7 +1385,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
           <span class="ic big">🎨</span>
           <div><strong>{{ t('Settings') }}</strong><div class="dim">{{ t('Applies to NetBase only, for your account.') }}</div></div>
           <span class="spacer"></span>
-          <button class="btn xs" @click="themeBox=false">✕</button>
+          <button class="btn xs ib" :title="t('Close')" :aria-label="t('Close')" @click="themeBox=false"><svg viewBox="0 0 24 24"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg></button>
         </div>
         <div class="drawer-body">
           <div class="theme-picks">
@@ -1420,12 +1425,26 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         <strong class="nm">{{ w.title }}</strong>
         <span class="dim mono tiny addr">{{ w.base }}{{ w.path ? '/' + w.path : '' }}</span>
         <span class="spacer"></span>
-        <button class="btn xs" :title="t('Back')" :disabled="w.trailAt < 1" @click.stop="backWindow(w)">←</button>
-        <button class="btn xs" :title="t('Front page')" @click.stop="homeWindow(w)">⌂</button>
-        <button class="btn xs" :title="t('Reload')" @click.stop="reloadWindow(w)">⟳</button>
-        <button class="btn xs" :title="t('Fill the screen')" @click.stop="toggleFull(w)">⤢</button>
-        <button class="btn xs" :title="t('What this window can and cannot do')" @click.stop="w.help = !w.help">?</button>
-        <button class="btn xs" :title="t('Close')" @click.stop="closeWindow(w)">✕</button>
+        <!-- Drawn, not typed: the arrows and crosses a font happens to carry are
+             hairline thin at this size, and no two systems draw them alike. -->
+        <button class="btn xs ib" :title="t('Back')" :aria-label="t('Back')" :disabled="w.trailAt < 1" @click.stop="backWindow(w)">
+          <svg viewBox="0 0 24 24"><path d="M20 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
+        </button>
+        <button class="btn xs ib" :title="t('Front page')" :aria-label="t('Front page')" @click.stop="homeWindow(w)">
+          <svg viewBox="0 0 24 24"><path d="M3 10.5L12 3l9 7.5V20a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 20z"/><path d="M9.5 21.5v-8h5v8"/></svg>
+        </button>
+        <button class="btn xs ib" :title="t('Reload')" :aria-label="t('Reload')" @click.stop="reloadWindow(w)">
+          <svg viewBox="0 0 24 24"><path d="M20.5 13.5A8.5 8.5 0 1 1 18 6.4L21.5 9.5"/><path d="M21.5 4v5.5H16"/></svg>
+        </button>
+        <button class="btn xs ib" v-if="!narrow" :title="t('Fill the screen')" :aria-label="t('Fill the screen')" @click.stop="toggleFull(w)">
+          <svg viewBox="0 0 24 24"><path d="M14.5 3.5H20.5V9.5"/><path d="M9.5 20.5H3.5V14.5"/><path d="M20.5 3.5L13.5 10.5"/><path d="M3.5 20.5L10.5 13.5"/></svg>
+        </button>
+        <button class="btn xs ib" :title="t('What this window can and cannot do')" :aria-label="t('What this window can and cannot do')" @click.stop="w.help = !w.help">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9.2"/><path d="M9.2 9.3a2.9 2.9 0 0 1 5.7.8c0 1.9-2.9 2.4-2.9 4"/><path d="M12 17.4h.01"/></svg>
+        </button>
+        <button class="btn xs ib" :title="t('Close')" :aria-label="t('Close')" @click.stop="closeWindow(w)">
+          <svg viewBox="0 0 24 24"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg>
+        </button>
       </div>
       <div v-if="w.help" class="devwin-help" @mousedown.stop>
         <strong>{{ t('What works here') }}</strong>
@@ -1463,7 +1482,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
           <span class="ic big">📂</span>
           <div><strong>{{ t(picker.title) }}</strong><div class="dim tiny">{{ t('Your Nextcloud files') }}</div></div>
           <span class="spacer"></span>
-          <button class="btn xs" @click="picker.open=false">✕</button>
+          <button class="btn xs ib" :title="t('Close')" :aria-label="t('Close')" @click="picker.open=false"><svg viewBox="0 0 24 24"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg></button>
         </div>
         <div class="drawer-body">
           <div class="path-bar">
@@ -1504,7 +1523,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
           </div>
           <span class="spacer"></span>
           <button class="btn sm" @click="term.lines = []">{{ t('Clear') }}</button>
-          <button class="btn xs" @click="closeConsole">✕</button>
+          <button class="btn xs ib" :title="t('Close')" :aria-label="t('Close')" @click="closeConsole"><svg viewBox="0 0 24 24"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg></button>
         </div>
         <div class="term-body" ref="termBody">
           <p class="dim tiny">{{ t('Each line runs on its own connection and the working directory is carried over, so cd, ls and tail behave as expected. Programs that need a real terminal — vi, top, an interactive password prompt — cannot run here.') }}</p>
@@ -1529,9 +1548,9 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
             <div class="dim mono tiny">{{ preview.url }}</div>
           </div>
           <span class="spacer"></span>
-          <a class="btn sm" :href="preview.url" target="_blank" rel="noopener noreferrer" :title="t('Only works from inside that network')">↗</a>
+          <a class="btn sm ib" :href="preview.url" target="_blank" rel="noopener noreferrer" :title="t('Only works from inside that network')" :aria-label="t('Only works from inside that network')"><svg viewBox="0 0 24 24"><path d="M14 4h6v6"/><path d="M20 4l-8.5 8.5"/><path d="M18 14.5V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4.5"/></svg></a>
           <button class="btn sm" :disabled="preview.loading" @click="reloadPreview">{{ t('Reload') }}</button>
-          <button class="btn xs" @click="closePreview">✕</button>
+          <button class="btn xs ib" :title="t('Close')" :aria-label="t('Close')" @click="closePreview"><svg viewBox="0 0 24 24"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg></button>
         </div>
         <div class="drawer-body preview-body">
           <p v-if="preview.loading" class="dim centred-text">{{ t('Rendering the page on the server…') }}</p>
@@ -1553,7 +1572,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
           <span class="ic big">🔗</span>
           <div><strong>{{ connForm.id ? t('Edit connection') : t('New connection') }}</strong><div class="dim">{{ t('Saved for your account only. The password is encrypted on the server and never sent back to the browser.') }}</div></div>
           <span class="spacer"></span>
-          <button class="btn xs" @click="connModal=false">✕</button>
+          <button class="btn xs ib" :title="t('Close')" :aria-label="t('Close')" @click="connModal=false"><svg viewBox="0 0 24 24"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg></button>
         </div>
         <div class="drawer-body">
           <label class="fl"><span class="fl-label">{{ t('Type') }}</span>
@@ -1619,7 +1638,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
             <div class="dim mono">{{ selected.ip }} · {{ selected.mac || t('no MAC') }}</div>
           </div>
           <span class="spacer"></span>
-          <button class="btn xs" @click="selected=null">✕</button>
+          <button class="btn xs ib" :title="t('Close')" :aria-label="t('Close')" @click="selected=null"><svg viewBox="0 0 24 24"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg></button>
         </div>
         <div class="drawer-body">
           <div class="kv">
@@ -1656,7 +1675,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
             <template v-for="l in webLinks(selected)" :key="l.href">
               <button class="btn sm" v-if="allowed('preview')" @click="openDeviceWindow(selected, l.port)">🖥 {{ l.label }}</button>
               <button class="btn sm" v-if="allowed('preview') && status.preview" @click="showPage(l.href)">🖼 {{ t('Show the page') }}</button>
-              <a class="btn sm" :href="l.href" target="_blank" rel="noopener noreferrer" :title="t('Only works from inside that network')">↗</a>
+              <a class="btn sm ib" :href="l.href" target="_blank" rel="noopener noreferrer" :title="t('Only works from inside that network')" :aria-label="t('Only works from inside that network')"><svg viewBox="0 0 24 24"><path d="M14 4h6v6"/><path d="M20 4l-8.5 8.5"/><path d="M18 14.5V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4.5"/></svg></a>
             </template>
             <button class="btn sm" v-if="allowed('ping')" @click="toolFor('ping')">📡 {{ t('Ping') }}</button>
             <button class="btn sm" v-if="allowed('ports')" @click="toolFor('ports')">🔌 {{ t('Ports') }}</button>
@@ -1810,6 +1829,9 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
     data() {
       return {
         version: '', tab: 'devices', banner: null, authenticated: true,
+        // On a narrow screen the tool list is a drawer rather than a column,
+        // and a device's page fills the screen instead of floating over it.
+        menu: false, narrow: window.innerWidth <= 900,
         status: { canScan: false, canLookup: false, isAdmin: false, binaries: {}, nmap: { available: false }, ouiEntries: 0, targets: [] },
         settings: { language: 'auto', theme: 'auto', languages: [], tabOrder: [] },
         dragTab: '', overTab: '',
@@ -2223,13 +2245,15 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         if (!scheme || !device.ip) return;
         const host = device.ip.includes(':') ? '[' + device.ip + ']' : device.ip;
         const base = scheme + '://' + host + (port === 80 || port === 443 ? '' : ':' + port);
-        const offset = (this.windows.length % 6) * 28;
+        const offset = this.narrow ? 0 : (this.windows.length % 6) * 28;
         const w = {
           id: ++this.windowSeq, base, url: '', src: '', error: '', busy: true, full: false,
           here: '', trail: [], trailAt: -1, rewinding: false, help: false, z: ++this.windowTop,
           title: (device.name || device.ip) + ' · ' + port,
-          x: Math.max(20, Math.round(window.innerWidth / 2 - 520) + offset),
-          y: 90 + offset, w: Math.min(1040, window.innerWidth - 60), h: Math.min(700, window.innerHeight - 140),
+          x: this.narrow ? 0 : Math.max(20, Math.round(window.innerWidth / 2 - 520) + offset),
+          y: this.narrow ? 0 : 90 + offset,
+          w: this.narrow ? window.innerWidth : Math.min(1040, window.innerWidth - 60),
+          h: this.narrow ? window.innerHeight : Math.min(700, window.innerHeight - 140),
         };
         this.windows.push(w);
         // Vue watches the copy it stored, not the object that was handed in.
@@ -2247,6 +2271,18 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         live.busy = false;
       },
       focusWindow(w) { w.z = ++this.windowTop; },
+      onViewportResize() {
+        this.narrow = window.innerWidth <= 900;
+        if (this.narrow) return;
+        // Turning a phone back to a desktop width would otherwise leave the
+        // windows off the edge of the screen, with no title bar to drag.
+        for (const w of this.windows) {
+          w.w = Math.min(w.w, window.innerWidth - 40);
+          w.h = Math.min(w.h, window.innerHeight - 100);
+          w.x = Math.max(0, Math.min(w.x, window.innerWidth - 120));
+          w.y = Math.max(0, Math.min(w.y, window.innerHeight - 60));
+        }
+      },
       onWindowMessage(event) {
         const data = event && event.data;
         if (!data || (data.netbase !== 'frames' && data.netbase !== 'here')) return;
@@ -3142,10 +3178,12 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
     unmounted() {
       if (this.liveTimer) clearInterval(this.liveTimer);
       window.removeEventListener('message', this.onWindowMessage);
+      window.removeEventListener('resize', this.onViewportResize);
     },
     mounted() {
       rootProxy = this;
       window.addEventListener('message', this.onWindowMessage);
+      window.addEventListener('resize', this.onViewportResize);
       const root = document.getElementById('netbase-root');
       if (root && root.dataset.theme) this.settings.theme = root.dataset.theme;
       this.applyTheme();

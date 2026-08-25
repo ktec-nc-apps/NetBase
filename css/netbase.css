@@ -95,6 +95,8 @@
 #netbase-root .spacer { flex: 1 1 auto; }
 #netbase-root .topbar-actions { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; }
 #netbase-root .topbar-actions .filter { width: 260px; }
+/* A tab's own controls sit in the row with the rest until the room runs out. */
+#netbase-root .tab-actions { display: contents; }
 #netbase-root .content { flex: 1 1 auto; overflow-y: auto; padding: 18px 20px 40px; }
 
 /* ---------- primitives ---------- */
@@ -206,7 +208,12 @@
 #netbase-root .nh-head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; flex-wrap: wrap; }
 
 /* ---------- device drawer ---------- */
-#netbase-root .drawer-backdrop { position: fixed; inset: 0; background: rgba(15, 23, 42, .45); display: flex; justify-content: flex-end; z-index: 2000; }
+/* Everything the app puts over the page starts below Nextcloud's own header:
+   a panel that reaches under it loses its title and its close button. */
+#netbase-root .drawer-backdrop {
+  position: fixed; inset: var(--header-height, 50px) 0 0 0; background: rgba(15, 23, 42, .45);
+  display: flex; justify-content: flex-end; z-index: 2000;
+}
 #netbase-root .drawer { width: min(520px, 100%); background: var(--surface); display: flex; flex-direction: column; box-shadow: var(--shadow); }
 #netbase-root .drawer-head { display: flex; align-items: center; gap: 12px; padding: 16px 18px; border-bottom: 1px solid var(--border); }
 #netbase-root .drawer-head .ic.big { font-size: 28px; }
@@ -215,10 +222,6 @@
 #netbase-root .drawer-tools { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
 #netbase-root .drawer-foot { display: flex; align-items: center; gap: 8px; padding: 14px 18px; border-top: 1px solid var(--border); }
 
-@media (max-width: 900px) {
-  #netbase-root .sidebar { display: none; }
-  #netbase-root .topbar-actions .filter { width: 150px; }
-}
 
 /* ---------- tool access matrix ---------- */
 #netbase-root table.tool-access td { vertical-align: middle; }
@@ -414,6 +417,16 @@
 #netbase-root .devwin-head .nm { font-size: 13.5px; }
 #netbase-root .devwin-head .addr { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 40%; }
 #netbase-root .devwin-head a.btn { text-decoration: none; }
+/* The window's own controls. A drawn icon keeps the same weight on every
+   system, where ← ⌂ ⟳ ✕ are whatever hairline the installed font holds. */
+#netbase-root .btn.ib { display: inline-flex; align-items: center; justify-content: center; padding: 5px; }
+#netbase-root .btn svg {
+  width: 16px; height: 16px; display: block; flex: 0 0 auto;
+  fill: none; stroke: currentColor; stroke-width: 2.1;
+  stroke-linecap: round; stroke-linejoin: round;
+}
+#netbase-root .devwin-head .btn.ib { color: var(--text); }
+#netbase-root .devwin-head .btn.ib:hover:not(:disabled) { color: var(--primary); border-color: var(--primary); }
 #netbase-root .devwin-frame { flex: 1 1 auto; width: 100%; border: 0; background: #fff; }
 #netbase-root .devwin-grip {
   position: absolute; right: 0; bottom: 0; width: 16px; height: 16px; cursor: nwse-resize;
@@ -492,8 +505,8 @@
 .devwin-help li { list-style: disc; }
 
 /* Copy, download and save say what they are, until the room runs out. */
-.topbar-actions .btn.keep { display: inline-flex; align-items: center; gap: 5px; }
-.topbar-actions .btn.keep .ic { font-size: 1.05em; line-height: 1; }
+.topbar-actions .btn.keep { display: inline-flex; align-items: center; gap: 6px; }
+.topbar-actions .btn.keep .ic { display: inline-flex; line-height: 1; }
 /* The width the sidebar leaves is what matters, so this gives up the words
    well before the window itself runs out of room. */
 @media (max-width: 1500px) {
@@ -521,7 +534,6 @@
 
 /* The little chooser that sits beside an address field. */
 #netbase-root .tool-row .pick { max-width: 12em; flex: 0 0 auto; }
-@media (max-width: 900px) { #netbase-root .tool-row .pick { max-width: 8em; } }
 
 /* An address, in the four numbers and the prefix it is made of. */
 #netbase-root .ip-boxes { display: inline-flex; align-items: center; gap: 3px; }
@@ -536,3 +548,128 @@
 #netbase-root .ip-prefix { width: 4.6em; }
 #netbase-root .ip-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
 #netbase-root .fl-check { display: inline-flex; align-items: center; gap: 6px; font-size: .85em; color: var(--muted); }
+
+/* ---------- narrow screens ----------
+   A phone gets the same app, arranged for a thumb: the tool list slides in
+   instead of standing beside the work, rows stack instead of being squeezed,
+   a device's page fills the screen, and a table keeps every column but slides
+   sideways to show them. Nothing is taken away. */
+#netbase-root .menu-btn,
+#netbase-root .nav-backdrop { display: none; }
+
+@media (max-width: 900px) {
+  /* The way to every other tool: filled in, the colour of the app, and big
+     enough for a thumb — not a grey square someone has to go looking for. */
+  #netbase-root .menu-btn {
+    display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto;
+    width: 42px; height: 42px; padding: 0; font-size: 21px; line-height: 1;
+    background: var(--primary); border-color: var(--primary); color: var(--primary-ink);
+    box-shadow: 0 2px 8px color-mix(in srgb, var(--primary) 45%, transparent);
+  }
+  #netbase-root .menu-btn:hover:not(:disabled) { color: var(--primary-ink); border-color: var(--primary); filter: brightness(1.08); }
+  #netbase-root .menu-btn:active { filter: brightness(.94); }
+  /* The list of tools becomes a drawer over the work, under Nextcloud's own
+     header so its menus stay reachable. */
+  #netbase-root .sidebar {
+    position: fixed; top: var(--header-height, 50px); bottom: 0; left: 0; z-index: 2200;
+    width: min(300px, 84vw); flex: 0 0 auto;
+    transform: translateX(-101%); transition: transform .18s ease;
+    box-shadow: 0 10px 40px rgba(15, 23, 42, .35);
+  }
+  #netbase-root .sidebar.open { transform: none; }
+  #netbase-root .nav-backdrop { display: block; position: fixed; inset: 0; z-index: 2100; background: rgba(15, 23, 42, .45); }
+  #netbase-root .brand { padding: 14px 16px 10px; font-size: 18px; }
+  #netbase-root .nav-item { padding: 10px; font-size: 15px; }
+  /* Rearranging by dragging wants a pointer; the keyboard order still works. */
+  #netbase-root .nav-list .nav-item .grip { display: none; }
+  #netbase-root .topbar-actions .filter { width: auto; flex: 1 1 130px; min-width: 0; }
+
+  /* A device's own page fills the screen: there is no room to float, and no
+     mouse to move or resize a window with. */
+  #netbase-root .devwin {
+    left: 0 !important; top: var(--header-height, 50px) !important;
+    width: 100% !important; height: calc(100dvh - var(--header-height, 50px)) !important;
+    border-radius: 0; border-left: 0; border-right: 0; border-bottom: 0;
+  }
+  #netbase-root .devwin-head { cursor: default; flex-wrap: wrap; gap: 5px; }
+  #netbase-root .devwin-head .nm { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #netbase-root .devwin-head .addr { flex: 1 1 100%; max-width: 100%; order: 9; }
+  #netbase-root .devwin-head .btn.xs { padding: 6px 9px; }
+  #netbase-root .devwin-grip { display: none; }
+  #netbase-root .devwin-help { top: 46px; }
+}
+@media (max-width: 900px) and (prefers-reduced-motion: reduce) {
+  #netbase-root .sidebar { transition: none; }
+}
+
+@media (max-width: 720px) {
+  /* iOS zooms the page in on any field it thinks is too small to read. */
+  #netbase-root input, #netbase-root select, #netbase-root textarea { font-size: 16px; }
+  /* A topbar on two lines must keep both; a flex column would otherwise
+     squeeze it back to one and cut the second off. */
+  #netbase-root .topbar { flex: 0 0 auto; flex-wrap: wrap; gap: 8px; padding: 8px 12px; min-height: 0; }
+  #netbase-root .topbar .title .nm { font-size: 15px; }
+  /* With no room to push them to the far side, the buttons follow the title
+     and wrap onto a second line only when they have to. */
+  #netbase-root .topbar > .spacer { display: none; }
+  /* The buttons every tab has join the title row; this tab's own controls
+     take the line below, whole. */
+  #netbase-root .topbar-actions { display: contents; }
+  #netbase-root .tab-actions {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 6px;
+    flex: 1 1 100%; min-width: 0; order: 2;
+  }
+  #netbase-root .tab-actions .filter { flex: 1 1 130px; }
+  #netbase-root .content { padding: 12px 12px 32px; }
+  #netbase-root .card { padding: 12px; margin-bottom: 12px; border-radius: 12px; }
+
+  /* A row of fields becomes a column of fields. */
+  #netbase-root .scan-row, #netbase-root .tool-row, #netbase-root .fl-row,
+  #netbase-root .path-bar, #netbase-root .bench-head, #netbase-root .with-button,
+  #netbase-root .ip-row, #netbase-root .row-actions, #netbase-root .drawer-foot { flex-wrap: wrap; }
+  #netbase-root .scan-row { align-items: stretch; }
+  #netbase-root .fl.narrow, #netbase-root .tool-row .narrow, #netbase-root .tool-row .short,
+  #netbase-root .tool-row .pick, #netbase-root .bench-head select.narrow { max-width: none; }
+  #netbase-root .tool-row .tiny { max-width: 7em; }
+  #netbase-root .fl-row .fl.short { flex: 0 0 6.5em; }
+  #netbase-root .scan-row > .btn, #netbase-root .tool-row > .btn { flex: 1 1 auto; }
+
+  /* Every column stays; the table slides sideways to reach them. */
+  #netbase-root table.grid {
+    display: block; max-width: 100%; overflow: auto hidden;
+    -webkit-overflow-scrolling: touch;
+  }
+  /* Except in the device list, where the row itself opens a panel holding
+     everything these columns say. */
+  #netbase-root table.grid .c-extra { display: none; }
+  #netbase-root table.grid th, #netbase-root table.grid td { padding: 8px 9px; }
+
+  #netbase-root .kv { grid-template-columns: 1fr; }
+  #netbase-root .drawer { width: 100%; }
+  #netbase-root .drawer-head, #netbase-root .drawer-foot { padding: 12px 14px; }
+  #netbase-root .drawer-body { padding: 14px; }
+  #netbase-root .modal, #netbase-root .modal.narrow, #netbase-root .modal.wide { width: 96vw; max-height: 92dvh; }
+  #netbase-root .term-modal { height: 86dvh; }
+  #netbase-root .bench-results { gap: 18px; }
+  #netbase-root .bench-results .num { font-size: 24px; }
+  #netbase-root .wf-name { flex: 0 0 70px; }
+  #netbase-root .wf-ms { flex: 0 0 62px; }
+  /* Cut short, this line says nothing; it is short enough to wrap instead. */
+  #netbase-root .devwin-line { white-space: normal; }
+}
+
+@media (max-width: 430px) {
+  /* The six pairs of a MAC address, and the four numbers of an IPv4 address,
+     have to fit side by side on the narrowest phone in use. */
+  #netbase-root .mac-boxes { gap: 2px; }
+  #netbase-root .mac-box { width: 2.6em; padding: 8px 0; }
+  #netbase-root .mac-sep { font-size: 12px; }
+  #netbase-root .ip-boxes { gap: 2px; }
+  #netbase-root .ip-box { width: 2.3em; }
+  /* The prefix keeps its width: a select narrower than its own number shows
+     "2." instead of "24". */
+  #netbase-root .ip-slash { margin: 0 2px; }
+  /* The buttons that add and remove a row belong on the row they act on. */
+  #netbase-root .ip-row { gap: 5px; }
+  #netbase-root .ip-row .btn.xs { padding: 6px 7px; }
+}

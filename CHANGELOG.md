@@ -31,6 +31,15 @@ All notable changes to NetBase are documented here.
 - The device list now defaults to administrators. It is not a lookup like whois or ping but the inventory of a private network — what is on it, what it answers on, what it is called — and that belongs to whoever runs the network. Every instance can still hand it to a group, or to everyone, in the app's admin settings.
 - A web port is shown as a link only to an account that may open a device window; to anyone else it is plain text rather than a link that can only be refused.
 
+## 0.4.0 — 2026-08-25
+
+### Changed
+- **NetBase works on a phone.** The tool list slides in from a button beside the title instead of standing beside the work; every row of fields stacks rather than being squeezed; a wide table keeps all its columns and slides sideways to show them; and the device list shows the name, address and open ports, with the rest a tap away in the panel that already holds it.
+- A device's own settings page fills a phone's screen, below Nextcloud's header, so both the page and the way back stay in reach.
+- The window's controls — back, front page, reload, fill the screen, help, close — are drawn rather than borrowed from whatever arrows and crosses the font happens to carry, so they have the same weight on every system.
+- Panels and dialogues start below Nextcloud's own header instead of under it, where their title and close button used to disappear.
+- The administration settings fit a phone too: the tool list keeps the name and the setting side by side, and stacks them on the narrowest screens.
+
 ## 0.3.0 — 2026-08-24
 
 ### Added
