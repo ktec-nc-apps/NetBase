@@ -2,6 +2,15 @@
 
 All notable changes to NetBase are documented here.
 
+## 0.3.3 — 2026-09-04
+
+### Removed
+- **Ping, traceroute, the port check, TCP ping and path MTU discovery**, and the **nmap** front end with them. The Nextcloud app store review takes the view that an app which sends probes of that kind should not be installable from the store, and NetBase follows it: the tools, their tabs, their routes and the code behind them are gone from this release.
+
+### Changed
+- Everything else works as before: device discovery and the device windows, the LAN sweep and inventory, DNS, whois, TLS and HTTP, subnet and MAC, mail, FTP and SFTP, SSH and Telnet, the clock check, the benchmarks and the server view.
+- The requirements page and the administration settings no longer mention `ping`, `traceroute`, `mtr` or `nmap`, and no longer ask for them to be installed.
+
 ## 0.2.0 — 2026-08-23
 
 ### Added

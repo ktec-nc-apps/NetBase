@@ -18,7 +18,7 @@ use OCA\NetBase\Service\MailService;
 use OCA\NetBase\Service\ProbeService;
 use OCA\NetBase\Service\SshService;
 use OCA\NetBase\Service\TransferService;
-use OCA\NetBase\Service\NmapService;
+// NETBASE-STORE-REMOVED: use OCA\NetBase\Service\NmapService;
 use OCA\NetBase\Service\OuiService;
 use OCA\NetBase\Service\PermissionService;
 use OCA\NetBase\Service\RequirementsService;
@@ -42,7 +42,7 @@ class ApiController extends Controller {
 		private DiscoveryService $discovery,
 		private ScanService $scanService,
 		private ToolService $tools,
-		private NmapService $nmap,
+// NETBASE-STORE-REMOVED: 		private NmapService $nmap,
 		private BenchmarkService $bench,
 		private RequirementsService $requirements,
 		private EndpointService $endpoints,
@@ -109,7 +109,8 @@ class ApiController extends Controller {
 	#[NoAdminRequired]
 	public function status(): JSONResponse {
 		$binaries = [];
-		foreach (['nmap', 'ping', 'traceroute', 'tracepath', 'whois', 'dig', 'arp-scan', 'avahi-browse', 'ss', 'netstat', 'snmpwalk', 'nbtscan', 'mtr'] as $binary) {
+		// NETBASE-STORE-REMOVED: 'nmap', 'ping', 'traceroute', 'tracepath', 'mtr' dropped from the list
+		foreach (['whois', 'dig', 'arp-scan', 'avahi-browse', 'ss', 'netstat', 'snmpwalk', 'nbtscan'] as $binary) {
 			$binaries[$binary] = $this->exec->available($binary);
 		}
 		return new JSONResponse([
@@ -122,7 +123,8 @@ class ApiController extends Controller {
 			'targets' => $this->permissions->can('scan') ? $this->discovery->suggestedTargets() : [],
 			'binaries' => $binaries,
 			'ouiEntries' => $this->oui->count(),
-			'nmap' => $this->permissions->can('nmap') ? $this->nmap->status() : ['available' => false],
+			// NETBASE-STORE-REMOVED: nmap availability
+			'nmap' => ['available' => false],
 			'fingerprintPorts' => DiscoveryService::FINGERPRINT_PORTS,
 			'neighbourLimits' => $this->discovery->neighbourLimits(),
 			'neighbourCount' => $this->discovery->neighbourCount(),
@@ -236,33 +238,34 @@ class ApiController extends Controller {
 		return $this->guard(fn () => $this->tools->reverseLookup($ip), 'dns');
 	}
 
-	#[NoAdminRequired]
-	#[UserRateLimit(limit: 60, period: 60)]
-	public function ping(string $host, int $count = 4, bool $ipv6 = false): JSONResponse {
-		return $this->guard(fn () => $this->tools->ping($host, $count, $ipv6), 'ping');
-	}
-
-	#[NoAdminRequired]
-	#[UserRateLimit(limit: 20, period: 60)]
-	public function traceroute(string $host, int $maxHops = 20): JSONResponse {
-		return $this->guard(fn () => $this->tools->traceroute($host, $maxHops), 'ping');
-	}
-
-	#[NoAdminRequired]
-	#[UserRateLimit(limit: 60, period: 60)]
-	public function ports(string $host, array|string $ports = [], string $spec = ''): JSONResponse {
-		if (is_string($ports)) {
-			// A list typed as one string is what anyone would send by hand.
-			$spec = $spec !== '' ? $spec : $ports;
-			$ports = [];
-		}
-		return $this->guard(function () use ($host, $ports, $spec) {
-			// A typed range ("22,80,8000-8010") beats ticking boxes when someone
-			// already knows what they are looking for.
-			$list = $spec !== '' ? $this->tools->expandPorts($spec) : $ports;
-			return $this->tools->portCheck($host, $list !== [] ? $list : DiscoveryService::FINGERPRINT_PORTS);
-		}, 'ports');
-	}
+	// NETBASE-STORE-REMOVED: ping, traceroute and the TCP port check
+// 	#[NoAdminRequired]
+// 	#[UserRateLimit(limit: 60, period: 60)]
+// 	public function ping(string $host, int $count = 4, bool $ipv6 = false): JSONResponse {
+// 		return $this->guard(fn () => $this->tools->ping($host, $count, $ipv6), 'ping');
+// 	}
+//
+// 	#[NoAdminRequired]
+// 	#[UserRateLimit(limit: 20, period: 60)]
+// 	public function traceroute(string $host, int $maxHops = 20): JSONResponse {
+// 		return $this->guard(fn () => $this->tools->traceroute($host, $maxHops), 'ping');
+// 	}
+//
+// 	#[NoAdminRequired]
+// 	#[UserRateLimit(limit: 60, period: 60)]
+// 	public function ports(string $host, array|string $ports = [], string $spec = ''): JSONResponse {
+// 		if (is_string($ports)) {
+// 			// A list typed as one string is what anyone would send by hand.
+// 			$spec = $spec !== '' ? $spec : $ports;
+// 			$ports = [];
+// 		}
+// 		return $this->guard(function () use ($host, $ports, $spec) {
+// 			// A typed range ("22,80,8000-8010") beats ticking boxes when someone
+// 			// already knows what they are looking for.
+// 			$list = $spec !== '' ? $this->tools->expandPorts($spec) : $ports;
+// 			return $this->tools->portCheck($host, $list !== [] ? $list : DiscoveryService::FINGERPRINT_PORTS);
+// 		}, 'ports');
+// 	}
 
 	#[NoAdminRequired]
 	#[UserRateLimit(limit: 60, period: 60)]
@@ -331,11 +334,12 @@ class ApiController extends Controller {
 		return $this->guard(fn () => $this->bench->iperf($host, $port, $seconds, $reverse, $streams), 'bench');
 	}
 
-	#[NoAdminRequired]
-	#[UserRateLimit(limit: 20, period: 60)]
-	public function pathQuality(string $host, int $count = 10): JSONResponse {
-		return $this->guard(fn () => $this->tools->pathQuality($host, $count), 'ping');
-	}
+	// NETBASE-STORE-REMOVED: path quality (mtr)
+// 	#[NoAdminRequired]
+// 	#[UserRateLimit(limit: 20, period: 60)]
+// 	public function pathQuality(string $host, int $count = 10): JSONResponse {
+// 		return $this->guard(fn () => $this->tools->pathQuality($host, $count), 'ping');
+// 	}
 
 	// ---------------------------------------------------------------- requirements
 
@@ -344,13 +348,14 @@ class ApiController extends Controller {
 		return new JSONResponse($this->requirements->report($this->permissions->isAdmin()));
 	}
 
-	// ---------------------------------------------------------------- nmap
-
-	#[NoAdminRequired]
-	#[UserRateLimit(limit: 20, period: 60)]
-	public function nmapScan(array $targets = [], string $preset = 'quick', array $extra = []): JSONResponse {
-		return $this->guard(fn () => $this->nmap->scan($targets, $preset, $extra), 'nmap');
-	}
+	// NETBASE-STORE-REMOVED: nmap endpoint
+// 	// ---------------------------------------------------------------- nmap
+//
+// 	#[NoAdminRequired]
+// 	#[UserRateLimit(limit: 20, period: 60)]
+// 	public function nmapScan(array $targets = [], string $preset = 'quick', array $extra = []): JSONResponse {
+// 		return $this->guard(fn () => $this->nmap->scan($targets, $preset, $extra), 'nmap');
+// 	}
 
 	// ---------------------------------------------------------------- saved connections
 
@@ -626,17 +631,19 @@ class ApiController extends Controller {
 		return $this->guard(fn () => $this->tools->tlsVersions($host, $port), 'tls');
 	}
 
-	#[NoAdminRequired]
-	#[UserRateLimit(limit: 60, period: 60)]
-	public function tcpPing(string $host, int $port = 443, int $count = 5): JSONResponse {
-		return $this->guard(fn () => $this->tools->tcpPing($host, $port, $count), 'ping');
-	}
+	// NETBASE-STORE-REMOVED: TCP ping
+// 	#[NoAdminRequired]
+// 	#[UserRateLimit(limit: 60, period: 60)]
+// 	public function tcpPing(string $host, int $port = 443, int $count = 5): JSONResponse {
+// 		return $this->guard(fn () => $this->tools->tcpPing($host, $port, $count), 'ping');
+// 	}
 
-	#[NoAdminRequired]
-	#[UserRateLimit(limit: 20, period: 300)]
-	public function mtuDiscover(string $host): JSONResponse {
-		return $this->guard(fn () => $this->tools->mtuDiscover($host), 'ping');
-	}
+	// NETBASE-STORE-REMOVED: path MTU discovery
+// 	#[NoAdminRequired]
+// 	#[UserRateLimit(limit: 20, period: 300)]
+// 	public function mtuDiscover(string $host): JSONResponse {
+// 		return $this->guard(fn () => $this->tools->mtuDiscover($host), 'ping');
+// 	}
 
 	#[NoAdminRequired]
 	public function subnetSplit(string $cidr, int $prefix): JSONResponse {

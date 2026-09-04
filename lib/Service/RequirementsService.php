@@ -10,7 +10,7 @@ namespace OCA\NetBase\Service;
  * Nothing in this list is required to run the app — every entry buys one
  * specific capability, and the interface says which. The install commands are
  * generated for the package manager this machine actually has, because "install
- * nmap" is not useful guidance on a system where the answer is `apk add nmap`.
+ * iperf3" is not useful guidance on a system where the answer is `apk add iperf3`.
  */
 class RequirementsService {
 	private const PACKAGE_MANAGERS = [
@@ -140,46 +140,47 @@ class RequirementsService {
 				'packages' => ['apt-get' => 'chromium-browser', 'dnf' => 'chromium', 'yum' => 'chromium', 'zypper' => 'chromium', 'pacman' => 'chromium', 'apk' => 'chromium', 'brew' => 'chromium'],
 				'after' => 'It is a large package. NetBase runs it with a throwaway profile and deletes it after every page.',
 			],
-			[
-				'id' => 'nmap',
-				'kind' => 'binary',
-				'probe' => 'nmap',
-				'name' => 'nmap',
-				'enables' => 'The nmap tab: host discovery, port and service detection with presets',
-				'without' => 'NetBase still sweeps the LAN and checks common ports on its own; the nmap tab is hidden.',
-				'packages' => ['apt-get' => 'nmap', 'dnf' => 'nmap', 'yum' => 'nmap', 'zypper' => 'nmap', 'pacman' => 'nmap', 'apk' => 'nmap', 'brew' => 'nmap'],
-				'after' => 'SYN, OS and UDP scans additionally need raw sockets: sudo setcap cap_net_raw,cap_net_admin,cap_net_bind_service+eip $(command -v nmap)',
-			],
-			[
-				'id' => 'mtr',
-				'kind' => 'binary',
-				'probe' => 'mtr',
-				'name' => 'mtr',
-				'enables' => 'Path quality: per-hop packet loss and latency along a route',
-				'without' => 'Traceroute still shows the path; per-hop loss statistics are unavailable.',
-				'packages' => ['apt-get' => 'mtr-tiny', 'dnf' => 'mtr', 'yum' => 'mtr', 'zypper' => 'mtr', 'pacman' => 'mtr', 'apk' => 'mtr', 'brew' => 'mtr'],
-				'after' => 'Unprivileged use needs raw sockets: sudo setcap cap_net_raw+ep $(command -v mtr)',
-			],
-			[
-				'id' => 'traceroute',
-				'kind' => 'binary',
-				'probe' => 'traceroute',
-				'name' => 'traceroute',
-				'enables' => 'Tracing the path to a host',
-				'without' => 'NetBase falls back to tracepath if it is installed; otherwise path tracing is unavailable.',
-				'packages' => ['apt-get' => 'traceroute', 'dnf' => 'traceroute', 'yum' => 'traceroute', 'zypper' => 'traceroute', 'pacman' => 'traceroute', 'apk' => 'traceroute', 'brew' => 'traceroute'],
-				'after' => null,
-			],
-			[
-				'id' => 'ping',
-				'kind' => 'binary',
-				'probe' => 'ping',
-				'name' => 'ping',
-				'enables' => 'Reachability and round-trip time',
-				'without' => 'Reachability can still be inferred from the TCP port check, without round-trip times.',
-				'packages' => ['apt-get' => 'iputils-ping', 'dnf' => 'iputils', 'yum' => 'iputils', 'zypper' => 'iputils', 'pacman' => 'iputils', 'apk' => 'iputils', 'brew' => null],
-				'after' => null,
-			],
+			// NETBASE-STORE-REMOVED: nmap, mtr, traceroute and ping requirements
+// 			[
+// 				'id' => 'nmap',
+// 				'kind' => 'binary',
+// 				'probe' => 'nmap',
+// 				'name' => 'nmap',
+// 				'enables' => 'The nmap tab: host discovery, port and service detection with presets',
+// 				'without' => 'NetBase still sweeps the LAN and checks common ports on its own; the nmap tab is hidden.',
+// 				'packages' => ['apt-get' => 'nmap', 'dnf' => 'nmap', 'yum' => 'nmap', 'zypper' => 'nmap', 'pacman' => 'nmap', 'apk' => 'nmap', 'brew' => 'nmap'],
+// 				'after' => 'SYN, OS and UDP scans additionally need raw sockets: sudo setcap cap_net_raw,cap_net_admin,cap_net_bind_service+eip $(command -v nmap)',
+// 			],
+// 			[
+// 				'id' => 'mtr',
+// 				'kind' => 'binary',
+// 				'probe' => 'mtr',
+// 				'name' => 'mtr',
+// 				'enables' => 'Path quality: per-hop packet loss and latency along a route',
+// 				'without' => 'Traceroute still shows the path; per-hop loss statistics are unavailable.',
+// 				'packages' => ['apt-get' => 'mtr-tiny', 'dnf' => 'mtr', 'yum' => 'mtr', 'zypper' => 'mtr', 'pacman' => 'mtr', 'apk' => 'mtr', 'brew' => 'mtr'],
+// 				'after' => 'Unprivileged use needs raw sockets: sudo setcap cap_net_raw+ep $(command -v mtr)',
+// 			],
+// 			[
+// 				'id' => 'traceroute',
+// 				'kind' => 'binary',
+// 				'probe' => 'traceroute',
+// 				'name' => 'traceroute',
+// 				'enables' => 'Tracing the path to a host',
+// 				'without' => 'NetBase falls back to tracepath if it is installed; otherwise path tracing is unavailable.',
+// 				'packages' => ['apt-get' => 'traceroute', 'dnf' => 'traceroute', 'yum' => 'traceroute', 'zypper' => 'traceroute', 'pacman' => 'traceroute', 'apk' => 'traceroute', 'brew' => 'traceroute'],
+// 				'after' => null,
+// 			],
+// 			[
+// 				'id' => 'ping',
+// 				'kind' => 'binary',
+// 				'probe' => 'ping',
+// 				'name' => 'ping',
+// 				'enables' => 'Reachability and round-trip time',
+// 				'without' => 'Reachability can still be inferred from the TCP port check, without round-trip times.',
+// 				'packages' => ['apt-get' => 'iputils-ping', 'dnf' => 'iputils', 'yum' => 'iputils', 'zypper' => 'iputils', 'pacman' => 'iputils', 'apk' => 'iputils', 'brew' => null],
+// 				'after' => null,
+// 			],
 			[
 				'id' => 'ss',
 				'kind' => 'binary',

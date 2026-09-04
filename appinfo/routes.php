@@ -43,9 +43,10 @@ return [
 		['name' => 'api#whois', 'url' => '/api/tools/whois', 'verb' => 'GET'],
 		['name' => 'api#dns', 'url' => '/api/tools/dns', 'verb' => 'GET'],
 		['name' => 'api#reverse', 'url' => '/api/tools/reverse', 'verb' => 'GET'],
-		['name' => 'api#ping', 'url' => '/api/tools/ping', 'verb' => 'GET'],
-		['name' => 'api#traceroute', 'url' => '/api/tools/traceroute', 'verb' => 'GET'],
-		['name' => 'api#ports', 'url' => '/api/tools/ports', 'verb' => 'GET'],
+		// NETBASE-STORE-REMOVED: ping, traceroute and the port check
+// 		['name' => 'api#ping', 'url' => '/api/tools/ping', 'verb' => 'GET'],
+// 		['name' => 'api#traceroute', 'url' => '/api/tools/traceroute', 'verb' => 'GET'],
+// 		['name' => 'api#ports', 'url' => '/api/tools/ports', 'verb' => 'GET'],
 		['name' => 'api#tls', 'url' => '/api/tools/tls', 'verb' => 'GET'],
 		['name' => 'api#http', 'url' => '/api/tools/http', 'verb' => 'GET'],
 		['name' => 'api#subnet', 'url' => '/api/tools/subnet', 'verb' => 'GET'],
@@ -59,7 +60,8 @@ return [
 		['name' => 'api#dnsBenchmark', 'url' => '/api/bench/dns', 'verb' => 'GET'],
 		['name' => 'api#httpTiming', 'url' => '/api/bench/http', 'verb' => 'GET'],
 		['name' => 'api#iperf', 'url' => '/api/bench/iperf', 'verb' => 'POST'],
-		['name' => 'api#pathQuality', 'url' => '/api/tools/path', 'verb' => 'GET'],
+		// NETBASE-STORE-REMOVED: path quality (mtr)
+// 		['name' => 'api#pathQuality', 'url' => '/api/tools/path', 'verb' => 'GET'],
 
 		// requirements
 		['name' => 'api#requirements', 'url' => '/api/requirements', 'verb' => 'GET'],
@@ -104,8 +106,9 @@ return [
 
 		// deeper checks on the existing tools
 		['name' => 'api#tlsVersions', 'url' => '/api/tools/tls-versions', 'verb' => 'GET'],
-		['name' => 'api#tcpPing', 'url' => '/api/tools/tcp-ping', 'verb' => 'GET'],
-		['name' => 'api#mtuDiscover', 'url' => '/api/tools/mtu', 'verb' => 'GET'],
+		// NETBASE-STORE-REMOVED: TCP ping and path MTU
+// 		['name' => 'api#tcpPing', 'url' => '/api/tools/tcp-ping', 'verb' => 'GET'],
+// 		['name' => 'api#mtuDiscover', 'url' => '/api/tools/mtu', 'verb' => 'GET'],
 		['name' => 'api#subnetSplit', 'url' => '/api/tools/subnet-split', 'verb' => 'GET'],
 		['name' => 'api#subnetAggregate', 'url' => '/api/tools/subnet-aggregate', 'verb' => 'GET'],
 
@@ -114,7 +117,8 @@ return [
 		['name' => 'api#probeTelnet', 'url' => '/api/probe/telnet', 'verb' => 'GET'],
 		['name' => 'api#probeNtp', 'url' => '/api/probe/ntp', 'verb' => 'GET'],
 
-		// nmap
-		['name' => 'api#nmapScan', 'url' => '/api/nmap', 'verb' => 'POST'],
+		// NETBASE-STORE-REMOVED: nmap
+// 		// nmap
+// 		['name' => 'api#nmapScan', 'url' => '/api/nmap', 'verb' => 'POST'],
 	],
 ];

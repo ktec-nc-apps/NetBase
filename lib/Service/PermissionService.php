@@ -36,9 +36,10 @@ class PermissionService {
 		// belongs to whoever runs the network, not to everyone with an account.
 		'devices' => ['default' => self::ADMIN, 'label' => 'Devices — read the device list', 'probes' => false],
 		'scan' => ['default' => self::ADMIN, 'label' => 'Scanning — sweep the network and edit the device list', 'probes' => true],
-		'nmap' => ['default' => self::ADMIN, 'label' => 'nmap — presets over the nmap scanner', 'probes' => true],
-		'ports' => ['default' => self::ADMIN, 'label' => 'Ports — TCP connect check with banners', 'probes' => true],
-		'ping' => ['default' => self::ALL, 'label' => 'Ping and traceroute', 'probes' => true],
+		// NETBASE-STORE-REMOVED: nmap, ports and ping tools
+// 		'nmap' => ['default' => self::ADMIN, 'label' => 'nmap — presets over the nmap scanner', 'probes' => true],
+// 		'ports' => ['default' => self::ADMIN, 'label' => 'Ports — TCP connect check with banners', 'probes' => true],
+// 		'ping' => ['default' => self::ALL, 'label' => 'Ping and traceroute', 'probes' => true],
 		'wol' => ['default' => self::ADMIN, 'label' => 'Wake-on-LAN — send magic packets', 'probes' => true],
 		'server' => ['default' => self::ADMIN, 'label' => 'This server — interfaces, routes, listening sockets', 'probes' => false],
 		'bench' => ['default' => self::ADMIN, 'label' => 'Benchmarks — speed test, throughput, DNS and HTTP timing', 'probes' => true],

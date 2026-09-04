@@ -259,144 +259,147 @@ class ToolService {
 		return ['ip' => $ip, 'name' => ($name !== false && $name !== $ip) ? $name : null];
 	}
 
-	// ---------------------------------------------------------------- reachability
+	// NETBASE-STORE-REMOVED: ping and traceroute
+// 	// ---------------------------------------------------------------- reachability
+//
+// 	public function ping(string $host, int $count = 4, bool $ipv6 = false): array {
+// 		$host = $this->validateHost($host);
+// 		$count = max(1, min(20, $count));
+// 		$binary = $ipv6 && $this->exec->available('ping6') ? 'ping6' : 'ping';
+// 		$args = ['-c', (string)$count, '-W', '2', '-n'];
+// 		if ($ipv6 && $binary === 'ping') {
+// 			$args[] = '-6';
+// 		}
+// 		$args[] = $host;
+// 		$result = $this->exec->run($binary, $args, (float)($count * 2 + 5));
+//
+// 		$stats = [];
+// 		if (preg_match('/(\d+) packets transmitted, (\d+) (?:packets )?received.*?([\d.]+)% packet loss/s', $result['stdout'], $m)) {
+// 			$stats = ['sent' => (int)$m[1], 'received' => (int)$m[2], 'loss' => (float)$m[3]];
+// 		}
+// 		if (preg_match('#min/avg/max/[a-z]+ = ([\d.]+)/([\d.]+)/([\d.]+)/([\d.]+)#', $result['stdout'], $m)) {
+// 			$stats += ['min' => (float)$m[1], 'avg' => (float)$m[2], 'max' => (float)$m[3], 'mdev' => (float)$m[4]];
+// 		}
+// 		// A bare "100% packet loss" reads as "the device is down", and often it
+// 		// is not: plenty of devices and firewalls simply ignore ping. Say what
+// 		// the number means, and what to do next.
+// 		$findings = [];
+// 		$loss = $stats['loss'] ?? null;
+// 		if ($loss === null && $result['code'] !== 127) {
+// 			$findings[] = ['level' => 'warn', 'area' => 'Ping', 'text' => $this->l->t('No answer at all — the name may not resolve, or nothing on the way let the request through.')];
+// 		} elseif ($loss !== null && $loss >= 100.0) {
+// 			$findings[] = ['level' => 'warn', 'area' => 'Ping', 'text' => $this->l->t('Nothing came back. Many devices and firewalls ignore ping while still answering on a port, so try the TCP check before calling it offline.')];
+// 		} elseif ($loss !== null && $loss > 0.0) {
+// 			$findings[] = ['level' => 'warn', 'area' => 'Ping', 'text' => $this->l->t('%s%% of the packets went missing. On a wired network that points at a cable or a port; on Wi-Fi, at range or interference.', [(string)$loss])];
+// 		} elseif ($loss !== null) {
+// 			$findings[] = ['level' => 'ok', 'area' => 'Ping', 'text' => $this->l->t('Every packet came back.')];
+// 		}
+// 		if (isset($stats['mdev']) && $stats['mdev'] > 30.0) {
+// 			$findings[] = ['level' => 'warn', 'area' => 'Ping', 'text' => $this->l->t('Round-trip times vary by %s ms. That much jitter is felt in calls and remote sessions.', [(string)$stats['mdev']])];
+// 		}
+// 		if (isset($stats['avg']) && $stats['avg'] > 200.0) {
+// 			$findings[] = ['level' => 'warn', 'area' => 'Ping', 'text' => $this->l->t('An average of %s ms is high enough to be noticeable in anything interactive.', [(string)$stats['avg']])];
+// 		}
+//
+// 		return ['host' => $host, 'stats' => $stats, 'findings' => $findings, 'output' => $result['stdout'] ?: $result['stderr'], 'available' => $result['code'] !== 127];
+// 	}
+//
+// 	public function traceroute(string $host, int $maxHops = 20): array {
+// 		$host = $this->validateHost($host);
+// 		$maxHops = max(1, min(40, $maxHops));
+// 		foreach ([['traceroute', ['-n', '-q', '1', '-w', '2', '-m', (string)$maxHops, $host]], ['tracepath', ['-n', '-m', (string)$maxHops, $host]]] as [$binary, $args]) {
+// 			if (!$this->exec->available($binary)) {
+// 				continue;
+// 			}
+// 			$result = $this->exec->run($binary, $args, 60.0);
+// 			return ['host' => $host, 'tool' => $binary, 'output' => $result['stdout'] ?: $result['stderr'], 'available' => true];
+// 		}
+// 		return ['host' => $host, 'tool' => null, 'output' => '', 'available' => false];
+// 	}
 
-	public function ping(string $host, int $count = 4, bool $ipv6 = false): array {
-		$host = $this->validateHost($host);
-		$count = max(1, min(20, $count));
-		$binary = $ipv6 && $this->exec->available('ping6') ? 'ping6' : 'ping';
-		$args = ['-c', (string)$count, '-W', '2', '-n'];
-		if ($ipv6 && $binary === 'ping') {
-			$args[] = '-6';
-		}
-		$args[] = $host;
-		$result = $this->exec->run($binary, $args, (float)($count * 2 + 5));
+	// NETBASE-STORE-REMOVED: per-hop path quality (mtr)
+// 	/**
+// 	 * Per-hop packet loss and latency along a route.
+// 	 *
+// 	 * Traceroute shows where the packets go; this shows where they suffer,
+// 	 * which is usually the question actually being asked.
+// 	 */
+// 	public function pathQuality(string $host, int $count = 10): array {
+// 		$host = $this->validateHost($host);
+// 		$count = max(3, min(60, $count));
+// 		if (!$this->exec->available('mtr')) {
+// 			return ['available' => false, 'host' => $host, 'hops' => []];
+// 		}
+// 		$result = $this->exec->run('mtr', ['--json', '-n', '-c', (string)$count, $host], (float)($count * 2 + 20));
+// 		$parsed = json_decode($result['stdout'], true);
+// 		if (!is_array($parsed) || !isset($parsed['report']['hubs'])) {
+// 			return [
+// 				'available' => true,
+// 				'host' => $host,
+// 				'hops' => [],
+// 				'error' => trim($result['stderr']) ?: 'mtr returned no usable output',
+// 			];
+// 		}
+// 		$hops = [];
+// 		foreach ($parsed['report']['hubs'] as $hub) {
+// 			$hops[] = [
+// 				'hop' => (int)($hub['count'] ?? 0),
+// 				'host' => (string)($hub['host'] ?? '???'),
+// 				'loss' => round((float)($hub['Loss%'] ?? 0), 1),
+// 				'sent' => (int)($hub['Snt'] ?? 0),
+// 				'last' => round((float)($hub['Last'] ?? 0), 1),
+// 				'avg' => round((float)($hub['Avg'] ?? 0), 1),
+// 				'best' => round((float)($hub['Best'] ?? 0), 1),
+// 				'worst' => round((float)($hub['Wrst'] ?? 0), 1),
+// 				'jitter' => round((float)($hub['StDev'] ?? 0), 1),
+// 			];
+// 		}
+// 		return ['available' => true, 'host' => $host, 'count' => $count, 'hops' => $hops];
+// 	}
 
-		$stats = [];
-		if (preg_match('/(\d+) packets transmitted, (\d+) (?:packets )?received.*?([\d.]+)% packet loss/s', $result['stdout'], $m)) {
-			$stats = ['sent' => (int)$m[1], 'received' => (int)$m[2], 'loss' => (float)$m[3]];
-		}
-		if (preg_match('#min/avg/max/[a-z]+ = ([\d.]+)/([\d.]+)/([\d.]+)/([\d.]+)#', $result['stdout'], $m)) {
-			$stats += ['min' => (float)$m[1], 'avg' => (float)$m[2], 'max' => (float)$m[3], 'mdev' => (float)$m[4]];
-		}
-		// A bare "100% packet loss" reads as "the device is down", and often it
-		// is not: plenty of devices and firewalls simply ignore ping. Say what
-		// the number means, and what to do next.
-		$findings = [];
-		$loss = $stats['loss'] ?? null;
-		if ($loss === null && $result['code'] !== 127) {
-			$findings[] = ['level' => 'warn', 'area' => 'Ping', 'text' => $this->l->t('No answer at all — the name may not resolve, or nothing on the way let the request through.')];
-		} elseif ($loss !== null && $loss >= 100.0) {
-			$findings[] = ['level' => 'warn', 'area' => 'Ping', 'text' => $this->l->t('Nothing came back. Many devices and firewalls ignore ping while still answering on a port, so try the TCP check before calling it offline.')];
-		} elseif ($loss !== null && $loss > 0.0) {
-			$findings[] = ['level' => 'warn', 'area' => 'Ping', 'text' => $this->l->t('%s%% of the packets went missing. On a wired network that points at a cable or a port; on Wi-Fi, at range or interference.', [(string)$loss])];
-		} elseif ($loss !== null) {
-			$findings[] = ['level' => 'ok', 'area' => 'Ping', 'text' => $this->l->t('Every packet came back.')];
-		}
-		if (isset($stats['mdev']) && $stats['mdev'] > 30.0) {
-			$findings[] = ['level' => 'warn', 'area' => 'Ping', 'text' => $this->l->t('Round-trip times vary by %s ms. That much jitter is felt in calls and remote sessions.', [(string)$stats['mdev']])];
-		}
-		if (isset($stats['avg']) && $stats['avg'] > 200.0) {
-			$findings[] = ['level' => 'warn', 'area' => 'Ping', 'text' => $this->l->t('An average of %s ms is high enough to be noticeable in anything interactive.', [(string)$stats['avg']])];
-		}
-
-		return ['host' => $host, 'stats' => $stats, 'findings' => $findings, 'output' => $result['stdout'] ?: $result['stderr'], 'available' => $result['code'] !== 127];
-	}
-
-	public function traceroute(string $host, int $maxHops = 20): array {
-		$host = $this->validateHost($host);
-		$maxHops = max(1, min(40, $maxHops));
-		foreach ([['traceroute', ['-n', '-q', '1', '-w', '2', '-m', (string)$maxHops, $host]], ['tracepath', ['-n', '-m', (string)$maxHops, $host]]] as [$binary, $args]) {
-			if (!$this->exec->available($binary)) {
-				continue;
-			}
-			$result = $this->exec->run($binary, $args, 60.0);
-			return ['host' => $host, 'tool' => $binary, 'output' => $result['stdout'] ?: $result['stderr'], 'available' => true];
-		}
-		return ['host' => $host, 'tool' => null, 'output' => '', 'available' => false];
-	}
-
-	/**
-	 * Per-hop packet loss and latency along a route.
-	 *
-	 * Traceroute shows where the packets go; this shows where they suffer,
-	 * which is usually the question actually being asked.
-	 */
-	public function pathQuality(string $host, int $count = 10): array {
-		$host = $this->validateHost($host);
-		$count = max(3, min(60, $count));
-		if (!$this->exec->available('mtr')) {
-			return ['available' => false, 'host' => $host, 'hops' => []];
-		}
-		$result = $this->exec->run('mtr', ['--json', '-n', '-c', (string)$count, $host], (float)($count * 2 + 20));
-		$parsed = json_decode($result['stdout'], true);
-		if (!is_array($parsed) || !isset($parsed['report']['hubs'])) {
-			return [
-				'available' => true,
-				'host' => $host,
-				'hops' => [],
-				'error' => trim($result['stderr']) ?: 'mtr returned no usable output',
-			];
-		}
-		$hops = [];
-		foreach ($parsed['report']['hubs'] as $hub) {
-			$hops[] = [
-				'hop' => (int)($hub['count'] ?? 0),
-				'host' => (string)($hub['host'] ?? '???'),
-				'loss' => round((float)($hub['Loss%'] ?? 0), 1),
-				'sent' => (int)($hub['Snt'] ?? 0),
-				'last' => round((float)($hub['Last'] ?? 0), 1),
-				'avg' => round((float)($hub['Avg'] ?? 0), 1),
-				'best' => round((float)($hub['Best'] ?? 0), 1),
-				'worst' => round((float)($hub['Wrst'] ?? 0), 1),
-				'jitter' => round((float)($hub['StDev'] ?? 0), 1),
-			];
-		}
-		return ['available' => true, 'host' => $host, 'count' => $count, 'hops' => $hops];
-	}
-
-	/**
-	 * TCP connect check with a short banner read, for one host and a port list.
-	 */
-	public function portCheck(string $host, array $ports, float $timeout = 1.5): array {
-		$host = $this->validateHost($host);
-		$ports = array_values(array_filter(array_map('intval', $ports), static fn ($p) => $p > 0 && $p < 65536));
-		if ($ports === []) {
-			throw new \InvalidArgumentException('No ports given');
-		}
-		$results = [];
-		foreach (array_slice($ports, 0, 128) as $port) {
-			$started = microtime(true);
-			$target = str_contains($host, ':') ? '[' . $host . ']' : $host;
-			$errno = 0;
-			$errstr = '';
-			$sock = @stream_socket_client('tcp://' . $target . ':' . $port, $errno, $errstr, $timeout);
-			$elapsed = round((microtime(true) - $started) * 1000, 1);
-			if ($sock === false) {
-				$results[] = ['port' => $port, 'open' => false, 'ms' => $elapsed, 'service' => $this->serviceName($port), 'banner' => null, 'error' => $errstr];
-				continue;
-			}
-			stream_set_timeout($sock, 1);
-			stream_set_blocking($sock, false);
-			usleep(250000);
-			$banner = (string)@fread($sock, 512);
-			if ($banner === '' && in_array($port, [80, 8080, 8000], true)) {
-				@fwrite($sock, "HEAD / HTTP/1.0\r\nHost: " . $host . "\r\n\r\n");
-				usleep(300000);
-				$banner = (string)@fread($sock, 512);
-			}
-			@fclose($sock);
-			$results[] = [
-				'port' => $port,
-				'open' => true,
-				'ms' => $elapsed,
-				'service' => $this->serviceName($port),
-				'banner' => $banner !== '' ? mb_substr(preg_replace('/[\x00-\x08\x0b\x0c\x0e-\x1f]/', '', $banner) ?? '', 0, 300) : null,
-				'error' => null,
-			];
-		}
-		return ['host' => $host, 'results' => $results];
-	}
+	// NETBASE-STORE-REMOVED: TCP port check
+// 	/**
+// 	 * TCP connect check with a short banner read, for one host and a port list.
+// 	 */
+// 	public function portCheck(string $host, array $ports, float $timeout = 1.5): array {
+// 		$host = $this->validateHost($host);
+// 		$ports = array_values(array_filter(array_map('intval', $ports), static fn ($p) => $p > 0 && $p < 65536));
+// 		if ($ports === []) {
+// 			throw new \InvalidArgumentException('No ports given');
+// 		}
+// 		$results = [];
+// 		foreach (array_slice($ports, 0, 128) as $port) {
+// 			$started = microtime(true);
+// 			$target = str_contains($host, ':') ? '[' . $host . ']' : $host;
+// 			$errno = 0;
+// 			$errstr = '';
+// 			$sock = @stream_socket_client('tcp://' . $target . ':' . $port, $errno, $errstr, $timeout);
+// 			$elapsed = round((microtime(true) - $started) * 1000, 1);
+// 			if ($sock === false) {
+// 				$results[] = ['port' => $port, 'open' => false, 'ms' => $elapsed, 'service' => $this->serviceName($port), 'banner' => null, 'error' => $errstr];
+// 				continue;
+// 			}
+// 			stream_set_timeout($sock, 1);
+// 			stream_set_blocking($sock, false);
+// 			usleep(250000);
+// 			$banner = (string)@fread($sock, 512);
+// 			if ($banner === '' && in_array($port, [80, 8080, 8000], true)) {
+// 				@fwrite($sock, "HEAD / HTTP/1.0\r\nHost: " . $host . "\r\n\r\n");
+// 				usleep(300000);
+// 				$banner = (string)@fread($sock, 512);
+// 			}
+// 			@fclose($sock);
+// 			$results[] = [
+// 				'port' => $port,
+// 				'open' => true,
+// 				'ms' => $elapsed,
+// 				'service' => $this->serviceName($port),
+// 				'banner' => $banner !== '' ? mb_substr(preg_replace('/[\x00-\x08\x0b\x0c\x0e-\x1f]/', '', $banner) ?? '', 0, 300) : null,
+// 				'error' => null,
+// 			];
+// 		}
+// 		return ['host' => $host, 'results' => $results];
+// 	}
 
 	public function serviceName(int $port): string {
 		$known = [
@@ -711,95 +714,97 @@ class ToolService {
 		return ['host' => $host, 'port' => $port, 'versions' => $results, 'findings' => $findings];
 	}
 
-	/**
-	 * Latency measured by opening a TCP connection, for the many hosts and
-	 * networks that drop ICMP but answer on a port.
-	 *
-	 * @return array<string, mixed>
-	 */
-	public function tcpPing(string $host, int $port = 443, int $count = 5, float $timeout = 3.0): array {
-		$host = $this->validateHost($host);
-		$port = max(1, min(65535, $port));
-		$count = max(1, min(20, $count));
-		$target = str_contains($host, ':') && filter_var($host, FILTER_VALIDATE_IP) !== false ? '[' . $host . ']' : $host;
-		$times = [];
-		$failures = 0;
-		for ($i = 0; $i < $count; $i++) {
-			$errno = 0;
-			$errstr = '';
-			$started = microtime(true);
-			$socket = @stream_socket_client('tcp://' . $target . ':' . $port, $errno, $errstr, $timeout);
-			if ($socket === false) {
-				$failures++;
-			} else {
-				$times[] = round((microtime(true) - $started) * 1000, 2);
-				@fclose($socket);
-			}
-			if ($i < $count - 1) {
-				usleep(200000);
-			}
-		}
-		sort($times);
-		$stats = [];
-		if ($times !== []) {
-			$sum = array_sum($times);
-			$stats = [
-				'min' => $times[0],
-				'max' => $times[count($times) - 1],
-				'avg' => round($sum / count($times), 2),
-				'median' => $times[intdiv(count($times), 2)],
-			];
-		}
-		return [
-			'host' => $host, 'port' => $port, 'sent' => $count, 'received' => count($times),
-			'loss' => round($failures / $count * 100, 1), 'times' => $times, 'stats' => $stats,
-			'service' => $this->serviceName($port),
-		];
-	}
+	// NETBASE-STORE-REMOVED: TCP ping
+// 	/**
+// 	 * Latency measured by opening a TCP connection, for the many hosts and
+// 	 * networks that drop ICMP but answer on a port.
+// 	 *
+// 	 * @return array<string, mixed>
+// 	 */
+// 	public function tcpPing(string $host, int $port = 443, int $count = 5, float $timeout = 3.0): array {
+// 		$host = $this->validateHost($host);
+// 		$port = max(1, min(65535, $port));
+// 		$count = max(1, min(20, $count));
+// 		$target = str_contains($host, ':') && filter_var($host, FILTER_VALIDATE_IP) !== false ? '[' . $host . ']' : $host;
+// 		$times = [];
+// 		$failures = 0;
+// 		for ($i = 0; $i < $count; $i++) {
+// 			$errno = 0;
+// 			$errstr = '';
+// 			$started = microtime(true);
+// 			$socket = @stream_socket_client('tcp://' . $target . ':' . $port, $errno, $errstr, $timeout);
+// 			if ($socket === false) {
+// 				$failures++;
+// 			} else {
+// 				$times[] = round((microtime(true) - $started) * 1000, 2);
+// 				@fclose($socket);
+// 			}
+// 			if ($i < $count - 1) {
+// 				usleep(200000);
+// 			}
+// 		}
+// 		sort($times);
+// 		$stats = [];
+// 		if ($times !== []) {
+// 			$sum = array_sum($times);
+// 			$stats = [
+// 				'min' => $times[0],
+// 				'max' => $times[count($times) - 1],
+// 				'avg' => round($sum / count($times), 2),
+// 				'median' => $times[intdiv(count($times), 2)],
+// 			];
+// 		}
+// 		return [
+// 			'host' => $host, 'port' => $port, 'sent' => $count, 'received' => count($times),
+// 			'loss' => round($failures / $count * 100, 1), 'times' => $times, 'stats' => $stats,
+// 			'service' => $this->serviceName($port),
+// 		];
+// 	}
 
-	/**
-	 * The largest packet that reaches a host without fragmentation.
-	 *
-	 * A path that silently drops big packets is the classic cause of "the page
-	 * starts loading and then stops", and nothing else finds it quickly.
-	 *
-	 * @return array<string, mixed>
-	 */
-	public function mtuDiscover(string $host, int $low = 1200, int $high = 1472): array {
-		$host = $this->validateHost($host);
-		if (!$this->exec->available('ping')) {
-			return ['host' => $host, 'available' => false, 'mtu' => null];
-		}
-		// 1472 bytes of payload plus 28 of header is the standard 1500-byte
-		// Ethernet MTU, which is the ceiling worth searching for.
-		$low = max(548, min(8972, $low));
-		$high = max($low, min(8972, $high));
-		$best = null;
-		// Binary search over the payload size; 28 bytes of IP and ICMP header
-		// sit on top of it.
-		while ($low <= $high) {
-			$middle = intdiv($low + $high, 2);
-			$result = $this->exec->run('ping', ['-c', '1', '-W', '2', '-M', 'do', '-s', (string)$middle, '-n', $host], 6.0);
-			$ok = $result['code'] === 0;
-			if ($ok) {
-				$best = $middle;
-				$low = $middle + 1;
-			} else {
-				$high = $middle - 1;
-			}
-		}
-		return [
-			'host' => $host,
-			'available' => true,
-			'payload' => $best,
-			'mtu' => $best !== null ? $best + 28 : null,
-			'findings' => [$best === null
-				? ['level' => 'warn', 'area' => 'MTU', 'text' => $this->l->t('No packet size in the range got through. The host may be dropping ICMP entirely.')]
-				: ($best + 28 < 1500
-					? ['level' => 'warn', 'area' => 'MTU', 'text' => $this->l->t('The path carries at most %d bytes, below the usual 1500. Tunnels and PPPoE links do this, and it breaks large transfers when routers stay quiet about it.', [$best + 28])]
-					: ['level' => 'ok', 'area' => 'MTU', 'text' => $this->l->t('The full 1500-byte path is clear.')])],
-		];
-	}
+	// NETBASE-STORE-REMOVED: path MTU discovery
+// 	/**
+// 	 * The largest packet that reaches a host without fragmentation.
+// 	 *
+// 	 * A path that silently drops big packets is the classic cause of "the page
+// 	 * starts loading and then stops", and nothing else finds it quickly.
+// 	 *
+// 	 * @return array<string, mixed>
+// 	 */
+// 	public function mtuDiscover(string $host, int $low = 1200, int $high = 1472): array {
+// 		$host = $this->validateHost($host);
+// 		if (!$this->exec->available('ping')) {
+// 			return ['host' => $host, 'available' => false, 'mtu' => null];
+// 		}
+// 		// 1472 bytes of payload plus 28 of header is the standard 1500-byte
+// 		// Ethernet MTU, which is the ceiling worth searching for.
+// 		$low = max(548, min(8972, $low));
+// 		$high = max($low, min(8972, $high));
+// 		$best = null;
+// 		// Binary search over the payload size; 28 bytes of IP and ICMP header
+// 		// sit on top of it.
+// 		while ($low <= $high) {
+// 			$middle = intdiv($low + $high, 2);
+// 			$result = $this->exec->run('ping', ['-c', '1', '-W', '2', '-M', 'do', '-s', (string)$middle, '-n', $host], 6.0);
+// 			$ok = $result['code'] === 0;
+// 			if ($ok) {
+// 				$best = $middle;
+// 				$low = $middle + 1;
+// 			} else {
+// 				$high = $middle - 1;
+// 			}
+// 		}
+// 		return [
+// 			'host' => $host,
+// 			'available' => true,
+// 			'payload' => $best,
+// 			'mtu' => $best !== null ? $best + 28 : null,
+// 			'findings' => [$best === null
+// 				? ['level' => 'warn', 'area' => 'MTU', 'text' => $this->l->t('No packet size in the range got through. The host may be dropping ICMP entirely.')]
+// 				: ($best + 28 < 1500
+// 					? ['level' => 'warn', 'area' => 'MTU', 'text' => $this->l->t('The path carries at most %d bytes, below the usual 1500. Tunnels and PPPoE links do this, and it breaks large transfers when routers stay quiet about it.', [$best + 28])]
+// 					: ['level' => 'ok', 'area' => 'MTU', 'text' => $this->l->t('The full 1500-byte path is clear.')])],
+// 		];
+// 	}
 
 	/**
 	 * Split a network into equal smaller ones — the everyday VLAN question.
