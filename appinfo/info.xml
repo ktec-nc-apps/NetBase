@@ -2,8 +2,8 @@
 <info xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://apps.nextcloud.com/schema/apps/info.xsd">
 	<id>netbase</id>
 	<name>NetBase</name>
-	<summary>Network toolbox — fast LAN device discovery with vendor lookup, plus DNS, whois, ping, port, TLS and nmap tools</summary>
-	<summary lang="ja">ネットワーク総合ツール ― LAN機器の高速検出とベンダー判別、DNS・whois・ping・ポート・TLS・nmap の各ツール</summary>
+	<summary>Network toolbox — fast LAN device discovery with vendor lookup, plus DNS, whois, TLS, mail and file-transfer tools</summary>
+	<summary lang="ja">ネットワーク総合ツール ― LAN機器の高速検出とベンダー判別、DNS・whois・TLS・メール・ファイル転送の各ツール</summary>
 	<description><![CDATA[NetBase turns your Nextcloud into a network console: it finds every device on the LAN, opens each one's own settings page from inside Nextcloud, and keeps the everyday lookup tools on the same screen.
 
 Device windows are the heart of it. The server fetches a device's own web interface and rewrites every address inside it, so a router, a switch, a printer or a NAS can be signed into and configured from anywhere the Nextcloud is reachable — no VPN, no jump host, no site visit. Firmware can be sent, a configuration restored, a backup taken. Several windows can be open at once.
@@ -15,16 +15,15 @@ What each part is for:
 - LAN sweep and inventory — name, IPv4, MAC, vendor, type and open ports, exportable as CSV
 - DNS — any record type from any resolver, resolver comparison, delegation trace, zone-transfer test
 - Whois — domains and addresses, following IANA referrals, with no whois binary
-- Reachability — ping, traceroute, port check with banners, TCP ping for hosts that drop ICMP, path MTU, Wake-on-LAN
+- Wake-on-LAN — wake a device by its MAC address
 - TLS and HTTP — certificate, chain and expiry, accepted TLS versions, redirect chain, security headers
 - Mail — SPF, DKIM, DMARC, MTA-STS, DANE and blocklists, plus SMTP/IMAP/POP3 server tests, an open-relay test and a real test message
 - FTP and SFTP — browse a remote server and move files to and from your Nextcloud folders
 - SSH and Telnet — a credential-free probe, and commands or a console on a saved connection
-- Benchmarks — internet speed, LAN throughput over iperf3, resolver comparison, HTTP timing, per-hop path quality
-- nmap front end with a strict argument allow-list, when nmap is installed
+- Benchmarks — internet speed, LAN throughput over iperf3, resolver comparison, HTTP timing
 - Every result can be copied, downloaded or saved straight into your own Nextcloud files
 
-Access is per tool. NetBase is an administrator's app, and everything that touches the local network defaults to administrators — but each tool can be opened to named groups or to everyone from Administration settings, so an instance can lend out whois, ping, DNS and the other harmless lookups without lending out the network. Where an account is allowed nothing, NetBase leaves itself out of that account's app menu.
+Access is per tool. NetBase is an administrator's app, and everything that touches the local network defaults to administrators — but each tool can be opened to named groups or to everyone from Administration settings, so an instance can lend out whois, DNS and the other harmless lookups without lending out the network. Where an account is allowed nothing, NetBase leaves itself out of that account's app menu.
 
 Available in twenty languages, and NetBase can be set to a different language from the rest of Nextcloud, per account.]]></description>
 	<description lang="ja"><![CDATA[NetBaseは、Nextcloudをネットワーク管理コンソールに変えるアプリです。LAN上の機器を洗い出し、各機器の設定画面をNextcloudの中から開き、日常的に使う調査ツールを同じ画面に揃えます。
@@ -38,18 +37,18 @@ Available in twenty languages, and NetBase can be set to a different language fr
 - LANスキャンと台帳 ― 機器名・IPv4・MAC・ベンダー・種別・開放ポート、CSV書き出し
 - DNS ― 任意のレコード種別を任意のDNSサーバーへ、リゾルバ比較、委任追跡、ゾーン転送検査
 - whois ― ドメインとIPアドレス、IANAからの委譲追跡（whoisコマンド不要）
-- 疎通確認 ― ping、traceroute、バナー付きポート確認、ICMPが通らない相手向けTCP ping、経路MTU、Wake-on-LAN
+- Wake-on-LAN ― MACアドレスを指定して機器を起動
 - TLS・HTTP ― 証明書とチェーンと有効期限、受け付けるTLSバージョン、リダイレクト連鎖、セキュリティヘッダー
 - メール ― SPF・DKIM・DMARC・MTA-STS・DANE・ブロックリスト、SMTP/IMAP/POP3のサーバー検査、第三者中継テスト、実際の試験送信
 - FTP・SFTP ― リモートサーバーの閲覧と、Nextcloudフォルダーとのファイル受け渡し
 - SSH・Telnet ― 資格情報なしの調査と、保存済み接続先でのコマンド実行・コンソール
-- ベンチマーク ― 回線速度、iperf3によるLAN帯域、リゾルバ比較、HTTP時間内訳、経路ごとの品質
+- ベンチマーク ― 回線速度、iperf3によるLAN帯域、リゾルバ比較、HTTP時間内訳
 - どの結果もコピー・ダウンロード・Nextcloudのファイルへの保存が可能
 
-公開範囲はツール単位で設定できます。NetBaseは管理者向けのアプリで、ローカルネットワークに触れる機能は既定で管理者のみですが、管理設定から各ツールを指定グループや全員に開放できます。ネットワークそのものを渡すことなく、whois・ping・DNSといった無害な調査だけを一般利用者に使ってもらえます。何も許可されていない利用者には、アプリメニューにも表示しません。
+公開範囲はツール単位で設定できます。NetBaseは管理者向けのアプリで、ローカルネットワークに触れる機能は既定で管理者のみですが、管理設定から各ツールを指定グループや全員に開放できます。ネットワークそのものを渡すことなく、whois・DNSといった無害な調査だけを一般利用者に使ってもらえます。何も許可されていない利用者には、アプリメニューにも表示しません。
 
 20言語に対応し、NetBaseだけをNextcloud本体と別の言語に設定することもできます（利用者ごと）。]]></description>
-	<version>0.3.2</version>
+	<version>0.3.3</version>
 	<licence>agpl</licence>
 	<author>KTEC</author>
 	<namespace>NetBase</namespace>

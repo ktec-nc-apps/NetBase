@@ -204,7 +204,7 @@
 #netbase-root .tool-row { display: flex; gap: 10px; align-items: center; margin-bottom: 8px; }
 #netbase-root .tool-row .narrow { max-width: 260px; }
 #netbase-root .tool-row .tiny { max-width: 96px; }
-#netbase-root .nmap-host { border-top: 1px solid var(--border); padding-top: 12px; margin-top: 12px; }
+/* NETBASE-STORE-REMOVED: #netbase-root .nmap-host { border-top: 1px solid var(--border); padding-top: 12px; margin-top: 12px; } */
 #netbase-root .nh-head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; flex-wrap: wrap; }
 
 /* ---------- device drawer ---------- */

@@ -1,6 +1,6 @@
 # NetBase
 
-Network toolbox for Nextcloud — fast LAN device discovery with vendor lookup, plus DNS, whois, ping, port, TLS and nmap tools.
+Network toolbox for Nextcloud — fast LAN device discovery with vendor lookup, plus DNS, whois, TLS, mail, file-transfer and benchmark tools.
 
 NetBase turns your Nextcloud into a network console. It finds every device on your LAN, tells you what each one is, opens each one's own settings page from inside Nextcloud, and keeps the everyday lookup tools on the same screen.
 
@@ -29,12 +29,6 @@ NetBase turns your Nextcloud into a network console. It finds every device on yo
 **How it works.** IANA is asked first, then the registry it names, then the registrar it names — the referral chain followed to the end, over plain sockets. No `whois` binary is required.
 
 **What it is for.** Expiry dates before they surprise you. Who to contact about an address that is causing trouble. Which registrar a domain actually sits at, before a transfer.
-
-### Reachability: ping, traceroute, ports, MTU
-
-**How it works.** `ping`, `traceroute` and `mtr` are the system's own; the port check opens a TCP connection and reads the banner; the TCP ping times connections for hosts that ignore ICMP; path MTU is found by sending probes that must not be fragmented.
-
-**What it is for.** Deciding whether the problem is the device, the path or the firewall. Proving a device is up when it refuses to answer ping. Explaining a VPN that works until a file is large.
 
 ### TLS and HTTP
 
@@ -78,12 +72,6 @@ NetBase turns your Nextcloud into a network console. It finds every device on yo
 
 **What it is for.** Ruling the clock in or out. A drifted clock is behind more certificate and sign-in failures than anything else.
 
-### nmap
-
-**How it works.** A front end over the installed `nmap`, with results parsed from its XML output. Options are restricted to an allow-list that refuses anything writing files, reading target lists or loading scripts.
-
-**What it is for.** Going deeper than NetBase's own port check when something warrants it — service versions, operating-system guesses, a UDP sweep.
-
 ### System information
 
 **How it works.** This server's interfaces, addresses, routes, resolvers and listening sockets, alongside a list of which tools work right now and which would start working if a package were installed — with the install command for the package manager this machine actually has.
@@ -98,9 +86,9 @@ NetBase turns your Nextcloud into a network console. It finds every device on yo
 
 ### Access, appearance and language
 
-**How it works.** NetBase is an administrator's app, and everything that touches the local network — the device windows, the sweep, port checks, nmap, Wake-on-LAN, mail tests, FTP, SFTP, SSH, the device list itself — defaults to administrators. But every tool has its own level, set in **Administration settings → NetBase**: administrators only, administrators plus named groups, or every signed-in account. Any of them can be opened up, including the ones that ship closed. Where an account is allowed nothing at all, NetBase leaves itself out of that account's app menu rather than advertising a door that will not open. The theme and the language are per account, and the sidebar can be dragged into whatever order suits the work.
+**How it works.** NetBase is an administrator's app, and everything that touches the local network — the device windows, the sweep, Wake-on-LAN, mail tests, FTP, SFTP, SSH, the device list itself — defaults to administrators. But every tool has its own level, set in **Administration settings → NetBase**: administrators only, administrators plus named groups, or every signed-in account. Any of them can be opened up, including the ones that ship closed. Where an account is allowed nothing at all, NetBase leaves itself out of that account's app menu rather than advertising a door that will not open. The theme and the language are per account, and the sidebar can be dragged into whatever order suits the work.
 
-**What it is for.** Letting the helpdesk run a whois or a ping without giving them the network. Opening the device list to a named group during a migration, and closing it again afterwards.
+**What it is for.** Letting the helpdesk run a whois or a DNS lookup without giving them the network. Opening the device list to a named group during a migration, and closing it again afterwards.
 
 ## Benchmarks
 
@@ -111,7 +99,6 @@ NetBase turns your Nextcloud into a network console. It finds every device on yo
 | **LAN throughput** | The real speed of the local link, in both directions, with a per-second graph and the retransmit count | `iperf3` here and on one other machine |
 | **DNS resolver comparison** | Median, average and jitter for every resolver, including the one this server uses, with the fastest marked | nothing |
 | **Where the time goes** | One HTTP request broken into DNS, TCP, TLS, server think-time and transfer | `ext-curl` |
-| **Path quality** | Packet loss and latency at every hop along a route | `mtr` |
 
 Two of these deserve a note.
 
@@ -165,7 +152,7 @@ The password (or private key, with its passphrase) is encrypted with Nextcloud's
 
 ## Requirements
 
-Nextcloud 30–34 and PHP 8.1 or newer. **Nothing else is required**: device discovery, naming, vendor lookup, DNS, whois, port checks, subnet maths, the live throughput graph and the DNS resolver comparison all work on a stock PHP install.
+Nextcloud 30–34 and PHP 8.1 or newer. **Nothing else is required**: device discovery, naming, vendor lookup, DNS, whois, subnet maths, the live throughput graph and the DNS resolver comparison all work on a stock PHP install.
 
 Everything below is optional. Each entry buys one capability, and NetBase degrades to a documented fallback without it.
 
@@ -178,26 +165,21 @@ You do not have to read this table to find out where you stand. **System informa
 | `ext-ftp` (PHP) | Browsing FTP servers and moving files | SFTP still works — it uses the library Nextcloud already ships |
 | `chromium` | **Show the page**: a device's web page rendered on the server as a picture | The web ports are still offered as links |
 | `iperf3` | LAN throughput measurement | Local link speed cannot be measured |
-| `nmap` | The nmap tab | NetBase still sweeps the LAN and checks common ports itself |
-| `mtr` | Per-hop packet loss and latency | Traceroute still shows the path, without loss statistics |
-| `traceroute` | Path tracing | Falls back to `tracepath` |
-| `ping` | Round-trip times | Reachability is still inferred from the TCP port check |
 | `ss` (iproute2) | The listening-sockets list | Falls back to `netstat` |
 
-Two components want more than an install:
+One component wants more than an install:
 
-- **nmap** — SYN, OS and UDP scans need raw sockets. Without them NetBase hides those presets and says why. To grant them: `sudo setcap cap_net_raw,cap_net_admin,cap_net_bind_service+eip $(command -v nmap)`
 - **iperf3** — the far end has to be listening: `iperf3 -s`
 
 ## Notes for administrators
 
-**Access.** NetBase is an administrator's app that can lend out its harmless half. Every tool has its own access level, set in **Administration settings → NetBase**: administrators only, administrators plus named groups, or every signed-in user. Administrators always have everything. The lookups that touch nothing locally — DNS, whois, TLS and HTTP, subnet maths, ping, a clock check, an SSH or Telnet probe — default to every signed-in user, because none of them is more powerful than a public web form. Everything that touches the local network defaults to administrators: sweeping it, port checks, nmap, Wake-on-LAN, the server view, mail tests, FTP and SFTP, SSH commands, and the device windows. So does reading the device list, which is not a lookup but the inventory of a private network — what is on it, what it answers on, what it is called. Running a sweep is a separate permission from reading its result, because a sweep puts thousands of ARP probes on the wire. Where nothing at all is permitted, NetBase leaves itself out of the app menu rather than advertising a door that will not open.
+**Access.** NetBase is an administrator's app that can lend out its harmless half. Every tool has its own access level, set in **Administration settings → NetBase**: administrators only, administrators plus named groups, or every signed-in user. Administrators always have everything. The lookups that touch nothing locally — DNS, whois, TLS and HTTP, subnet maths, a clock check, an SSH or Telnet probe — default to every signed-in user, because none of them is more powerful than a public web form. Everything that touches the local network defaults to administrators: sweeping it, Wake-on-LAN, the server view, mail tests, FTP and SFTP, SSH commands, and the device windows. So does reading the device list, which is not a lookup but the inventory of a private network — what is on it, what it answers on, what it is called. Running a sweep is a separate permission from reading its result, because a sweep puts thousands of ARP probes on the wire. Where nothing at all is permitted, NetBase leaves itself out of the app menu rather than advertising a door that will not open.
 
 When a user is allowed no tool at all, NetBase leaves itself out of that user's app menu and its page answers 403. That behaviour is a setting, so an instance can advertise the app to everyone if it prefers.
 
 **Neighbour table.** A sweep creates one kernel neighbour entry per probed address. If the target is larger than `net.ipv4.neigh.default.gc_thresh3` (1024 on most systems), the kernel forces garbage collection and logs `neighbour table overflow`. The scan is still correct, but NetBase shows the exact `sysctl` command to raise the limit before you sweep anything larger than that.
 
-**Safety.** External binaries are never invoked through a shell — arguments are passed as an array — and nmap options are restricted to an allow-list that refuses anything writing files, reading target lists or loading scripts from disk.
+**Safety.** External binaries are never invoked through a shell: arguments are passed as an array, never as a command line a shell could reinterpret.
 
 ## Command line
 
@@ -242,12 +224,6 @@ Nextcloud 用のネットワーク総合ツールです。LAN上の機器を検�
 
 **用途** ― ドメイン有効期限の事前把握。問題のあるアドレスの連絡先確認。移管前に、そのドメインが実際にどの登録業者にあるかの確認。
 
-### 疎通確認（ping・traceroute・ポート・MTU）
-
-**仕組み** ― ping・traceroute・mtr は OS のコマンドを利用。ポート確認は実際に TCP 接続してバナーを読み取り、TCP ping は ICMP を返さない相手向けに接続時間を計測、経路MTUは分割禁止の試験パケットで求めます。
-
-**用途** ― 原因が機器か経路かファイアウォールかの切り分け。ping に応答しない機器が「生きている」ことの証明。大きなファイルのときだけ失敗する VPN の説明。
-
 ### TLS・HTTP 検査
 
 **仕組み** ― 確立した通信から証明書・チェーン・有効期限を読み取り、TLS のバージョンを一つずつ提示して受け付けるものを判定、リダイレクト連鎖と応答ヘッダーを取得して評価します。
@@ -290,12 +266,6 @@ Nextcloud 用のネットワーク総合ツールです。LAN上の機器を検�
 
 **用途** ― 時刻ずれの切り分け。証明書エラーやログイン失敗の原因として、時刻ずれは最も多い部類です。
 
-### nmap
-
-**仕組み** ― 導入済みの `nmap` のフロントエンドで、結果は XML 出力を解析して表示します。オプションは許可リスト方式で、ファイル書き込み・対象リスト読み込み・スクリプト実行を伴うものは拒否します。
-
-**用途** ― NetBase 自身のポート確認より深く踏み込みたいとき（サービスのバージョン判定、OS 推定、UDP 掃引）。
-
 ### システム情報
 
 **仕組み** ― このサーバーのインターフェース・アドレス・経路・DNSサーバー・待受ソケットに加え、「いま使える機能」と「何を入れれば使えるようになる機能」を、このマシンのパッケージ管理に合わせた導入コマンド付きで一覧します。
@@ -310,9 +280,9 @@ Nextcloud 用のネットワーク総合ツールです。LAN上の機器を検�
 
 ### 公開範囲・表示・言語
 
-**仕組み** ― NetBase は管理者向けのアプリで、ローカルネットワークに触れる機能（機器ウィンドウ、スキャン、ポート確認、nmap、Wake-on-LAN、メール検査、FTP・SFTP、SSH、機器台帳そのもの）は既定で管理者のみです。ただし公開範囲はツール単位で、**管理設定 → NetBase** から「管理者のみ／指定グループ／全員」を選べます。既定で閉じている機能も含め、どれでも開放できます。何も許可されていない利用者には、開かない扉を見せないよう、アプリメニューにも表示しません。テーマと言語は利用者ごと、サイドバーの並び順もドラッグで変更できます。
+**仕組み** ― NetBase は管理者向けのアプリで、ローカルネットワークに触れる機能（機器ウィンドウ、スキャン、Wake-on-LAN、メール検査、FTP・SFTP、SSH、機器台帳そのもの）は既定で管理者のみです。ただし公開範囲はツール単位で、**管理設定 → NetBase** から「管理者のみ／指定グループ／全員」を選べます。既定で閉じている機能も含め、どれでも開放できます。何も許可されていない利用者には、開かない扉を見せないよう、アプリメニューにも表示しません。テーマと言語は利用者ごと、サイドバーの並び順もドラッグで変更できます。
 
-**用途** ― ネットワークそのものを渡さずに、ヘルプデスクに whois や疎通確認だけ使ってもらう。移行作業の期間だけ機器台帳を特定グループに開放し、終わったら閉じる。
+**用途** ― ネットワークそのものを渡さずに、ヘルプデスクに whois や DNS の照会だけ使ってもらう。移行作業の期間だけ機器台帳を特定グループに開放し、終わったら閉じる。
 
 ## ベンチマーク
 
@@ -323,7 +293,6 @@ Nextcloud 用のネットワーク総合ツールです。LAN上の機器を検�
 | **LANスループット** | ローカル回線の実力を双方向で計測。秒毎のグラフと再送数つき | このサーバーと相手側の `iperf3` |
 | **DNSリゾルバ比較** | 各リゾルバの中央値・平均・ジッター。このサーバーが使っているリゾルバも含め、最速を明示 | なし |
 | **時間の内訳** | HTTPリクエスト1回を DNS・TCP・TLS・サーバー処理・転送に分解 | `ext-curl` |
-| **経路品質** | 経路上のホップ毎のパケット損失と遅延 | `mtr` |
 
 このうち2つには補足が必要です。
 
@@ -377,7 +346,7 @@ FTPはPHP標準の `ext-ftp` を使い、TLSの有無どちらにも対応しま
 
 ## 動作要件
 
-Nextcloud 30〜34、PHP 8.1 以降。**それ以外は不要です。** 機器の検出・名前解決・ベンダー判別・DNS・whois・ポート確認・サブネット計算・実効スループットのグラフ・DNSリゾルバ比較は、いずれも素の PHP 環境でそのまま動作します。
+Nextcloud 30〜34、PHP 8.1 以降。**それ以外は不要です。** 機器の検出・名前解決・ベンダー判別・DNS・whois・サブネット計算・実効スループットのグラフ・DNSリゾルバ比較は、いずれも素の PHP 環境でそのまま動作します。
 
 以下はすべて任意です。それぞれが1つの機能を追加するもので、無い場合の代替動作も定めてあります。
 
@@ -390,26 +359,21 @@ Nextcloud 30〜34、PHP 8.1 以降。**それ以外は不要です。** 機器�
 | `ext-ftp`（PHP） | FTPサーバーの閲覧とファイル受け渡し | SFTPはNextcloud同梱のライブラリで動作します |
 | `chromium` | **ページを表示** ― 機器のWeb画面をサーバーで描画して画像表示 | Webポートはリンクとしては利用できます |
 | `iperf3` | LANスループット計測 | LAN内の実効速度を測れません |
-| `nmap` | nmapタブ | NetBase 自身による掃引と主要ポート確認は引き続き動作します |
-| `mtr` | ホップ毎のパケット損失と遅延 | traceroute で経路自体は確認できます（損失統計なし） |
-| `traceroute` | 経路の追跡 | `tracepath` があればそちらを使用 |
-| `ping` | 往復時間 | TCPポート確認から到達性は判断できます |
 | `ss`（iproute2） | 待受ソケット一覧 | `netstat` があればそちらを使用 |
 
 導入だけでは足りないものが2つあります。
 
-- **nmap** ― SYN・OS判定・UDPスキャンには raw ソケット権限が必要です。権限が無い場合、NetBase は該当プリセットを実行せず理由を表示します。付与するには `sudo setcap cap_net_raw,cap_net_admin,cap_net_bind_service+eip $(command -v nmap)`
 - **iperf3** ― 相手側で待ち受けが必要です: `iperf3 -s`
 
 ## 管理者向けの注意
 
-**アクセス権.** ツールごとに利用範囲を設定できます（**管理者設定 → NetBase**）。選べるのは「管理者のみ」「管理者と指定グループ」「すべてのログイン利用者」の3段階で、管理者はつねに全ツールを利用できます。機器リストの閲覧・ping・ローカルに何も送らない参照系（DNS・whois・TLS・サブネット計算）は、いずれも公開されたWebフォームと同程度の機能にすぎないため、既定で全利用者としています。一方、**調査の実行は閲覧とは別の権限**とし、ポート確認・nmap・Wake-on-LAN・サーバー情報とあわせて既定で管理者のみとしています。1回の掃引で数千のARPプローブを送出するため、誰でも任意に開始できる状態は避けるべきだからです。
+**アクセス権.** ツールごとに利用範囲を設定できます（**管理者設定 → NetBase**）。選べるのは「管理者のみ」「管理者と指定グループ」「すべてのログイン利用者」の3段階で、管理者はつねに全ツールを利用できます。ローカルに何も送らない参照系（DNS・whois・TLS・サブネット計算）は、いずれも公開されたWebフォームと同程度の機能にすぎないため、既定で全利用者としています。一方、**調査の実行は閲覧とは別の権限**とし、Wake-on-LAN・サーバー情報とあわせて既定で管理者のみとしています。1回の掃引で数千のARPプローブを送出するため、誰でも任意に開始できる状態は避けるべきだからです。
 
 利用できるツールが一つもない利用者に対しては、上部のアプリメニューに NetBase を表示せず、ページ自体も403を返します。この挙動は設定で切り替えられます。
 
 **近隣テーブル.** 掃引はプローブしたアドレスごとにカーネルの近隣エントリを1件作ります。対象が `net.ipv4.neigh.default.gc_thresh3`（多くの環境で1024）を超えると、カーネルは強制的にガベージコレクションを行い `neighbour table overflow` をログに記録します。調査結果自体は正しく得られますが、それより大きい範囲を掃引する前に上限を引き上げられるよう、NetBase は実行すべき `sysctl` コマンドをそのまま提示します。
 
-**安全性.** 外部コマンドをシェル経由で起動することはありません（引数は配列で渡します）。nmap のオプションは許可リスト方式で、ファイル書き出し・対象リスト読み込み・ディスク上のスクリプト読み込みを伴うものは拒否します。
+**安全性.** 外部コマンドをシェル経由で起動することはありません。引数は配列で渡し、シェルが解釈し直せるコマンド行にはしません。
 
 ## コマンドライン
 

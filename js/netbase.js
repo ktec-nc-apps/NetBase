@@ -1,6 +1,6 @@
 /* NetBase — Nextcloud native SPA (buildless Vue 3).
  * A device list built from a privilege-free LAN sweep, with the everyday
- * lookup tools (DNS, whois, ping, ports, TLS, subnet maths, nmap) beside it.
+ * lookup tools (DNS, whois, TLS, subnet maths) beside it.
  * No eval / no new Function — the template is precompiled at build time. */
 (function () {
   'use strict';
@@ -88,6 +88,181 @@
     const pad = (n) => String(n).padStart(2, '0');
     return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
   }
+
+  /* NETBASE-STORE-REMOVED — the markup of the tools taken out for the app store.
+   * Restore a block into the TEMPLATE literal (and its methods, data fields, route,
+   * controller and service) to bring the tool back.
+   *
+   * ==== the device window's own buttons ====
+            <button class="btn sm" v-if="allowed('ping')" @click="toolFor('ping')">📡 {{ t('Ping') }}</button>
+            <button class="btn sm" v-if="allowed('ports')" @click="toolFor('ports')">🔌 {{ t('Ports') }}</button>
+            <button class="btn sm" v-if="allowed('nmap') && status.nmap && status.nmap.available" @click="toolFor('nmap')">🗺️ nmap</button>
+   *
+   * ==== ping / traceroute / path quality ====
+        <!-- ============ ping / traceroute ============ -->
+        <section v-if="tab==='ping'">
+          <div class="card tool-card">
+            <div class="tool-row">
+              <select class="pick" :title="t('Pick one NetBase already knows')" @change="pickInto('pingHost', $event)">
+                <option value="">{{ t('Choose…') }}</option>
+                <optgroup v-for="g in hostChoices" :key="g.label" :label="t(g.label)">
+                  <option v-for="o in g.items" :key="o.value" :value="o.value">{{ o.text }}</option>
+                </optgroup>
+              </select>
+              <input v-model="pingHost" :placeholder="t('Host name or IP address')" @keyup.enter="runPing">
+              <button class="btn primary" :disabled="busy.ping" @click="runPing">{{ t('Ping') }}</button>
+              <button class="btn" :disabled="busy.trace" @click="runTrace">{{ t('Traceroute') }}</button>
+              <button class="btn" :disabled="busy.path" @click="runPath">{{ t('Path quality') }}</button>
+            </div>
+            <div class="tool-row">
+              <input v-model.number="tcpPingPort" type="number" class="tiny" min="1" max="65535">
+              <button class="btn" :disabled="busy.tcpping" @click="runTcpPing">{{ t('TCP ping (works without ICMP)') }}</button>
+              <button class="btn" :disabled="busy.mtu" @click="runMtu">{{ t('Find the path MTU') }}</button>
+            </div>
+          </div>
+          <div class="card" v-if="tcpPingResult">
+            <h3>{{ t('TCP ping') }}</h3>
+            <div class="kv">
+              <div><span>{{ t('Target') }}</span><code>{{ tcpPingResult.host }}:{{ tcpPingResult.port }} <span class="dim">{{ tcpPingResult.service }}</span></code></div>
+              <div><span>{{ t('Answered') }}</span><code>{{ tcpPingResult.received }} / {{ tcpPingResult.sent }} ({{ tcpPingResult.loss }}% {{ t('lost') }})</code></div>
+              <div v-if="tcpPingResult.stats.avg"><span>{{ t('Round trip') }}</span><code>{{ t('min') }} {{ tcpPingResult.stats.min }} · {{ t('avg') }} {{ tcpPingResult.stats.avg }} · {{ t('max') }} {{ tcpPingResult.stats.max }} ms</code></div>
+            </div>
+          </div>
+          <div class="card" v-if="mtuResult">
+            <h3>{{ t('Path MTU') }}</h3>
+            <div v-for="(f,i) in (mtuResult.findings || [])" :key="i" class="finding" :class="f.level">
+              <span class="pill" :class="f.level">{{ t(levelLabel(f.level)) }}</span><div><strong>{{ f.area }}</strong> · {{ f.text }}</div>
+            </div>
+            <div class="kv" v-if="mtuResult.mtu">
+              <div><span>MTU</span><code>{{ mtuResult.mtu }} {{ t('bytes') }}</code></div>
+              <div><span>{{ t('Largest payload') }}</span><code>{{ mtuResult.payload }} {{ t('bytes') }}</code></div>
+            </div>
+          </div>
+          <div class="card" v-if="pingResult">
+            <div v-for="(f,i) in (pingResult.findings || [])" :key="i" class="finding" :class="f.level">
+              <span class="area">{{ f.area }}</span><span>{{ f.text }}</span>
+            </div>
+            <div class="kv" v-if="pingResult.stats && pingResult.stats.sent">
+              <div><span>{{ t('Sent') }}</span><code>{{ pingResult.stats.sent }}</code></div>
+              <div><span>{{ t('Received') }}</span><code>{{ pingResult.stats.received }}</code></div>
+              <div><span>{{ t('Loss') }}</span><code>{{ pingResult.stats.loss }}%</code></div>
+              <div v-if="pingResult.stats.avg"><span>{{ t('Average') }}</span><code>{{ pingResult.stats.avg }} ms</code></div>
+            </div>
+            <pre class="raw">{{ pingResult.output }}</pre>
+          </div>
+          <div class="card" v-if="traceResult">
+            <p v-if="!traceResult.available" class="empty-hint">{{ t('traceroute is not installed on this server.') }}</p>
+            <pre v-else class="raw">{{ traceResult.output }}</pre>
+          </div>
+          <div class="card" v-if="pathResult">
+            <div v-if="!pathResult.available" class="missing">
+              <p>{{ t('Per-hop loss and latency needs mtr.') }}</p>
+              <pre class="raw">{{ installFor('mtr') }}</pre>
+            </div>
+            <table v-else class="grid compact">
+              <thead><tr><th>#</th><th>{{ t('Host') }}</th><th>{{ t('Loss') }}</th><th>{{ t('Average') }}</th><th>{{ t('Best') }}</th><th>{{ t('Worst') }}</th><th>{{ t('Jitter') }}</th></tr></thead>
+              <tbody>
+                <tr v-for="h in pathResult.hops" :key="h.hop">
+                  <td class="mono dim">{{ h.hop }}</td>
+                  <td class="mono">{{ h.host }}</td>
+                  <td><span class="pill" :class="h.loss > 0 ? 'no' : 'ok'">{{ h.loss }}%</span></td>
+                  <td class="mono">{{ h.avg }} ms</td>
+                  <td class="mono dim">{{ h.best }}</td>
+                  <td class="mono dim">{{ h.worst }}</td>
+                  <td class="mono dim">{{ h.jitter }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+   *
+   * ==== ports ====
+        <!-- ============ ports ============ -->
+        <section v-if="tab==='ports'">
+          <div class="card tool-card">
+            <div class="tool-row">
+              <select class="pick" :title="t('Pick one NetBase already knows')" @change="pickInto('portHost', $event)">
+                <option value="">{{ t('Choose…') }}</option>
+                <optgroup v-for="g in hostChoices" :key="g.label" :label="t(g.label)">
+                  <option v-for="o in g.items" :key="o.value" :value="o.value">{{ o.text }}</option>
+                </optgroup>
+              </select>
+              <input v-model="portHost" :placeholder="t('Host name or IP address')" @keyup.enter="runPorts">
+              <input v-model="portList" class="narrow" :placeholder="t('22,80,443,8000-8100 (blank = common ports)')">
+              <button class="btn primary" :disabled="busy.ports" @click="runPorts">{{ t('Check') }}</button>
+            </div>
+            <div class="chips">
+              <button class="btn xs" v-for="p in portPresets" :key="p.label" @click="portList = p.ports; runPorts()">{{ t(p.label) }}</button>
+            </div>
+          </div>
+          <div class="card" v-if="portResult">
+            <table class="grid compact">
+              <thead><tr><th>{{ t('Port') }}</th><th>{{ t('State') }}</th><th>{{ t('Service') }}</th><th>{{ t('Response') }}</th><th>{{ t('Banner') }}</th></tr></thead>
+              <tbody>
+                <tr v-for="r in portResult.results" :key="r.port">
+                  <td class="mono">{{ r.port }}</td>
+                  <td><span class="pill" :class="r.open ? 'ok' : 'no'">{{ r.open ? t('open') : t('closed') }}</span></td>
+                  <td>{{ r.service }}</td>
+                  <td class="dim mono">{{ r.ms }} ms</td>
+                  <td class="mono wrap dim">{{ r.banner }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+   *
+   * ==== nmap ====
+        <!-- ============ nmap ============ -->
+        <section v-if="tab==='nmap'">
+          <div class="card" v-if="!status.nmap || !status.nmap.available">
+            <p class="empty-hint">{{ t('nmap is not installed on this server. An administrator can install it, then reload this page.') }}</p>
+            <pre class="raw">sudo apt install nmap        # Debian / Ubuntu
+sudo dnf install nmap        # Fedora / RHEL</pre>
+          </div>
+          <template v-else>
+            <div class="card tool-card">
+              <div class="tool-row">
+                <select class="pick" :title="t('Pick one NetBase already knows')" @change="pickInto('nmapTargets', $event)">
+                <option value="">{{ t('Choose…') }}</option>
+                <optgroup v-for="g in targetChoices" :key="g.label" :label="t(g.label)">
+                  <option v-for="o in g.items" :key="o.value" :value="o.value">{{ o.text }}</option>
+                </optgroup>
+              </select>
+              <input v-model="nmapTargets" :placeholder="t('Host, address or 192.168.1.0/24')" @keyup.enter="runNmap">
+                <select v-model="nmapPreset">
+                  <option v-for="(p,k) in status.nmap.presets" :key="k" :value="k">{{ t(p.label) }}</option>
+                </select>
+                <button class="btn primary" :disabled="busy.nmap" @click="runNmap">{{ busy.nmap ? t('Scanning…') : t('Run') }}</button>
+              </div>
+              <div class="tool-row">
+                <input v-model="nmapExtra" :placeholder="t('Extra options (allow-listed), e.g. -Pn --top-ports 200')">
+              </div>
+              <p class="hint">
+                {{ t('nmap {version} · running as {user}', { version: status.nmap.version, user: status.nmap.user }) }}
+                <span v-if="!status.nmap.privileged">— {{ t('no raw-socket privileges, so SYN/OS/UDP presets are unavailable') }}</span>
+              </p>
+            </div>
+            <div class="card" v-if="nmapResult">
+              <p v-if="nmapResult.error" class="empty-hint">⚠ {{ nmapResult.error }}</p>
+              <div class="kv"><div><span>{{ t('Command') }}</span><code class="wrap">{{ nmapResult.command }}</code></div><div><span>{{ t('Duration') }}</span><code>{{ nmapResult.seconds }} s</code></div></div>
+              <div v-for="(h,i) in nmapResult.hosts" :key="i" class="nmap-host">
+                <div class="nh-head"><strong class="mono">{{ h.addresses.join(', ') }}</strong>
+                  <span v-if="h.hostnames.length" class="dim">{{ h.hostnames.join(', ') }}</span>
+                  <span v-if="h.vendor" class="badge">{{ h.vendor }}</span>
+                  <span class="pill" :class="h.state==='up' ? 'ok' : 'no'">{{ h.state }}</span>
+                </div>
+                <table v-if="h.ports.length" class="grid compact">
+                  <thead><tr><th>{{ t('Port') }}</th><th>{{ t('State') }}</th><th>{{ t('Service') }}</th><th>{{ t('Product') }}</th></tr></thead>
+                  <tbody><tr v-for="p in h.ports" :key="p.port"><td class="mono">{{ p.port }}/{{ p.protocol }}</td><td>{{ p.state }}</td><td>{{ p.service }}</td><td class="dim">{{ p.product }}</td></tr></tbody>
+                </table>
+                <div v-if="h.os.length" class="dim">OS: {{ h.os.map(o => o.name + ' (' + o.accuracy + '%)').join(', ') }}</div>
+              </div>
+              <details v-if="nmapResult.output"><summary>{{ t('Raw output') }}</summary><pre class="raw">{{ nmapResult.output }}</pre></details>
+            </div>
+          </template>
+        </section>
+   *
+   */
 
   const TEMPLATE = `
   <div class="layout" :class="{'menu-open': menu}">
@@ -381,117 +556,6 @@
               <summary>{{ hop.server }}</summary>
               <pre class="raw">{{ hop.response }}</pre>
             </details>
-          </div>
-        </section>
-
-        <!-- ============ ping / traceroute ============ -->
-        <section v-if="tab==='ping'">
-          <div class="card tool-card">
-            <div class="tool-row">
-              <select class="pick" :title="t('Pick one NetBase already knows')" @change="pickInto('pingHost', $event)">
-                <option value="">{{ t('Choose…') }}</option>
-                <optgroup v-for="g in hostChoices" :key="g.label" :label="t(g.label)">
-                  <option v-for="o in g.items" :key="o.value" :value="o.value">{{ o.text }}</option>
-                </optgroup>
-              </select>
-              <input v-model="pingHost" :placeholder="t('Host name or IP address')" @keyup.enter="runPing">
-              <button class="btn primary" :disabled="busy.ping" @click="runPing">{{ t('Ping') }}</button>
-              <button class="btn" :disabled="busy.trace" @click="runTrace">{{ t('Traceroute') }}</button>
-              <button class="btn" :disabled="busy.path" @click="runPath">{{ t('Path quality') }}</button>
-            </div>
-            <div class="tool-row">
-              <input v-model.number="tcpPingPort" type="number" class="tiny" min="1" max="65535">
-              <button class="btn" :disabled="busy.tcpping" @click="runTcpPing">{{ t('TCP ping (works without ICMP)') }}</button>
-              <button class="btn" :disabled="busy.mtu" @click="runMtu">{{ t('Find the path MTU') }}</button>
-            </div>
-          </div>
-          <div class="card" v-if="tcpPingResult">
-            <h3>{{ t('TCP ping') }}</h3>
-            <div class="kv">
-              <div><span>{{ t('Target') }}</span><code>{{ tcpPingResult.host }}:{{ tcpPingResult.port }} <span class="dim">{{ tcpPingResult.service }}</span></code></div>
-              <div><span>{{ t('Answered') }}</span><code>{{ tcpPingResult.received }} / {{ tcpPingResult.sent }} ({{ tcpPingResult.loss }}% {{ t('lost') }})</code></div>
-              <div v-if="tcpPingResult.stats.avg"><span>{{ t('Round trip') }}</span><code>{{ t('min') }} {{ tcpPingResult.stats.min }} · {{ t('avg') }} {{ tcpPingResult.stats.avg }} · {{ t('max') }} {{ tcpPingResult.stats.max }} ms</code></div>
-            </div>
-          </div>
-          <div class="card" v-if="mtuResult">
-            <h3>{{ t('Path MTU') }}</h3>
-            <div v-for="(f,i) in (mtuResult.findings || [])" :key="i" class="finding" :class="f.level">
-              <span class="pill" :class="f.level">{{ t(levelLabel(f.level)) }}</span><div><strong>{{ f.area }}</strong> · {{ f.text }}</div>
-            </div>
-            <div class="kv" v-if="mtuResult.mtu">
-              <div><span>MTU</span><code>{{ mtuResult.mtu }} {{ t('bytes') }}</code></div>
-              <div><span>{{ t('Largest payload') }}</span><code>{{ mtuResult.payload }} {{ t('bytes') }}</code></div>
-            </div>
-          </div>
-          <div class="card" v-if="pingResult">
-            <div v-for="(f,i) in (pingResult.findings || [])" :key="i" class="finding" :class="f.level">
-              <span class="area">{{ f.area }}</span><span>{{ f.text }}</span>
-            </div>
-            <div class="kv" v-if="pingResult.stats && pingResult.stats.sent">
-              <div><span>{{ t('Sent') }}</span><code>{{ pingResult.stats.sent }}</code></div>
-              <div><span>{{ t('Received') }}</span><code>{{ pingResult.stats.received }}</code></div>
-              <div><span>{{ t('Loss') }}</span><code>{{ pingResult.stats.loss }}%</code></div>
-              <div v-if="pingResult.stats.avg"><span>{{ t('Average') }}</span><code>{{ pingResult.stats.avg }} ms</code></div>
-            </div>
-            <pre class="raw">{{ pingResult.output }}</pre>
-          </div>
-          <div class="card" v-if="traceResult">
-            <p v-if="!traceResult.available" class="empty-hint">{{ t('traceroute is not installed on this server.') }}</p>
-            <pre v-else class="raw">{{ traceResult.output }}</pre>
-          </div>
-          <div class="card" v-if="pathResult">
-            <div v-if="!pathResult.available" class="missing">
-              <p>{{ t('Per-hop loss and latency needs mtr.') }}</p>
-              <pre class="raw">{{ installFor('mtr') }}</pre>
-            </div>
-            <table v-else class="grid compact">
-              <thead><tr><th>#</th><th>{{ t('Host') }}</th><th>{{ t('Loss') }}</th><th>{{ t('Average') }}</th><th>{{ t('Best') }}</th><th>{{ t('Worst') }}</th><th>{{ t('Jitter') }}</th></tr></thead>
-              <tbody>
-                <tr v-for="h in pathResult.hops" :key="h.hop">
-                  <td class="mono dim">{{ h.hop }}</td>
-                  <td class="mono">{{ h.host }}</td>
-                  <td><span class="pill" :class="h.loss > 0 ? 'no' : 'ok'">{{ h.loss }}%</span></td>
-                  <td class="mono">{{ h.avg }} ms</td>
-                  <td class="mono dim">{{ h.best }}</td>
-                  <td class="mono dim">{{ h.worst }}</td>
-                  <td class="mono dim">{{ h.jitter }}</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </section>
-
-        <!-- ============ ports ============ -->
-        <section v-if="tab==='ports'">
-          <div class="card tool-card">
-            <div class="tool-row">
-              <select class="pick" :title="t('Pick one NetBase already knows')" @change="pickInto('portHost', $event)">
-                <option value="">{{ t('Choose…') }}</option>
-                <optgroup v-for="g in hostChoices" :key="g.label" :label="t(g.label)">
-                  <option v-for="o in g.items" :key="o.value" :value="o.value">{{ o.text }}</option>
-                </optgroup>
-              </select>
-              <input v-model="portHost" :placeholder="t('Host name or IP address')" @keyup.enter="runPorts">
-              <input v-model="portList" class="narrow" :placeholder="t('22,80,443,8000-8100 (blank = common ports)')">
-              <button class="btn primary" :disabled="busy.ports" @click="runPorts">{{ t('Check') }}</button>
-            </div>
-            <div class="chips">
-              <button class="btn xs" v-for="p in portPresets" :key="p.label" @click="portList = p.ports; runPorts()">{{ t(p.label) }}</button>
-            </div>
-          </div>
-          <div class="card" v-if="portResult">
-            <table class="grid compact">
-              <thead><tr><th>{{ t('Port') }}</th><th>{{ t('State') }}</th><th>{{ t('Service') }}</th><th>{{ t('Response') }}</th><th>{{ t('Banner') }}</th></tr></thead>
-              <tbody>
-                <tr v-for="r in portResult.results" :key="r.port">
-                  <td class="mono">{{ r.port }}</td>
-                  <td><span class="pill" :class="r.open ? 'ok' : 'no'">{{ r.open ? t('open') : t('closed') }}</span></td>
-                  <td>{{ r.service }}</td>
-                  <td class="dim mono">{{ r.ms }} ms</td>
-                  <td class="mono wrap dim">{{ r.banner }}</td>
-                </tr>
-              </tbody>
-            </table>
           </div>
         </section>
 
@@ -791,56 +855,6 @@
         </section>
 
         <!-- ============ server ============ -->
-
-        <!-- ============ nmap ============ -->
-        <section v-if="tab==='nmap'">
-          <div class="card" v-if="!status.nmap || !status.nmap.available">
-            <p class="empty-hint">{{ t('nmap is not installed on this server. An administrator can install it, then reload this page.') }}</p>
-            <pre class="raw">sudo apt install nmap        # Debian / Ubuntu
-sudo dnf install nmap        # Fedora / RHEL</pre>
-          </div>
-          <template v-else>
-            <div class="card tool-card">
-              <div class="tool-row">
-                <select class="pick" :title="t('Pick one NetBase already knows')" @change="pickInto('nmapTargets', $event)">
-                <option value="">{{ t('Choose…') }}</option>
-                <optgroup v-for="g in targetChoices" :key="g.label" :label="t(g.label)">
-                  <option v-for="o in g.items" :key="o.value" :value="o.value">{{ o.text }}</option>
-                </optgroup>
-              </select>
-              <input v-model="nmapTargets" :placeholder="t('Host, address or 192.168.1.0/24')" @keyup.enter="runNmap">
-                <select v-model="nmapPreset">
-                  <option v-for="(p,k) in status.nmap.presets" :key="k" :value="k">{{ t(p.label) }}</option>
-                </select>
-                <button class="btn primary" :disabled="busy.nmap" @click="runNmap">{{ busy.nmap ? t('Scanning…') : t('Run') }}</button>
-              </div>
-              <div class="tool-row">
-                <input v-model="nmapExtra" :placeholder="t('Extra options (allow-listed), e.g. -Pn --top-ports 200')">
-              </div>
-              <p class="hint">
-                {{ t('nmap {version} · running as {user}', { version: status.nmap.version, user: status.nmap.user }) }}
-                <span v-if="!status.nmap.privileged">— {{ t('no raw-socket privileges, so SYN/OS/UDP presets are unavailable') }}</span>
-              </p>
-            </div>
-            <div class="card" v-if="nmapResult">
-              <p v-if="nmapResult.error" class="empty-hint">⚠ {{ nmapResult.error }}</p>
-              <div class="kv"><div><span>{{ t('Command') }}</span><code class="wrap">{{ nmapResult.command }}</code></div><div><span>{{ t('Duration') }}</span><code>{{ nmapResult.seconds }} s</code></div></div>
-              <div v-for="(h,i) in nmapResult.hosts" :key="i" class="nmap-host">
-                <div class="nh-head"><strong class="mono">{{ h.addresses.join(', ') }}</strong>
-                  <span v-if="h.hostnames.length" class="dim">{{ h.hostnames.join(', ') }}</span>
-                  <span v-if="h.vendor" class="badge">{{ h.vendor }}</span>
-                  <span class="pill" :class="h.state==='up' ? 'ok' : 'no'">{{ h.state }}</span>
-                </div>
-                <table v-if="h.ports.length" class="grid compact">
-                  <thead><tr><th>{{ t('Port') }}</th><th>{{ t('State') }}</th><th>{{ t('Service') }}</th><th>{{ t('Product') }}</th></tr></thead>
-                  <tbody><tr v-for="p in h.ports" :key="p.port"><td class="mono">{{ p.port }}/{{ p.protocol }}</td><td>{{ p.state }}</td><td>{{ p.service }}</td><td class="dim">{{ p.product }}</td></tr></tbody>
-                </table>
-                <div v-if="h.os.length" class="dim">OS: {{ h.os.map(o => o.name + ' (' + o.accuracy + '%)').join(', ') }}</div>
-              </div>
-              <details v-if="nmapResult.output"><summary>{{ t('Raw output') }}</summary><pre class="raw">{{ nmapResult.output }}</pre></details>
-            </div>
-          </template>
-        </section>
 
         <!-- ============ mail ============ -->
         <section v-if="tab==='mail'">
@@ -1677,9 +1691,6 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
               <button class="btn sm" v-if="allowed('preview') && status.preview" @click="showPage(l.href)">🖼 {{ t('Show the page') }}</button>
               <a class="btn sm ib" :href="l.href" target="_blank" rel="noopener noreferrer" :title="t('Only works from inside that network')" :aria-label="t('Only works from inside that network')"><svg viewBox="0 0 24 24"><path d="M14 4h6v6"/><path d="M20 4l-8.5 8.5"/><path d="M18 14.5V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4.5"/></svg></a>
             </template>
-            <button class="btn sm" v-if="allowed('ping')" @click="toolFor('ping')">📡 {{ t('Ping') }}</button>
-            <button class="btn sm" v-if="allowed('ports')" @click="toolFor('ports')">🔌 {{ t('Ports') }}</button>
-            <button class="btn sm" v-if="allowed('nmap') && status.nmap && status.nmap.available" @click="toolFor('nmap')">🗺️ nmap</button>
             <button class="btn sm" v-if="selected.mac && allowed('wol')" @click="wake(selected)">⏻ {{ t('Wake on LAN') }}</button>
           </div>
         </div>
@@ -1697,8 +1708,9 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
     { id: 'devices', icon: '🛰️', label: 'Devices', hint: 'Everything answering on the local network' },
     { id: 'dns', icon: '🌐', label: 'DNS', hint: 'Records of any type, resolver comparison, delegation and zone transfer' },
     { id: 'whois', icon: '📇', label: 'Whois', hint: 'Domain and address registration' },
-    { id: 'ping', icon: '📡', label: 'Ping & traceroute', hint: 'Reachability and the path there' },
-    { id: 'ports', icon: '🔌', label: 'Ports', hint: 'TCP connect check with banners' },
+    // NETBASE-STORE-REMOVED: the ping and ports tabs
+    // { id: 'ping', icon: '📡', label: 'Ping & traceroute', hint: 'Reachability and the path there' },
+    // { id: 'ports', icon: '🔌', label: 'Ports', hint: 'TCP connect check with banners' },
     { id: 'tls', icon: '🔒', label: 'TLS & HTTP', hint: 'Certificates, redirects and headers' },
     { id: 'subnet', icon: '🧮', label: 'Subnet & MAC', hint: 'Address maths and vendor lookup' },
     { id: 'bench', icon: '⏱️', label: 'Benchmarks', hint: 'Throughput, latency and where the time goes' },
@@ -1706,7 +1718,8 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
     { id: 'files', icon: '📁', label: 'FTP & SFTP', hint: 'Browse a remote server and move files' },
     { id: 'ssh', icon: '🔐', label: 'SSH & Telnet', hint: 'What a service offers, and commands on the servers you keep' },
     { id: 'ntp', icon: '🕒', label: 'Clock check', hint: 'How far the clock has drifted from a time server' },
-    { id: 'nmap', icon: '🗺️', label: 'nmap', hint: 'Presets over the nmap scanner' },
+    // NETBASE-STORE-REMOVED: the nmap tab
+    // { id: 'nmap', icon: '🗺️', label: 'nmap', hint: 'Presets over the nmap scanner' },
   ];
 
   const DNS_VIEWS = [
@@ -1718,15 +1731,16 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
   ];
   const DNS_ALL_TYPES = ['A', 'AAAA', 'CNAME', 'MX', 'NS', 'TXT', 'SOA', 'SRV', 'CAA', 'PTR', 'TLSA', 'DS', 'DNSKEY', 'SSHFP', 'NAPTR', 'HTTPS', 'SVCB', 'ANY'];
   const SPLIT_PREFIXES = [22, 23, 24, 25, 26, 27, 28, 29, 30];
-  const PORT_PRESETS = [
-    { label: 'Common', ports: '21,22,23,25,53,80,110,139,143,443,445,587,993,995,3389,8080' },
-    { label: 'Web', ports: '80,443,8000,8008,8080,8443,8888' },
-    { label: 'Mail', ports: '25,110,143,465,587,993,995' },
-    { label: 'Databases', ports: '1433,1521,3306,5432,6379,9200,27017' },
-    { label: 'Remote access', ports: '22,23,3389,5900,5901' },
-    { label: 'Printers and NAS', ports: '139,445,515,631,5000,5001,9100' },
-  ];
-
+  // NETBASE-STORE-REMOVED: the port-check presets
+//   const PORT_PRESETS = [
+//     { label: 'Common', ports: '21,22,23,25,53,80,110,139,143,443,445,587,993,995,3389,8080' },
+//     { label: 'Web', ports: '80,443,8000,8008,8080,8443,8888' },
+//     { label: 'Mail', ports: '25,110,143,465,587,993,995' },
+//     { label: 'Databases', ports: '1433,1521,3306,5432,6379,9200,27017' },
+//     { label: 'Remote access', ports: '22,23,3389,5900,5901' },
+//     { label: 'Printers and NAS', ports: '139,445,515,631,5000,5001,9100' },
+//   ];
+//
   // Ports a browser can open directly, and what scheme to use.
   // Ports that answer something other than a web page: opening a window on one
   // would only ever show an error, so the number stays a number.
@@ -1846,16 +1860,17 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         dnsType: 'A', dnsServer: '', dnsDnssec: false, dnsQueryResult: null,
         dnsCompareResult: null, dnsTraceResult: null,
         axfrZone: '', axfrServer: '', axfrResult: null,
-        tlsVersionsResult: null, tcpPingPort: 443, tcpPingResult: null, mtuResult: null,
+        tlsVersionsResult: null,
+        // NETBASE-STORE-REMOVED: tcpPingPort: 443, tcpPingResult: null, mtuResult: null,
         splitCidr: '', splitPrefix: 26, splitPrefixes: SPLIT_PREFIXES, splitResult: null,
         aggregateInput: '', aggregateResult: null,
-        portPresets: PORT_PRESETS,
+        // NETBASE-STORE-REMOVED: portPresets: PORT_PRESETS,
         sshConn: 0, sshPreset: '', sshCommand: '', sshRunResult: null,
         sshAdhoc: { kind: 'ssh', host: '', port: 22, username: '', secret: '', authType: 'password', privateKeyPath: '', passphrase: '', mode: 'ssh' },
         dnsTypes: ['A', 'AAAA', 'CNAME', 'MX', 'NS', 'TXT', 'SOA', 'SRV', 'CAA'],
         whoisQuery: '', whoisResult: null,
-        pingHost: '', pingResult: null, traceResult: null,
-        portHost: '', portList: '', portResult: null,
+        // NETBASE-STORE-REMOVED: pingHost: '', pingResult: null, traceResult: null,
+        // NETBASE-STORE-REMOVED: portHost: '', portList: '', portResult: null,
         tlsHost: '', tlsPort: 443, tlsResult: null, httpResult: null,
         subnetInput: '', subnetResult: null, macParts: ['', '', '', '', '', ''], macResult: null,
         // An address is four numbers and a prefix; typing it that way beats
@@ -1897,8 +1912,9 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         liveErrors: 0, lastCounters: null, liveTimer: null,
         speedSize: 25, speedUpload: true, speedResult: null,
         iperfHost: '', iperfPort: 5201, iperfSeconds: 10, iperfReverse: false, iperfResult: null,
-        dnsBench: null, timingUrl: '', timingResult: null, pathResult: null,
-        nmapTargets: '', nmapPreset: 'quick', nmapExtra: '', nmapResult: null,
+        dnsBench: null, timingUrl: '', timingResult: null,
+        // NETBASE-STORE-REMOVED: pathResult: null,
+        // NETBASE-STORE-REMOVED: nmapTargets: '', nmapPreset: 'quick', nmapExtra: '', nmapResult: null,
         typeLabels: TYPE_LABEL,
       };
     },
@@ -1961,12 +1977,11 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
       hasResult() {
         // Reading the results makes the buttons wake up the moment one arrives.
         void [this.dnsResult, this.dnsQueryResult, this.dnsCompareResult, this.dnsTraceResult, this.axfrResult,
-          this.whoisResult, this.pingResult, this.traceResult, this.tcpPingResult, this.mtuResult,
-          this.portResult, this.tlsResult, this.tlsVersionsResult, this.httpResult, this.subnetResult,
+          this.whoisResult, this.tlsResult, this.tlsVersionsResult, this.httpResult, this.subnetResult,
           this.splitResult, this.aggregateResult, this.macResult, this.speedResult, this.iperfResult,
-          this.dnsBench, this.timingResult, this.pathResult, this.mailAudit, this.mailProbeResult,
+          this.dnsBench, this.timingResult, this.mailAudit, this.mailProbeResult,
           this.relayResult, this.blResult, this.sendResult, this.mailboxResult, this.filesData,
-          this.sshResult, this.telnetResult, this.sshRunResult, this.ntpResult, this.nmapResult,
+          this.sshResult, this.telnetResult, this.sshRunResult, this.ntpResult,
           this.devices.length, this.term.lines.length];
         return !!this.resultBundle();
       },
@@ -2229,9 +2244,10 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
       toolFor(tool) {
         const target = this.selected.ip;
         this.selected = null;
-        if (tool === 'ping') { this.pingHost = target; this.tab = 'ping'; this.runPing(); }
-        if (tool === 'ports') { this.portHost = target; this.tab = 'ports'; this.runPorts(); }
-        if (tool === 'nmap') { this.nmapTargets = target; this.tab = 'nmap'; }
+        // NETBASE-STORE-REMOVED: per-device ping, ports and nmap
+//         if (tool === 'ping') { this.pingHost = target; this.tab = 'ping'; this.runPing(); }
+//         if (tool === 'ports') { this.portHost = target; this.tab = 'ports'; this.runPorts(); }
+//         if (tool === 'nmap') { this.nmapTargets = target; this.tab = 'nmap'; }
       },
 
       async guarded(key, fn) {
@@ -2680,8 +2696,9 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
       async runDnsTrace() { this.dnsTraceResult = await this.guarded('dnst', () => api('dns/trace?' + qs({ host: this.dnsHost, type: this.dnsType }))); },
       async runAxfr() { this.axfrResult = await this.guarded('axfr', () => api('dns/axfr?' + qs({ zone: this.axfrZone, nameserver: this.axfrServer }))); },
       async runTlsVersions() { this.tlsVersionsResult = await this.guarded('tlsver', () => api('tools/tls-versions?' + qs({ host: this.tlsHost, port: this.tlsPort }))); },
-      async runTcpPing() { this.tcpPingResult = await this.guarded('tcpping', () => api('tools/tcp-ping?' + qs({ host: this.pingHost, port: this.tcpPingPort || 443 }))); },
-      async runMtu() { this.mtuResult = await this.guarded('mtu', () => api('tools/mtu?' + qs({ host: this.pingHost }))); },
+      // NETBASE-STORE-REMOVED: runTcpPing and runMtu
+//       async runTcpPing() { this.tcpPingResult = await this.guarded('tcpping', () => api('tools/tcp-ping?' + qs({ host: this.pingHost, port: this.tcpPingPort || 443 }))); },
+//       async runMtu() { this.mtuResult = await this.guarded('mtu', () => api('tools/mtu?' + qs({ host: this.pingHost }))); },
       async runSplit() {
         const cidr = this.addressOf(this.splitAddress) || this.splitCidr || this.subnetInput;
         if (!cidr) { this.note(T('Fill in an address first.')); return; }
@@ -2778,15 +2795,16 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
 
       async runDns() { this.dnsResult = await this.guarded('dns', () => api('tools/dns?' + qs({ host: this.dnsHost, types: this.dnsWanted }))); },
       async runWhois() { this.whoisResult = await this.guarded('whois', () => api('tools/whois?' + qs({ query: this.whoisQuery }))); },
-      async runPing() {
-        this.rememberHost(this.pingHost); this.pingResult = await this.guarded('ping', () => api('tools/ping?' + qs({ host: this.pingHost }))); },
-      async runTrace() { this.traceResult = await this.guarded('trace', () => api('tools/traceroute?' + qs({ host: this.pingHost }))); },
-      async runPorts() {
-        this.rememberHost(this.portHost);
-        // The server understands "22,80,8000-8100"; sending the text as typed
-        // keeps ranges intact.
-        this.portResult = await this.guarded('ports', () => api('tools/ports?' + qs({ host: this.portHost, spec: this.portList })));
-      },
+      // NETBASE-STORE-REMOVED: runPing, runTrace and runPorts
+//       async runPing() {
+//         this.rememberHost(this.pingHost); this.pingResult = await this.guarded('ping', () => api('tools/ping?' + qs({ host: this.pingHost }))); },
+//       async runTrace() { this.traceResult = await this.guarded('trace', () => api('tools/traceroute?' + qs({ host: this.pingHost }))); },
+//       async runPorts() {
+//         this.rememberHost(this.portHost);
+//         // The server understands "22,80,8000-8100"; sending the text as typed
+//         // keeps ranges intact.
+//         this.portResult = await this.guarded('ports', () => api('tools/ports?' + qs({ host: this.portHost, spec: this.portList })));
+//       },
       async runTls() { this.tlsResult = await this.guarded('tls', () => api('tools/tls?' + qs({ host: this.tlsHost, port: this.tlsPort }))); },
       async runHttp() { this.httpResult = await this.guarded('http', () => api('tools/http?' + qs({ url: this.tlsHost }))); },
       async runSubnet() {
@@ -3021,19 +3039,21 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
       },
       async runDnsBench() { this.dnsBench = await this.guarded('dnsbench', () => api('bench/dns?' + qs({ rounds: 2 }))); },
       async runTiming() { this.timingResult = await this.guarded('timing', () => api('bench/http?' + qs({ url: this.timingUrl }))); },
-      async runPath() { this.pathResult = await this.guarded('path', () => api('tools/path?' + qs({ host: this.pingHost }))); },
+      // NETBASE-STORE-REMOVED: runPath (mtr)
+//       async runPath() { this.pathResult = await this.guarded('path', () => api('tools/path?' + qs({ host: this.pingHost }))); },
       openSysInfo() {
         this.sysInfo = true;
         if (this.allowed('server') && !this.serverResult) this.runServer();
       },
       async runServer() { this.serverResult = await this.guarded('server', () => api('tools/server')); },
-      async runNmap() {
-        const targets = this.nmapTargets.split(/[\s,]+/).filter(Boolean);
-        this.nmapResult = await this.guarded('nmap', () => api('nmap', {
-          method: 'POST',
-          body: JSON.stringify({ targets, preset: this.nmapPreset, extra: this.nmapExtra ? [this.nmapExtra] : [] }),
-        }));
-      },
+      // NETBASE-STORE-REMOVED: runNmap
+//       async runNmap() {
+//         const targets = this.nmapTargets.split(/[\s,]+/).filter(Boolean);
+//         this.nmapResult = await this.guarded('nmap', () => api('nmap', {
+//           method: 'POST',
+//           body: JSON.stringify({ targets, preset: this.nmapPreset, extra: this.nmapExtra ? [this.nmapExtra] : [] }),
+//         }));
+//       },
       /** Everything the tab in front of you has found, gathered as plain text. */
       resultBundle() {
         const named = (label, value) => (value ? { label, value } : null);
@@ -3045,11 +3065,12 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
             named(T('Zone transfer'), this.axfrResult),
           ],
           whois: () => [named(T('Whois'), this.whoisResult)],
-          ping: () => [
-            named(T('Ping'), this.pingResult), named(T('Traceroute'), this.traceResult),
-            named(T('TCP ping'), this.tcpPingResult), named('MTU', this.mtuResult),
-          ],
-          ports: () => [named(T('Ports'), this.portResult)],
+          // NETBASE-STORE-REMOVED: ping and ports results
+//           ping: () => [
+//             named(T('Ping'), this.pingResult), named(T('Traceroute'), this.traceResult),
+//             named(T('TCP ping'), this.tcpPingResult), named('MTU', this.mtuResult),
+//           ],
+//           ports: () => [named(T('Ports'), this.portResult)],
           tls: () => [
             named(T('Certificate'), this.tlsResult), named(T('TLS versions'), this.tlsVersionsResult),
             named('HTTP', this.httpResult),
@@ -3061,7 +3082,8 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
           bench: () => [
             named(T('Internet speed'), this.speedResult), named(T('LAN throughput'), this.iperfResult),
             named(T('DNS resolvers'), this.dnsBench), named(T('Where the time goes'), this.timingResult),
-            named(T('Path quality'), this.pathResult),
+            // NETBASE-STORE-REMOVED: path quality result
+//             named(T('Path quality'), this.pathResult),
           ],
           mail: () => [
             named(T('Domain policy'), this.mailAudit), named(T('Server test'), this.mailProbeResult),
@@ -3075,7 +3097,8 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
             named(T('Console'), this.term.lines.length ? this.term.lines.map((l) => l.text).join('\n') : null),
           ],
           ntp: () => [named(T('Clock check'), this.ntpResult)],
-          nmap: () => [named('nmap', this.nmapResult)],
+          // NETBASE-STORE-REMOVED: nmap results
+//           nmap: () => [named('nmap', this.nmapResult)],
         };
         const found = (parts[this.tab] ? parts[this.tab]() : []).filter(Boolean);
         if (!found.length) return null;
