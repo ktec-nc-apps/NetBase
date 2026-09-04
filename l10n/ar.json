@@ -748,6 +748,7 @@
         "Remove this row": "احذف هذا السطر",
         "Whose equipment is this?": "لمن هذا الجهاز؟",
         "The first half of a MAC address says who made the device. NetBase looks it up in the bundled IEEE registry, so nothing leaves this server.": "يدل النصف الأول من عنوان MAC على الصانع. يبحث عنه نِت‌بيس في سجل IEEE المرفق، فلا يغادر شيء هذا الخادم.",
+        "Colons and hyphens are optional; six hex digits are enough.": "النقطتان والشرطات اختيارية؛ تكفي ستة أرقام سداسية عشرية.",
         "Fill in at least one network first.": "أدخل شبكة واحدة على الأقل.",
         "Fill in an address first.": "أدخل عنوانًا أولًا.",
         "One network in, and the equal parts it divides into — with the range and host count of each.": "شبكة واحدة تدخل، وتخرج أجزاؤها المتساوية مع مدى كل جزء وعدد مضيفيه.",

@@ -748,6 +748,7 @@
         "Remove this row": "이 행 삭제",
         "Whose equipment is this?": "이 장치는 어디 제품인가",
         "The first half of a MAC address says who made the device. NetBase looks it up in the bundled IEEE registry, so nothing leaves this server.": "MAC 주소의 앞부분은 제조사를 나타냅니다. 내장된 IEEE 등록부에서 조회하므로 외부로 나가는 정보는 없습니다.",
+        "Colons and hyphens are optional; six hex digits are enough.": "콜론과 하이픈은 생략할 수 있습니다. 16진수 여섯 자리면 충분합니다.",
         "Fill in at least one network first.": "네트워크를 하나 이상 입력하세요.",
         "Fill in an address first.": "먼저 주소를 입력하세요.",
         "One network in, and the equal parts it divides into — with the range and host count of each.": "네트워크를 넣으면 같은 크기로 나눈 각 네트워크를 범위와 수용 수와 함께 보여 줍니다.",

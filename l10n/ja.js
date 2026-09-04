@@ -749,6 +749,7 @@ OC.L10N.register(
         "Remove this row": "この行を削除",
         "Whose equipment is this?": "この機器はどこ製か",
         "The first half of a MAC address says who made the device. NetBase looks it up in the bundled IEEE registry, so nothing leaves this server.": "MACアドレスの前半は製造元を示します。同梱のIEEE登録簿で照合するため、外部には一切送信しません。",
+        "Colons and hyphens are optional; six hex digits are enough.": "コロンやハイフンは省略できます。16進数6桁で判別できます。",
         "Fill in at least one network first.": "ネットワークを1つ以上入力してください。",
         "Fill in an address first.": "アドレスを入力してください。",
         "One network in, and the equal parts it divides into — with the range and host count of each.": "ネットワークを入れると、等分した各ネットワークを範囲と収容数つきで一覧します。",

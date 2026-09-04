@@ -748,6 +748,7 @@
         "Remove this row": "حذف این ردیف",
         "Whose equipment is this?": "این دستگاه از کیست؟",
         "The first half of a MAC address says who made the device. NetBase looks it up in the bundled IEEE registry, so nothing leaves this server.": "نیمهٔ نخست نشانی مک سازنده را می‌گوید. نت‌بیس آن را در فهرست IEEE همراه برنامه می‌جوید؛ چیزی از این کارساز بیرون نمی‌رود.",
+        "Colons and hyphens are optional; six hex digits are enough.": "دونقطه و خط تیره اختیاری است؛ شش رقم شانزده‌شانزدهی کافی است.",
         "Fill in at least one network first.": "دست‌کم یک شبکه وارد کنید.",
         "Fill in an address first.": "نخست نشانی را وارد کنید.",
         "One network in, and the equal parts it divides into — with the range and host count of each.": "یک شبکه بدهید تا بخش‌های برابر آن را با بازه و شمار میزبان هر کدام ببینید.",

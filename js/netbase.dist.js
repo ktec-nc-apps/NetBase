@@ -784,13 +784,10 @@ const _hoisted_343 = { class: "wrap" }
 const _hoisted_344 = { class: "wrap" }
 const _hoisted_345 = { class: "card tool-card" }
 const _hoisted_346 = { class: "dim" }
-const _hoisted_347 = { class: "tool-row" }
-const _hoisted_348 = ["title"]
-const _hoisted_349 = ["value", "aria-label", "onInput", "onKeydown"]
-const _hoisted_350 = {
-  key: 0,
-  class: "mac-sep"
-}
+const _hoisted_347 = { class: "dim" }
+const _hoisted_348 = { class: "tool-row" }
+const _hoisted_349 = ["aria-label"]
+const _hoisted_350 = ["disabled"]
 const _hoisted_351 = {
   key: 0,
   class: "kv"
@@ -3195,39 +3192,26 @@ return function render(_ctx, _cache) {
               _createElementVNode("div", _hoisted_345, [
                 _createElementVNode("h3", null, _toDisplayString(_ctx.t('Whose equipment is this?')), 1 /* TEXT */),
                 _createElementVNode("p", _hoisted_346, _toDisplayString(_ctx.t('The first half of a MAC address says who made the device. NetBase looks it up in the bundled IEEE registry, so nothing leaves this server.')), 1 /* TEXT */),
-                _createElementVNode("div", _hoisted_347, [
-                  _createCommentVNode(" Six pairs, because that is what a MAC address is. Two\n                   characters fill a box and move on; backspace in an empty box\n                   steps back. Pasting the whole address fills them all. "),
-                  _createElementVNode("div", {
-                    class: "mac-boxes",
-                    title: _ctx.t('MAC address')
-                  }, [
-                    (_openBlock(true), _createElementBlock(_Fragment, null, _renderList(_ctx.macParts, (part, i) => {
-                      return (_openBlock(), _createElementBlock(_Fragment, { key: i }, [
-                        _createElementVNode("input", {
-                          class: "mac-box",
-                          ref_for: true,
-                          ref: "macBox",
-                          value: part,
-                          maxlength: "2",
-                          inputmode: "text",
-                          spellcheck: "false",
-                          autocomplete: "off",
-                          "aria-label": _ctx.t('MAC address') + ' ' + (i + 1),
-                          onInput: $event => (_ctx.typeMacPart(i, $event)),
-                          onKeydown: $event => (_ctx.macKey(i, $event)),
-                          onPaste: _cache[95] || (_cache[95] = $event => (_ctx.pasteMac($event))),
-                          onFocus: _cache[96] || (_cache[96] = $event => ($event.target.select()))
-                        }, null, 40 /* PROPS, NEED_HYDRATION */, _hoisted_349),
-                        (i < 5)
-                          ? (_openBlock(), _createElementBlock("span", _hoisted_350, ":"))
-                          : _createCommentVNode("v-if", true)
-                      ], 64 /* STABLE_FRAGMENT */))
-                    }), 128 /* KEYED_FRAGMENT */))
-                  ], 8 /* PROPS */, _hoisted_348),
+                _createElementVNode("p", _hoisted_347, _toDisplayString(_ctx.t('Colons and hyphens are optional; six hex digits are enough.')), 1 /* TEXT */),
+                _createElementVNode("div", _hoisted_348, [
+                  _createCommentVNode(" One box, taken as it comes: written with colons, with hyphens,\n                   in fours, or as bare hex. Six hex digits name the vendor, so\n                   the lookup happens as soon as that many have been typed. "),
+                  _withDirectives(_createElementVNode("input", {
+                    "onUpdate:modelValue": _cache[95] || (_cache[95] = $event => ((_ctx.macInput) = $event)),
+                    class: "mac-input",
+                    placeholder: "84:af:ec:85:7a:e0",
+                    inputmode: "text",
+                    spellcheck: "false",
+                    autocomplete: "off",
+                    "aria-label": _ctx.t('MAC address'),
+                    onKeyup: _cache[96] || (_cache[96] = _withKeys((...args) => (_ctx.runMac && _ctx.runMac(...args)), ["enter"]))
+                  }, null, 40 /* PROPS, NEED_HYDRATION */, _hoisted_349), [
+                    [_vModelText, _ctx.macInput]
+                  ]),
                   _createElementVNode("button", {
                     class: "btn",
+                    disabled: !_ctx.macReady,
                     onClick: _cache[97] || (_cache[97] = (...args) => (_ctx.runMac && _ctx.runMac(...args)))
-                  }, _toDisplayString(_ctx.t('Identify vendor')), 1 /* TEXT */)
+                  }, _toDisplayString(_ctx.t('Identify vendor')), 9 /* TEXT, PROPS */, _hoisted_350)
                 ]),
                 (_ctx.macResult)
                   ? (_openBlock(), _createElementBlock("div", _hoisted_351, [
@@ -5903,7 +5887,7 @@ return function render(_ctx, _cache) {
         // NETBASE-STORE-REMOVED: pingHost: '', pingResult: null, traceResult: null,
         // NETBASE-STORE-REMOVED: portHost: '', portList: '', portResult: null,
         tlsHost: '', tlsPort: 443, tlsResult: null, httpResult: null,
-        subnetInput: '', subnetResult: null, macParts: ['', '', '', '', '', ''], macResult: null,
+        subnetInput: '', subnetResult: null, macInput: '', macResult: null, macTimer: null,
         // An address is four numbers and a prefix; typing it that way beats
         // typing punctuation. The free-text boxes stay for IPv6 and ranges.
         calcAddress: { octets: ['', '', '', ''], prefix: 24 },
@@ -5964,12 +5948,12 @@ return function render(_ctx, _cache) {
       },
       currentTab() { return TABS.find((x) => x.id === this.tab) || TABS[0]; },
       macQuery() {
-        // Trailing empty boxes are simply not typed yet, so they are not part
-        // of the address either.
-        const parts = [...this.macParts];
-        while (parts.length && parts[parts.length - 1] === '') parts.pop();
-        return parts.join(':');
+        // However it was written — colons, hyphens, dots, spaces or nothing at
+        // all — what matters is the hex underneath.
+        return String(this.macInput || '').replace(/[^0-9a-fA-F]/g, '').toLowerCase().slice(0, 12);
       },
+      /** Six hex digits are the vendor prefix, and enough to answer with. */
+      macReady() { return this.macQuery.length >= 6; },
 
       /**
        * Addresses NetBase already knows, so they need not be typed again:
@@ -6944,58 +6928,10 @@ return function render(_ctx, _cache) {
       },
 
       // ---- the six boxes of a MAC address ---------------------------------
-      macBoxAt(index) {
-        const boxes = this.$refs.macBox;
-        return Array.isArray(boxes) ? boxes[index] : null;
+      async runMac() {
+        if (!this.macReady) { this.macResult = null; return; }
+        this.macResult = await this.guarded('mac', () => api('tools/mac?' + qs({ mac: this.macQuery })));
       },
-      focusMacBox(index, atEnd) {
-        const box = this.macBoxAt(index);
-        if (!box) return;
-        box.focus();
-        if (atEnd) this.$nextTick(() => box.setSelectionRange(box.value.length, box.value.length));
-      },
-      typeMacPart(index, event) {
-        const hex = String(event.target.value || '').replace(/[^0-9a-fA-F]/g, '').slice(0, 2).toLowerCase();
-        const parts = [...this.macParts];
-        parts[index] = hex;
-        this.macParts = parts;
-        // Put back the cleaned value, in case something else was typed.
-        this.$nextTick(() => { event.target.value = hex; });
-        // A full pair moves on, which is what typing an address feels like.
-        if (hex.length === 2 && index < 5) this.focusMacBox(index + 1, false);
-      },
-      macKey(index, event) {
-        if (event.key === 'Backspace' && event.target.value === '' && index > 0) {
-          event.preventDefault();
-          const parts = [...this.macParts];
-          parts[index - 1] = '';
-          this.macParts = parts;
-          this.focusMacBox(index - 1, true);
-          return;
-        }
-        if (event.key === 'ArrowLeft' && event.target.selectionStart === 0 && index > 0) {
-          event.preventDefault();
-          this.focusMacBox(index - 1, true);
-        }
-        if (event.key === 'ArrowRight' && event.target.selectionStart === event.target.value.length && index < 5) {
-          event.preventDefault();
-          this.focusMacBox(index + 1, false);
-        }
-        if (event.key === 'Enter') this.runMac();
-      },
-      pasteMac(event) {
-        const text = (event.clipboardData || window.clipboardData).getData('text') || '';
-        const hex = text.replace(/[^0-9a-fA-F]/g, '').slice(0, 12).toLowerCase();
-        if (hex.length < 3) return;
-        event.preventDefault();
-        const pairs = hex.match(/.{1,2}/g) || [];
-        this.macParts = Array.from({ length: 6 }, (unused, i) => pairs[i] || '');
-        this.$nextTick(() => {
-          this.macParts.forEach((part, i) => { const box = this.macBoxAt(i); if (box) box.value = part; });
-          this.focusMacBox(Math.min(pairs.length, 5), true);
-        });
-      },
-      async runMac() { this.macResult = await this.guarded('mac', () => api('tools/mac?' + qs({ mac: this.macQuery }))); },
       hasTool(id) {
         if (!this.requirements) return false;
         const c = this.requirements.components.find((x) => x.id === id);
@@ -7220,6 +7156,13 @@ return function render(_ctx, _cache) {
       },
     },
     watch: {
+      // The registry is bundled and the answer is local, so there is no reason
+      // to make anyone press a button once the prefix is there.
+      macQuery(value) {
+        clearTimeout(this.macTimer);
+        if (value.length < 6) { this.macResult = null; return; }
+        this.macTimer = setTimeout(() => this.runMac(), 250);
+      },
       tab(value) {
         // Saved connections are shared by the mail and file tabs; fetch them the
         // first time either one is opened.

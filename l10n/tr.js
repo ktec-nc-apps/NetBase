@@ -749,6 +749,7 @@ OC.L10N.register(
         "Remove this row": "Bu satırı kaldır",
         "Whose equipment is this?": "Bu cihaz kimin?",
         "The first half of a MAC address says who made the device. NetBase looks it up in the bundled IEEE registry, so nothing leaves this server.": "MAC adresinin ilk yarısı üreticiyi söyler. NetBase bunu gömülü IEEE kaydında arar; hiçbir şey bu sunucudan çıkmaz.",
+        "Colons and hyphens are optional; six hex digits are enough.": "İki nokta üst üste ve tire isteğe bağlıdır; altı onaltılık basamak yeterlidir.",
         "Fill in at least one network first.": "Önce en az bir ağ girin.",
         "Fill in an address first.": "Önce bir adres girin.",
         "One network in, and the equal parts it divides into — with the range and host count of each.": "Bir ağ girin, eşit parçaları çıksın — her birinin aralığı ve makine sayısıyla.",
