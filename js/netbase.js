@@ -832,20 +832,15 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
           <div class="card tool-card">
             <h3>{{ t('Whose equipment is this?') }}</h3>
             <p class="dim">{{ t('The first half of a MAC address says who made the device. NetBase looks it up in the bundled IEEE registry, so nothing leaves this server.') }}</p>
+            <p class="dim">{{ t('Colons and hyphens are optional; six hex digits are enough.') }}</p>
             <div class="tool-row">
-              <!-- Six pairs, because that is what a MAC address is. Two
-                   characters fill a box and move on; backspace in an empty box
-                   steps back. Pasting the whole address fills them all. -->
-              <div class="mac-boxes" :title="t('MAC address')">
-                <template v-for="(part, i) in macParts" :key="i">
-                  <input class="mac-box" ref="macBox" :value="part" maxlength="2" inputmode="text"
-                         spellcheck="false" autocomplete="off" :aria-label="t('MAC address') + ' ' + (i + 1)"
-                         @input="typeMacPart(i, $event)" @keydown="macKey(i, $event)"
-                         @paste="pasteMac($event)" @focus="$event.target.select()">
-                  <span v-if="i < 5" class="mac-sep">:</span>
-                </template>
-              </div>
-              <button class="btn" @click="runMac">{{ t('Identify vendor') }}</button>
+              <!-- One box, taken as it comes: written with colons, with hyphens,
+                   in fours, or as bare hex. Six hex digits name the vendor, so
+                   the lookup happens as soon as that many have been typed. -->
+              <input v-model="macInput" class="mac-input" placeholder="84:af:ec:85:7a:e0"
+                     inputmode="text" spellcheck="false" autocomplete="off"
+                     :aria-label="t('MAC address')" @keyup.enter="runMac">
+              <button class="btn" :disabled="!macReady" @click="runMac">{{ t('Identify vendor') }}</button>
             </div>
             <div class="kv" v-if="macResult">
               <div><span>{{ t('Vendor') }}</span><code>{{ macResult.vendor || (macResult.local ? t('Randomised (privacy) address') : t('Not registered')) }}</code></div>
@@ -1872,7 +1867,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         // NETBASE-STORE-REMOVED: pingHost: '', pingResult: null, traceResult: null,
         // NETBASE-STORE-REMOVED: portHost: '', portList: '', portResult: null,
         tlsHost: '', tlsPort: 443, tlsResult: null, httpResult: null,
-        subnetInput: '', subnetResult: null, macParts: ['', '', '', '', '', ''], macResult: null,
+        subnetInput: '', subnetResult: null, macInput: '', macResult: null, macTimer: null,
         // An address is four numbers and a prefix; typing it that way beats
         // typing punctuation. The free-text boxes stay for IPv6 and ranges.
         calcAddress: { octets: ['', '', '', ''], prefix: 24 },
@@ -1933,12 +1928,12 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
       },
       currentTab() { return TABS.find((x) => x.id === this.tab) || TABS[0]; },
       macQuery() {
-        // Trailing empty boxes are simply not typed yet, so they are not part
-        // of the address either.
-        const parts = [...this.macParts];
-        while (parts.length && parts[parts.length - 1] === '') parts.pop();
-        return parts.join(':');
+        // However it was written — colons, hyphens, dots, spaces or nothing at
+        // all — what matters is the hex underneath.
+        return String(this.macInput || '').replace(/[^0-9a-fA-F]/g, '').toLowerCase().slice(0, 12);
       },
+      /** Six hex digits are the vendor prefix, and enough to answer with. */
+      macReady() { return this.macQuery.length >= 6; },
 
       /**
        * Addresses NetBase already knows, so they need not be typed again:
@@ -2913,58 +2908,10 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
       },
 
       // ---- the six boxes of a MAC address ---------------------------------
-      macBoxAt(index) {
-        const boxes = this.$refs.macBox;
-        return Array.isArray(boxes) ? boxes[index] : null;
+      async runMac() {
+        if (!this.macReady) { this.macResult = null; return; }
+        this.macResult = await this.guarded('mac', () => api('tools/mac?' + qs({ mac: this.macQuery })));
       },
-      focusMacBox(index, atEnd) {
-        const box = this.macBoxAt(index);
-        if (!box) return;
-        box.focus();
-        if (atEnd) this.$nextTick(() => box.setSelectionRange(box.value.length, box.value.length));
-      },
-      typeMacPart(index, event) {
-        const hex = String(event.target.value || '').replace(/[^0-9a-fA-F]/g, '').slice(0, 2).toLowerCase();
-        const parts = [...this.macParts];
-        parts[index] = hex;
-        this.macParts = parts;
-        // Put back the cleaned value, in case something else was typed.
-        this.$nextTick(() => { event.target.value = hex; });
-        // A full pair moves on, which is what typing an address feels like.
-        if (hex.length === 2 && index < 5) this.focusMacBox(index + 1, false);
-      },
-      macKey(index, event) {
-        if (event.key === 'Backspace' && event.target.value === '' && index > 0) {
-          event.preventDefault();
-          const parts = [...this.macParts];
-          parts[index - 1] = '';
-          this.macParts = parts;
-          this.focusMacBox(index - 1, true);
-          return;
-        }
-        if (event.key === 'ArrowLeft' && event.target.selectionStart === 0 && index > 0) {
-          event.preventDefault();
-          this.focusMacBox(index - 1, true);
-        }
-        if (event.key === 'ArrowRight' && event.target.selectionStart === event.target.value.length && index < 5) {
-          event.preventDefault();
-          this.focusMacBox(index + 1, false);
-        }
-        if (event.key === 'Enter') this.runMac();
-      },
-      pasteMac(event) {
-        const text = (event.clipboardData || window.clipboardData).getData('text') || '';
-        const hex = text.replace(/[^0-9a-fA-F]/g, '').slice(0, 12).toLowerCase();
-        if (hex.length < 3) return;
-        event.preventDefault();
-        const pairs = hex.match(/.{1,2}/g) || [];
-        this.macParts = Array.from({ length: 6 }, (unused, i) => pairs[i] || '');
-        this.$nextTick(() => {
-          this.macParts.forEach((part, i) => { const box = this.macBoxAt(i); if (box) box.value = part; });
-          this.focusMacBox(Math.min(pairs.length, 5), true);
-        });
-      },
-      async runMac() { this.macResult = await this.guarded('mac', () => api('tools/mac?' + qs({ mac: this.macQuery }))); },
       hasTool(id) {
         if (!this.requirements) return false;
         const c = this.requirements.components.find((x) => x.id === id);
@@ -3189,6 +3136,13 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
       },
     },
     watch: {
+      // The registry is bundled and the answer is local, so there is no reason
+      // to make anyone press a button once the prefix is there.
+      macQuery(value) {
+        clearTimeout(this.macTimer);
+        if (value.length < 6) { this.macResult = null; return; }
+        this.macTimer = setTimeout(() => this.runMac(), 250);
+      },
       tab(value) {
         // Saved connections are shared by the mail and file tabs; fetch them the
         // first time either one is opened.

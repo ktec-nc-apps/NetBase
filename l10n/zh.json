@@ -748,6 +748,7 @@
         "Remove this row": "删除此行",
         "Whose equipment is this?": "这是谁家的设备？",
         "The first half of a MAC address says who made the device. NetBase looks it up in the bundled IEEE registry, so nothing leaves this server.": "MAC 地址的前半段表示制造商。NetBase 使用内置的 IEEE 登记库查询，数据不会离开本服务器。",
+        "Colons and hyphens are optional; six hex digits are enough.": "冒号和连字符可以省略，输入六位十六进制数即可识别。",
         "Fill in at least one network first.": "请先填写至少一个网络。",
         "Fill in an address first.": "请先填写地址。",
         "One network in, and the equal parts it divides into — with the range and host count of each.": "输入一个网络，列出等分后的各子网及其范围与主机数。",

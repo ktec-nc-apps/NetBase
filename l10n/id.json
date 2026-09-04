@@ -748,6 +748,7 @@
         "Remove this row": "Hapus baris ini",
         "Whose equipment is this?": "Perangkat siapa ini?",
         "The first half of a MAC address says who made the device. NetBase looks it up in the bundled IEEE registry, so nothing leaves this server.": "Separuh awal alamat MAC menunjukkan pembuatnya. NetBase mencarinya di daftar IEEE bawaan, jadi tak ada yang keluar dari peladen ini.",
+        "Colons and hyphens are optional; six hex digits are enough.": "Titik dua dan tanda hubung bersifat opsional; enam digit heksadesimal sudah cukup.",
         "Fill in at least one network first.": "Isi setidaknya satu jaringan.",
         "Fill in an address first.": "Isi alamat dahulu.",
         "One network in, and the equal parts it divides into — with the range and host count of each.": "Satu jaringan masuk, bagian-bagian samanya keluar — lengkap dengan rentang dan jumlah host.",

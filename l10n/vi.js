@@ -749,6 +749,7 @@ OC.L10N.register(
         "Remove this row": "Xóa dòng này",
         "Whose equipment is this?": "Thiết bị này của hãng nào?",
         "The first half of a MAC address says who made the device. NetBase looks it up in the bundled IEEE registry, so nothing leaves this server.": "Nửa đầu địa chỉ MAC cho biết nhà sản xuất. NetBase tra trong sổ đăng ký IEEE kèm theo, nên không gì rời khỏi máy chủ này.",
+        "Colons and hyphens are optional; six hex digits are enough.": "Dấu hai chấm và dấu gạch ngang là tùy chọn; sáu chữ số thập lục phân là đủ.",
         "Fill in at least one network first.": "Hãy nhập ít nhất một mạng.",
         "Fill in an address first.": "Hãy nhập địa chỉ trước.",
         "One network in, and the equal parts it divides into — with the range and host count of each.": "Nhập một mạng, nhận các phần bằng nhau — kèm dải và số máy của từng phần.",

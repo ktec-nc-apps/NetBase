@@ -749,6 +749,7 @@ OC.L10N.register(
         "Remove this row": "Quitar esta fila",
         "Whose equipment is this?": "¿De quién es este equipo?",
         "The first half of a MAC address says who made the device. NetBase looks it up in the bundled IEEE registry, so nothing leaves this server.": "La primera mitad de una MAC indica el fabricante. NetBase la busca en el registro IEEE incluido, así que nada sale de este servidor.",
+        "Colons and hyphens are optional; six hex digits are enough.": "Los dos puntos y los guiones son opcionales; bastan seis dígitos hexadecimales.",
         "Fill in at least one network first.": "Introduzca al menos una red.",
         "Fill in an address first.": "Introduzca una dirección.",
         "One network in, and the equal parts it divides into — with the range and host count of each.": "Una red y las partes iguales en que se divide, con el rango y el número de equipos de cada una.",

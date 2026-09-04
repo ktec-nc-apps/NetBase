@@ -521,16 +521,12 @@
   #netbase-root .topbar-actions .btn.keep .lb { display: none; }
 }
 
-/* A MAC address, in the six pairs it is made of. */
-#netbase-root .mac-boxes { display: inline-flex; align-items: center; gap: 4px; }
-#netbase-root .mac-box {
-  width: 3.1em;
-  padding: 8px 0;
-  text-align: center;
+/* A MAC address, written however the person writing it likes. */
+#netbase-root .mac-input {
+  width: 16em;
+  max-width: 100%;
   font-family: var(--mono, ui-monospace, SFMono-Regular, Menlo, monospace);
-  text-transform: lowercase;
 }
-#netbase-root .mac-sep { color: var(--muted); font-weight: 600; }
 
 /* The little chooser that sits beside an address field. */
 #netbase-root .tool-row .pick { max-width: 12em; flex: 0 0 auto; }
@@ -659,11 +655,9 @@
 }
 
 @media (max-width: 430px) {
-  /* The six pairs of a MAC address, and the four numbers of an IPv4 address,
-     have to fit side by side on the narrowest phone in use. */
-  #netbase-root .mac-boxes { gap: 2px; }
-  #netbase-root .mac-box { width: 2.6em; padding: 8px 0; }
-  #netbase-root .mac-sep { font-size: 12px; }
+  /* The four numbers of an IPv4 address have to fit side by side on the
+     narrowest phone in use, and the MAC field takes the width it is given. */
+  #netbase-root .mac-input { width: 100%; }
   #netbase-root .ip-boxes { gap: 2px; }
   #netbase-root .ip-box { width: 2.3em; }
   /* The prefix keeps its width: a select narrower than its own number shows

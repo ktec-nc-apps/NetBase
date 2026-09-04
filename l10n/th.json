@@ -748,6 +748,7 @@
         "Remove this row": "ลบแถวนี้",
         "Whose equipment is this?": "อุปกรณ์นี้เป็นของใคร",
         "The first half of a MAC address says who made the device. NetBase looks it up in the bundled IEEE registry, so nothing leaves this server.": "ครึ่งแรกของที่อยู่ MAC บอกผู้ผลิต NetBase ค้นจากทะเบียน IEEE ที่มากับตัวแอป จึงไม่มีข้อมูลออกจากเซิร์ฟเวอร์",
+        "Colons and hyphens are optional; six hex digits are enough.": "เครื่องหมายทวิภาคและยัติภังค์ไม่จำเป็น ใส่เลขฐานสิบหกหกหลักก็เพียงพอ",
         "Fill in at least one network first.": "กรอกอย่างน้อยหนึ่งเครือข่ายก่อน",
         "Fill in an address first.": "กรอกที่อยู่ก่อน",
         "One network in, and the equal parts it divides into — with the range and host count of each.": "ใส่เครือข่ายหนึ่ง แล้วได้ส่วนย่อยเท่า ๆ กัน พร้อมช่วงและจำนวนโฮสต์ของแต่ละส่วน",

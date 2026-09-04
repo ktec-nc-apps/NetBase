@@ -748,6 +748,7 @@
         "Remove this row": "Rimuovi questa riga",
         "Whose equipment is this?": "Di chi è questo apparecchio?",
         "The first half of a MAC address says who made the device. NetBase looks it up in the bundled IEEE registry, so nothing leaves this server.": "La prima metà di un MAC indica il produttore. NetBase la cerca nel registro IEEE incluso: nulla lascia questo server.",
+        "Colons and hyphens are optional; six hex digits are enough.": "I due punti e i trattini sono facoltativi; bastano sei cifre esadecimali.",
         "Fill in at least one network first.": "Inserisci almeno una rete.",
         "Fill in an address first.": "Inserisci prima un indirizzo.",
         "One network in, and the equal parts it divides into — with the range and host count of each.": "Una rete e le parti uguali in cui si divide, con intervallo e numero di host di ciascuna.",
