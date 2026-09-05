@@ -21,6 +21,25 @@ class DiscoveryService {
 	/** Ports probed to tell what a device is; kept short so a sweep stays fast. */
 	public const FINGERPRINT_PORTS = [22, 23, 53, 80, 139, 443, 445, 515, 554, 631, 3389, 5000, 8080, 8443, 9100];
 
+	/**
+	 * The longer list, for when the short one leaves a device unexplained.
+	 *
+	 * Everything here answers on TCP and says something about what a machine
+	 * is: web and management interfaces, remote access, file and mail service,
+	 * databases, printers, cameras and the ports appliances tend to sit on. It
+	 * is roughly seven times the work of the short list, which is why it is a
+	 * choice and not the default.
+	 */
+	public const DETAILED_PORTS = [
+		7, 9, 13, 21, 22, 23, 25, 26, 37, 53, 79, 80, 81, 88, 106, 110, 111, 113, 119, 135, 139, 143,
+		179, 199, 389, 427, 443, 444, 445, 465, 513, 514, 515, 543, 544, 548, 554, 587, 631, 636, 873,
+		990, 993, 995, 1025, 1080, 1194, 1433, 1521, 1723, 1883, 2000, 2049, 2121, 2181, 2222, 2375,
+		3000, 3128, 3260, 3268, 3306, 3389, 4444, 4899, 5000, 5001, 5060, 5222, 5357, 5432, 5555, 5601,
+		5666, 5800, 5900, 5901, 5985, 6000, 6379, 6667, 7070, 7443, 8000, 8008, 8009, 8080, 8081, 8088,
+		8443, 8554, 8888, 9000, 9080, 9090, 9100, 9200, 9443, 9999, 10000, 11211, 27017, 32400, 49152,
+		49153, 49154,
+	];
+
 	public function __construct(
 		private OuiService $oui,
 		private LoggerInterface $logger,

@@ -352,7 +352,16 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
             <div class="scan-opts">
               <label><input type="checkbox" v-model="opts.names"> {{ t('Ask devices for their names') }}</label>
               <label><input type="checkbox" v-model="opts.multicast"> {{ t('Multicast discovery') }}</label>
-              <label><input type="checkbox" v-model="opts.ports"> {{ t('Check common ports') }}</label>
+              <label><input type="checkbox" v-model="opts.ports"> {{ t('Check open ports') }}</label>
+              <!-- Two depths rather than one compromise: the short list keeps a
+                   sweep quick, the long one is there when a device stays
+                   unexplained. -->
+              <label class="depth" v-if="opts.ports">
+                <select v-model="opts.portScan">
+                  <option value="common">{{ t('Common ports') }} ({{ portCount('common') }})</option>
+                  <option value="detailed">{{ t('Detailed search') }} ({{ portCount('detailed') }})</option>
+                </select>
+              </label>
               <label><input type="checkbox" v-model="opts.rdns"> {{ t('Reverse DNS') }}</label>
               <label><input type="checkbox" v-model="opts.arpOnly"> {{ t('Read neighbour table only (instant)') }}</label>
             </div>
@@ -1846,7 +1855,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         dragTab: '', overTab: '',
         devices: [], scan: null, scanning: false, advice: null,
         scanTargets: '', pace: 'fast',
-        opts: { names: true, multicast: true, ports: true, rdns: true, arpOnly: false },
+        opts: { names: true, multicast: true, ports: true, portScan: 'common', rdns: true, arpOnly: false },
         filter: '', onlyOnline: true, sortKey: 'ip', sortDir: 1,
         selected: null, editLabel: '', editTags: '', editNotes: '', editType: 'unknown',
         busy: {},
@@ -2050,6 +2059,11 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
       note(text) { this.banner = { kind: 'info', text }; },
 
       allowed(tool) { return !!(this.status.can || {})[tool]; },
+      /** How many ports each depth actually probes, straight from the server. */
+      portCount(depth) {
+        const list = depth === 'detailed' ? this.status.detailedPorts : this.status.fingerprintPorts;
+        return (list || []).length;
+      },
 
       // ---- putting the tools in the order someone actually works in --------
       startTabDrag(item, event) {

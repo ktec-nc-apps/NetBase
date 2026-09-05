@@ -2,6 +2,19 @@
 
 All notable changes to NetBase are documented here.
 
+## 0.3.5 — 2026-09-05
+
+### Added
+
+- **A choice of depth for the port check in device discovery.** The sweep can
+  now be told to look at either the common ports — the short list of fifteen
+  that tells a printer from a camera without slowing the scan — or to run a
+  detailed search across 106 TCP ports: web and management interfaces, remote
+  access, file, mail and directory service, databases, printers, cameras and
+  the ports appliances tend to sit on. The short list stays the default, and
+  the detailed search takes fewer hosts per slice so each step still finishes
+  inside its time budget.
+
 ## 0.3.4 — 2026-09-05
 
 ### Fixed

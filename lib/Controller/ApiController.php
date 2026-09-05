@@ -126,6 +126,7 @@ class ApiController extends Controller {
 			// NETBASE-STORE-REMOVED: nmap availability
 			'nmap' => ['available' => false],
 			'fingerprintPorts' => DiscoveryService::FINGERPRINT_PORTS,
+			'detailedPorts' => DiscoveryService::DETAILED_PORTS,
 			'neighbourLimits' => $this->discovery->neighbourLimits(),
 			'neighbourCount' => $this->discovery->neighbourCount(),
 			'sockets' => extension_loaded('sockets'),

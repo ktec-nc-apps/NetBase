@@ -285,7 +285,9 @@ class ScanService {
 	private function stepPorts(ScanEntity $scan, array &$queue, array $options): void {
 		$ips = $queue['ips'] ?? [];
 		$idx = (int)($queue['idx'] ?? 0);
-		$batch = array_slice($ips, $idx, 24);
+		// The work is hosts times ports, so the long list takes fewer hosts at a
+		// time and each slice still finishes inside the request budget.
+		$batch = array_slice($ips, $idx, ($options['portScan'] ?? 'common') === 'detailed' ? 8 : 24);
 		if ($batch === []) {
 			$queue['idx'] = 0;
 			$scan->setPhase($options['rdns'] ? 'rdns' : 'done');
@@ -617,7 +619,12 @@ class ScanService {
 	}
 
 	private function normaliseOptions(array $options): array {
-		$ports = $options['portList'] ?? DiscoveryService::FINGERPRINT_PORTS;
+		// Two depths, because one list cannot serve both purposes: the short one
+		// is there to tell a printer from a camera without slowing the sweep,
+		// the long one for the device that the short list leaves unexplained.
+		$depth = ($options['portScan'] ?? 'common') === 'detailed' ? 'detailed' : 'common';
+		$default = $depth === 'detailed' ? DiscoveryService::DETAILED_PORTS : DiscoveryService::FINGERPRINT_PORTS;
+		$ports = $options['portList'] ?? $default;
 		$ports = array_values(array_filter(array_map('intval', (array)$ports), static fn ($p) => $p > 0 && $p < 65536));
 		$mode = ($options['pace'] ?? 'fast') === 'gentle' ? 'gentle' : 'fast';
 		$pace = $this->pacing($mode);
@@ -630,9 +637,10 @@ class ScanService {
 			'names' => (bool)($options['names'] ?? true),
 			'multicast' => (bool)($options['multicast'] ?? true),
 			'ports' => (bool)($options['ports'] ?? true),
+			'portScan' => $depth,
 			'rdns' => (bool)($options['rdns'] ?? true),
 			'interface' => (string)($options['interface'] ?? ''),
-			'portList' => $ports ?: DiscoveryService::FINGERPRINT_PORTS,
+			'portList' => $ports ?: $default,
 		];
 	}
 

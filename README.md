@@ -14,7 +14,7 @@ NetBase turns your Nextcloud into a network console. It finds every device on yo
 
 ### Device discovery and inventory
 
-**How it works.** Nextcloud runs unprivileged, so raw sockets — and therefore ARP scanning in PHP — are not available. NetBase makes the kernel do the work instead: sending a datagram to an on-link address forces the kernel to resolve it, and the result lands in the neighbour table, which is world readable. Names come from the devices themselves over NetBIOS, mDNS, WS-Discovery and SSDP, all plain UDP, and vendors from the bundled IEEE registries — more than 53,000 prefixes, so no MAC address is ever sent anywhere.
+**How it works.** Nextcloud runs unprivileged, so raw sockets — and therefore ARP scanning in PHP — are not available. NetBase makes the kernel do the work instead: sending a datagram to an on-link address forces the kernel to resolve it, and the result lands in the neighbour table, which is world readable. Names come from the devices themselves over NetBIOS, mDNS, WS-Discovery and SSDP, all plain UDP, and vendors from the bundled IEEE registries — more than 53,000 prefixes, so no MAC address is ever sent anywhere. Open ports are checked at one of two depths: a short list of fifteen that keeps a sweep quick, or a detailed list of 106 for the device the short list leaves unexplained.
 
 **What it is for.** Building the asset list a site never quite had. Finding the device nobody remembers installing. Seeing which addresses are free before assigning one. Exporting the lot as CSV for an inventory that lives outside Nextcloud.
 
@@ -208,7 +208,7 @@ Nextcloud 用のネットワーク総合ツールです。LAN上の機器を検�
 
 ### 機器の検出と台帳
 
-**仕組み** ― Nextcloud は非特権で動作するため raw ソケット（つまり PHP からの ARP スキャン）は使えません。そこでカーネルに仕事をさせます。同一リンク上のアドレスへデータグラムを送るとカーネルは必ずアドレス解決を行い、その結果が誰でも読める近隣テーブルに残ります。名前は NetBIOS・mDNS・WS-Discovery・SSDP という素の UDP で機器自身に尋ね、ベンダーは同梱の IEEE 登録簿（53,000件超）で判定します。MACアドレスを外部へ送ることはありません。
+**仕組み** ― Nextcloud は非特権で動作するため raw ソケット（つまり PHP からの ARP スキャン）は使えません。そこでカーネルに仕事をさせます。同一リンク上のアドレスへデータグラムを送るとカーネルは必ずアドレス解決を行い、その結果が誰でも読める近隣テーブルに残ります。名前は NetBIOS・mDNS・WS-Discovery・SSDP という素の UDP で機器自身に尋ね、ベンダーは同梱の IEEE 登録簿（53,000件超）で判定します。MACアドレスを外部へ送ることはありません。 開いているポートの確認は2段階から選べます。掃引を速いまま保つ主要ポート15個と、それでは正体のつかめない機器のための詳細検索106個です。
 
 **用途** ― 作りかけのまま放置されがちな機器台帳の整備。誰も覚えていない機器の発見。IPアドレス払い出し前の空き確認。CSV 書き出しによる社内資産管理との連携。
 
