@@ -2,6 +2,23 @@
 
 All notable changes to NetBase are documented here.
 
+## 0.3.9 — 2026-09-05
+
+### Fixed
+
+- **A device window no longer reloads itself for ever.** A Buffalo LinkStation
+  (LS520D724) opened on port 80 reloaded about once a second and never showed
+  its login page. Its own script checks that it is at its own path and, seeing
+  the proxy's prefix in front of it, redirects to where it already is — which
+  fails the same check on arrival. Device firmware is written on the assumption
+  that it is the whole page, so it is now told what it expects to hear: the
+  path with the prefix taken off, and `window.top` pointing at the device's own
+  document rather than at NetBase. `window.top.setLang is not a function`, which
+  this device threw on every load, is gone with it. As a last resort, a page
+  that arrives at the address it is already showing three times inside ten
+  seconds is not sent there a fourth; a device that refreshes itself on a timer
+  is doing something reasonable and is left alone.
+
 ## 0.3.8 — 2026-09-05
 
 ### Added

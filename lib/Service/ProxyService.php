@@ -311,6 +311,8 @@ class ProxyService {
 			$body = $this->rewriteHtml($body, $base, $prefix, $path, $userId);
 		} elseif (str_contains(strtolower($type), 'css')) {
 			$body = $this->rewriteCss($body, $prefix);
+		} elseif (preg_match('#(java|ecma)script#i', $type) === 1) {
+			$body = $this->rewriteJs($body);
 		}
 
 		$out = [];
@@ -356,7 +358,13 @@ class ProxyService {
 		if ($type === '') {
 			return false;
 		}
-		return !str_contains($type, 'html') && !str_contains($type, 'css');
+		// Scripts are held back with the markup and the stylesheets, because
+		// they carry the same assumptions about where the page is running and
+		// need the same correction. Everything else — images, downloads, the
+		// firmware file itself — goes straight through untouched.
+		return !str_contains($type, 'html')
+			&& !str_contains($type, 'css')
+			&& preg_match('#(java|ecma)script#', $type) !== 1;
 	}
 
 	/** @param array<string, string> $headers */
@@ -610,6 +618,13 @@ class ProxyService {
 
 		$body = $this->rewriteCss($body, $prefix);
 
+		// Inline scripts hold the same assumptions as the files beside them.
+		$body = preg_replace_callback(
+			'#(<script\b(?![^>]*\bsrc\s*=)[^>]*>)(.*?)(</script\s*>)#is',
+			fn (array $m) => $m[1] . $this->rewriteJs($m[2]) . $m[3],
+			$body,
+		) ?? $body;
+
 		// Rewriting the markup cannot catch an address a script builds while the
 		// page runs, so the page is given a small shim that redirects those the
 		// same way. Without it, a device interface that fetches its own data
@@ -628,11 +643,74 @@ class ProxyService {
 		return $body;
 	}
 
+	/**
+	 * Corrects a script's idea of where it is running.
+	 *
+	 * Device firmware is written to be the whole page. `window.top` is taken to
+	 * be itself — the LinkStation calls `window.top.setLang(...)`, which through
+	 * the proxy reaches NetBase's own page and is not there — and the path is
+	 * taken to be its own, which is how the same firmware talks itself into an
+	 * endless redirect. Both are answered with what the shim provides.
+	 *
+	 * Only reads are rewritten: `x = location.pathname` becomes a call, while
+	 * `location.pathname = x`, which is a navigation, is left exactly as it was.
+	 */
+	private function rewriteJs(string $body): string {
+		$body = preg_replace('#\bwindow\s*\.\s*top\b(?!\s*=[^=])#', 'window.__nbTop', $body) ?? $body;
+		$body = preg_replace('#\bwindow\s*\.\s*parent\b(?!\s*=[^=])#', 'window.__nbParent', $body) ?? $body;
+		return preg_replace(
+			'#\b(?:window\s*\.\s*)?location\s*\.\s*pathname\b(?!\s*=[^=])#',
+			'window.__nbPath()',
+			$body,
+		) ?? $body;
+	}
+
 	/** Sends script-made requests back through the proxy instead of to Nextcloud. */
 	private function shim(string $prefix): string {
 		$script = <<<'JS'
 (function () {
 	var P = __PREFIX__;
+
+	// A device interface is written on the assumption that it is the whole
+	// page: that window.top is itself, and that the address bar shows its own
+	// path. Through the proxy neither is true, and pages act on the difference
+	// — the Buffalo LinkStation login checks its own path and, finding the
+	// proxy prefix in front of it, redirects to where it already is. Once a
+	// second, for ever.
+	//
+	// So the page is told what it expects to hear: the topmost document that
+	// is still ours, and the path with the prefix taken off.
+	function root() {
+		var w = window;
+		try {
+			while (w.parent && w.parent !== w && w.parent.location.pathname.lastIndexOf(P, 0) === 0) { w = w.parent; }
+		} catch (e) { /* a document we may not read is not one of ours */ }
+		return w;
+	}
+	window.__nbTop = root();
+	window.__nbParent = (window.parent && window.parent !== window && window !== window.__nbTop) ? window.parent : window.__nbTop;
+	window.__nbPath = function () {
+		var path = location.pathname;
+		return path.lastIndexOf(P, 0) === 0 ? (path.slice(P.length) || '/') : path;
+	};
+
+	// The last resort, when a page still insists on going where it already is.
+	// A device that refreshes itself on a timer is doing something reasonable
+	// and is left alone; one that arrives at the same address three times
+	// inside ten seconds is in a loop, and nothing further will come of it.
+	var LOOP_KEY = 'netbase.nav.' + P;
+	function looping(href) {
+		var url;
+		try { url = new URL(href, location.href).href; } catch (e) { return false; }
+		if (url.split('#')[0] !== location.href.split('#')[0]) { return false; }
+		var now = Date.now(), seen = [];
+		try { seen = JSON.parse(sessionStorage.getItem(LOOP_KEY) || '[]'); } catch (e) { seen = []; }
+		seen = seen.filter(function (t) { return now - t < 10000; });
+		seen.push(now);
+		try { sessionStorage.setItem(LOOP_KEY, JSON.stringify(seen)); } catch (e) { /* private window */ }
+		return seen.length >= 3;
+	}
+
 	function fix(u) {
 		if (typeof u !== 'string' || !u) { return u; }
 		if (u.lastIndexOf(P, 0) === 0) { return u; }
@@ -676,6 +754,8 @@ class ProxyService {
 		var a = [].slice.call(arguments);
 		a[0] = fix(a[0]);
 		if (a[1] && escapes[String(a[1]).toLowerCase()]) { a[1] = W; }
+		// This is how a device page redirects itself, and how the loop arrives.
+		if (a[0] && looping(a[0])) { return null; }
 		return ow.apply(this, a);
 	};
 	// Old device interfaces build themselves with document.write, and the
@@ -747,7 +827,7 @@ class ProxyService {
 	// browser would open a new tab instead. So the document navigates itself,
 	// on behalf of whichever of its frames asked: the call runs here, in the
 	// window's own document, which is allowed to go where it likes.
-	window.__netbaseGo = function (href) { location.href = href; };
+	window.__netbaseGo = function (href) { if (!looping(href)) { location.href = href; } };
 	// A frameset's menu fills a named frame beside it. A sandboxed page may
 	// navigate itself and what is inside it, never a neighbour — so the window's
 	// own document, which contains them all, does it on the menu's behalf.
@@ -758,7 +838,7 @@ class ProxyService {
 			target = element && element.contentWindow ? element.contentWindow : null;
 		}
 		if (target && target !== window) { target.location.href = href; return true; }
-		location.href = href;
+		if (!looping(href)) { location.href = href; }
 		return true;
 	};
 	window.__netbaseSubmit = function (action, method, fields, name) {
