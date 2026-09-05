@@ -132,7 +132,15 @@ class ProxyController extends Controller {
 			$output->setOutput($page);
 			return;
 		}
-		$output->setHttpResponseCode((int)$result['status'] ?: 200);
+		// The status line as well as the code. The framework has already sent
+		// "HTTP/1.1 200 OK" for this response before ever calling us, and under
+		// FastCGI that is what decides the status — so a device's 302 arrived at
+		// the browser as a 200 with a Location nobody acted on, and its page
+		// stayed blank. The streaming path always did both; this one now does
+		// too.
+		$status = (int)$result['status'] ?: 200;
+		$output->setHeader('HTTP/1.1 ' . $status . ' ' . (ProxyService::REASONS[$status] ?? 'Status'));
+		$output->setHttpResponseCode($status);
 		foreach ((array)$result['headers'] as $name => $value) {
 			$output->setHeader($name . ': ' . $value);
 		}

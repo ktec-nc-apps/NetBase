@@ -340,14 +340,13 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
                 <input v-model="scanTargets" :placeholder="suggestedPlaceholder">
               </label>
               <!-- Two different things, named as the two different things they
-                   are. The send rate walks the addresses; the wait is what a
-                   port that says nothing costs, and it is the wait, not the
-                   rate, that decides how long a long scan takes. -->
-              <label class="fl narrow pace" :title="t('How quickly the addresses are walked through. The slower rate finds more Wi-Fi devices, because a wireless network carries broadcasts slowly. The time shown is for the addresses only.')">
-                <span class="fl-label">{{ t('Send rate') }}</span>
+                   are. This one walks the addresses; the wait beneath is what a
+                   port that says nothing costs, and it is the wait, not this,
+                   that decides how long a long scan takes. -->
+              <label class="fl narrow pace" :title="t('How quickly the addresses are walked through. A slower speed finds more Wi-Fi devices, because a wireless network carries broadcasts slowly: on a /16 with ten devices, 15,000 a second found six of them and 1,500 found all ten. The time shown is for the addresses only.')">
+                <span class="fl-label">{{ t('Scan speed') }}</span>
                 <select v-model="pace">
-                  <option value="fast">{{ paceLabel('fast') }}</option>
-                  <option value="gentle">{{ paceLabel('gentle') }}</option>
+                  <option v-for="r in paceRates" :key="r" :value="String(r)">{{ paceLabel(r) }}</option>
                 </select>
               </label>
               <button class="btn primary" :disabled="scanning" @click="startScan()">{{ scanning ? t('Scanning…') : t('Start') }}</button>
@@ -1501,7 +1500,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
            policy pins everything it loads or sends to the proxy path, so it cannot
            reach a Nextcloud endpoint. The name is how its own "replace everything"
            links find this window. -->
-      <iframe v-else :src="w.src" class="devwin-frame" :title="w.title" name="_netbase_window"
+      <iframe v-else :src="w.src" class="devwin-frame" :title="w.title" name="_netbase_window" @load="onWindowLoad(w, $event)"
               sandbox="allow-scripts allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox allow-downloads allow-same-origin"></iframe>
       <div class="devwin-grip" @mousedown.prevent.stop="startResize(w, $event)"></div>
     </div>
@@ -1666,16 +1665,22 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
           <span class="ic big">{{ icon(selected) }}</span>
           <div>
             <input class="dev-name" v-model="editLabel" :placeholder="selected.hostname || selected.ip" :readonly="!allowed('scan')">
-            <div class="dim mono">{{ selected.ip }} · {{ selected.mac || t('no MAC') }}</div>
+            <div class="dim mono">{{ selected.ip }}<button class="btn xs ib copy-one" :title="t('Copy this')" :aria-label="t('Copy this')" @click="copyField(t('IPv4'), selected.ip)"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2.2"/><path d="M6 15.5H5.5A2.5 2.5 0 0 1 3 13V5.5A2.5 2.5 0 0 1 5.5 3H13a2.5 2.5 0 0 1 2.5 2.5V6"/></svg></button> · {{ selected.mac || t('no MAC') }}<template v-if="selected.mac"><button class="btn xs ib copy-one" :title="t('Copy this')" :aria-label="t('Copy this')" @click="copyField(t('MAC address'), selected.mac)"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2.2"/><path d="M6 15.5H5.5A2.5 2.5 0 0 1 3 13V5.5A2.5 2.5 0 0 1 5.5 3H13a2.5 2.5 0 0 1 2.5 2.5V6"/></svg></button></template></div>
           </div>
           <span class="spacer"></span>
+          <!-- The whole record, and below, each row on its own: a device is
+               quoted into a ticket or a stock list far more often than it is
+               read on the screen. -->
+          <button class="btn sm keep" :title="t('Copy everything about this device')" @click="copyDevice(selected)">
+            <span class="ic"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2.2"/><path d="M6 15.5H5.5A2.5 2.5 0 0 1 3 13V5.5A2.5 2.5 0 0 1 5.5 3H13a2.5 2.5 0 0 1 2.5 2.5V6"/></svg></span><span class="lb">{{ t('Copy all') }}</span>
+          </button>
           <button class="btn xs ib" :title="t('Close')" :aria-label="t('Close')" @click="selected=null"><svg viewBox="0 0 24 24"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg></button>
         </div>
         <div class="drawer-body">
           <div class="kv">
-            <div><span>{{ t('Vendor') }}</span><code>{{ vendorText(selected) }}</code></div>
-            <div><span>{{ t('Reported name') }}</span><code>{{ selected.hostname || '—' }}</code></div>
-            <div v-if="selected.workgroup"><span>{{ t('Workgroup') }}</span><code>{{ selected.workgroup }}</code></div>
+            <div><span>{{ t('Vendor') }}</span><code>{{ vendorText(selected) }}</code><button class="btn xs ib copy-one" :title="t('Copy this')" :aria-label="t('Copy this')" @click="copyField(t('Vendor'), vendorText(selected))"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2.2"/><path d="M6 15.5H5.5A2.5 2.5 0 0 1 3 13V5.5A2.5 2.5 0 0 1 5.5 3H13a2.5 2.5 0 0 1 2.5 2.5V6"/></svg></button></div>
+            <div><span>{{ t('Reported name') }}</span><code>{{ selected.hostname || '—' }}</code><button class="btn xs ib copy-one" :title="t('Copy this')" :aria-label="t('Copy this')" @click="copyField(t('Reported name'), selected.hostname)"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2.2"/><path d="M6 15.5H5.5A2.5 2.5 0 0 1 3 13V5.5A2.5 2.5 0 0 1 5.5 3H13a2.5 2.5 0 0 1 2.5 2.5V6"/></svg></button></div>
+            <div v-if="selected.workgroup"><span>{{ t('Workgroup') }}</span><code>{{ selected.workgroup }}</code><button class="btn xs ib copy-one" :title="t('Copy this')" :aria-label="t('Copy this')" @click="copyField(t('Workgroup'), selected.workgroup)"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2.2"/><path d="M6 15.5H5.5A2.5 2.5 0 0 1 3 13V5.5A2.5 2.5 0 0 1 5.5 3H13a2.5 2.5 0 0 1 2.5 2.5V6"/></svg></button></div>
             <div><span>{{ t('Open ports') }}</span><code>
               <template v-for="(p,i) in selected.ports" :key="p">
                 <a v-if="portLink(selected, p)" href="#" :title="portLink(selected, p).title" @click.prevent="openDeviceWindow(selected, p)">{{ p }}</a>
@@ -1683,13 +1688,13 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
                 <span v-else>{{ p }}</span><span v-if="i < selected.ports.length - 1">, </span>
               </template>
               <span v-if="!selected.ports.length">—</span>
-            </code></div>
-            <div><span>{{ t('Found by') }}</span><code>{{ selected.sources.join(', ') }}</code></div>
-            <div><span>{{ t('First seen') }}</span><code>{{ stamp(selected.firstSeen) }}</code></div>
-            <div><span>{{ t('Last seen') }}</span><code>{{ stamp(selected.lastSeen) }}</code></div>
-            <div v-if="selected.extra && selected.extra.mdns"><span>mDNS</span><code>{{ selected.extra.mdns }}</code></div>
-            <div v-if="selected.extra && selected.extra.rdns"><span>{{ t('Reverse DNS') }}</span><code>{{ selected.extra.rdns }}</code></div>
-            <div v-if="selected.extra && selected.extra.ssdp"><span>SSDP</span><code class="wrap">{{ selected.extra.ssdp }}</code></div>
+            </code><button class="btn xs ib copy-one" :title="t('Copy this')" :aria-label="t('Copy this')" @click="copyField(t('Open ports'), selected.ports.join(', '))"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2.2"/><path d="M6 15.5H5.5A2.5 2.5 0 0 1 3 13V5.5A2.5 2.5 0 0 1 5.5 3H13a2.5 2.5 0 0 1 2.5 2.5V6"/></svg></button></div>
+            <div><span>{{ t('Found by') }}</span><code>{{ selected.sources.join(', ') }}</code><button class="btn xs ib copy-one" :title="t('Copy this')" :aria-label="t('Copy this')" @click="copyField(t('Found by'), selected.sources.join(', '))"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2.2"/><path d="M6 15.5H5.5A2.5 2.5 0 0 1 3 13V5.5A2.5 2.5 0 0 1 5.5 3H13a2.5 2.5 0 0 1 2.5 2.5V6"/></svg></button></div>
+            <div><span>{{ t('First seen') }}</span><code>{{ stamp(selected.firstSeen) }}</code><button class="btn xs ib copy-one" :title="t('Copy this')" :aria-label="t('Copy this')" @click="copyField(t('First seen'), stamp(selected.firstSeen))"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2.2"/><path d="M6 15.5H5.5A2.5 2.5 0 0 1 3 13V5.5A2.5 2.5 0 0 1 5.5 3H13a2.5 2.5 0 0 1 2.5 2.5V6"/></svg></button></div>
+            <div><span>{{ t('Last seen') }}</span><code>{{ stamp(selected.lastSeen) }}</code><button class="btn xs ib copy-one" :title="t('Copy this')" :aria-label="t('Copy this')" @click="copyField(t('Last seen'), stamp(selected.lastSeen))"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2.2"/><path d="M6 15.5H5.5A2.5 2.5 0 0 1 3 13V5.5A2.5 2.5 0 0 1 5.5 3H13a2.5 2.5 0 0 1 2.5 2.5V6"/></svg></button></div>
+            <div v-if="selected.extra && selected.extra.mdns"><span>mDNS</span><code>{{ selected.extra.mdns }}</code><button class="btn xs ib copy-one" :title="t('Copy this')" :aria-label="t('Copy this')" @click="copyField('mDNS', selected.extra.mdns)"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2.2"/><path d="M6 15.5H5.5A2.5 2.5 0 0 1 3 13V5.5A2.5 2.5 0 0 1 5.5 3H13a2.5 2.5 0 0 1 2.5 2.5V6"/></svg></button></div>
+            <div v-if="selected.extra && selected.extra.rdns"><span>{{ t('Reverse DNS') }}</span><code>{{ selected.extra.rdns }}</code><button class="btn xs ib copy-one" :title="t('Copy this')" :aria-label="t('Copy this')" @click="copyField(t('Reverse DNS'), selected.extra.rdns)"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2.2"/><path d="M6 15.5H5.5A2.5 2.5 0 0 1 3 13V5.5A2.5 2.5 0 0 1 5.5 3H13a2.5 2.5 0 0 1 2.5 2.5V6"/></svg></button></div>
+            <div v-if="selected.extra && selected.extra.ssdp"><span>SSDP</span><code class="wrap">{{ selected.extra.ssdp }}</code><button class="btn xs ib copy-one" :title="t('Copy this')" :aria-label="t('Copy this')" @click="copyField('SSDP', selected.extra.ssdp)"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2.2"/><path d="M6 15.5H5.5A2.5 2.5 0 0 1 3 13V5.5A2.5 2.5 0 0 1 5.5 3H13a2.5 2.5 0 0 1 2.5 2.5V6"/></svg></button></div>
           </div>
           <template v-if="allowed('scan')">
             <label class="fl"><span class="fl-label">{{ t('Type') }}</span>
@@ -1878,7 +1883,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         settings: { language: 'auto', theme: 'auto', languages: [], tabOrder: [] },
         dragTab: '', overTab: '',
         devices: [], scan: null, scanning: false, advice: null,
-        scanTargets: '', pace: 'fast',
+        scanTargets: '', pace: '1500',
         opts: { names: true, multicast: true, ports: true, portScan: 'common', portWait: 0.9, rdns: true, arpOnly: false },
         openPort: '', openScheme: 'http',
         filter: '', onlyOnline: true, sortKey: 'ip', sortDir: 1,
@@ -2026,6 +2031,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
       dormantComponents() { return this.requirements ? this.requirements.components.filter((c) => !c.present) : []; },
       suggestedPlaceholder() { return (this.status.targets || []).map((t2) => t2.cidr).join(', ') || '192.168.1.0/24'; },
       portWaits() { return this.status.portWaits || [0.3, 0.9, 2.0]; },
+      paceRates() { return this.status.pacing ? Object.keys(this.status.pacing).map(Number).sort((a, b) => a - b) : [1500]; },
       openPortReady() {
         const n = Number(this.openPort);
         return Number.isInteger(n) && n > 0 && n < 65536;
@@ -2113,9 +2119,14 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
        * depends on how many addresses this particular scan has to walk.
        */
       paceLabel(mode) {
-        const p = (this.status.pacing || {})[mode];
-        const name = p ? T('{n}/s', { n: p.rate.toLocaleString() })
-                       : (mode === 'fast' ? T('Fast') : T('Gentle'));
+        const p = (this.status.pacing || {})[String(mode)];
+        const rate = p ? p.rate : Number(mode);
+        let name = T('{n}/s', { n: rate.toLocaleString() });
+        // The ends of the list are worth a word, because neither is free: the
+        // slowest is the one that misses nothing, the fastest misses devices.
+        const rates = this.paceRates;
+        if (rate === rates[0]) name = T('{pace} — most thorough', { pace: name });
+        if (rate === rates[rates.length - 1]) name = T('{pace} — misses some devices', { pace: name });
         const eta = this.sweepEta(mode);
         return eta ? T('{pace} ({time})', { pace: name, time: eta }) : name;
       },
@@ -2145,7 +2156,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
        * reverse DNS — depends on how many devices answer, so it is left out.
        */
       sweepEta(mode) {
-        const p = (this.status.pacing || {})[mode];
+        const p = (this.status.pacing || {})[String(mode)];
         const total = this.sweepAddresses;
         if (!p || !total || this.opts.arpOnly) return '';
         const slices = Math.ceil(total / p.chunk);
@@ -2371,7 +2382,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         const base = scheme + '://' + host + (port === 80 || port === 443 ? '' : ':' + port);
         const offset = this.narrow ? 0 : (this.windows.length % 6) * 28;
         const w = {
-          id: ++this.windowSeq, base, url: '', src: '', error: '', busy: true, full: false,
+          id: ++this.windowSeq, base, url: '', src: '', error: '', busy: true, full: false, escapes: 0,
           here: '', trail: [], trailAt: -1, rewinding: false, help: false, z: ++this.windowTop,
           title: (device.name || device.ip) + ' · ' + port,
           x: this.narrow ? 0 : Math.max(20, Math.round(window.innerWidth / 2 - 520) + offset),
@@ -2393,6 +2404,33 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
           live.error = e.message || String(e);
         }
         live.busy = false;
+      },
+      /**
+       * The net under the window.
+       *
+       * The proxy corrects the addresses it can see — in the markup, in the
+       * scripts, and in what a script asks for while it runs. What it cannot
+       * see is a page that hands the address to somebody else first: an ASUS
+       * router's login page sets its own location through jQuery, and the
+       * plain path it uses lands on Nextcloud's root instead of the device.
+       *
+       * The window can see it happen, though. The frame is on this origin, so
+       * a page that has slipped out of the proxy's path is visible from here
+       * and can simply be sent back to where it meant to go.
+       */
+      onWindowLoad(w, event) {
+        const frame = event && event.target;
+        let here = '';
+        try { here = frame.contentWindow.location.pathname + frame.contentWindow.location.search; } catch (e) { return; }
+        if (!here || !w.url) return;
+        const prefix = w.url.replace(/\/$/, '');
+        if (here.indexOf(prefix) === 0) return;          // still inside the proxy
+        if (here === 'about:blank') return;
+        // Twice is a mistake worth correcting; a third time is a page that
+        // will not be helped, and would only bounce here for ever.
+        w.escapes = (w.escapes || 0) + 1;
+        if (w.escapes > 2) { w.error = T('This page keeps leaving the device window.'); return; }
+        frame.contentWindow.location.replace(prefix + here);
       },
       focusWindow(w) { w.z = ++this.windowTop; },
       onViewportResize() {
@@ -3194,22 +3232,64 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         ].join('\t'));
         return ['status\tip\tname\tmac\tvendor\ttype\tports', ...rows].join('\n');
       },
-      async copyResult() {
-        const bundle = this.resultBundle();
-        if (!bundle) return;
+      /** Text onto the clipboard, whichever way this browser allows. */
+      async copyText(text, said) {
+        if (!text) return;
         try {
-          await navigator.clipboard.writeText(bundle.text);
-          this.note(T('Copied'));
+          await navigator.clipboard.writeText(text);
         } catch (e) {
           // Clipboard permission is not always given; a selection always is.
           const box = document.createElement('textarea');
-          box.value = bundle.text;
+          box.value = text;
           document.body.appendChild(box);
           box.select();
           document.execCommand('copy');
           box.remove();
-          this.note(T('Copied'));
         }
+        this.note(said || T('Copied'));
+      },
+      async copyResult() {
+        const bundle = this.resultBundle();
+        if (bundle) await this.copyText(bundle.text);
+      },
+      /**
+       * Everything known about one device, as lines a person can paste into a
+       * ticket or a stock list. The same rows the drawer shows, in the same
+       * order, so what is copied is what was on the screen.
+       */
+      deviceLines(device) {
+        if (!device) return [];
+        const extra = device.extra || {};
+        const rows = [
+          [T('Name'), device.label || device.hostname || device.ip],
+          [T('IPv4'), device.ip],
+          [T('MAC address'), device.mac || ''],
+          [T('Vendor'), this.vendorText(device)],
+          [T('Reported name'), device.hostname || ''],
+          [T('Workgroup'), device.workgroup || ''],
+          [T('Type'), T(this.typeLabels[device.type] || device.type || '')],
+          [T('Open ports'), (device.ports || []).join(', ')],
+          [T('Found by'), (device.sources || []).join(', ')],
+          [T('First seen'), stamp(device.firstSeen)],
+          [T('Last seen'), stamp(device.lastSeen)],
+          ['mDNS', extra.mdns || ''],
+          [T('Reverse DNS'), extra.rdns || ''],
+          ['SSDP', extra.ssdp || ''],
+          [T('Tags'), (device.tags || []).join(', ')],
+          [T('Notes'), device.notes || ''],
+        ];
+        return rows.filter((r) => String(r[1]).trim() !== '');
+      },
+      copyDevice(device) {
+        const lines = this.deviceLines(device);
+        if (!lines.length) return;
+        const width = Math.max(...lines.map((r) => r[0].length));
+        const text = lines.map((r) => r[0].padEnd(width) + '  ' + r[1]).join('\n');
+        this.copyText(text, T('The whole record is on the clipboard'));
+      },
+      /** One row on its own: the value, not the label, because that is what gets pasted. */
+      copyField(label, value) {
+        this.copyText(String(value == null ? '' : value).trim(), T('{field} copied', { field: label }));
       },
       downloadResult() {
         const bundle = this.resultBundle();

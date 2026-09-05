@@ -341,7 +341,7 @@ class ProxyService {
 	}
 
 	/** Enough of the status phrases for the ones a device actually sends. */
-	private const REASONS = [
+	public const REASONS = [
 		200 => 'OK', 201 => 'Created', 202 => 'Accepted', 204 => 'No Content',
 		206 => 'Partial Content', 301 => 'Moved Permanently', 302 => 'Found',
 		303 => 'See Other', 304 => 'Not Modified', 307 => 'Temporary Redirect',
@@ -656,11 +656,32 @@ class ProxyService {
 	 * `location.pathname = x`, which is a navigation, is left exactly as it was.
 	 */
 	private function rewriteJs(string $body): string {
+		// window.top / window.parent, and the bare forms, which in a device's
+		// firmware are the window and never a variable of its own.
+		$body = preg_replace('#\b(?:window\s*\.\s*)?top\s*\.\s*location\b#', 'window.__nbTop.location', $body) ?? $body;
+		$body = preg_replace('#\b(?:window\s*\.\s*)?parent\s*\.\s*location\b#', 'window.__nbParent.location', $body) ?? $body;
 		$body = preg_replace('#\bwindow\s*\.\s*top\b(?!\s*=[^=])#', 'window.__nbTop', $body) ?? $body;
 		$body = preg_replace('#\bwindow\s*\.\s*parent\b(?!\s*=[^=])#', 'window.__nbParent', $body) ?? $body;
-		return preg_replace(
+		// document.location is the same object as window.location; saying so
+		// here means only one of them has to be dealt with below.
+		$body = preg_replace('#\bdocument\s*\.\s*location\b(?!\s*=[^=])#', 'window.location', $body) ?? $body;
+
+		// Reading the path.
+		$body = preg_replace(
 			'#\b(?:window\s*\.\s*)?location\s*\.\s*pathname\b(?!\s*=[^=])#',
 			'window.__nbPath()',
+			$body,
+		) ?? $body;
+
+		// Going somewhere. An assignment to location.href cannot be intercepted
+		// at run time — the property is unforgeable — so the object being
+		// assigned to is swapped for one that can put the address right first.
+		// An ASUS router's front page is a single line of exactly this:
+		// window.top.location.href = '/Main_Login.asp', which without the swap
+		// leaves the window and lands on Nextcloud's own root.
+		return preg_replace(
+			'#\blocation\s*\.\s*(href\s*=(?!=)|assign\s*\(|replace\s*\()#',
+			'__nbLoc.$1',
 			$body,
 		) ?? $body;
 	}
@@ -692,6 +713,16 @@ class ProxyService {
 	window.__nbPath = function () {
 		var path = location.pathname;
 		return path.lastIndexOf(P, 0) === 0 ? (path.slice(P.length) || '/') : path;
+	};
+	// What a script assigns to when it means to go somewhere. The real
+	// location cannot be replaced, so the rewriting points at this instead and
+	// the address is put right on the way through.
+	window.__nbLoc = {
+		get href() { return location.href; },
+		set href(u) { var t = fix(u); if (!looping(t)) { location.href = t; } },
+		assign: function (u) { var t = fix(u); if (!looping(t)) { location.assign(t); } },
+		replace: function (u) { var t = fix(u); if (!looping(t)) { location.replace(t); } },
+		reload: function () { location.reload(); },
 	};
 
 	// The last resort, when a page still insists on going where it already is.
@@ -743,6 +774,23 @@ class ProxyService {
 			return of.call(this, i, o);
 		};
 	}
+	// A page that tidies its own address bar. The path handed to these is the
+	// device's own — that is what __nbPath() is for — but these two do not
+	// navigate, they rewrite the address in place, so without the prefix put
+	// back the frame silently stops being inside the proxy. An ASUS router
+	// does exactly this on its login page: history.pushState("", title,
+	// window.location.pathname).
+	['pushState', 'replaceState'].forEach(function (name) {
+		var original = history[name];
+		if (typeof original !== 'function') { return; }
+		history[name] = function (state, title, url) {
+			if (arguments.length < 3 || url === null || url === undefined) {
+				return original.call(history, state, title);
+			}
+			return original.call(history, state, title, fix(String(url)));
+		};
+	});
+
 	var oo = XMLHttpRequest.prototype.open;
 	XMLHttpRequest.prototype.open = function () {
 		var a = [].slice.call(arguments);

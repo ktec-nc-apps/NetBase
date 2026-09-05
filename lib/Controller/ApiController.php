@@ -131,10 +131,11 @@ class ApiController extends Controller {
 			// real numbers rather than keeping a copy of them.
 			'portWaits' => ScanService::PORT_WAITS,
 			'portBudget' => ScanService::PORT_BUDGET,
-			'pacing' => [
-				'fast' => $this->scanService->pacing('fast'),
-				'gentle' => $this->scanService->pacing('gentle'),
-			],
+			'pacing' => array_combine(
+				array_map('strval', ScanService::PACE_RATES),
+				array_map(fn (int $r) => $this->scanService->pacing($r), ScanService::PACE_RATES),
+			),
+			'paceDefault' => ScanService::PACE_DEFAULT,
 			'neighbourLimits' => $this->discovery->neighbourLimits(),
 			'neighbourCount' => $this->discovery->neighbourCount(),
 			'sockets' => extension_loaded('sockets'),

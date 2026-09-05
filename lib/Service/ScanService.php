@@ -655,23 +655,52 @@ class ScanService {
 	 * roughly three times quicker on a /16 but leans on forced garbage
 	 * collection, so it is opt-in.
 	 */
-	public function pacing(string $mode = 'fast'): array {
-		$limits = $this->discovery->neighbourLimits();
-		// The slice size is an accuracy setting, not just a pacing one: the
-		// neighbour table holds gc_thresh3 entries, and anything probed beyond
-		// that is evicted before it can be read back. So a slice always stays
-		// well inside the table, whatever the pace — 'fast' simply sends each
-		// slice faster and waits less between them.
-		$slice = max(256, (int)floor($limits['gc3'] / 2));
-		// The send rate is an accuracy setting too. Every probe is an ARP
-		// broadcast, and Wi-Fi carries broadcasts slowly: pushing tens of
-		// thousands of packets per second reliably loses wireless devices that
-		// a calmer sweep finds every time. Measured on a /16 with ten devices,
-		// 20,000/s found six of them and 1,500/s found all ten.
-		if ($mode === 'gentle') {
-			return ['chunk' => max(64, (int)floor($limits['gc3'] / 4)), 'settle' => 500, 'rate' => 500, 'limits' => $limits];
+	/**
+	 * The speeds a scan may be run at, as probes per second.
+	 *
+	 * The send rate is an accuracy setting, not only a pacing one. Every probe
+	 * is an ARP broadcast, and Wi-Fi carries broadcasts slowly: pushing tens of
+	 * thousands of packets per second reliably loses wireless devices that a
+	 * calmer sweep finds every time. Measured on a /16 with ten devices,
+	 * 20,000/s found six of them and 1,500/s found all ten — which is why the
+	 * middle of this list is the default and not the end of it.
+	 */
+	public const PACE_RATES = [200, 500, 1500, 5000, 15000];
+
+	public const PACE_DEFAULT = 1500;
+
+	/** The old two-choice names, so a saved scan still means what it meant. */
+	private const PACE_LEGACY = ['gentle' => 500, 'fast' => 1500];
+
+	/** The rate meant by whatever the browser sent. */
+	public function paceRate(string|int $mode): int {
+		if (isset(self::PACE_LEGACY[(string)$mode])) {
+			return self::PACE_LEGACY[(string)$mode];
 		}
-		return ['chunk' => $slice, 'settle' => 300, 'rate' => 1500, 'limits' => $limits];
+		$rate = (int)$mode;
+		return in_array($rate, self::PACE_RATES, true) ? $rate : self::PACE_DEFAULT;
+	}
+
+	public function pacing(string|int $mode = self::PACE_DEFAULT): array {
+		$limits = $this->discovery->neighbourLimits();
+		$rate = $this->paceRate($mode);
+		// The slice size is an accuracy setting too: the neighbour table holds
+		// gc_thresh3 entries, and anything probed beyond that is evicted before
+		// it can be read back. So a slice always stays well inside the table,
+		// whatever the pace — a faster one simply sends each slice sooner and
+		// waits less between them.
+		$half = max(256, (int)floor($limits['gc3'] / 2));
+		$quarter = max(64, (int)floor($limits['gc3'] / 4));
+		// The slowest paces fill the table more gently and give slow devices
+		// longer to answer; the fastest ones have nothing left to give.
+		[$chunk, $settle] = match (true) {
+			$rate <= 200 => [$quarter, 700],
+			$rate <= 500 => [$quarter, 500],
+			$rate <= 1500 => [$half, 300],
+			$rate <= 5000 => [$half, 250],
+			default => [$half, 200],
+		};
+		return ['chunk' => $chunk, 'settle' => $settle, 'rate' => $rate, 'limits' => $limits];
 	}
 
 	/**
@@ -716,7 +745,7 @@ class ScanService {
 		};
 		$ports = $depth === 'all' ? [] : ($options['portList'] ?? $default);
 		$ports = array_values(array_filter(array_map('intval', (array)$ports), static fn ($p) => $p > 0 && $p < 65536));
-		$mode = ($options['pace'] ?? 'fast') === 'gentle' ? 'gentle' : 'fast';
+		$mode = $this->paceRate((string)($options['pace'] ?? self::PACE_DEFAULT));
 		$pace = $this->pacing($mode);
 		return [
 			'pace' => $mode,

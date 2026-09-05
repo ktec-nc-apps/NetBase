@@ -2,6 +2,51 @@
 
 All notable changes to NetBase are documented here.
 
+## 0.3.11 — 2026-09-06
+
+### Fixed
+
+- **A device page could quietly step outside its window.** Three ways, all found
+  by opening every device with port 80 or 443 across nine customer sites:
+  `history.pushState` was handed the device's own path with the proxy's prefix
+  stripped off, which moves the address without navigating — an ASUS router
+  does this on its login page, and the window ended up pointing at Nextcloud's
+  root; a script assigning to `location.href` was not corrected, because that
+  property cannot be hooked at run time, so the assignment now goes through an
+  object that can put the address right first; and as a last resort the window
+  itself notices a frame that has left the proxy's path and sends it back,
+  giving up after twice so a page that insists cannot bounce for ever.
+
+### Added
+
+- **Five scan speeds instead of two**: 200, 500, 1,500, 5,000 and 15,000 probes
+  a second, each shown with the time it will take for the addresses entered.
+  The ends of the list say what they cost — the slowest is the one that misses
+  nothing, the fastest misses devices — because the speed is an accuracy
+  setting as much as a pacing one: on a /16 with ten devices, 15,000 a second
+  found six of them and 1,500 found all ten. The default is unchanged.
+- **Copy buttons in the device details.** One for the whole record, laid out as
+  aligned lines to paste into a ticket or a stock list, and one on every row —
+  address, MAC, vendor, reported name, workgroup, open ports, how it was found,
+  first and last seen, mDNS, reverse DNS, SSDP — because a single value is what
+  usually needs quoting.
+
+## 0.3.10 — 2026-09-06
+
+### Fixed
+
+- **A device that answers with a redirect now opens instead of showing nothing.**
+  Its status was lost on the way out: Nextcloud sends "HTTP/1.1 200 OK" for the
+  response before the proxy is ever asked what the device said, and under
+  FastCGI that status line is what counts — so a 301 or 302 reached the browser
+  as a 200 carrying a Location nobody acted on, and the window stayed blank.
+  Found across the customer fleet on Brother, Canon, Kyocera and Buffalo
+  hardware, all of which redirect off their own front page. The buffered path
+  now sends the status line as well as the code, which the streaming path had
+  been doing all along.
+- **The scan speed is called the scan speed again.** It had been renamed to the
+  send rate, which was not what was asked for.
+
 ## 0.3.9 — 2026-09-05
 
 ### Fixed
