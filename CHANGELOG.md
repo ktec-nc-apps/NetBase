@@ -2,6 +2,16 @@
 
 All notable changes to NetBase are documented here.
 
+## 0.3.4 — 2026-09-05
+
+### Fixed
+
+- **The package is now signed.** Releases up to 0.3.3 shipped without
+  `appinfo/signature.json`, so Nextcloud could not verify the app and reported
+  "App signature not found, skipping app integrity check" on every server. The
+  release is now signed with the app's certificate and verifies cleanly. No app
+  code has changed.
+
 ## 0.3.3 — 2026-09-04
 
 ### Removed
