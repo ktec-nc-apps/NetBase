@@ -127,6 +127,12 @@ class ApiController extends Controller {
 			'nmap' => ['available' => false],
 			'fingerprintPorts' => DiscoveryService::FINGERPRINT_PORTS,
 			'detailedPorts' => DiscoveryService::DETAILED_PORTS,
+			// The browser shows what each pace costs in seconds, so it reads the
+			// real numbers rather than keeping a copy of them.
+			'pacing' => [
+				'fast' => $this->scanService->pacing('fast'),
+				'gentle' => $this->scanService->pacing('gentle'),
+			],
 			'neighbourLimits' => $this->discovery->neighbourLimits(),
 			'neighbourCount' => $this->discovery->neighbourCount(),
 			'sockets' => extension_loaded('sockets'),

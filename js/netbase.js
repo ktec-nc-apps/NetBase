@@ -335,35 +335,35 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         <section v-if="tab==='devices'">
           <div class="card scan-card" v-if="allowed('scan')">
             <div class="scan-row">
-              <label class="fl">
+              <label class="fl" :title="t('Which networks to look at. Left blank, it uses the ones this server is on. Several can be given, separated by commas.')">
                 <span class="fl-label">{{ t('Networks to scan') }}</span>
                 <input v-model="scanTargets" :placeholder="suggestedPlaceholder">
               </label>
-              <label class="fl narrow">
-                <span class="fl-label">{{ t('Pace') }}</span>
+              <label class="fl narrow pace" :title="t('Fast sends 1,500 probes a second, gentle 500. The slower pace finds more Wi-Fi devices and puts less on the network. The time shown is for the address sweep; what follows depends on how many devices answer.')">
+                <span class="fl-label">{{ t('Scan speed') }}</span>
                 <select v-model="pace">
-                  <option value="fast">{{ t('Fast') }}</option>
-                  <option value="gentle">{{ t('Gentle') }}</option>
+                  <option value="fast">{{ paceLabel('fast') }}</option>
+                  <option value="gentle">{{ paceLabel('gentle') }}</option>
                 </select>
               </label>
               <button class="btn primary" :disabled="scanning" @click="startScan()">{{ scanning ? t('Scanning…') : t('Start') }}</button>
               <button class="btn" v-if="scanning" @click="cancelScan">{{ t('Stop') }}</button>
             </div>
             <div class="scan-opts">
-              <label><input type="checkbox" v-model="opts.names"> {{ t('Ask devices for their names') }}</label>
-              <label><input type="checkbox" v-model="opts.multicast"> {{ t('Multicast discovery') }}</label>
-              <label><input type="checkbox" v-model="opts.ports"> {{ t('Check open ports') }}</label>
+              <label :title="t('Asks each address for its own name, over NetBIOS and mDNS.')"><input type="checkbox" v-model="opts.names"> {{ t('Ask devices for their names') }}</label>
+              <label :title="t('Listens for the devices that announce themselves — mDNS, WS-Discovery and SSDP. It finds devices the sweep missed.')"><input type="checkbox" v-model="opts.multicast"> {{ t('Multicast discovery') }}</label>
+              <label :title="t('Connects to each device to see which ports answer. This is what tells a printer from a camera.')"><input type="checkbox" v-model="opts.ports"> {{ t('Check open ports') }}</label>
               <!-- Two depths rather than one compromise: the short list keeps a
                    sweep quick, the long one is there when a device stays
                    unexplained. -->
-              <label class="depth" v-if="opts.ports">
+              <label class="depth" v-if="opts.ports" :title="t('How many ports to try on each device.')">
                 <select v-model="opts.portScan">
                   <option value="common">{{ t('Common ports') }} ({{ portCount('common') }})</option>
                   <option value="detailed">{{ t('Detailed search') }} ({{ portCount('detailed') }})</option>
                 </select>
               </label>
-              <label><input type="checkbox" v-model="opts.rdns"> {{ t('Reverse DNS') }}</label>
-              <label><input type="checkbox" v-model="opts.arpOnly"> {{ t('Read neighbour table only (instant)') }}</label>
+              <label :title="t('Asks the DNS server what name it has on record for each address.')"><input type="checkbox" v-model="opts.rdns"> {{ t('Reverse DNS') }}</label>
+              <label :title="t('Skips the sweep and lists only the devices this server has already spoken to. It answers at once, but finds nothing new.')"><input type="checkbox" v-model="opts.arpOnly"> {{ t('Read neighbour table only (instant)') }}</label>
             </div>
             <div class="progress" v-if="scan">
               <div class="bar"><div class="fill" :style="{width: scan.percent + '%'}"></div></div>
@@ -1695,6 +1695,17 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
               <button class="btn sm" v-if="allowed('preview') && status.preview" @click="showPage(l.href)">🖼 {{ t('Show the page') }}</button>
               <a class="btn sm ib" :href="l.href" target="_blank" rel="noopener noreferrer" :title="t('Only works from inside that network')" :aria-label="t('Only works from inside that network')"><svg viewBox="0 0 24 24"><path d="M14 4h6v6"/><path d="M20 4l-8.5 8.5"/><path d="M18 14.5V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4.5"/></svg></a>
             </template>
+            <!-- A device's page is not always on a port the scan noticed, and
+                 a maker is free to put it anywhere, so the number can simply
+                 be typed. -->
+            <span class="port-open" v-if="allowed('preview')" :title="t('Opens a page on this device at a port of your choosing, through this server.')">
+              <input v-model="openPort" class="tiny" inputmode="numeric" :placeholder="t('Port')" :aria-label="t('Port')" @keyup.enter="openTypedPort">
+              <select v-model="openScheme" :aria-label="t('Protocol')">
+                <option value="http">HTTP</option>
+                <option value="https">HTTPS</option>
+              </select>
+              <button class="btn sm" :disabled="!openPortReady" @click="openTypedPort">🖥 {{ t('Open this port') }}</button>
+            </span>
             <button class="btn sm" v-if="selected.mac && allowed('wol')" @click="wake(selected)">⏻ {{ t('Wake on LAN') }}</button>
           </div>
         </div>
@@ -1856,6 +1867,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         devices: [], scan: null, scanning: false, advice: null,
         scanTargets: '', pace: 'fast',
         opts: { names: true, multicast: true, ports: true, portScan: 'common', rdns: true, arpOnly: false },
+        openPort: '', openScheme: 'http',
         filter: '', onlyOnline: true, sortKey: 'ip', sortDir: 1,
         selected: null, editLabel: '', editTags: '', editNotes: '', editType: 'unknown',
         busy: {},
@@ -2000,6 +2012,27 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
       activeComponents() { return this.requirements ? this.requirements.components.filter((c) => c.present) : []; },
       dormantComponents() { return this.requirements ? this.requirements.components.filter((c) => !c.present) : []; },
       suggestedPlaceholder() { return (this.status.targets || []).map((t2) => t2.cidr).join(', ') || '192.168.1.0/24'; },
+      openPortReady() {
+        const n = Number(this.openPort);
+        return Number.isInteger(n) && n > 0 && n < 65536;
+      },
+      /**
+       * How many addresses the sweep is about to walk through — what the user
+       * typed if it parses, and otherwise the networks this server sits on.
+       */
+      sweepAddresses() {
+        const written = this.scanTargets.split(',').map((x) => x.trim()).filter(Boolean);
+        const list = written.length ? written : (this.status.targets || []).map((t2) => t2.cidr);
+        let total = 0;
+        for (const target of list) {
+          const m = /^(\d+\.\d+\.\d+\.\d+)(?:\/(\d+))?$/.exec(target);
+          if (!m) return 0;                       // a range we cannot count: say nothing
+          const bits = m[2] === undefined ? 32 : Number(m[2]);
+          if (bits < 8 || bits > 32) return 0;
+          total += bits >= 31 ? 1 : Math.pow(2, 32 - bits) - 2;
+        }
+        return total;
+      },
       shownDevices() {
         const needle = this.filter.trim().toLowerCase();
         let list = this.devices.filter((d) => (!this.onlyOnline || d.online));
@@ -2059,6 +2092,35 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
       note(text) { this.banner = { kind: 'info', text }; },
 
       allowed(tool) { return !!(this.status.can || {})[tool]; },
+      /**
+       * The pace, with what it costs. A pace on its own says nothing: 'fast'
+       * and 'gentle' only mean something next to the time they take, which
+       * depends on how many addresses this particular scan has to walk.
+       */
+      paceLabel(mode) {
+        const name = mode === 'fast' ? T('Fast') : T('Gentle');
+        const eta = this.sweepEta(mode);
+        return eta ? T('{pace} ({time})', { pace: name, time: eta }) : name;
+      },
+      /**
+       * The sweep phase, in the words of the clock. Each slice sends `chunk`
+       * addresses at `rate` a second and then waits `settle` for the answers,
+       * which is exactly what stepSweep does. What comes after — names, ports,
+       * reverse DNS — depends on how many devices answer, so it is left out.
+       */
+      sweepEta(mode) {
+        const p = (this.status.pacing || {})[mode];
+        const total = this.sweepAddresses;
+        if (!p || !total || this.opts.arpOnly) return '';
+        const slices = Math.ceil(total / p.chunk);
+        const seconds = total / p.rate + slices * (p.settle / 1000);
+        if (seconds < 90) return T('about {n} s', { n: Math.max(5, Math.round(seconds / 5) * 5) });
+        return T('about {n} min', { n: Math.round(seconds / 60) });
+      },
+      openTypedPort() {
+        if (!this.openPortReady) return;
+        this.openDeviceWindow(this.selected, Number(this.openPort), this.openScheme);
+      },
       /** How many ports each depth actually probes, straight from the server. */
       portCount(depth) {
         const list = depth === 'detailed' ? this.status.detailedPorts : this.status.fingerprintPorts;
@@ -2265,9 +2327,11 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
       },
       // ---- device windows: the page comes through this server, so it works
       // from outside the LAN and several can be open at once ----
-      async openDeviceWindow(device, port) {
-        const scheme = WEB_PORTS[port];
-        if (!scheme || !device.ip) return;
+      async openDeviceWindow(device, port, scheme) {
+        // A typed port carries its own protocol; a port the scan found is
+        // looked up in the table.
+        scheme = scheme || WEB_PORTS[port];
+        if (!scheme || !device || !device.ip) return;
         const host = device.ip.includes(':') ? '[' + device.ip + ']' : device.ip;
         const base = scheme + '://' + host + (port === 80 || port === 443 ? '' : ':' + port);
         const offset = this.narrow ? 0 : (this.windows.length % 6) * 28;
@@ -3150,6 +3214,14 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
       },
     },
     watch: {
+      // A well-known port already says which protocol it speaks, so the
+      // choice is made for the person typing — and left editable.
+      openPort(value) {
+        const scheme = WEB_PORTS[Number(value)];
+        if (scheme) this.openScheme = scheme;
+      },
+      // Each device gets an empty box rather than the last one's number.
+      selected() { this.openPort = ''; this.openScheme = 'http'; },
       // The registry is bundled and the answer is local, so there is no reason
       // to make anyone press a button once the prefix is there.
       macQuery(value) {

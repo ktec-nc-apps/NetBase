@@ -2,6 +2,35 @@
 
 All notable changes to NetBase are documented here.
 
+## 0.3.7 — 2026-09-05
+
+### Added
+
+- **Every control in the device scan says what it does.** Hovering over the
+  target field, the speed, or any of the options now explains it in a sentence.
+- **A page on any port.** A device's own interface is not always on a port the
+  scan noticed, so the number can now simply be typed — with HTTP or HTTPS
+  beside it, filled in from the port where the port says which — and the page
+  opens through this server like any other device window.
+
+### Changed
+
+- **The scan speed is given in seconds, not adjectives.** "Fast" and "gentle"
+  described nothing on their own. The control is now called the scan speed and
+  each choice carries the time it will take for the addresses actually
+  entered — read from the server's own pacing, so the figure cannot drift away
+  from what the scan really does.
+
+## 0.3.6 — 2026-09-05
+
+### Changed
+
+- **Plainer Japanese in the device scan.** The translation used 掃引, a word
+  almost nobody says out loud, where it only ever meant "look at every address
+  in turn"; it now says so in ordinary words. The pace control said 高速 and
+  ひかえめ, which describe nothing on their own — it is now 調べ方 with 速さ優先
+  and 負荷を抑える, so the choice explains itself.
+
 ## 0.3.5 — 2026-09-05
 
 ### Added
