@@ -129,6 +129,8 @@ class ApiController extends Controller {
 			'detailedPorts' => DiscoveryService::DETAILED_PORTS,
 			// The browser shows what each pace costs in seconds, so it reads the
 			// real numbers rather than keeping a copy of them.
+			'portWaits' => ScanService::PORT_WAITS,
+			'portBudget' => ScanService::PORT_BUDGET,
 			'pacing' => [
 				'fast' => $this->scanService->pacing('fast'),
 				'gentle' => $this->scanService->pacing('gentle'),

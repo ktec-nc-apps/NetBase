@@ -339,8 +339,12 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
                 <span class="fl-label">{{ t('Networks to scan') }}</span>
                 <input v-model="scanTargets" :placeholder="suggestedPlaceholder">
               </label>
-              <label class="fl narrow pace" :title="t('Fast sends 1,500 probes a second, gentle 500. The slower pace finds more Wi-Fi devices and puts less on the network. The time shown is for the address sweep; what follows depends on how many devices answer.')">
-                <span class="fl-label">{{ t('Scan speed') }}</span>
+              <!-- Two different things, named as the two different things they
+                   are. The send rate walks the addresses; the wait is what a
+                   port that says nothing costs, and it is the wait, not the
+                   rate, that decides how long a long scan takes. -->
+              <label class="fl narrow pace" :title="t('How quickly the addresses are walked through. The slower rate finds more Wi-Fi devices, because a wireless network carries broadcasts slowly. The time shown is for the addresses only.')">
+                <span class="fl-label">{{ t('Send rate') }}</span>
                 <select v-model="pace">
                   <option value="fast">{{ paceLabel('fast') }}</option>
                   <option value="gentle">{{ paceLabel('gentle') }}</option>
@@ -353,13 +357,22 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
               <label :title="t('Asks each address for its own name, over NetBIOS and mDNS.')"><input type="checkbox" v-model="opts.names"> {{ t('Ask devices for their names') }}</label>
               <label :title="t('Listens for the devices that announce themselves — mDNS, WS-Discovery and SSDP. It finds devices the sweep missed.')"><input type="checkbox" v-model="opts.multicast"> {{ t('Multicast discovery') }}</label>
               <label :title="t('Connects to each device to see which ports answer. This is what tells a printer from a camera.')"><input type="checkbox" v-model="opts.ports"> {{ t('Check open ports') }}</label>
-              <!-- Two depths rather than one compromise: the short list keeps a
-                   sweep quick, the long one is there when a device stays
-                   unexplained. -->
+              <!-- Three depths rather than one compromise: the short list keeps
+                   a scan quick, the long one explains the device the short list
+                   does not, and the whole range is there for the interface a
+                   maker hid on port 30443. -->
               <label class="depth" v-if="opts.ports" :title="t('How many ports to try on each device.')">
                 <select v-model="opts.portScan">
                   <option value="common">{{ t('Common ports') }} ({{ portCount('common') }})</option>
                   <option value="detailed">{{ t('Detailed search') }} ({{ portCount('detailed') }})</option>
+                  <option value="all">{{ t('Every port') }} ({{ portCount('all') }})</option>
+                </select>
+              </label>
+              <!-- The number that actually decides how long this takes. -->
+              <label class="depth" v-if="opts.ports" :title="t('How long to wait for a port to answer. A port that refuses is instant whatever this is; the wait only applies to one that says nothing at all, which is what a firewall and a sleeping device both look like. Waiting less is quicker and misses more.')">
+                <span class="opt-label">{{ t('Wait per port') }}</span>
+                <select v-model.number="opts.portWait">
+                  <option v-for="w in portWaits" :key="w" :value="w">{{ waitLabel(w) }}</option>
                 </select>
               </label>
               <label :title="t('Asks the DNS server what name it has on record for each address.')"><input type="checkbox" v-model="opts.rdns"> {{ t('Reverse DNS') }}</label>
@@ -1866,7 +1879,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         dragTab: '', overTab: '',
         devices: [], scan: null, scanning: false, advice: null,
         scanTargets: '', pace: 'fast',
-        opts: { names: true, multicast: true, ports: true, portScan: 'common', rdns: true, arpOnly: false },
+        opts: { names: true, multicast: true, ports: true, portScan: 'common', portWait: 0.9, rdns: true, arpOnly: false },
         openPort: '', openScheme: 'http',
         filter: '', onlyOnline: true, sortKey: 'ip', sortDir: 1,
         selected: null, editLabel: '', editTags: '', editNotes: '', editType: 'unknown',
@@ -2012,6 +2025,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
       activeComponents() { return this.requirements ? this.requirements.components.filter((c) => c.present) : []; },
       dormantComponents() { return this.requirements ? this.requirements.components.filter((c) => !c.present) : []; },
       suggestedPlaceholder() { return (this.status.targets || []).map((t2) => t2.cidr).join(', ') || '192.168.1.0/24'; },
+      portWaits() { return this.status.portWaits || [0.3, 0.9, 2.0]; },
       openPortReady() {
         const n = Number(this.openPort);
         return Number.isInteger(n) && n > 0 && n < 65536;
@@ -2065,6 +2079,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
           case 'names2': return T('Asking again, more slowly ({done} / {total})', v);
           case 'mcast': return T('Multicast discovery complete');
           case 'ports': return T('Checking services ({done} / {total})', v);
+          case 'portsAll': return T('Checking ports ({done} / {total})', v);
           case 'rdns': return T('Reverse DNS ({done} / {total})', v);
           default: return scan.message || scan.phase;
         }
@@ -2098,9 +2113,30 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
        * depends on how many addresses this particular scan has to walk.
        */
       paceLabel(mode) {
-        const name = mode === 'fast' ? T('Fast') : T('Gentle');
+        const p = (this.status.pacing || {})[mode];
+        const name = p ? T('{n}/s', { n: p.rate.toLocaleString() })
+                       : (mode === 'fast' ? T('Fast') : T('Gentle'));
         const eta = this.sweepEta(mode);
         return eta ? T('{pace} ({time})', { pace: name, time: eta }) : name;
+      },
+      /**
+       * A wait, with what it costs on the worst device the scan can meet.
+       *
+       * 512 sockets go out at once and a device that answers nothing holds
+       * every one of them for the whole wait, so this is the honest ceiling
+       * per device — and with the whole range selected, it is minutes.
+       */
+      waitLabel(wait) {
+        const seconds = T('{n} s', { n: wait });
+        const ports = this.portCount(this.opts.portScan);
+        if (!ports) return seconds;
+        const worst = Math.ceil(ports / 512) * wait;
+        return T('{wait} (up to {time} per device)', { wait: seconds, time: this.duration(worst) });
+      },
+      /** Seconds, said the way a person would say them. */
+      duration(seconds) {
+        if (seconds < 90) return T('about {n} s', { n: Math.max(1, Math.round(seconds)) });
+        return T('about {n} min', { n: Math.round(seconds / 60) });
       },
       /**
        * The sweep phase, in the words of the clock. Each slice sends `chunk`
@@ -2113,9 +2149,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         const total = this.sweepAddresses;
         if (!p || !total || this.opts.arpOnly) return '';
         const slices = Math.ceil(total / p.chunk);
-        const seconds = total / p.rate + slices * (p.settle / 1000);
-        if (seconds < 90) return T('about {n} s', { n: Math.max(5, Math.round(seconds / 5) * 5) });
-        return T('about {n} min', { n: Math.round(seconds / 60) });
+        return this.duration(total / p.rate + slices * (p.settle / 1000));
       },
       openTypedPort() {
         if (!this.openPortReady) return;
@@ -2123,6 +2157,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
       },
       /** How many ports each depth actually probes, straight from the server. */
       portCount(depth) {
+        if (depth === 'all') return 65535;
         const list = depth === 'detailed' ? this.status.detailedPorts : this.status.fingerprintPorts;
         return (list || []).length;
       },

@@ -22,6 +22,26 @@ use Psr\Log\LoggerInterface;
 class ScanService {
 	public const PHASES = ['sweep', 'names', 'mcast', 'ports', 'rdns', 'done'];
 
+	/**
+	 * How many connections one request's worth of port checking is allowed.
+	 *
+	 * A device that answers nothing at all costs the full timeout for every
+	 * 512 sockets, so this is what decides how long a step can run: four
+	 * thousand attempts is about seven seconds against the most silent device
+	 * on the network, and worth a round trip against the most talkative.
+	 */
+	public const PORT_BUDGET = 4096;
+
+	/**
+	 * The waits offered for a port to answer, in seconds.
+	 *
+	 * A closed port that refuses is instant whatever this is set to; the wait
+	 * only ever applies to a port that says nothing at all, which is what a
+	 * firewall and a sleeping device both look like. Shorter is quicker and
+	 * misses more.
+	 */
+	public const PORT_WAITS = [0.3, 0.9, 2.0];
+
 	public function __construct(
 		private DiscoveryService $discovery,
 		private OuiService $oui,
@@ -285,26 +305,89 @@ class ScanService {
 	private function stepPorts(ScanEntity $scan, array &$queue, array $options): void {
 		$ips = $queue['ips'] ?? [];
 		$idx = (int)($queue['idx'] ?? 0);
-		// The work is hosts times ports, so the long list takes fewer hosts at a
-		// time and each slice still finishes inside the request budget.
-		$batch = array_slice($ips, $idx, ($options['portScan'] ?? 'common') === 'detailed' ? 8 : 24);
-		if ($batch === []) {
+		$ports = $this->portsFor($options);
+		$count = count($ports);
+
+		// The work is hosts times ports. With a short list that means many
+		// hosts at once; with the whole range it means one host, walked across
+		// as many requests as it takes, so no single step overruns.
+		// The wait is what a step costs: every 512 sockets that answer nothing
+		// take the full wait, so a longer wait has to mean fewer attempts per
+		// request if the step is to finish in the same few seconds.
+		$budget = max(512, (int)round(self::PORT_BUDGET * (0.9 / max(0.1, $wait))));
+		$window = min($count, $budget);
+		$hosts = max(1, min(24, intdiv($budget, max(1, $window))));
+		$batch = array_slice($ips, $idx, $hosts);
+		if ($batch === [] || $count === 0) {
 			$queue['idx'] = 0;
+			$queue['portAt'] = 0;
+			$queue['open'] = [];
 			$scan->setPhase($options['rdns'] ? 'rdns' : 'done');
 			return;
 		}
-		$open = $this->discovery->tcpSweep($batch, $options['portList'], 0.9);
+
+		$at = (int)($queue['portAt'] ?? 0);
+		$slice = array_slice($ports, $at, $window);
+		$wait = (float)$options['portWait'];
+		$open = $this->discovery->tcpSweep($batch, $slice, $wait);
+		$at += count($slice);
+		$finished = $at >= $count;
+
 		foreach ($batch as $ip) {
-			if (!isset($open[$ip])) {
-				// Nothing answered within the timeout. Retry just this host
-				// once, on its own, before recording it as having no services.
-				$retry = $this->discovery->tcpSweep([$ip], $options['portList'], 1.6);
-				$open[$ip] = $retry[$ip] ?? [];
+			$found = array_values(array_unique(array_merge($queue['open'][$ip] ?? [], $open[$ip] ?? [])));
+			sort($found);
+			$queue['open'][$ip] = $found;
+			if (!$finished) {
+				continue;
 			}
-			$this->upsert($ip, null, ['ports' => $open[$ip]]);
+			if ($found === [] && $count <= count(DiscoveryService::DETAILED_PORTS)) {
+				// Nothing answered within the timeout. On the short lists it is
+				// worth one slower second ask before recording a device as
+				// having no services; after sixty-five thousand attempts it is
+				// not.
+				$retry = $this->discovery->tcpSweep([$ip], $ports, $wait * 1.8);
+				$found = $retry[$ip] ?? [];
+			}
+			$this->upsert($ip, null, ['ports' => $found]);
+			unset($queue['open'][$ip]);
 		}
-		$queue['idx'] = $idx + count($batch);
-		$this->progress($scan, 'ports', min((int)$queue['idx'], count($ips)), count($ips));
+
+		if ($finished) {
+			$queue['idx'] = $idx + count($batch);
+			$queue['portAt'] = 0;
+			$at = 0;
+			$idx = (int)$queue['idx'];
+		} else {
+			$queue['portAt'] = $at;
+		}
+		// A list short enough to finish a device per step counts devices. A
+		// range that takes minutes per device counts ports, because a count of
+		// devices would not move at all while it ran.
+		if ($window >= $count) {
+			$this->progress($scan, 'ports', min($idx, count($ips)), count($ips));
+		} else {
+			$this->progress($scan, 'portsAll', $idx * $count + $at, count($ips) * $count);
+		}
+	}
+
+	/**
+	 * The ports a scan actually tries.
+	 *
+	 * The whole range is built here rather than stored: sixty-five thousand
+	 * numbers do not belong in the scan's saved options.
+	 *
+	 * @return list<int>
+	 */
+	private function portsFor(array $options): array {
+		$explicit = $options['portList'] ?? [];
+		if (is_array($explicit) && $explicit !== []) {
+			return array_values($explicit);
+		}
+		return match ($options['portScan'] ?? 'common') {
+			'all' => range(1, 65535),
+			'detailed' => DiscoveryService::DETAILED_PORTS,
+			default => DiscoveryService::FINGERPRINT_PORTS,
+		};
 	}
 
 	private function stepRdns(ScanEntity $scan, array &$queue, array $options): void {
@@ -619,12 +702,19 @@ class ScanService {
 	}
 
 	private function normaliseOptions(array $options): array {
-		// Two depths, because one list cannot serve both purposes: the short one
-		// is there to tell a printer from a camera without slowing the sweep,
-		// the long one for the device that the short list leaves unexplained.
-		$depth = ($options['portScan'] ?? 'common') === 'detailed' ? 'detailed' : 'common';
-		$default = $depth === 'detailed' ? DiscoveryService::DETAILED_PORTS : DiscoveryService::FINGERPRINT_PORTS;
-		$ports = $options['portList'] ?? $default;
+		// Three depths, because one list cannot serve every purpose: the short
+		// one tells a printer from a camera without slowing the sweep, the long
+		// one explains the device the short list does not, and the whole range
+		// is there for the interface a maker hid on port 30443.
+		$depth = in_array($options['portScan'] ?? 'common', ['common', 'detailed', 'all'], true)
+			? (string)$options['portScan']
+			: 'common';
+		$default = match ($depth) {
+			'all' => [],
+			'detailed' => DiscoveryService::DETAILED_PORTS,
+			default => DiscoveryService::FINGERPRINT_PORTS,
+		};
+		$ports = $depth === 'all' ? [] : ($options['portList'] ?? $default);
 		$ports = array_values(array_filter(array_map('intval', (array)$ports), static fn ($p) => $p > 0 && $p < 65536));
 		$mode = ($options['pace'] ?? 'fast') === 'gentle' ? 'gentle' : 'fast';
 		$pace = $this->pacing($mode);
@@ -638,6 +728,10 @@ class ScanService {
 			'multicast' => (bool)($options['multicast'] ?? true),
 			'ports' => (bool)($options['ports'] ?? true),
 			'portScan' => $depth,
+			// How long to wait for a port to answer. This, not the send rate,
+			// is what decides how long a scan takes: a device that answers
+			// nothing costs the whole wait for every 512 attempts.
+			'portWait' => min(3.0, max(0.2, round((float)($options['portWait'] ?? 0.9), 2))),
 			'rdns' => (bool)($options['rdns'] ?? true),
 			'interface' => (string)($options['interface'] ?? ''),
 			'portList' => $ports ?: $default,

@@ -2,6 +2,36 @@
 
 All notable changes to NetBase are documented here.
 
+## 0.3.8 — 2026-09-05
+
+### Added
+
+- **A third depth for the port check: every port.** All 65,535, for the device
+  whose interface its maker put on 30443. It is walked across as many requests
+  as it takes, so no single step overruns, and it reports its progress in ports
+  rather than in devices — a count of devices would not move for minutes.
+- **The wait for a port to answer is now a setting**, offered as 0.3, 0.9 or
+  2 seconds with what each costs on the worst device the scan can meet. It was
+  fixed at 0.9 s and invisible, which was the wrong thing to hide: this is the
+  number that decides how long a scan takes. A port that refuses answers
+  instantly whatever it is set to; the wait is only ever spent on a port that
+  says nothing, which is what a firewall and a sleeping device both look like.
+
+### Fixed
+
+- **The progress bar no longer says 100% while the scan is still working.** It
+  counted addresses, which are finished long before the devices found at them
+  are; with the whole port range selected it sat at 100% for minutes. It now
+  follows whatever phase is actually running.
+
+### Changed
+
+- **The send rate says what it is.** It was labelled the scan speed and offered
+  "fast" or "gentle" — but it sets neither the speed of the scan nor anything a
+  person could picture. It is the rate the addresses are walked through, so it
+  now says 1,500/s or 500/s, and the slower one is there because a wireless
+  network carries broadcasts slowly.
+
 ## 0.3.7 — 2026-09-05
 
 ### Added

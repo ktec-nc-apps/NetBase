@@ -59,6 +59,15 @@ class ScanEntity extends Entity implements \JsonSerializable {
 	}
 
 	/** Progress is stored structured so the browser can translate it. */
+	/** How far the running phase has got, or null if it does not say. */
+	private static function percentOf(?array $progress): ?int {
+		$total = (int)($progress['total'] ?? 0);
+		if ($progress === null || $total <= 0) {
+			return null;
+		}
+		return max(0, min(100, (int)round((int)($progress['done'] ?? 0) / $total * 100)));
+	}
+
 	public static function renderMessage(?array $progress): string {
 		if ($progress === null) {
 			return '';
@@ -71,6 +80,7 @@ class ScanEntity extends Entity implements \JsonSerializable {
 			'names2' => sprintf('Asking again, more slowly (%d / %d)', $done, $total),
 			'mcast' => 'Multicast discovery complete',
 			'ports' => sprintf('Checking services (%d / %d)', $done, $total),
+			'portsAll' => sprintf('Checking ports (%d / %d)', $done, $total),
 			'rdns' => sprintf('Reverse DNS (%d / %d)', $done, $total),
 			default => (string)($progress['key'] ?? ''),
 		};
@@ -90,7 +100,10 @@ class ScanEntity extends Entity implements \JsonSerializable {
 			'cursor' => (int)$this->cursor,
 			'total' => (int)$this->total,
 			'found' => (int)$this->found,
-			'percent' => min(100, (int)round((int)$this->cursor / $total * 100)),
+			// The bar follows whatever phase is running, because the address
+			// cursor reaches its end long before the scan does — with the whole
+			// port range that left it sitting at 100% for minutes.
+			'percent' => self::percentOf($progress) ?? min(100, (int)round((int)$this->cursor / $total * 100)),
 			'progress' => $progress,
 			'message' => $progress !== null ? self::renderMessage($progress) : $this->message,
 			'started' => $this->started,
