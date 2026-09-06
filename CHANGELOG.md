@@ -2,6 +2,14 @@
 
 All notable changes to NetBase are documented here.
 
+## 0.3.14 — 2026-09-06
+
+### Changed
+
+- **The scan speed no longer carries a time estimate.** It now reads simply as
+  the number of probes a second it sends, with a word on the slowest and the
+  fastest about what each costs.
+
 ## 0.3.13 — 2026-09-06
 
 ### Added

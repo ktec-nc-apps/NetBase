@@ -351,7 +351,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
                    are. This one walks the addresses; the wait beneath is what a
                    port that says nothing costs, and it is the wait, not this,
                    that decides how long a long scan takes. -->
-              <label class="fl narrow pace" :title="t('How quickly the addresses are walked through. A slower speed finds more Wi-Fi devices, because a wireless network carries broadcasts slowly: on a /16 with ten devices, 15,000 a second found six of them and 1,500 found all ten. The time shown is for the addresses only.')">
+              <label class="fl narrow pace" :title="t('How quickly the addresses are walked through. A slower speed finds more Wi-Fi devices, because a wireless network carries broadcasts slowly: on a /16 with ten devices, 15,000 a second found six of them and 1,500 found all ten.')">
                 <span class="fl-label">{{ t('Scan speed') }}</span>
                 <select v-model="pace">
                   <option v-for="r in paceRates" :key="r" :value="String(r)">{{ paceLabel(r) }}</option>
@@ -2075,23 +2075,6 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         const n = Number(this.openPort);
         return Number.isInteger(n) && n > 0 && n < 65536;
       },
-      /**
-       * How many addresses the sweep is about to walk through — what the user
-       * typed if it parses, and otherwise the networks this server sits on.
-       */
-      sweepAddresses() {
-        const written = this.scanTargets.split(',').map((x) => x.trim()).filter(Boolean);
-        const list = written.length ? written : (this.status.targets || []).map((t2) => t2.cidr);
-        let total = 0;
-        for (const target of list) {
-          const m = /^(\d+\.\d+\.\d+\.\d+)(?:\/(\d+))?$/.exec(target);
-          if (!m) return 0;                       // a range we cannot count: say nothing
-          const bits = m[2] === undefined ? 32 : Number(m[2]);
-          if (bits < 8 || bits > 32) return 0;
-          total += bits >= 31 ? 1 : Math.pow(2, 32 - bits) - 2;
-        }
-        return total;
-      },
       shownDevices() {
         const needle = this.filter.trim().toLowerCase();
         let list = this.devices.filter((d) => (!this.onlyOnline || d.online));
@@ -2152,11 +2135,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
       note(text) { this.banner = { kind: 'info', text }; },
 
       allowed(tool) { return !!(this.status.can || {})[tool]; },
-      /**
-       * The pace, with what it costs. A pace on its own says nothing: 'fast'
-       * and 'gentle' only mean something next to the time they take, which
-       * depends on how many addresses this particular scan has to walk.
-       */
+      /** The speed, as the number of probes a second it actually sends. */
       paceLabel(mode) {
         const p = (this.status.pacing || {})[String(mode)];
         const rate = p ? p.rate : Number(mode);
@@ -2166,8 +2145,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         const rates = this.paceRates;
         if (rate === rates[0]) name = T('{pace} — most thorough', { pace: name });
         if (rate === rates[rates.length - 1]) name = T('{pace} — misses some devices', { pace: name });
-        const eta = this.sweepEta(mode);
-        return eta ? T('{pace} ({time})', { pace: name, time: eta }) : name;
+        return name;
       },
       /**
        * A wait, with what it costs on the worst device the scan can meet.
@@ -2187,19 +2165,6 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
       duration(seconds) {
         if (seconds < 90) return T('about {n} s', { n: Math.max(1, Math.round(seconds)) });
         return T('about {n} min', { n: Math.round(seconds / 60) });
-      },
-      /**
-       * The sweep phase, in the words of the clock. Each slice sends `chunk`
-       * addresses at `rate` a second and then waits `settle` for the answers,
-       * which is exactly what stepSweep does. What comes after — names, ports,
-       * reverse DNS — depends on how many devices answer, so it is left out.
-       */
-      sweepEta(mode) {
-        const p = (this.status.pacing || {})[String(mode)];
-        const total = this.sweepAddresses;
-        if (!p || !total || this.opts.arpOnly) return '';
-        const slices = Math.ceil(total / p.chunk);
-        return this.duration(total / p.rate + slices * (p.settle / 1000));
       },
       openTypedPort() {
         if (!this.openPortReady) return;
