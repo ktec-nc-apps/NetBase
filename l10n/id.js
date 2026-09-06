@@ -27,6 +27,7 @@ OC.L10N.register(
         "Scan speed": "Kecepatan pemindaian",
         "Fast": "Cepat",
         "Gentle": "Pelan",
+        "this server": "peladen ini",
         "Wait for an answer": "Menunggu jawaban",
         "{wait} — quick, misses slow devices": "{wait} — cepat, perangkat lambat terlewat",
         "{wait} — the usual": "{wait} — biasa",

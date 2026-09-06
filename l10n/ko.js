@@ -27,6 +27,7 @@ OC.L10N.register(
         "Scan speed": "검색 속도",
         "Fast": "빠르게",
         "Gentle": "완만하게",
+        "this server": "이 서버",
         "Wait for an answer": "응답 대기 시간",
         "{wait} — quick, misses slow devices": "{wait}（빠름・느린 기기를 놓침）",
         "{wait} — the usual": "{wait}（표준）",

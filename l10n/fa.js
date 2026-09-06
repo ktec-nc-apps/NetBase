@@ -27,6 +27,7 @@ OC.L10N.register(
         "Scan speed": "سرعت پویش",
         "Fast": "سریع",
         "Gentle": "ملایم",
+        "this server": "همین کارساز",
         "Wait for an answer": "انتظار برای پاسخ",
         "{wait} — quick, misses slow devices": "{wait} — سریع، دستگاه‌های کند را جا می‌گذارد",
         "{wait} — the usual": "{wait} — معمول",

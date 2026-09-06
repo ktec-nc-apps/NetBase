@@ -27,6 +27,7 @@ OC.L10N.register(
         "Scan speed": "Tarama hızı",
         "Fast": "Hızlı",
         "Gentle": "Yumuşak",
+        "this server": "bu sunucu",
         "Wait for an answer": "Yanıt bekleme",
         "{wait} — quick, misses slow devices": "{wait} — hızlı, yavaş aygıtları kaçırır",
         "{wait} — the usual": "{wait} — olağan",

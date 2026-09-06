@@ -26,6 +26,7 @@
         "Scan speed": "スキャン速度",
         "Fast": "速い",
         "Gentle": "ゆっくり",
+        "this server": "このサーバー",
         "Wait for an answer": "応答を待つ時間",
         "{wait} — quick, misses slow devices": "{wait}（速い・遅い機器を取りこぼす）",
         "{wait} — the usual": "{wait}（標準）",

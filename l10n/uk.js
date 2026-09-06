@@ -27,6 +27,7 @@ OC.L10N.register(
         "Scan speed": "Швидкість сканування",
         "Fast": "Швидко",
         "Gentle": "Обережно",
+        "this server": "цей сервер",
         "Wait for an answer": "Очікування відповіді",
         "{wait} — quick, misses slow devices": "{wait} — швидко, пропускає повільні пристрої",
         "{wait} — the usual": "{wait} — звичайний",

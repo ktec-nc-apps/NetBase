@@ -27,6 +27,7 @@ OC.L10N.register(
         "Scan speed": "Rychlost skenování",
         "Fast": "Rychle",
         "Gentle": "Šetrně",
+        "this server": "tento server",
         "Wait for an answer": "Čekání na odpověď",
         "{wait} — quick, misses slow devices": "{wait} — rychle, pomalá zařízení mine",
         "{wait} — the usual": "{wait} — obvyklé",

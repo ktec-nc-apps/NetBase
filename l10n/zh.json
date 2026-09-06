@@ -26,6 +26,7 @@
         "Scan speed": "扫描速度",
         "Fast": "快速",
         "Gentle": "温和",
+        "this server": "本服务器",
         "Wait for an answer": "等待应答",
         "{wait} — quick, misses slow devices": "{wait} — 快，会漏掉慢速设备",
         "{wait} — the usual": "{wait} — 常用",

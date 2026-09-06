@@ -2,6 +2,16 @@
 
 All notable changes to NetBase are documented here.
 
+## 0.4.6 — 2026-09-06
+
+### Fixed
+
+- **The server NetBase runs on now appears in its own device list.** A machine
+  never asks the network for its own MAC address, so it is never in its own ARP
+  table — and NetBase, which discovers by reading that table, could see every
+  device on the network except the one it was running on. Its own interfaces
+  are now written down at the start of a scan, marked "this server" in the list.
+
 ## 0.4.5 — 2026-09-06
 
 ### Fixed

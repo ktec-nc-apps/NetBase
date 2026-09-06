@@ -174,6 +174,7 @@ class ScanService {
 	 * has already spoken to and no more, which is the whole point of it.
 	 */
 	private function stepArp(ScanEntity $scan, array &$queue, array $options): void {
+		$this->absorbSelf($queue, $options);
 		$this->absorbNeighbours($queue, $options);
 		$total = max(1, count($queue['ips'] ?? []));
 		$scan->setCursor($scan->getTotal());
@@ -190,6 +191,9 @@ class ScanService {
 		$cursor = (int)$scan->getCursor();
 		$total = (int)$scan->getTotal();
 
+		if ($cursor === 0) {
+			$this->absorbSelf($queue, $options);
+		}
 		// Read first: a device that woke up slowly — Wi-Fi power save easily
 		// adds a few hundred milliseconds — will have answered the previous
 		// slice by now, and this read costs nothing.
@@ -453,7 +457,43 @@ class ScanService {
 
 	// ---------------------------------------------------------------- persistence
 
-	/** Read the neighbour table and record everything new in it. */
+	/**
+	 * This server, in its own list.
+	 *
+	 * A machine never asks the network for its own MAC address, so it is never
+	 * in its own ARP table, and NetBase — which discovers by reading that table
+	 * — could see every device on the network except the one it was running on.
+	 * The kernel knows its own interfaces, so they are simply written down.
+	 */
+	private function absorbSelf(array &$queue, array $options): void {
+		$known = array_flip($queue['ips'] ?? []);
+		foreach ($this->discovery->interfaces() as $interface) {
+			if ($interface['loopback'] || !$interface['up']) {
+				continue;
+			}
+			if (($options['interface'] ?? '') !== '' && $interface['name'] !== $options['interface']) {
+				continue;
+			}
+			foreach ($interface['addresses'] as $address) {
+				if (($address['family'] ?? '') !== 'inet' || ($address['ip'] ?? '') === '') {
+					continue;
+				}
+				$ip = (string)$address['ip'];
+				$this->upsert($ip, ($interface['mac'] ?? '') !== '' ? $interface['mac'] : null, [
+					'interface' => $interface['name'],
+					'hostname' => gethostname() ?: null,
+					'dtype' => 'server',
+					'source' => 'self',
+				]);
+				if (!isset($known[$ip])) {
+					$queue['ips'][] = $ip;
+					$known[$ip] = true;
+				}
+			}
+		}
+	}
+
+	/** Read the ARP table and record everything new in it. */
 	private function absorbNeighbours(array &$queue, array $options): void {
 		$known = array_flip($queue['ips'] ?? []);
 		foreach ($this->discovery->neighbours() as $ip => $entry) {

@@ -26,6 +26,7 @@
         "Scan speed": "स्कैन गति",
         "Fast": "तेज़",
         "Gentle": "धीमा",
+        "this server": "यह सर्वर",
         "Wait for an answer": "उत्तर की प्रतीक्षा",
         "{wait} — quick, misses slow devices": "{wait} — तेज़, धीमे उपकरण छूटते हैं",
         "{wait} — the usual": "{wait} — सामान्य",

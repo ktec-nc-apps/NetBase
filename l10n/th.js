@@ -27,6 +27,7 @@ OC.L10N.register(
         "Scan speed": "ความเร็วการสแกน",
         "Fast": "เร็ว",
         "Gentle": "เบา",
+        "this server": "เซิร์ฟเวอร์นี้",
         "Wait for an answer": "รอคำตอบ",
         "{wait} — quick, misses slow devices": "{wait} — เร็ว แต่พลาดอุปกรณ์ที่ช้า",
         "{wait} — the usual": "{wait} — ปกติ",

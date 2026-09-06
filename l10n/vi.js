@@ -27,6 +27,7 @@ OC.L10N.register(
         "Scan speed": "Tốc độ quét",
         "Fast": "Nhanh",
         "Gentle": "Nhẹ nhàng",
+        "this server": "máy chủ này",
         "Wait for an answer": "Chờ trả lời",
         "{wait} — quick, misses slow devices": "{wait} — nhanh, bỏ sót thiết bị chậm",
         "{wait} — the usual": "{wait} — thông thường",

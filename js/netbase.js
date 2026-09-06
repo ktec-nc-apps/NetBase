@@ -429,7 +429,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
             <tbody>
               <tr v-for="d in shownDevices" :key="d.id" @click="openDevice(d)" @contextmenu.prevent="openRowMenu(d, $event)" :class="{offline: !d.online}">
                 <td class="c-dot"><span class="dot" :class="{on: d.online}" :title="d.online ? t('Online') : t('Not seen in the last sweep')"></span></td>
-                <td class="c-name"><span class="ic">{{ icon(d) }}</span><span class="nm">{{ d.name }}</span><span class="badge" v-if="d.label">{{ t('named') }}</span></td>
+                <td class="c-name"><span class="ic">{{ icon(d) }}</span><span class="nm">{{ d.name }}</span><span class="badge self" v-if="isSelf(d)">{{ t('this server') }}</span><span class="badge" v-if="d.label">{{ t('named') }}</span></td>
                 <td class="mono">{{ d.ip }}</td>
                 <td class="mono dim c-extra">{{ d.mac || '—' }}</td>
                 <td class="c-extra">{{ vendorText(d) }}</td>
@@ -2231,6 +2231,8 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
       fail(e) { this.banner = { kind: 'error', text: String((e && e.message) || e) }; },
       note(text) { this.banner = { kind: 'info', text }; },
 
+      /** The machine NetBase is running on, which is in the list like any other. */
+      isSelf(device) { return !!device && (device.sources || []).indexOf('self') >= 0; },
       allowed(tool) { return !!(this.status.can || {})[tool]; },
       /** The speed, as the number of probes a second it actually sends. */
       paceLabel(mode) {

@@ -27,6 +27,7 @@ OC.L10N.register(
         "Scan speed": "Szybkość skanowania",
         "Fast": "Szybko",
         "Gentle": "Łagodnie",
+        "this server": "ten serwer",
         "Wait for an answer": "Czekanie na odpowiedź",
         "{wait} — quick, misses slow devices": "{wait} — szybko, pomija wolne urządzenia",
         "{wait} — the usual": "{wait} — zwykły",
