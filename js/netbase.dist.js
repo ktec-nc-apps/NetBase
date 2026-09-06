@@ -1620,20 +1620,20 @@ const _hoisted_858 = [
   _hoisted_857
 ]
 const _hoisted_859 = /*#__PURE__*/_createElementVNode("span", { class: "spacer" }, null, -1 /* HOISTED */)
-const _hoisted_860 = ["title"]
-const _hoisted_861 = /*#__PURE__*/_createElementVNode("span", { class: "ic" }, [
-  /*#__PURE__*/_createElementVNode("svg", { viewBox: "0 0 24 24" }, [
-    /*#__PURE__*/_createElementVNode("rect", {
-      x: "9",
-      y: "9",
-      width: "12",
-      height: "12",
-      rx: "2.2"
-    }),
-    /*#__PURE__*/_createElementVNode("path", { d: "M6 15.5H5.5A2.5 2.5 0 0 1 3 13V5.5A2.5 2.5 0 0 1 5.5 3H13a2.5 2.5 0 0 1 2.5 2.5V6" })
-  ])
+const _hoisted_860 = ["title", "aria-label"]
+const _hoisted_861 = /*#__PURE__*/_createElementVNode("svg", { viewBox: "0 0 24 24" }, [
+  /*#__PURE__*/_createElementVNode("rect", {
+    x: "9",
+    y: "9",
+    width: "12",
+    height: "12",
+    rx: "2.2"
+  }),
+  /*#__PURE__*/_createElementVNode("path", { d: "M6 15.5H5.5A2.5 2.5 0 0 1 3 13V5.5A2.5 2.5 0 0 1 5.5 3H13a2.5 2.5 0 0 1 2.5 2.5V6" })
 ], -1 /* HOISTED */)
-const _hoisted_862 = { class: "lb" }
+const _hoisted_862 = [
+  _hoisted_861
+]
 const _hoisted_863 = ["title", "aria-label"]
 const _hoisted_864 = /*#__PURE__*/_createElementVNode("svg", { viewBox: "0 0 24 24" }, [
   /*#__PURE__*/_createElementVNode("path", { d: "M18 6L6 18" }),
@@ -1813,7 +1813,7 @@ const _hoisted_920 = { key: 1 }
 const _hoisted_921 = { class: "wrap" }
 const _hoisted_922 = { class: "drawer-tools" }
 const _hoisted_923 = ["onClick"]
-const _hoisted_924 = ["onClick"]
+const _hoisted_924 = ["title", "aria-label", "onClick"]
 const _hoisted_925 = ["href", "title", "aria-label"]
 const _hoisted_926 = /*#__PURE__*/_createElementVNode("svg", { viewBox: "0 0 24 24" }, [
   /*#__PURE__*/_createElementVNode("path", { d: "M14 4h6v6" }),
@@ -1823,35 +1823,36 @@ const _hoisted_926 = /*#__PURE__*/_createElementVNode("svg", { viewBox: "0 0 24 
 const _hoisted_927 = [
   _hoisted_926
 ]
-const _hoisted_928 = ["disabled"]
+const _hoisted_928 = { class: "drawer-tools device" }
 const _hoisted_929 = ["disabled"]
-const _hoisted_930 = ["title"]
-const _hoisted_931 = ["placeholder", "aria-label"]
-const _hoisted_932 = ["aria-label"]
-const _hoisted_933 = /*#__PURE__*/_createElementVNode("option", { value: "http" }, "HTTP", -1 /* HOISTED */)
-const _hoisted_934 = /*#__PURE__*/_createElementVNode("option", { value: "https" }, "HTTPS", -1 /* HOISTED */)
-const _hoisted_935 = [
-  _hoisted_933,
-  _hoisted_934
+const _hoisted_930 = ["disabled"]
+const _hoisted_931 = ["title"]
+const _hoisted_932 = ["placeholder", "aria-label"]
+const _hoisted_933 = ["aria-label"]
+const _hoisted_934 = /*#__PURE__*/_createElementVNode("option", { value: "http" }, "HTTP", -1 /* HOISTED */)
+const _hoisted_935 = /*#__PURE__*/_createElementVNode("option", { value: "https" }, "HTTPS", -1 /* HOISTED */)
+const _hoisted_936 = [
+  _hoisted_934,
+  _hoisted_935
 ]
-const _hoisted_936 = ["disabled"]
-const _hoisted_937 = {
+const _hoisted_937 = ["disabled"]
+const _hoisted_938 = {
   key: 2,
   class: "deep-result",
   ref: "deepResult"
 }
-const _hoisted_938 = {
+const _hoisted_939 = {
   key: 0,
   class: "hint"
 }
-const _hoisted_939 = {
+const _hoisted_940 = {
   key: 1,
   class: "kv"
 }
-const _hoisted_940 = { class: "mono" }
-const _hoisted_941 = ["onClick"]
-const _hoisted_942 = { class: "drawer-foot" }
-const _hoisted_943 = /*#__PURE__*/_createElementVNode("span", { class: "spacer" }, null, -1 /* HOISTED */)
+const _hoisted_941 = { class: "mono" }
+const _hoisted_942 = ["onClick"]
+const _hoisted_943 = { class: "drawer-foot" }
+const _hoisted_944 = /*#__PURE__*/_createElementVNode("span", { class: "spacer" }, null, -1 /* HOISTED */)
 
 return function render(_ctx, _cache) {
   return (_openBlock(), _createElementBlock("div", {
@@ -5995,13 +5996,11 @@ return function render(_ctx, _cache) {
               _hoisted_859,
               _createCommentVNode(" The whole record, and below, each row on its own: a device is\n               quoted into a ticket or a stock list far more often than it is\n               read on the screen. "),
               _createElementVNode("button", {
-                class: "btn sm keep",
+                class: "btn xs ib",
                 title: _ctx.t('Copy everything about this device'),
+                "aria-label": _ctx.t('Copy all'),
                 onClick: _cache[264] || (_cache[264] = $event => (_ctx.copyDevice(_ctx.selected)))
-              }, [
-                _hoisted_861,
-                _createElementVNode("span", _hoisted_862, _toDisplayString(_ctx.t('Copy all')), 1 /* TEXT */)
-              ], 8 /* PROPS */, _hoisted_860),
+              }, _hoisted_862, 8 /* PROPS */, _hoisted_860),
               _createElementVNode("button", {
                 class: "btn xs ib",
                 title: _ctx.t('Close'),
@@ -6176,7 +6175,7 @@ return function render(_ctx, _cache) {
                       _createElementVNode("span", _hoisted_917, _toDisplayString(_ctx.t('Notes')), 1 /* TEXT */),
                       _withDirectives(_createElementVNode("textarea", {
                         "onUpdate:modelValue": _cache[278] || (_cache[278] = $event => ((_ctx.editNotes) = $event)),
-                        rows: "3"
+                        rows: "2"
                       }, null, 512 /* NEED_PATCH */), [
                         [_vModelText, _ctx.editNotes]
                       ])
@@ -6200,7 +6199,8 @@ return function render(_ctx, _cache) {
                   : _createCommentVNode("v-if", true),
               _createElementVNode("div", _hoisted_922, [
                 (_openBlock(true), _createElementBlock(_Fragment, null, _renderList(_ctx.webLinks(_ctx.selected), (l) => {
-                  return (_openBlock(), _createElementBlock(_Fragment, {
+                  return (_openBlock(), _createElementBlock("div", {
+                    class: "tool-line",
                     key: l.href
                   }, [
                     (_ctx.allowed('preview'))
@@ -6213,9 +6213,11 @@ return function render(_ctx, _cache) {
                     (_ctx.allowed('preview') && _ctx.status.preview)
                       ? (_openBlock(), _createElementBlock("button", {
                           key: 1,
-                          class: "btn sm",
+                          class: "btn sm ib",
+                          title: _ctx.t('Show the page'),
+                          "aria-label": _ctx.t('Show the page'),
                           onClick: $event => (_ctx.showPage(l.href))
-                        }, "🖼 " + _toDisplayString(_ctx.t('Show the page')), 9 /* TEXT, PROPS */, _hoisted_924))
+                        }, "🖼", 8 /* PROPS */, _hoisted_924))
                       : _createCommentVNode("v-if", true),
                     _createElementVNode("a", {
                       class: "btn sm ib",
@@ -6225,8 +6227,10 @@ return function render(_ctx, _cache) {
                       title: _ctx.t('Only works from inside that network'),
                       "aria-label": _ctx.t('Only works from inside that network')
                     }, _hoisted_927, 8 /* PROPS */, _hoisted_925)
-                  ], 64 /* STABLE_FRAGMENT */))
-                }), 128 /* KEYED_FRAGMENT */)),
+                  ]))
+                }), 128 /* KEYED_FRAGMENT */))
+              ]),
+              _createElementVNode("div", _hoisted_928, [
                 _createCommentVNode(" Asking this one device what a sweep has no time to ask: every\n                 port it has, and which of those are really web pages. "),
                 (_ctx.allowed('scan'))
                   ? (_openBlock(), _createElementBlock("button", {
@@ -6234,7 +6238,7 @@ return function render(_ctx, _cache) {
                       class: "btn sm",
                       disabled: !!_ctx.deep.busy,
                       onClick: _cache[279] || (_cache[279] = $event => (_ctx.scanAllPorts(_ctx.selected)))
-                    }, " 🔎 " + _toDisplayString(_ctx.deep.busy === 'ports' ? _ctx.t('Scanning… {done}%', { done: _ctx.deep.percent }) : _ctx.t('Scan every port')), 9 /* TEXT, PROPS */, _hoisted_928))
+                    }, " 🔎 " + _toDisplayString(_ctx.deep.busy === 'ports' ? _ctx.t('Scanning… {done}%', { done: _ctx.deep.percent }) : _ctx.t('Scan every port')), 9 /* TEXT, PROPS */, _hoisted_929))
                   : _createCommentVNode("v-if", true),
                 (_ctx.allowed('scan'))
                   ? (_openBlock(), _createElementBlock("button", {
@@ -6242,7 +6246,7 @@ return function render(_ctx, _cache) {
                       class: "btn sm",
                       disabled: !!_ctx.deep.busy || !_ctx.selected.ports.length,
                       onClick: _cache[280] || (_cache[280] = $event => (_ctx.findWebPages(_ctx.selected)))
-                    }, " 🌐 " + _toDisplayString(_ctx.deep.busy === 'web' ? _ctx.t('Looking…') : _ctx.t('Find web pages')), 9 /* TEXT, PROPS */, _hoisted_929))
+                    }, " 🌐 " + _toDisplayString(_ctx.deep.busy === 'web' ? _ctx.t('Looking…') : _ctx.t('Find web pages')), 9 /* TEXT, PROPS */, _hoisted_930))
                   : _createCommentVNode("v-if", true),
                 _createCommentVNode(" A device's page is not always on a port the scan noticed, and\n                 a maker is free to put it anywhere, so the number can simply\n                 be typed. "),
                 (_ctx.allowed('preview'))
@@ -6258,21 +6262,21 @@ return function render(_ctx, _cache) {
                         placeholder: _ctx.t('Port'),
                         "aria-label": _ctx.t('Port'),
                         onKeyup: _cache[282] || (_cache[282] = _withKeys((...args) => (_ctx.openTypedPort && _ctx.openTypedPort(...args)), ["enter"]))
-                      }, null, 40 /* PROPS, NEED_HYDRATION */, _hoisted_931), [
+                      }, null, 40 /* PROPS, NEED_HYDRATION */, _hoisted_932), [
                         [_vModelText, _ctx.openPort]
                       ]),
                       _withDirectives(_createElementVNode("select", {
                         "onUpdate:modelValue": _cache[283] || (_cache[283] = $event => ((_ctx.openScheme) = $event)),
                         "aria-label": _ctx.t('Protocol')
-                      }, _hoisted_935, 8 /* PROPS */, _hoisted_932), [
+                      }, _hoisted_936, 8 /* PROPS */, _hoisted_933), [
                         [_vModelSelect, _ctx.openScheme]
                       ]),
                       _createElementVNode("button", {
                         class: "btn sm",
                         disabled: !_ctx.openPortReady,
                         onClick: _cache[284] || (_cache[284] = (...args) => (_ctx.openTypedPort && _ctx.openTypedPort(...args)))
-                      }, "🖥 " + _toDisplayString(_ctx.t('Open this port')), 9 /* TEXT, PROPS */, _hoisted_936)
-                    ], 8 /* PROPS */, _hoisted_930))
+                      }, "🖥 " + _toDisplayString(_ctx.t('Open this port')), 9 /* TEXT, PROPS */, _hoisted_937)
+                    ], 8 /* PROPS */, _hoisted_931))
                   : _createCommentVNode("v-if", true),
                 (_ctx.selected.mac && _ctx.allowed('wol'))
                   ? (_openBlock(), _createElementBlock("button", {
@@ -6284,17 +6288,17 @@ return function render(_ctx, _cache) {
               ]),
               _createCommentVNode(" What the two searches came back with, for this device. "),
               (_ctx.deep.note || _ctx.deep.pages.length)
-                ? (_openBlock(), _createElementBlock("div", _hoisted_937, [
+                ? (_openBlock(), _createElementBlock("div", _hoisted_938, [
                     (_ctx.deep.note)
-                      ? (_openBlock(), _createElementBlock("p", _hoisted_938, _toDisplayString(_ctx.deep.note), 1 /* TEXT */))
+                      ? (_openBlock(), _createElementBlock("p", _hoisted_939, _toDisplayString(_ctx.deep.note), 1 /* TEXT */))
                       : _createCommentVNode("v-if", true),
                     (_ctx.deep.pages.length)
-                      ? (_openBlock(), _createElementBlock("div", _hoisted_939, [
+                      ? (_openBlock(), _createElementBlock("div", _hoisted_940, [
                           (_openBlock(true), _createElementBlock(_Fragment, null, _renderList(_ctx.deep.pages, (page) => {
                             return (_openBlock(), _createElementBlock("div", {
                               key: page.port
                             }, [
-                              _createElementVNode("span", _hoisted_940, _toDisplayString(page.scheme) + " · " + _toDisplayString(page.port), 1 /* TEXT */),
+                              _createElementVNode("span", _hoisted_941, _toDisplayString(page.scheme) + " · " + _toDisplayString(page.port), 1 /* TEXT */),
                               _createElementVNode("code", null, [
                                 _createTextVNode(_toDisplayString(page.title || page.server || _ctx.t('a page')), 1 /* TEXT */),
                                 (_ctx.allowed('preview'))
@@ -6302,7 +6306,7 @@ return function render(_ctx, _cache) {
                                       key: 0,
                                       class: "btn xs",
                                       onClick: $event => (_ctx.openDeviceWindow(_ctx.selected, page.port, page.scheme))
-                                    }, _toDisplayString(_ctx.t('Open')), 9 /* TEXT, PROPS */, _hoisted_941))
+                                    }, _toDisplayString(_ctx.t('Open')), 9 /* TEXT, PROPS */, _hoisted_942))
                                   : _createCommentVNode("v-if", true)
                               ])
                             ]))
@@ -6312,7 +6316,7 @@ return function render(_ctx, _cache) {
                   ], 512 /* NEED_PATCH */))
                 : _createCommentVNode("v-if", true)
             ]),
-            _createElementVNode("div", _hoisted_942, [
+            _createElementVNode("div", _hoisted_943, [
               (_ctx.allowed('scan'))
                 ? (_openBlock(), _createElementBlock("button", {
                     key: 0,
@@ -6320,7 +6324,7 @@ return function render(_ctx, _cache) {
                     onClick: _cache[286] || (_cache[286] = $event => (_ctx.removeDevice(_ctx.selected)))
                   }, _toDisplayString(_ctx.t('Forget this device')), 1 /* TEXT */))
                 : _createCommentVNode("v-if", true),
-              _hoisted_943,
+              _hoisted_944,
               _createElementVNode("button", {
                 class: "btn sm",
                 onClick: _cache[287] || (_cache[287] = $event => (_ctx.selected=null))

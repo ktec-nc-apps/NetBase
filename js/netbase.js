@@ -1723,9 +1723,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
           <!-- The whole record, and below, each row on its own: a device is
                quoted into a ticket or a stock list far more often than it is
                read on the screen. -->
-          <button class="btn sm keep" :title="t('Copy everything about this device')" @click="copyDevice(selected)">
-            <span class="ic"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2.2"/><path d="M6 15.5H5.5A2.5 2.5 0 0 1 3 13V5.5A2.5 2.5 0 0 1 5.5 3H13a2.5 2.5 0 0 1 2.5 2.5V6"/></svg></span><span class="lb">{{ t('Copy all') }}</span>
-          </button>
+          <button class="btn xs ib" :title="t('Copy everything about this device')" :aria-label="t('Copy all')" @click="copyDevice(selected)"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2.2"/><path d="M6 15.5H5.5A2.5 2.5 0 0 1 3 13V5.5A2.5 2.5 0 0 1 5.5 3H13a2.5 2.5 0 0 1 2.5 2.5V6"/></svg></button>
           <button class="btn xs ib" :title="t('Close')" :aria-label="t('Close')" @click="selected=null"><svg viewBox="0 0 24 24"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg></button>
         </div>
         <div class="drawer-body">
@@ -1753,18 +1751,20 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
               <select v-model="editType"><option v-for="(l,k) in typeLabels" :key="k" :value="k">{{ t(l) }}</option></select>
             </label>
             <label class="fl"><span class="fl-label">{{ t('Tags') }}</span><input v-model="editTags" :placeholder="t('office, 2F, spare')"></label>
-            <label class="fl"><span class="fl-label">{{ t('Notes') }}</span><textarea v-model="editNotes" rows="3"></textarea></label>
+            <label class="fl"><span class="fl-label">{{ t('Notes') }}</span><textarea v-model="editNotes" rows="2"></textarea></label>
           </template>
           <div class="kv" v-else-if="selected.tags.length || selected.notes">
             <div v-if="selected.tags.length"><span>{{ t('Tags') }}</span><code>{{ selected.tags.join(', ') }}</code></div>
             <div v-if="selected.notes"><span>{{ t('Notes') }}</span><code class="wrap">{{ selected.notes }}</code></div>
           </div>
           <div class="drawer-tools">
-            <template v-for="l in webLinks(selected)" :key="l.href">
+            <div class="tool-line" v-for="l in webLinks(selected)" :key="l.href">
               <button class="btn sm" v-if="allowed('preview')" @click="openDeviceWindow(selected, l.port)">🖥 {{ l.label }}</button>
-              <button class="btn sm" v-if="allowed('preview') && status.preview" @click="showPage(l.href)">🖼 {{ t('Show the page') }}</button>
+              <button class="btn sm ib" v-if="allowed('preview') && status.preview" :title="t('Show the page')" :aria-label="t('Show the page')" @click="showPage(l.href)">🖼</button>
               <a class="btn sm ib" :href="l.href" target="_blank" rel="noopener noreferrer" :title="t('Only works from inside that network')" :aria-label="t('Only works from inside that network')"><svg viewBox="0 0 24 24"><path d="M14 4h6v6"/><path d="M20 4l-8.5 8.5"/><path d="M18 14.5V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4.5"/></svg></a>
-            </template>
+            </div>
+          </div>
+          <div class="drawer-tools device">
             <!-- Asking this one device what a sweep has no time to ask: every
                  port it has, and which of those are really web pages. -->
             <button class="btn sm" v-if="allowed('scan')" :disabled="!!deep.busy" @click="scanAllPorts(selected)">

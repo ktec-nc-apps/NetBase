@@ -137,8 +137,8 @@
 
 /* key/value grid */
 #netbase-root .kv { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 6px 20px; margin-bottom: 12px; }
-#netbase-root .kv > div { display: flex; gap: 10px; align-items: baseline; padding: 5px 0; border-bottom: 1px solid var(--border); min-width: 0; }
-#netbase-root .kv > div > span { color: var(--muted); font-size: 13px; flex: 0 0 40%; }
+#netbase-root .kv > div { display: flex; gap: 10px; align-items: baseline; padding: 4px 0; border-bottom: 1px solid var(--border); min-width: 0; }
+#netbase-root .kv > div > span { color: var(--muted); font-size: 13px; flex: 0 0 38%; }
 #netbase-root .kv > div > code { font-size: 13px; min-width: 0; overflow-wrap: anywhere; }
 
 /* forms */
@@ -242,7 +242,11 @@
   display: flex; justify-content: flex-end; z-index: 2000;
 }
 #netbase-root .drawer { width: min(520px, 100%); background: var(--surface); display: flex; flex-direction: column; box-shadow: var(--shadow); }
-#netbase-root .drawer-head { display: flex; align-items: center; gap: 12px; padding: 16px 18px; border-bottom: 1px solid var(--border); }
+#netbase-root .drawer-head { display: flex; align-items: center; gap: 12px; padding: 14px 18px; border-bottom: 1px solid var(--border); }
+/* The name and the addresses have to be free to shrink, or the address line
+   wraps and leaves the separator stranded on a line of its own. */
+#netbase-root .drawer-head > div { flex: 1 1 auto; min-width: 0; }
+#netbase-root .drawer-head .dim.mono { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 12.5px; }
 #netbase-root .drawer-head .ic.big { font-size: 28px; }
 #netbase-root .drawer-head .dev-name { font-size: 17px; font-weight: 700; border: 0; padding: 2px 0; background: none; border-bottom: 1px dashed var(--border); border-radius: 0; min-height: 0; }
 #netbase-root .drawer-body { flex: 1 1 auto; overflow-y: auto; padding: 16px 18px; }
@@ -252,7 +256,10 @@
 #netbase-root .kv > div { position: relative; }
 #netbase-root .copy-one {
   opacity: 0; transition: opacity .12s ease; vertical-align: middle;
-  margin-left: 6px; padding: 2px; line-height: 0;
+  margin-left: 6px; padding: 3px; line-height: 0;
+  /* Without this it inherits a button's 34px and sets the height of every row
+     it sits in, which was half again as tall as the text needed. */
+  min-height: 0;
 }
 #netbase-root .kv > div:hover .copy-one,
 #netbase-root .drawer-head:hover .copy-one,
@@ -261,6 +268,11 @@
 #netbase-root .copy-one svg { width: 13px; height: 13px; }
 
 #netbase-root .drawer-tools { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+/* One line per port: the three ways of reaching the same page belong together,
+   and wrapping them into a pile hid which button went with which port. */
+#netbase-root .tool-line { display: flex; flex-wrap: nowrap; align-items: center; gap: 6px; width: 100%; }
+#netbase-root .tool-line .btn:first-child { flex: 1 1 auto; text-align: left; overflow: hidden; text-overflow: ellipsis; }
+#netbase-root .drawer-tools.device { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); }
 /* What the two searches came back with, under the buttons that ran them. */
 #netbase-root .deep-result { margin-top: 12px; }
 #netbase-root .deep-result .kv { margin-top: 6px; }

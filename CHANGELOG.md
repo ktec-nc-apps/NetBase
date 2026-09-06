@@ -2,6 +2,26 @@
 
 All notable changes to NetBase are documented here.
 
+## 0.3.23 — 2026-09-06
+
+### Fixed
+
+- **The device details fit in the panel again.** Every row of the record was as
+  tall as the copy button sitting in it — 45 pixels for 20 pixels of text —
+  because the button kept a full button's minimum height. Over nine rows that
+  was enough to push the last of the actions below the fold.
+- **The address line no longer wraps.** The name and addresses could not shrink,
+  so on a narrow panel the MAC fell to a second line and left the separator
+  stranded between them.
+
+### Changed
+
+- **A port's three ways in are on one line together.** Open in a window, render
+  the page, and the plain link had been laid out as a pile, so which button
+  belonged to which port was a matter of counting. The device's own actions —
+  scan every port, find web pages, wake on LAN, open a typed port — are now
+  separated from them by a rule.
+
 ## 0.3.22 — 2026-09-06
 
 ### Changed
