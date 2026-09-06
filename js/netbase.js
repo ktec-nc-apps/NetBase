@@ -1492,7 +1492,24 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         </ul>
         <button class="btn xs" @click.stop="w.help = false">{{ t('Close') }}</button>
       </div>
-      <div class="devwin-line">{{ t('{host} — its own settings page, opened through this server, so it works from anywhere. Sign in and change settings as you would standing in front of it.', { host: w.base.replace(/^https?:\/\//, '') }) }}</div>
+      <!-- What used to be here was a sentence explaining the window to someone
+           who had already opened it. This is the row of things a person
+           actually reaches for while signing into a device: its address, what
+           is on the page, and the clipboard going the other way, because a
+           device password is nearly always pasted. -->
+      <div class="devwin-bar" v-if="!w.busy && !w.error" @mousedown.stop>
+        <button class="btn xs" :title="t('Copy this device\'s own address')" @click.stop="copyText(w.base + (w.path ? '/' + w.path : ''), t('Address copied'))">
+          <span class="ic"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2.2"/><path d="M6 15.5H5.5A2.5 2.5 0 0 1 3 13V5.5A2.5 2.5 0 0 1 5.5 3H13a2.5 2.5 0 0 1 2.5 2.5V6"/></svg></span><span class="lb">{{ t('Address') }}</span>
+        </button>
+        <button class="btn xs" :title="t('Copy whatever is selected on the page, or the whole page if nothing is')" @click.stop="copyFromWindow(w)">
+          <span class="ic"><svg viewBox="0 0 24 24"><path d="M4 6.5h16"/><path d="M4 12h16"/><path d="M4 17.5h10"/></svg></span><span class="lb">{{ t('Page text') }}</span>
+        </button>
+        <button class="btn xs" :title="t('Paste the clipboard into the field the cursor is in')" @mousedown.prevent @click.stop="pasteIntoWindow(w)">
+          <span class="ic"><svg viewBox="0 0 24 24"><path d="M9 4.5H7A1.5 1.5 0 0 0 5.5 6v13A1.5 1.5 0 0 0 7 20.5h10a1.5 1.5 0 0 0 1.5-1.5V6A1.5 1.5 0 0 0 17 4.5h-2"/><rect x="9" y="2.5" width="6" height="3.5" rx="1"/><path d="M8.5 12h7"/><path d="M8.5 15.5h4.5"/></svg></span><span class="lb">{{ t('Paste') }}</span>
+        </button>
+        <span class="spacer"></span>
+        <span class="dim mono tiny">{{ w.base.replace(/^https?:\/\//, '') }}</span>
+      </div>
       <div v-if="w.busy" class="devwin-note dim">{{ t('Connecting…') }}</div>
       <div v-else-if="w.error" class="devwin-note error">⚠ {{ w.error }}</div>
       <!-- The page is sandboxed against navigating anything but itself, so a device
@@ -1500,7 +1517,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
            policy pins everything it loads or sends to the proxy path, so it cannot
            reach a Nextcloud endpoint. The name is how its own "replace everything"
            links find this window. -->
-      <iframe v-else :src="w.src" class="devwin-frame" :title="w.title" name="_netbase_window" @load="onWindowLoad(w, $event)"
+      <iframe v-else :src="w.src" class="devwin-frame" :title="w.title" :data-window="w.id" name="_netbase_window" @load="onWindowLoad(w, $event)"
               sandbox="allow-scripts allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox allow-downloads allow-same-origin"></iframe>
       <div class="devwin-grip" @mousedown.prevent.stop="startResize(w, $event)"></div>
     </div>
@@ -2382,7 +2399,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         const base = scheme + '://' + host + (port === 80 || port === 443 ? '' : ':' + port);
         const offset = this.narrow ? 0 : (this.windows.length % 6) * 28;
         const w = {
-          id: ++this.windowSeq, base, url: '', src: '', error: '', busy: true, full: false, escapes: 0,
+          id: ++this.windowSeq, base, url: '', src: '', error: '', busy: true, full: false, escapes: 0, field: null,
           here: '', trail: [], trailAt: -1, rewinding: false, help: false, z: ++this.windowTop,
           title: (device.name || device.ip) + ' · ' + port,
           x: this.narrow ? 0 : Math.max(20, Math.round(window.innerWidth / 2 - 520) + offset),
@@ -2424,13 +2441,85 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         try { here = frame.contentWindow.location.pathname + frame.contentWindow.location.search; } catch (e) { return; }
         if (!here || !w.url) return;
         const prefix = w.url.replace(/\/$/, '');
-        if (here.indexOf(prefix) === 0) return;          // still inside the proxy
+        if (here.indexOf(prefix) === 0) {
+          // Clicking a button up here takes the focus off whatever was being
+          // typed into down there, so the field has to be remembered while it
+          // still has it.
+          try {
+            const doc = frame.contentWindow.document;
+            doc.addEventListener('focusin', (e) => { w.field = e.target; }, true);
+          } catch (e) { /* not ours to listen to */ }
+          return;                                       // still inside the proxy
+        }
         if (here === 'about:blank') return;
         // Twice is a mistake worth correcting; a third time is a page that
         // will not be helped, and would only bounce here for ever.
         w.escapes = (w.escapes || 0) + 1;
         if (w.escapes > 2) { w.error = T('This page keeps leaving the device window.'); return; }
         frame.contentWindow.location.replace(prefix + here);
+      },
+      /** The frame of a window, while it is still showing what we put there. */
+      windowFrame(w) {
+        const el = document.querySelector('.devwin-frame[data-window="' + w.id + '"]');
+        try { return el && el.contentWindow && el.contentWindow.document ? el.contentWindow : null; } catch (e) { return null; }
+      },
+      /**
+       * What is on the device's page, onto the clipboard.
+       *
+       * The frame is served from this origin, so the selection inside it can
+       * be read — which is the whole point: a serial number or an error line
+       * on a device page is otherwise retyped by hand.
+       */
+      copyFromWindow(w) {
+        const win = this.windowFrame(w);
+        if (!win) { this.note(T('The page cannot be read yet')); return; }
+        let text = '';
+        try {
+          const picked = String(win.getSelection ? win.getSelection() : '');
+          text = picked.trim() || (win.document.body ? win.document.body.innerText : '');
+        } catch (e) { text = ''; }
+        text = text.replace(/\n{3,}/g, '\n\n').trim();
+        if (!text) { this.note(T('There is no text on this page')); return; }
+        this.copyText(text, T('Page text copied'));
+      },
+      /**
+       * The clipboard into whatever the cursor is in.
+       *
+       * A device password is nearly always pasted rather than typed, and a
+       * password box inside a frame does not always take the browser's own
+       * paste — so this puts it in and tells the page it changed, which is
+       * what a script watching the field is waiting for.
+       */
+      async pasteIntoWindow(w) {
+        const win = this.windowFrame(w);
+        if (!win) { this.note(T('The page cannot be read yet')); return; }
+        let text = '';
+        try { text = await navigator.clipboard.readText(); } catch (e) {
+          this.note(T('The browser did not allow the clipboard to be read'));
+          return;
+        }
+        if (!text) { this.note(T('The clipboard is empty')); return; }
+        // Whatever had the focus last, falling back to whatever has it now.
+        let field = w.field;
+        try {
+          if (!field || !field.isConnected) field = win.document.activeElement;
+        } catch (e) { field = null; }
+        const kind = field && field.tagName ? field.tagName.toLowerCase() : '';
+        if (kind !== 'input' && kind !== 'textarea' && !(field && field.isContentEditable)) {
+          this.note(T('Put the cursor in a field on the page first'));
+          return;
+        }
+        if (field.isContentEditable) {
+          field.textContent = text;
+        } else {
+          field.value = text;
+        }
+        // Whatever the page has watching this field has to hear about it.
+        ['input', 'change'].forEach((name) => {
+          field.dispatchEvent(new win.Event(name, { bubbles: true }));
+        });
+        try { field.focus(); } catch (e) { /* it may not want to be focused */ }
+        this.note(T('Pasted'));
       },
       focusWindow(w) { w.z = ++this.windowTop; },
       onViewportResize() {

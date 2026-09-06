@@ -2,6 +2,18 @@
 
 All notable changes to NetBase are documented here.
 
+## 0.3.12 — 2026-09-06
+
+### Changed
+
+- **The blue line under a device window's title is now a row of buttons.** It
+  used to carry a sentence explaining the window to somebody who had already
+  opened it. In its place: the device's own address onto the clipboard, the
+  page's text — the selection if there is one, the whole page if not — and the
+  clipboard the other way, into whichever field the cursor is in. A device
+  password is nearly always pasted rather than typed, and a serial number on a
+  device page is otherwise copied out by hand.
+
 ## 0.3.11 — 2026-09-06
 
 ### Fixed

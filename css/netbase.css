@@ -467,17 +467,18 @@
 }
 .devwin-note.error { color: var(--color-error, #c0392b); }
 
-/* What this window is, in one reversed line under its title bar. */
-.devwin-line {
-  padding: 5px 12px;
-  font-size: .78em;
-  line-height: 1.5;
-  white-space: nowrap;
+/* The row of things a person reaches for while signing into a device. It sits
+   where a sentence explaining the window used to be. */
+.devwin-bar {
+  display: flex; align-items: center; gap: 6px;
+  padding: 4px 8px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-2);
   overflow: hidden;
-  text-overflow: ellipsis;
-  background: var(--color-primary-element, #2970e2);
-  color: var(--color-primary-element-text, #fff);
 }
+.devwin-bar .btn.xs { display: inline-flex; align-items: center; gap: 5px; }
+.devwin-bar .btn.xs svg { width: 13px; height: 13px; }
+.devwin-bar .tiny { font-size: .74em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 /* While a window is being moved or resized the pointer must stay with the
    window, not disappear into the page it is showing. */
@@ -673,7 +674,8 @@
   #netbase-root .wf-name { flex: 0 0 70px; }
   #netbase-root .wf-ms { flex: 0 0 62px; }
   /* Cut short, this line says nothing; it is short enough to wrap instead. */
-  #netbase-root .devwin-line { white-space: normal; }
+  /* On a phone the labels go and the icons stay. */
+  #netbase-root .devwin-bar .lb { display: none; }
 }
 
 @media (max-width: 430px) {
