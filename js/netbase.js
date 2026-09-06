@@ -372,15 +372,20 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
               <button class="btn primary" :disabled="scanning" @click="startScan()">{{ scanning ? t('Scanning…') : t('Start scanning') }}</button>
               <button class="btn" v-if="scanning" @click="cancelScan">{{ t('Stop') }}</button>
             </div>
+            <!-- The four steps of a scan, in the order they happen, so the row
+                 reads as what the scan is about to do. -->
             <div class="scan-opts">
               <label :title="t('Asks each address for its own name, over NetBIOS and mDNS.')"><input type="checkbox" v-model="opts.names"> {{ t('Ask devices for their names') }}</label>
               <label :title="t('Listens for the devices that announce themselves — mDNS, WS-Discovery and SSDP. It finds devices the sweep missed.')"><input type="checkbox" v-model="opts.multicast"> {{ t('Multicast discovery') }}</label>
               <label :title="t('Connects to each device to see which ports answer. This is what tells a printer from a camera.')"><input type="checkbox" v-model="opts.ports"> {{ t('Check open ports') }}</label>
-              <!-- Three depths rather than one compromise: the short list keeps
-                   a scan quick, the long one explains the device the short list
-                   does not, and the whole range is there for the interface a
-                   maker hid on port 30443. -->
-              <label class="depth" v-if="opts.ports" :title="t('How many ports to try on each device.')">
+              <label :title="t('Asks the DNS server what name it has on record for each address.')"><input type="checkbox" v-model="opts.rdns"> {{ t('Reverse DNS') }}</label>
+            </div>
+            <!-- The two settings that belong to the third of them, kept under it
+                 rather than in the row, where the wrapping used to put an
+                 unrelated checkbox between a port setting and its own box. -->
+            <div class="scan-sub" v-if="opts.ports">
+              <label :title="t('How many ports to try on each device.')">
+                <span class="opt-label">{{ t('Ports to try') }}</span>
                 <select v-model="opts.portScan">
                   <option value="common">{{ t('Common ports') }} ({{ portCount('common') }})</option>
                   <option value="detailed">{{ t('Detailed search') }} ({{ portCount('detailed') }})</option>
@@ -389,13 +394,12 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
                 </select>
               </label>
               <!-- The number that actually decides how long this takes. -->
-              <label class="depth" v-if="opts.ports" :title="t('How long to wait for a port to answer. A port that refuses is instant whatever this is; the wait only applies to one that says nothing at all, which is what a firewall and a sleeping device both look like. Waiting less is quicker and misses more.')">
+              <label :title="t('How long to wait for a port to answer. A port that refuses is instant whatever this is; the wait only applies to one that says nothing at all, which is what a firewall and a sleeping device both look like. Waiting less is quicker and misses more.')">
                 <span class="opt-label">{{ t('Wait per port') }}</span>
                 <select v-model.number="opts.portWait">
                   <option v-for="w in portWaits" :key="w" :value="w">{{ waitLabel(w) }}</option>
                 </select>
               </label>
-              <label :title="t('Asks the DNS server what name it has on record for each address.')"><input type="checkbox" v-model="opts.rdns"> {{ t('Reverse DNS') }}</label>
             </div>
             <div class="progress" v-if="scan">
               <div class="bar"><div class="fill" :style="{width: scan.percent + '%'}"></div></div>

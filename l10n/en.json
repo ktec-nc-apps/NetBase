@@ -26,6 +26,7 @@
         "Scan speed": "Scan speed",
         "Fast": "Fast",
         "Gentle": "Gentle",
+        "Ports to try": "Ports to try",
         "What to scan": "What to scan",
         "The whole network": "The whole network",
         "The ARP table only": "The ARP table only",

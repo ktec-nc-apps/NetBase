@@ -27,6 +27,7 @@ OC.L10N.register(
         "Scan speed": "검색 속도",
         "Fast": "빠르게",
         "Gentle": "완만하게",
+        "Ports to try": "조사할 포트",
         "What to scan": "검색 대상",
         "The whole network": "네트워크 전체",
         "The ARP table only": "ARP 테이블만",

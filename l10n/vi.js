@@ -27,6 +27,7 @@ OC.L10N.register(
         "Scan speed": "Tốc độ quét",
         "Fast": "Nhanh",
         "Gentle": "Nhẹ nhàng",
+        "Ports to try": "Cổng cần thử",
         "What to scan": "Quét cái gì",
         "The whole network": "Toàn mạng",
         "The ARP table only": "Chỉ bảng ARP",

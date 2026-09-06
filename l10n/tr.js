@@ -27,6 +27,7 @@ OC.L10N.register(
         "Scan speed": "Tarama hızı",
         "Fast": "Hızlı",
         "Gentle": "Yumuşak",
+        "Ports to try": "Denenecek kapılar",
         "What to scan": "Ne taranacak",
         "The whole network": "Tüm ağ",
         "The ARP table only": "Yalnızca ARP tablosu",

@@ -27,6 +27,7 @@ OC.L10N.register(
         "Scan speed": "سرعة الفحص",
         "Fast": "سريع",
         "Gentle": "لطيف",
+        "Ports to try": "المنافذ المراد تجربتها",
         "What to scan": "ما الذي يُفحص",
         "The whole network": "الشبكة كاملة",
         "The ARP table only": "جدول ARP فقط",

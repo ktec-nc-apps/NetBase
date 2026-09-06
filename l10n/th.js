@@ -27,6 +27,7 @@ OC.L10N.register(
         "Scan speed": "ความเร็วการสแกน",
         "Fast": "เร็ว",
         "Gentle": "เบา",
+        "Ports to try": "พอร์ตที่จะลอง",
         "What to scan": "จะสแกนอะไร",
         "The whole network": "ทั้งเครือข่าย",
         "The ARP table only": "เฉพาะตาราง ARP",

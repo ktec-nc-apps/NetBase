@@ -26,6 +26,7 @@
         "Scan speed": "スキャン速度",
         "Fast": "速い",
         "Gentle": "ゆっくり",
+        "Ports to try": "調べるポート",
         "What to scan": "スキャン対象",
         "The whole network": "ネットワーク全体",
         "The ARP table only": "ARPテーブルのみ",

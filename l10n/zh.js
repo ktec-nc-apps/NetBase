@@ -27,6 +27,7 @@ OC.L10N.register(
         "Scan speed": "扫描速度",
         "Fast": "快速",
         "Gentle": "温和",
+        "Ports to try": "要尝试的端口",
         "What to scan": "扫描对象",
         "The whole network": "整个网络",
         "The ARP table only": "仅 ARP 表",

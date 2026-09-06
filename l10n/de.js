@@ -27,6 +27,7 @@ OC.L10N.register(
         "Scan speed": "Suchgeschwindigkeit",
         "Fast": "Schnell",
         "Gentle": "Schonend",
+        "Ports to try": "Zu prüfende Ports",
         "What to scan": "Was durchsucht wird",
         "The whole network": "Das ganze Netz",
         "The ARP table only": "Nur die ARP-Tabelle",

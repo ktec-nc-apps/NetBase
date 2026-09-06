@@ -27,6 +27,7 @@ OC.L10N.register(
         "Scan speed": "سرعت پویش",
         "Fast": "سریع",
         "Gentle": "ملایم",
+        "Ports to try": "درگاه‌های آزمودنی",
         "What to scan": "چه چیزی پویش شود",
         "The whole network": "همهٔ شبکه",
         "The ARP table only": "فقط جدول ARP",

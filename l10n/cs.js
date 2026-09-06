@@ -27,6 +27,7 @@ OC.L10N.register(
         "Scan speed": "Rychlost skenování",
         "Fast": "Rychle",
         "Gentle": "Šetrně",
+        "Ports to try": "Které porty zkusit",
         "What to scan": "Co prohledat",
         "The whole network": "Celá síť",
         "The ARP table only": "Jen tabulka ARP",

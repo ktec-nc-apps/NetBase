@@ -2,6 +2,17 @@
 
 All notable changes to NetBase are documented here.
 
+## 0.3.22 — 2026-09-06
+
+### Changed
+
+- **The scan options are arranged as what they are.** The four steps of a scan
+  sit on one line in the order they happen — names, multicast, ports, reverse
+  DNS — and the two settings that belong to the port check sit beneath it,
+  indented under the choice they modify. They had all been in a single wrapping
+  row, which put an unrelated checkbox between a port setting and its own box
+  whenever the window was narrow.
+
 ## 0.3.21 — 2026-09-06
 
 ### Changed
