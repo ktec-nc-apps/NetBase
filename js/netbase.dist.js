@@ -2147,7 +2147,7 @@ return function render(_ctx, _cache) {
                         }, null, 512 /* NEED_PATCH */), [
                           [_vModelCheckbox, _ctx.opts.arpOnly]
                         ]),
-                        _createTextVNode(" " + _toDisplayString(_ctx.t('Read neighbour table only (instant)')), 1 /* TEXT */)
+                        _createTextVNode(" " + _toDisplayString(_ctx.t('Read ARP table only (instant)')), 1 /* TEXT */)
                       ], 8 /* PROPS */, _hoisted_62)
                     ]),
                     (_ctx.scan)
@@ -2167,7 +2167,7 @@ return function render(_ctx, _cache) {
                       : _createCommentVNode("v-if", true),
                     (_ctx.advice && !_ctx.advice.ok)
                       ? (_openBlock(), _createElementBlock("p", _hoisted_67, [
-                          _createTextVNode(" ⚠ " + _toDisplayString(_ctx.t('This target has {hosts} addresses but the kernel neighbour table holds {gc3}. The sweep still works, but the kernel will log overflow warnings. To avoid that, an administrator can run:', { hosts: _ctx.advice.hosts, gc3: _ctx.advice.gc3 })) + " ", 1 /* TEXT */),
+                          _createTextVNode(" ⚠ " + _toDisplayString(_ctx.t('This target has {hosts} addresses but the kernel ARP table holds {gc3}. The sweep still works, but the kernel will log overflow warnings. To avoid that, an administrator can run:', { hosts: _ctx.advice.hosts, gc3: _ctx.advice.gc3 })) + " ", 1 /* TEXT */),
                           _createElementVNode("code", null, _toDisplayString(_ctx.advice.advice), 1 /* TEXT */)
                         ]))
                       : _createCommentVNode("v-if", true)
@@ -5075,7 +5075,7 @@ return function render(_ctx, _cache) {
                 ]),
                 (_ctx.status.neighbourLimits)
                   ? (_openBlock(), _createElementBlock("div", _hoisted_632, [
-                      _createElementVNode("span", null, _toDisplayString(_ctx.t('Neighbour table')), 1 /* TEXT */),
+                      _createElementVNode("span", null, _toDisplayString(_ctx.t('ARP table')), 1 /* TEXT */),
                       _createElementVNode("code", null, _toDisplayString(_ctx.status.neighbourCount) + " / " + _toDisplayString(_ctx.status.neighbourLimits.gc3), 1 /* TEXT */)
                     ]))
                   : _createCommentVNode("v-if", true),
@@ -5116,7 +5116,7 @@ return function render(_ctx, _cache) {
                               _createElementVNode("code", null, _toDisplayString(_ctx.serverResult.resolvers.join(', ')), 1 /* TEXT */)
                             ]),
                             _createElementVNode("div", null, [
-                              _createElementVNode("span", null, _toDisplayString(_ctx.t('Neighbour entries')), 1 /* TEXT */),
+                              _createElementVNode("span", null, _toDisplayString(_ctx.t('ARP entries')), 1 /* TEXT */),
                               _createElementVNode("code", null, _toDisplayString(_ctx.serverResult.neighbours), 1 /* TEXT */)
                             ])
                           ]),

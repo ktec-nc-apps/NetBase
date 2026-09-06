@@ -383,14 +383,14 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
                 </select>
               </label>
               <label :title="t('Asks the DNS server what name it has on record for each address.')"><input type="checkbox" v-model="opts.rdns"> {{ t('Reverse DNS') }}</label>
-              <label :title="t('Skips the sweep and lists only the devices this server has already spoken to. It answers at once, but finds nothing new.')"><input type="checkbox" v-model="opts.arpOnly"> {{ t('Read neighbour table only (instant)') }}</label>
+              <label :title="t('Skips the sweep and lists only the devices this server has already spoken to. It answers at once, but finds nothing new.')"><input type="checkbox" v-model="opts.arpOnly"> {{ t('Read ARP table only (instant)') }}</label>
             </div>
             <div class="progress" v-if="scan">
               <div class="bar"><div class="fill" :style="{width: scan.percent + '%'}"></div></div>
               <div class="progress-text"><span>{{ progressText(scan) }}</span><span class="spacer"></span><span>{{ scan.percent }}%</span></div>
             </div>
             <p class="hint" v-if="advice && !advice.ok">
-              ⚠ {{ t('This target has {hosts} addresses but the kernel neighbour table holds {gc3}. The sweep still works, but the kernel will log overflow warnings. To avoid that, an administrator can run:', { hosts: advice.hosts, gc3: advice.gc3 }) }}
+              ⚠ {{ t('This target has {hosts} addresses but the kernel ARP table holds {gc3}. The sweep still works, but the kernel will log overflow warnings. To avoid that, an administrator can run:', { hosts: advice.hosts, gc3: advice.gc3 }) }}
               <code>{{ advice.advice }}</code>
             </p>
           </div>
@@ -1358,7 +1358,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
             <div v-if="requirements && requirements.distro"><span>{{ t('System') }}</span><code>{{ requirements.distro }}</code></div>
             <div v-if="requirements && requirements.phpVersion"><span>PHP</span><code>{{ requirements.phpVersion }}<span v-if="requirements.phpUser" class="dim"> ({{ requirements.phpUser }})</span></code></div>
             <div><span>{{ t('Vendor database') }}</span><code>{{ t('{n} IEEE prefixes', {n: status.ouiEntries}) }}</code></div>
-            <div v-if="status.neighbourLimits"><span>{{ t('Neighbour table') }}</span><code>{{ status.neighbourCount }} / {{ status.neighbourLimits.gc3 }}</code></div>
+            <div v-if="status.neighbourLimits"><span>{{ t('ARP table') }}</span><code>{{ status.neighbourCount }} / {{ status.neighbourLimits.gc3 }}</code></div>
             <div v-if="status.defaultRoute && status.defaultRoute.gateway"><span>{{ t('Default gateway') }}</span><code>{{ status.defaultRoute.gateway }} ({{ status.defaultRoute.interface }})</code></div>
             <div v-for="tgt in (status.targets || [])" :key="tgt.cidr"><span>{{ t('Local network') }}</span><code>{{ tgt.cidr }} <span class="dim">{{ tgt.interface }}</span></code></div>
           </div>
@@ -1370,7 +1370,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
                 <div><span>{{ t('Host name') }}</span><code>{{ serverResult.hostname }}</code></div>
                 <div><span>{{ t('Default gateway') }}</span><code>{{ serverResult.defaultRoute.gateway }} ({{ serverResult.defaultRoute.interface }})</code></div>
                 <div><span>{{ t('Resolvers') }}</span><code>{{ serverResult.resolvers.join(', ') }}</code></div>
-                <div><span>{{ t('Neighbour entries') }}</span><code>{{ serverResult.neighbours }}</code></div>
+                <div><span>{{ t('ARP entries') }}</span><code>{{ serverResult.neighbours }}</code></div>
               </div>
               <table class="grid compact">
                 <thead><tr><th>{{ t('Interface') }}</th><th>{{ t('State') }}</th><th>{{ t('MAC address') }}</th><th>{{ t('Addresses') }}</th><th>MTU</th></tr></thead>

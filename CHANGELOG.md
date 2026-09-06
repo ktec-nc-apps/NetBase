@@ -2,6 +2,15 @@
 
 All notable changes to NetBase are documented here.
 
+## 0.3.18 — 2026-09-06
+
+### Changed
+
+- **It is called the ARP table.** "Neighbour table" is the kernel's own word and
+  covers IPv4 ARP and IPv6 NDP together; NetBase reads `/proc/net/arp` and the
+  IPv4 limits, and nothing else, so the general word was only ever a longer way
+  of saying ARP. Renamed in all twenty languages.
+
 ## 0.3.17 — 2026-09-06
 
 ### Changed
