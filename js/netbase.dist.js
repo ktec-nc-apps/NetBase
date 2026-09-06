@@ -7189,17 +7189,28 @@ return function render(_ctx, _cache) {
         const host = device.ip.includes(':') ? '[' + device.ip + ']' : device.ip;
         return scheme + '://' + host + (port === 80 || port === 443 ? '' : ':' + port);
       },
+      /**
+       * Whether a port number is one NetBase will offer to act on.
+       *
+       * The common ports and no others. A deeper scan turns up numbers whose
+       * purpose nobody knows — 22401 on a router here — and guessing that they
+       * are web pages made every one of them a link that mostly led nowhere.
+       * A number NetBase cannot vouch for is printed as a number.
+       */
+      mainPort(port) {
+        return (this.status.fingerprintPorts || []).indexOf(Number(port)) >= 0;
+      },
       portLink(device, port) {
         // Without the right to open a device page, the number is just a number:
         // better plain text than a link that can only fail.
-        const href = this.allowed('preview') ? this.webUrl(device, port) : null;
+        const href = this.allowed('preview') && this.mainPort(port) ? this.webUrl(device, port) : null;
         if (!href) return null;
         return { href, title: T('Open {url} in a window, through this server', { url: href }) };
       },
       /** Ports NetBase can act on itself, rather than hand to the browser. */
       portTool(device, port) {
         const tool = TOOL_PORTS[port];
-        if (!tool || !device.ip) return null;
+        if (!tool || !device.ip || !this.mainPort(port)) return null;
         if (!this.allowed(tool.tab === 'files' ? 'files' : tool.tab)) return null;
         return { ...tool, title: T(tool.label) };
       },

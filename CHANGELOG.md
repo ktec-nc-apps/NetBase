@@ -2,6 +2,17 @@
 
 All notable changes to NetBase are documented here.
 
+## 0.3.15 — 2026-09-06
+
+### Changed
+
+- **Only the common ports are links in the device list.** A deeper scan turns
+  up numbers whose purpose nobody knows — 22401 on a router here — and the list
+  treated anything not known to be something else as a web page worth trying,
+  which made most of them links that led nowhere. A number NetBase cannot vouch
+  for is now printed as a number. A device page on an unusual port can still be
+  opened by typing it into the device window.
+
 ## 0.3.14 — 2026-09-06
 
 ### Changed
