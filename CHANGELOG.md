@@ -2,6 +2,26 @@
 
 All notable changes to NetBase are documented here.
 
+## 0.4.4 — 2026-09-06
+
+### Fixed
+
+- **A device that answers and then stops no longer holds the window empty for
+  thirty seconds.** An NTT phone system at one site sends its 403 in under a
+  second and then keeps the connection open without ever finishing the body;
+  the proxy waited out its whole timeout for a page that was never coming. A
+  connection carrying nothing at all for ten seconds is now treated as
+  finished, and the window says the device answered and then stopped rather
+  than showing nothing. A stream that is genuinely working — a camera, a
+  download — is carrying bytes and is never caught by this.
+
+### Changed
+
+- **The wait for a port to answer says what it buys.** The seconds alone meant
+  nothing without having thought about what a silent port costs, and the "up to
+  N per device" beside them was arithmetic nobody asked for. Now: quick and
+  misses slow devices, the usual, or finds the slowest and takes longest.
+
 ## 0.4.3 — 2026-09-06
 
 ### Added

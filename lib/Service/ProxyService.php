@@ -7,6 +7,7 @@ namespace OCA\NetBase\Service;
 use OCA\NetBase\Db\DeviceMapper;
 use OCP\AppFramework\Http\IOutput;
 use OCP\IConfig;
+use OCP\IL10N;
 use OCP\Security\ICrypto;
 use Psr\Log\LoggerInterface;
 
@@ -28,6 +29,9 @@ class ProxyService {
 
 	private const MAX_BYTES = 16777216;
 	private const TIMEOUT = 30;
+
+	/** Seconds of a connection carrying nothing at all before it is treated as done. */
+	private const STALLED = 10;
 	/** Writing a firmware image takes as long as it takes. */
 	private const UPLOAD_TIMEOUT = 600;
 
@@ -45,6 +49,7 @@ class ProxyService {
 		private ToolService $tools,
 		private ICrypto $crypto,
 		private IConfig $config,
+		private IL10N $l,
 		private LoggerInterface $logger,
 	) {
 	}
@@ -261,6 +266,17 @@ class ProxyService {
 		} elseif ($post !== []) {
 			curl_setopt($curl, CURLOPT_POSTFIELDS, http_build_query($post));
 		}
+		if ($files === []) {
+			// Some devices answer and then simply stop: an NTT phone system here
+			// sends its 403 in under a second and holds the connection open
+			// until the timeout, so the window sat empty for thirty seconds
+			// waiting for a body that was never coming. A connection that has
+			// carried nothing for ten seconds has finished, whatever it says.
+			// A stream that is genuinely working — a camera, a download — is
+			// carrying bytes and is never caught by this.
+			curl_setopt($curl, CURLOPT_LOW_SPEED_LIMIT, 1);
+			curl_setopt($curl, CURLOPT_LOW_SPEED_TIME, self::STALLED);
+		}
 		if ($method === 'HEAD') {
 			curl_setopt($curl, CURLOPT_NOBODY, true);
 		} elseif ($method !== 'GET') {
@@ -277,7 +293,12 @@ class ProxyService {
 			return ['status' => $status, 'headers' => [], 'body' => '', 'html' => false, 'needsPassword' => false, 'realm' => '', 'streamed' => true];
 		}
 		if ($ok === false && $buffer === '') {
-			throw new \RuntimeException($error !== '' ? $error : 'The device did not answer');
+			// Say which of the two it was: nothing at all, or something that
+			// started and then stopped. They are different faults.
+			$why = $status > 0
+				? $this->l->t('The device answered %d and then stopped sending, so there is no page to show.', [$status])
+				: ($error !== '' ? $error : $this->l->t('The device did not answer'));
+			throw new \RuntimeException($why);
 		}
 		$body = $buffer;
 

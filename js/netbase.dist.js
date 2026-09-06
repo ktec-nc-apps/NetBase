@@ -2208,7 +2208,7 @@ return function render(_ctx, _cache) {
                           _createElementVNode("label", {
                             title: _ctx.t('How long to wait for a port to answer. A port that refuses is instant whatever this is; the wait only applies to one that says nothing at all, which is what a firewall and a sleeping device both look like. Waiting less is quicker and misses more.')
                           }, [
-                            _createElementVNode("span", _hoisted_68, _toDisplayString(_ctx.t('Wait per port')), 1 /* TEXT */),
+                            _createElementVNode("span", _hoisted_68, _toDisplayString(_ctx.t('Wait for an answer')), 1 /* TEXT */),
                             _withDirectives(_createElementVNode("select", {
                               "onUpdate:modelValue": _cache[26] || (_cache[26] = $event => ((_ctx.opts.portWait) = $event))
                             }, [
@@ -6904,11 +6904,13 @@ return function render(_ctx, _cache) {
        * per device — and with the whole range selected, it is minutes.
        */
       waitLabel(wait) {
+        // The number on its own says nothing to anyone who has not thought
+        // about what a silent port costs. What it buys and what it costs does.
         const seconds = T('{n} s', { n: wait });
-        const ports = this.portCount(this.opts.portScan);
-        if (!ports) return seconds;
-        const worst = Math.ceil(ports / 512) * wait;
-        return T('{wait} (up to {time} per device)', { wait: seconds, time: this.duration(worst) });
+        const waits = this.portWaits;
+        if (wait === waits[0]) return T('{wait} — quick, misses slow devices', { wait: seconds });
+        if (wait === waits[waits.length - 1]) return T('{wait} — finds the slowest, takes longest', { wait: seconds });
+        return T('{wait} — the usual', { wait: seconds });
       },
       /** Seconds, said the way a person would say them. */
       duration(seconds) {
