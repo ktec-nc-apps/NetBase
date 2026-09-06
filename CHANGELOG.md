@@ -2,6 +2,39 @@
 
 All notable changes to NetBase are documented here.
 
+## 0.4.5 — 2026-09-06
+
+### Fixed
+
+Five faults in the device window, all found by trying to sign in to a camera at
+a customer site rather than only checking that its page appeared.
+
+- **A relative address that climbs with `..` no longer eats the ticket.** On the
+  device the climb stops at the root; under the proxy the root is several
+  segments deeper, so `../script/inputrestriction.js` from `/login.html`
+  arrived with the ticket gone and came back 403. The camera's login page then
+  ran without a file it needed and threw `input_edit_restriction is not
+  defined`. Climbs are now resolved against the page and clamped where the
+  device would clamp them — in the markup, in scripts, and in what
+  `document.write` writes.
+- **A POST with no content type is no longer thrown away.** Device firmware
+  routinely omits it, and PHP will not parse a body it has not been told the
+  shape of; taking it as a form left the device receiving an empty request. The
+  camera's sign-in went 403. If nothing was parsed and something was sent, what
+  was sent is what goes on.
+- **Nothing but a page gets the shim.** A device also answers with things read
+  by script rather than shown — the camera's sign-in returns an empty body with
+  a 200 — and putting our script into that made the answer unrecognisable to
+  the page that asked for it.
+- **The cookies a device's own page sets now reach the device.** They live on
+  this server's name alongside Nextcloud's, so Nextcloud's are left out by
+  name; the session above all never leaves this origin.
+- **The request says which of the device's own pages it came from.** Nextcloud
+  sends `no-referrer` on everything, which is right for Nextcloud and wrong
+  here: this camera turns away every page after the sign-in without it. The
+  window now says same-origin — the referer never leaves this server — and the
+  proxy rewrites it into the device's own address before sending it on.
+
 ## 0.4.4 — 2026-09-06
 
 ### Fixed

@@ -66,6 +66,19 @@ class ProxyController extends Controller {
 			// A page that talks to its device in JSON, or in anything else of its
 			// own devising, is carried through untouched rather than rebuilt.
 			$body = $method !== 'GET' && !$form ? (string)file_get_contents('php://input') : '';
+			// An XHR that sets no content type at all is common in device
+			// firmware — a camera here signs in with one — and PHP will not
+			// parse a body it has not been told the shape of. Taking it as a
+			// form then threw the sign-in away and the device saw an empty
+			// request. If nothing was parsed and something was sent, what was
+			// sent is what goes on.
+			if ($method !== 'GET' && $form && $post === []) {
+				$raw = (string)file_get_contents('php://input');
+				if ($raw !== '') {
+					$body = $raw;
+					$form = false;
+				}
+			}
 
 			if (isset($post['__netbase_user'])) {
 				// The person answered the device's request for a password. It is
@@ -147,6 +160,13 @@ class ProxyController extends Controller {
 		// The window has no origin of its own, so anything it asks for itself
 		// counts as cross-origin; the ticket, not the origin, is what decides.
 		$output->setHeader('Access-Control-Allow-Origin: *');
+		// Nextcloud sends no-referrer on everything it serves, which is right
+		// for Nextcloud and wrong here: a camera at one site turns every page
+		// after the sign-in away unless the request says which of its own pages
+		// it came from. Same-origin keeps the referer inside this server — it
+		// never leaves for anywhere else — and the proxy rewrites it into the
+		// device's own address before sending it on.
+		$output->setHeader('Referrer-Policy: same-origin');
 		$output->setOutput((string)$result['body']);
 	}
 
@@ -160,7 +180,44 @@ class ProxyController extends Controller {
 				$headers[$name] = $value;
 			}
 		}
+		$page = $this->pageCookies();
+		if ($page !== '') {
+			$headers['cookie'] = $page;
+		}
+		// Where the request came from, said in the device's own terms. A camera
+		// here refuses every page after the sign-in unless it is told, and the
+		// browser's own Referer names this server, which means nothing to it
+		// and gives away where the window lives. The proxy service turns this
+		// into the device's address before sending it.
+		$referer = (string)$this->request->getHeader('Referer');
+		if ($referer !== '') {
+			$headers['referer'] = $referer;
+		}
 		return $headers;
+	}
+
+	/**
+	 * The cookies the device's own page set, and only those.
+	 *
+	 * A camera here signs in and then remembers it in a cookie the page writes
+	 * itself, which the device reads back on the next request; without it the
+	 * device sent the window straight back to the login screen. Those cookies
+	 * live on this server's name, alongside Nextcloud's, so the ones belonging
+	 * to Nextcloud are left out by name — the session above all, which must
+	 * never leave this origin.
+	 */
+	private function pageCookies(): string {
+		$mine = [];
+		foreach ($_COOKIE as $name => $value) {
+			$lower = strtolower((string)$name);
+			if (str_starts_with($lower, 'oc') || str_starts_with($lower, 'nc_')
+				|| str_starts_with($lower, '__host-') || str_starts_with($lower, '__secure-')
+				|| $lower === 'cookie_test' || !is_string($value)) {
+				continue;
+			}
+			$mine[] = $name . '=' . $value;
+		}
+		return implode('; ', $mine);
 	}
 
 	/**

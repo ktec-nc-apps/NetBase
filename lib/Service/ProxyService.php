@@ -119,7 +119,12 @@ class ProxyService {
 	private const PASS_REQUEST_HEADERS = [
 		'accept', 'accept-language', 'range', 'if-none-match', 'if-modified-since',
 		'x-requested-with', 'content-type',
+		// Only what the device's own page set: the controller has already taken
+		// Nextcloud's cookies out, and the session above all never leaves here.
+		'cookie',
 	];
+
+	/** The referer is not passed through as it stands; it is rewritten first. */
 
 	/**
 	 * Fetch one resource and hand it back for rewriting.
@@ -225,6 +230,18 @@ class ProxyService {
 				$send[] = ucfirst($name) . ': ' . $value;
 			}
 		}
+		// Said in the device's own terms. The browser's Referer names this
+		// server and the ticket, which means nothing to the device and tells
+		// it where the window lives; what it is owed is the page on itself
+		// that the request came from. A camera at one site turns every page
+		// after the sign-in away without it.
+		$referer = (string)($given['referer'] ?? '');
+		if ($referer !== '') {
+			$mark = strpos($referer, $prefix);
+			if ($mark !== false) {
+				$send[] = 'Referer: ' . $base . substr($referer, $mark + strlen($prefix));
+			}
+		}
 		if ($authorization !== '') {
 			// A device that asks the browser directly is answered directly.
 			$send[] = 'Authorization: ' . $authorization;
@@ -235,6 +252,9 @@ class ProxyService {
 		if ($send !== []) {
 			curl_setopt($curl, CURLOPT_HTTPHEADER, $send);
 		}
+		// The device's own cookies, kept between requests because the browser
+		// never sees them: they are stripped from the answer so they cannot be
+		// set on Nextcloud's name.
 		foreach ($this->loadCookies($userId, $base) as $cookie) {
 			curl_setopt($curl, CURLOPT_COOKIELIST, $cookie);
 		}
@@ -603,6 +623,22 @@ class ProxyService {
 			$body,
 		) ?? $body;
 
+		// A relative address that climbs out of the window. On the device the
+		// climb stops at the root; here it eats the ticket and the request
+		// arrives as somebody else's. A camera at one site asks for
+		// ../script/inputrestriction.js from /login.html, and the page then
+		// runs without the file it needed. Resolved here and clamped where the
+		// device would clamp it — before the browser ever sees it, because
+		// correcting the DOM afterwards is too late to stop the request.
+		$body = preg_replace_callback(
+			'#\b(href|src|action|data-src|poster)\s*=\s*(["\'])(\.\.[^"\']*)\2#i',
+			function (array $m) use ($prefix, $path): string {
+				$climbed = $this->resolveAgainst($path, $m[3]);
+				return $m[1] . '=' . $m[2] . ($climbed === null ? $m[3] : $prefix . $climbed) . $m[2];
+			},
+			$body,
+		) ?? $body;
+
 		// Absolute addresses: the ones on this device, and the ones on another
 		// device this server can also reach — a controller linking to what it
 		// manages. Anything further afield is left exactly as it is.
@@ -650,7 +686,21 @@ class ProxyService {
 		// page runs, so the page is given a small shim that redirects those the
 		// same way. Without it, a device interface that fetches its own data
 		// would reach for Nextcloud's root instead.
-		$shim = $this->shim($prefix);
+		// Only a page gets the shim. A device also answers with things that are
+		// not pages and are read by script rather than shown: a camera here
+		// signs in and gets back an empty body with a 200, and putting our
+		// script into that made the answer something the page did not
+		// recognise, so it stayed on the login screen having just been let in.
+		if (preg_match('#<(?:!doctype\s+html|html|head|body|frameset)\b#i', $body) !== 1) {
+			return $body;
+		}
+
+		// Said in the page itself as well as in the header, because the header
+		// on the response that created the document does not always win: a
+		// camera here needs the request to say which of its own pages it came
+		// from, and Nextcloud's no-referrer left the device turning every page
+		// after the sign-in away. Same-origin keeps it inside this server.
+		$shim = '<meta name="referrer" content="same-origin">' . $this->shim($prefix);
 		// After the character set declaration, so it stays where the browser
 		// looks for it, and before anything the page runs itself.
 		if (preg_match('#<meta[^>]*charset[^>]*>#i', $body, $m, PREG_OFFSET_CAPTURE) === 1) {
@@ -767,6 +817,24 @@ class ProxyService {
 		if (typeof u !== 'string' || !u) { return u; }
 		if (u.lastIndexOf(P, 0) === 0) { return u; }
 		if (u.charAt(0) === '/' && u.charAt(1) !== '/') { return P + u; }
+		// A climb with ".." stops at the device's root on the device itself.
+		// Here the root is several segments deeper, so left alone the climb
+		// eats the ticket. Resolved against the page and clamped, as a browser
+		// would clamp it against the root.
+		if (u.indexOf('..') >= 0 && u.charAt(0) !== '/' && !/^[a-z][a-z0-9+.-]*:/i.test(u)) {
+			var tail = '';
+			var mark = u.search(/[?#]/);
+			var rel = u;
+			if (mark >= 0) { tail = u.slice(mark); rel = u.slice(0, mark); }
+			var here = window.__nbPath().replace(/^\/+|\/+$/g, '').split('/');
+			here.pop();
+			rel.split('/').forEach(function (step) {
+				if (step === '' || step === '.') { return; }
+				if (step === '..') { here.pop(); return; }
+				here.push(step);
+			});
+			return P + '/' + here.join('/') + tail;
+		}
 		// A page that builds its own addresses out of where it thinks it is —
 		// location.origin, location.host — now says this server, and would walk
 		// straight out of the window without this.
@@ -785,7 +853,14 @@ class ProxyService {
 	var escapes = { _top: 1, _parent: 1, _blank: 1 };
 	var W = __WINDOW__;
 	function fixMarkup(html) {
-		return String(html).replace(/(\b(?:src|href|action|data|poster)\s*=\s*["'])\/(?!\/)/gi, '$1' + P + '/');
+		return String(html)
+			.replace(/(\b(?:src|href|action|data|poster)\s*=\s*["'])\/(?!\/)/gi, '$1' + P + '/')
+			// A camera's login page writes its own <script src="../script/…">
+			// with document.write, and that climb eats the ticket exactly as it
+			// would in the markup. Same treatment, same clamp.
+			.replace(/(\b(?:src|href|action|data|poster)\s*=\s*["'])(\.\.[^"'>]*)/gi, function (all, head, u) {
+				return head + fix(u);
+			});
 	}
 	var of = window.fetch;
 	if (of) {
@@ -1006,12 +1081,52 @@ JS;
 		return preg_replace('#url\(\s*(["\']?)/(?!/)#i', 'url($1' . $prefix . '/', $body) ?? $body;
 	}
 
+	/**
+	 * A relative address, worked out against the page it appears on, with any
+	 * climb above the device's root cut off exactly where a browser cuts it.
+	 *
+	 * Returns the device-absolute path, or null when there was nothing to do.
+	 */
+	private function resolveAgainst(string $path, string $url): ?string {
+		[$rel, $tail] = array_pad(preg_split('/(?=[?#])/', $url, 2) ?: [$url], 2, '');
+		if ($rel === '' || str_contains($rel, '..') === false) {
+			return null;
+		}
+		// The directory the page sits in.
+		$here = explode('/', trim($path, '/'));
+		array_pop($here);
+		foreach (explode('/', $rel) as $step) {
+			if ($step === '' || $step === '.') {
+				continue;
+			}
+			if ($step === '..') {
+				array_pop($here);        // at the root this does nothing, which is the point
+				continue;
+			}
+			$here[] = $step;
+		}
+		return '/' . implode('/', $here) . $tail;
+	}
+
 	private function rewriteUrl(string $url, string $base, string $prefix, string $path, string $userId = ''): string {
 		if (str_starts_with($url, $base)) {
 			return $prefix . substr($url, strlen($base));
 		}
 		if (str_starts_with($url, '/')) {
 			return $prefix . $url;
+		}
+		// A relative address that climbs with "..". On the device it stops at
+		// the root — a browser will not go above it — but under the proxy the
+		// root is several segments deeper, so the climb eats the ticket
+		// instead. A camera here asks for ../script/inputrestriction.js from
+		// /login.html and the request arrives with the ticket gone. So a climb
+		// is resolved here, against where the page is, and clamped where the
+		// device would clamp it.
+		if (str_contains($url, '..')) {
+			$climbed = $this->resolveAgainst($path, $url);
+			if ($climbed !== null) {
+				return $prefix . $climbed;
+			}
 		}
 		// A device that sends you to another one — a controller to the access
 		// point it manages, a page to the device's own name rather than its
