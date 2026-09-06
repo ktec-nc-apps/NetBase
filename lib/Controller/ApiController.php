@@ -9,6 +9,7 @@ use OCA\NetBase\Db\DeviceMapper;
 use OCA\NetBase\Db\ScanMapper;
 use OCA\NetBase\Service\BenchmarkService;
 use OCA\NetBase\Service\DeviceProbeService;
+use OCA\NetBase\Service\TelnetService;
 use OCA\NetBase\Service\BrowserService;
 use OCA\NetBase\Service\ProxyService;
 use OCA\NetBase\Service\DiscoveryService;
@@ -54,6 +55,7 @@ class ApiController extends Controller {
 		private DnsService $dnsService,
 		private BrowserService $browser,
 		private DeviceProbeService $deviceProbe,
+		private TelnetService $telnet,
 		private ProxyService $proxy,
 		private IURLGenerator $urls,
 		private OuiService $oui,
@@ -675,6 +677,18 @@ class ApiController extends Controller {
 	#[UserRateLimit(limit: 240, period: 60)]
 	public function sshShell(string $command, int $id = 0, string $cwd = '', array $connection = []): JSONResponse {
 		return $this->guard(fn () => $this->ssh->shell($this->endpointFor($id, $connection), $command, $cwd), 'sshexec');
+	}
+
+	/**
+	 * One line typed at a device over Telnet.
+	 *
+	 * Guarded by the same right as running a command over SSH: it is the same
+	 * act, on equipment too old to offer anything better.
+	 */
+	#[NoAdminRequired]
+	#[UserRateLimit(limit: 240, period: 60)]
+	public function telnetRun(string $host, int $port = 23, string $user = '', string $password = '', string $command = ''): JSONResponse {
+		return $this->guard(fn () => $this->telnet->run($host, $port, $user, $password, $command), 'sshexec');
 	}
 
 	#[NoAdminRequired]

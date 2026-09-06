@@ -120,6 +120,8 @@ return [
 		// service probes
 		['name' => 'api#probeSsh', 'url' => '/api/probe/ssh', 'verb' => 'GET'],
 		['name' => 'api#probeTelnet', 'url' => '/api/probe/telnet', 'verb' => 'GET'],
+		// a line typed at a device over telnet
+		['name' => 'api#telnetRun', 'url' => '/api/telnet/run', 'verb' => 'POST'],
 		['name' => 'api#probeNtp', 'url' => '/api/probe/ntp', 'verb' => 'GET'],
 
 		// NETBASE-STORE-REMOVED: nmap

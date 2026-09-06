@@ -2,6 +2,44 @@
 
 All notable changes to NetBase are documented here.
 
+## 0.4.3 — 2026-09-06
+
+### Added
+
+- **A right-click on a device offers the ways into it** — HTTP, HTTPS, FTP, SSH
+  and Telnet — built from the ports it actually has open, with Properties at the
+  bottom for the panel a left-click opens. Nothing speculative is listed: a port
+  that is not open is not offered, and a web page only for a port NetBase knows
+  serves one or has been shown to.
+
+### Changed
+
+- **Connecting from the SSH page opens a window**, the movable kind, rather than
+  a panel filling the screen that had to be closed to look at anything else.
+  Several can stand open at once, one per device. The Telnet window can be
+  opened from there too.
+- **The SSH page says which boxes belong together.** It does two jobs — looking
+  at a server, which needs nothing, and working on one, which needs an account —
+  and ran them together in five cards with three separate host fields. Each job
+  now has a heading, and the host typed at the top can be carried down to the
+  sign-in with a click, so the two are visibly the same machine.
+
+## 0.4.2 — 2026-09-06
+
+### Added
+
+- **SSH and Telnet open in a window**, the same movable, resizable frame a
+  device's web page uses, so several can stand open beside the device list at
+  once. Port 22 and port 23 in the device details open one instead of changing
+  tab — which used to close the device and leave nowhere to go back to.
+- **Telnet can now be used, not merely diagnosed.** It had a probe that read
+  the banner and warned about the plain text, and nothing that would let anyone
+  type at a switch. The window signs in, sends a line, reads the answer and
+  hangs up — a connection per line, because PHP cannot hold one open between
+  requests, which is also why nothing is left open on the device in between.
+  Option negotiation is refused throughout, so the device keeps talking without
+  our pretending to be a terminal.
+
 ## 0.4.1 — 2026-09-06
 
 ### Fixed

@@ -479,6 +479,48 @@
   padding: 4px 0; min-height: 0; border-radius: 0;
 }
 #netbase-root .term-input input:focus { outline: none; }
+/* A terminal in a window rather than in a modal: the same frame as a device
+   window, so it can be moved aside while the list is read. */
+#netbase-root .devwin.term-win { display: flex; flex-direction: column; overflow: hidden; }
+#netbase-root .devwin.term-win .term-body { flex: 1 1 auto; min-height: 0; }
+#netbase-root .devwin.term-win .term-input { flex: 0 0 auto; }
+/* Telnet asks who you are before it will say anything useful. */
+#netbase-root .term-signin {
+  display: flex; align-items: center; flex-wrap: wrap; gap: 8px;
+  padding: 10px 14px; background: var(--surface-2); border-bottom: 1px solid var(--border);
+}
+#netbase-root .term-signin input { width: auto; flex: 0 1 12em; min-height: 34px; padding: 6px 10px; font-size: 13px; margin: 0; }
+
+/* A heading over a group of cards, so it is clear which of them belong
+   together and what the group is for. */
+#netbase-root .section-head {
+  font-size: 15px; font-weight: 700; margin: 22px 0 10px; display: flex;
+  align-items: baseline; gap: 10px;
+}
+#netbase-root .section-head:first-child { margin-top: 4px; }
+#netbase-root .section-head .dim { font-size: 12.5px; font-weight: 500; }
+
+/* What can be done to the device under the pointer. */
+#netbase-root .row-menu-veil { position: fixed; inset: 0; z-index: 4000; }
+#netbase-root .row-menu {
+  position: fixed; min-width: 240px; margin: 0; padding: 6px 0; list-style: none;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+  box-shadow: 0 12px 32px rgba(0,0,0,.22);
+}
+#netbase-root .row-menu-head {
+  padding: 6px 14px 8px; font-size: 12px; font-weight: 700; color: var(--muted);
+  border-bottom: 1px solid var(--border); margin-bottom: 4px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+#netbase-root .row-menu-item {
+  display: flex; align-items: center; gap: 10px; width: 100%; text-align: left;
+  background: none; border: 0; border-radius: 0; padding: 7px 14px; font-size: 13.5px;
+  color: var(--text); font-weight: 500; min-height: 0; white-space: nowrap;
+}
+#netbase-root .row-menu-item:hover { background: var(--surface-2); color: var(--primary); }
+#netbase-root .row-menu-rule { height: 1px; background: var(--border); margin: 5px 0; }
+#netbase-root .row-menu-none { padding: 7px 14px; font-size: 13px; color: var(--muted); }
+
 #netbase-root .with-button { display: flex; gap: 8px; align-items: center; }
 #netbase-root .with-button input { flex: 1 1 auto; }
 

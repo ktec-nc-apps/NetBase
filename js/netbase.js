@@ -427,7 +427,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
               </tr>
             </thead>
             <tbody>
-              <tr v-for="d in shownDevices" :key="d.id" @click="openDevice(d)" :class="{offline: !d.online}">
+              <tr v-for="d in shownDevices" :key="d.id" @click="openDevice(d)" @contextmenu.prevent="openRowMenu(d, $event)" :class="{offline: !d.online}">
                 <td class="c-dot"><span class="dot" :class="{on: d.online}" :title="d.online ? t('Online') : t('Not seen in the last sweep')"></span></td>
                 <td class="c-name"><span class="ic">{{ icon(d) }}</span><span class="nm">{{ d.name }}</span><span class="badge" v-if="d.label">{{ t('named') }}</span></td>
                 <td class="mono">{{ d.ip }}</td>
@@ -1252,6 +1252,12 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
 
         <!-- ============ SSH / Telnet / NTP ============ -->
         <section v-if="tab==='ssh'">
+          <!-- The page does two different jobs and used to run them together:
+               looking at a server, which needs nothing, and working on it,
+               which needs an account. Each is now under its own heading, and
+               the host typed above is carried down so the two are visibly the
+               same machine. -->
+          <h2 class="section-head">{{ t('Look at a server') }} <span class="dim">{{ t('no account needed') }}</span></h2>
           <div class="card tool-card">
             <div class="tool-row">
               <select class="pick" :title="t('Pick one NetBase already knows')" @change="pickInto('sshHost', $event)">
@@ -1264,6 +1270,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
               <input v-model.number="sshPort" type="number" class="tiny" min="1" max="65535">
               <button class="btn primary" :disabled="busy.ssh" @click="runSsh">{{ t('Inspect SSH') }}</button>
               <button class="btn" :disabled="busy.telnet" @click="runTelnet">{{ t('Try Telnet') }}</button>
+              <button class="btn" :disabled="!sshHost" @click="openTerminal('telnet', sshHost, 23)">🖳 {{ t('Open a Telnet window') }}</button>
             </div>
             <label class="opt"><input type="checkbox" v-model="sshAuthMethods"> {{ t('Also ask which sign-in methods are accepted (leaves one failed attempt in the server log)') }}</label>
           </div>
@@ -1297,9 +1304,14 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
             <pre class="raw" v-if="telnetResult.banner">{{ telnetResult.banner }}</pre>
           </div>
 
+          <h2 class="section-head" v-if="allowed('sshexec')">{{ t('Work on a server') }} <span class="dim">{{ t('signs in, so it needs an account') }}</span></h2>
           <div class="card tool-card" v-if="allowed('sshexec')">
-            <h3>{{ t('Enter the connection details') }}</h3>
+            <h3>{{ t('Sign in with details typed here') }}</h3>
             <p class="dim">{{ t('Nothing has to be saved first. Fill this in and connect; save it to the list only if you want it again.') }}</p>
+            <p class="hint" v-if="sshHost && sshAdhoc.host !== sshHost">
+              {{ t('Looking at {host} above?', { host: sshHost }) }}
+              <button class="btn xs" @click="sshAdhoc.host = sshHost">{{ t('Use it here') }}</button>
+            </p>
             <div class="tool-row">
               <input v-model="sshAdhoc.host" class="grow" placeholder="server.example.com" @keyup.enter="quickConsole">
               <input v-model.number="sshAdhoc.port" type="number" class="tiny" min="1" max="65535">
@@ -1322,7 +1334,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
           </div>
 
           <div class="card tool-card" v-if="allowed('sshexec')">
-            <h3>{{ t('Run a command over SSH') }}</h3>
+            <h3>{{ t('Use a connection already saved') }}</h3>
             <p class="dim">{{ t('Signs in to a saved SSH connection with its password or private key. Run a single command, pick a preset, or open a console that keeps its working directory from one line to the next.') }}</p>
             <div class="tool-row">
               <select v-model.number="sshConn" class="grow">
@@ -1558,6 +1570,72 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
       <div class="devwin-grip" @mousedown.prevent.stop="startResize(w, $event)"></div>
     </div>
 
+    <!-- ============ what can be done to the device under the pointer ============ -->
+    <!-- A right-click asks the obvious question — how do I get into this thing —
+         and the answer is already known: whichever of its ports are open. -->
+    <div v-if="rowMenu.open" class="row-menu-veil" @click="rowMenu.open = false" @contextmenu.prevent="rowMenu.open = false">
+      <ul class="row-menu" :style="{ left: rowMenu.x + 'px', top: rowMenu.y + 'px' }" @click.stop>
+        <li class="row-menu-head">{{ rowMenu.device ? (rowMenu.device.name || rowMenu.device.ip) : '' }}</li>
+        <li v-for="(a,i) in rowActions(rowMenu.device)" :key="i">
+          <button class="row-menu-item" @click="rowMenu.open = false; a.run()">
+            <span class="ic">{{ a.icon }}</span>{{ a.label }}
+          </button>
+        </li>
+        <li v-if="!rowActions(rowMenu.device).length" class="row-menu-none">{{ t('No way in on the ports it has open') }}</li>
+        <li class="row-menu-rule"></li>
+        <li>
+          <button class="row-menu-item" @click="rowMenu.open = false; openDevice(rowMenu.device)">
+            <span class="ic">📋</span>{{ t('Properties') }}
+          </button>
+        </li>
+      </ul>
+    </div>
+
+    <!-- ============ terminal windows (SSH and Telnet) ============ -->
+    <!-- The same frame as a device window: moved, resized, several at once, and
+         open beside the list rather than instead of it. -->
+    <div v-for="w in terms" :key="w.id" class="devwin term-win" :class="{ dragging: !!drag }"
+         :style="{ left: w.x + 'px', top: w.y + 'px', width: w.w + 'px', height: w.h + 'px', zIndex: w.z }"
+         @mousedown="focusWindow(w)">
+      <div class="devwin-head" @mousedown.prevent="startDrag(w, $event)">
+        <span class="ic">🖳</span>
+        <strong class="nm">{{ w.kind === 'telnet' ? 'Telnet' : 'SSH' }} · {{ w.host }}</strong>
+        <span class="dim mono tiny addr">{{ w.prompt || (w.user ? w.user + '@' + w.host : w.host + ':' + w.port) }}</span>
+        <span class="spacer"></span>
+        <button class="btn xs ib" :title="t('Clear')" :aria-label="t('Clear')" @click.stop="w.lines = []">
+          <svg viewBox="0 0 24 24"><path d="M4 7h16"/><path d="M9.5 7V4.5h5V7"/><path d="M6.5 7l1 13h9l1-13"/></svg>
+        </button>
+        <button class="btn xs ib" v-if="!narrow" :title="t('Fill the screen')" :aria-label="t('Fill the screen')" @click.stop="toggleFull(w)">
+          <svg viewBox="0 0 24 24"><path d="M14.5 3.5H20.5V9.5"/><path d="M9.5 20.5H3.5V14.5"/><path d="M20.5 3.5L13.5 10.5"/><path d="M3.5 20.5L10.5 13.5"/></svg>
+        </button>
+        <button class="btn xs ib" :title="t('Close')" :aria-label="t('Close')" @click.stop="closeTerm(w)">
+          <svg viewBox="0 0 24 24"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <!-- Telnet asks who you are before it will say anything useful, and PHP
+           cannot hold the answer between requests, so it is kept here and sent
+           with every line. -->
+      <div class="term-signin" v-if="w.kind === 'telnet' && !w.signedIn">
+        <input v-model="w.user" :placeholder="t('User name')" autocomplete="off" spellcheck="false" @keyup.enter="signInTerm(w)">
+        <input v-model="w.password" type="password" :placeholder="t('Password')" autocomplete="off" @keyup.enter="signInTerm(w)">
+        <button class="btn sm primary" :disabled="w.busy" @click="signInTerm(w)">{{ w.busy ? t('Connecting…') : t('Connect') }}</button>
+        <span class="dim tiny">{{ t('Leave both empty if the device does not ask.') }}</span>
+      </div>
+      <div class="term-body" :ref="'term' + w.id">
+        <p class="dim tiny">{{ w.kind === 'telnet'
+          ? t('Each line is its own connection: it signs in, sends the line, reads the answer and hangs up. Telnet carries everything in the clear, this window included.')
+          : t('Each line runs on its own connection and the working directory is carried over, so cd, ls and tail behave as expected. Programs that need a real terminal — vi, top, an interactive password prompt — cannot run here.') }}</p>
+        <div v-for="(l,i) in w.lines" :key="i" :class="'term-line ' + l.kind"><span v-if="l.kind==='cmd'" class="term-prompt">{{ l.prompt }}</span>{{ l.text }}</div>
+        <div v-if="w.busy" class="term-line dim">…</div>
+      </div>
+      <div class="term-input" v-if="w.kind !== 'telnet' || w.signedIn">
+        <span class="term-prompt mono">{{ termPrompt(w) }}</span>
+        <input v-model="w.command" class="mono" autocomplete="off" spellcheck="false" :disabled="w.busy"
+               @keydown.enter.prevent="sendTerm(w)" @keydown.up.prevent="termHistory(w, -1)" @keydown.down.prevent="termHistory(w, 1)">
+      </div>
+      <div class="devwin-grip" @mousedown.prevent.stop="startResize(w, $event)"></div>
+    </div>
+
     <!-- ============ Nextcloud file picker ============ -->
     <div v-if="picker.open" class="drawer-backdrop centred" @click.self="picker.open=false">
       <div class="modal">
@@ -1591,32 +1669,6 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
           <span class="spacer"></span>
           <button class="btn sm" @click="picker.open=false">{{ t('Cancel') }}</button>
           <button class="btn primary" v-if="picker.foldersOnly" @click="pickerChoose(picker.path)">{{ t('Use this folder') }}</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- ============ SSH console ============ -->
-    <div v-if="term.open" class="drawer-backdrop centred" @click.self="closeConsole">
-      <div class="modal wide term-modal">
-        <div class="drawer-head">
-          <span class="ic big">🖳</span>
-          <div>
-            <strong>{{ t('SSH console') }}</strong>
-            <div class="dim mono tiny">{{ term.user }}@{{ term.host }}:{{ term.cwd || '~' }}</div>
-          </div>
-          <span class="spacer"></span>
-          <button class="btn sm" @click="term.lines = []">{{ t('Clear') }}</button>
-          <button class="btn xs ib" :title="t('Close')" :aria-label="t('Close')" @click="closeConsole"><svg viewBox="0 0 24 24"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg></button>
-        </div>
-        <div class="term-body" ref="termBody">
-          <p class="dim tiny">{{ t('Each line runs on its own connection and the working directory is carried over, so cd, ls and tail behave as expected. Programs that need a real terminal — vi, top, an interactive password prompt — cannot run here.') }}</p>
-          <div v-for="(l,i) in term.lines" :key="i" :class="'term-line ' + l.kind"><span v-if="l.kind==='cmd'" class="term-prompt">{{ l.prompt }}</span>{{ l.text }}</div>
-          <div v-if="busy.term" class="term-line dim">…</div>
-        </div>
-        <div class="term-input">
-          <span class="term-prompt mono">{{ term.user }}@{{ term.host }}:{{ term.cwd || '~' }}$</span>
-          <input ref="termInput" v-model="term.command" class="mono" autocomplete="off" spellcheck="false"
-                 @keydown.enter.prevent="sendConsole" @keydown.up.prevent="historyBack" @keydown.down.prevent="historyForward">
         </div>
       </div>
     </div>
@@ -2019,8 +2071,8 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         ntpHost: 'pool.ntp.org', ntpResult: null, ntpServers: NTP_SERVERS, knownResolvers: KNOWN_RESOLVERS,
         locale: 0,
         picker: { open: false, title: '', path: '', parent: null, entries: [], foldersOnly: false, onPick: null },
-        windows: [], windowSeq: 0, windowTop: 3000, drag: null,
-        term: { open: false, id: 0, host: '', user: '', cwd: '', command: '', lines: [], history: [], at: -1 },
+        windows: [], terms: [], windowSeq: 0, windowTop: 3000, drag: null,
+        rowMenu: { open: false, x: 0, y: 0, device: null },
         preview: { open: false, url: '', src: '', loading: false, error: null, full: false },
         serverResult: null, requirements: null, sysInfo: false, themeBox: false,
         themeOptions: THEME_OPTIONS,
@@ -2099,7 +2151,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
           this.dnsBench, this.timingResult, this.mailAudit, this.mailProbeResult,
           this.relayResult, this.blResult, this.sendResult, this.mailboxResult, this.filesData,
           this.sshResult, this.telnetResult, this.sshRunResult, this.ntpResult,
-          this.devices.length, this.term.lines.length];
+          this.devices.length, this.terms.reduce((n, w) => n + w.lines.length, 0)];
         return !!this.resultBundle();
       },
       onlineCount() { return this.devices.filter((d) => d.online).length; },
@@ -2775,7 +2827,133 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
           }
         }
       },
+      openRowMenu(device, event) {
+        // Near the pointer, but never off the edge.
+        const width = 260;
+        const height = 40 + (this.rowActions(device).length + 2) * 34;
+        this.rowMenu = {
+          open: true, device,
+          x: Math.min(event.clientX, window.innerWidth - width - 8),
+          y: Math.min(event.clientY, Math.max(8, window.innerHeight - height - 8)),
+        };
+      },
+      /**
+       * The ways into this device, from the ports it actually has open.
+       *
+       * Nothing speculative: a port that is not open is not offered, and a web
+       * page is offered only for a port NetBase knows serves one or has been
+       * shown to.
+       */
+      rowActions(device) {
+        if (!device) return [];
+        const ports = (device.ports || []).map(Number);
+        const web = this.knownWeb(device);
+        const out = [];
+        const canOpen = this.allowed('preview');
+        const has = (p) => ports.indexOf(p) >= 0;
+        if (canOpen && has(80)) out.push({ icon: '🖥', label: T('Open over HTTP'), run: () => this.openDeviceWindow(device, 80, 'http') });
+        if (canOpen && has(443)) out.push({ icon: '🔒', label: T('Open over HTTPS'), run: () => this.openDeviceWindow(device, 443, 'https') });
+        // Any other port that has been shown to serve a page.
+        web.filter((p) => p !== 80 && p !== 443).forEach((p) => {
+          if (canOpen) out.push({ icon: '🖥', label: T('Open port {port}', { port: p }), run: () => this.openDeviceWindow(device, p, p === 443 ? 'https' : 'http') });
+        });
+        if (has(21) && this.allowed('files')) out.push({ icon: '📁', label: T('Open over FTP'), run: () => this.openPortTool(device, 21) });
+        if (has(22) && this.allowed('sshexec')) out.push({ icon: '🖳', label: T('Open an SSH window'), run: () => this.openTerminal('ssh', device.ip, 22) });
+        if (has(23) && this.allowed('sshexec')) out.push({ icon: '🖳', label: T('Open a Telnet window'), run: () => this.openTerminal('telnet', device.ip, 23) });
+        return out;
+      },
       closeWindow(w) { this.windows = this.windows.filter((x) => x.id !== w.id); },
+
+      // ---- terminal windows: the same frame as a device window, holding a
+      // line of text rather than a page ----
+      /**
+       * A terminal for one device, opened beside the list rather than instead
+       * of it. Ports 22 and 23 used to change tab, which closed the device and
+       * left no way back to where the person was.
+       */
+      openTerminal(kind, host, port) {
+        const offset = this.narrow ? 0 : (this.terms.length % 6) * 26;
+        const w = {
+          id: ++this.windowSeq, kind, host, port: port || (kind === 'telnet' ? 23 : 22),
+          user: '', password: '', signedIn: kind !== 'telnet', prompt: '',
+          lines: [], command: '', history: [], at: -1, busy: false, cwd: '', full: false,
+          z: ++this.windowTop,
+          x: this.narrow ? 0 : Math.max(20, Math.round(window.innerWidth / 2 - 430) + offset),
+          y: this.narrow ? 0 : 96 + offset,
+          w: this.narrow ? window.innerWidth : Math.min(860, window.innerWidth - 60),
+          h: this.narrow ? window.innerHeight : Math.min(520, window.innerHeight - 150),
+        };
+        this.terms.push(w);
+        const live = this.terms[this.terms.length - 1];
+        this.selected = null;
+        if (kind === 'ssh') {
+          live.user = (this.sshConn && this.sshConn.username) || '';
+          this.say(live, 'out', T('Type a command and press Enter.'));
+        }
+        return live;
+      },
+      closeTerm(w) { this.terms = this.terms.filter((x) => x.id !== w.id); },
+      termPrompt(w) {
+        if (w.kind === 'telnet') return w.prompt || (w.host + '>');
+        return (w.user ? w.user + '@' : '') + w.host + ':' + (w.cwd || '~') + '$';
+      },
+      say(w, kind, text, prompt) {
+        String(text == null ? '' : text).split('\n').forEach((line, i) => {
+          w.lines.push({ kind, text: line, prompt: i === 0 ? (prompt || '') : '' });
+        });
+        if (w.lines.length > 2000) w.lines.splice(0, w.lines.length - 2000);
+        this.$nextTick(() => {
+          const box = this.$refs['term' + w.id];
+          const el = Array.isArray(box) ? box[0] : box;
+          if (el) el.scrollTop = el.scrollHeight;
+        });
+      },
+      /** Telnet asks who you are before it will say anything useful. */
+      async signInTerm(w) {
+        if (w.busy) return;
+        w.busy = true;
+        try {
+          const r = await api('telnet/run', { method: 'POST', body: JSON.stringify({
+            host: w.host, port: w.port, user: w.user, password: w.password, command: '',
+          }) });
+          if (!r.ok) { this.say(w, 'err', '⚠ ' + (r.error || T('Could not connect'))); return; }
+          w.signedIn = true;
+          w.prompt = r.prompt || '';
+          if (r.output) this.say(w, 'out', r.output);
+        } catch (e) { this.fail(e); } finally { w.busy = false; }
+      },
+      async sendTerm(w) {
+        const command = (w.command || '').trim();
+        if (!command || w.busy) return;
+        w.history.push(command);
+        w.at = w.history.length;
+        w.command = '';
+        this.say(w, 'cmd', command, this.termPrompt(w));
+        w.busy = true;
+        try {
+          if (w.kind === 'telnet') {
+            const r = await api('telnet/run', { method: 'POST', body: JSON.stringify({
+              host: w.host, port: w.port, user: w.user, password: w.password, command,
+            }) });
+            if (!r.ok) { this.say(w, 'err', '⚠ ' + (r.error || T('Could not connect'))); return; }
+            if (r.prompt) w.prompt = r.prompt;
+            this.say(w, 'out', r.output || '');
+            return;
+          }
+          const target = w.conn
+            ? { id: w.conn, command, cwd: w.cwd }
+            : this.sshTarget({ command, cwd: w.cwd });
+          const r = await api('ssh/shell', { method: 'POST', body: JSON.stringify(target) });
+          if (r.cwd) w.cwd = r.cwd;
+          if (r.output) this.say(w, 'out', r.output);
+          if (r.error) this.say(w, 'err', r.error);
+        } catch (e) { this.say(w, 'err', String(e.message || e)); } finally { w.busy = false; }
+      },
+      termHistory(w, step) {
+        if (!w.history.length) return;
+        w.at = Math.max(0, Math.min(w.history.length, w.at + step));
+        w.command = w.at < w.history.length ? w.history[w.at] : '';
+      },
       backWindow(w) {
         if (w.trailAt < 1) return;
         w.trailAt -= 1;
@@ -3197,63 +3375,26 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         if (pick) pick(path);
       },
 
+      /**
+       * A console for the saved connection, in a window.
+       *
+       * It used to fill the screen as a modal, which meant closing it to look
+       * at anything else. A window can be pushed aside, and several can stand
+       * open at once — one per device, which is how this work actually goes.
+       */
       openConsole() {
         const conn = this.connById(this.sshConn);
         if (!conn) { this.quickConsole(); return; }
-        this.term = {
-          open: true, id: conn.id, host: conn.host, user: conn.username || '',
-          cwd: (conn.options && conn.options.path) || '', command: '', lines: [], history: [], at: -1,
-        };
-        this.$nextTick(() => this.$refs.termInput && this.$refs.termInput.focus());
+        const w = this.openTerminal('ssh', conn.host, conn.port || 22);
+        w.user = conn.username || '';
+        w.cwd = (conn.options && conn.options.path) || '';
+        w.conn = conn.id;
       },
-      closeConsole() { this.term.open = false; },
-      historyBack() {
-        if (!this.term.history.length) return;
-        this.term.at = this.term.at < 0 ? this.term.history.length - 1 : Math.max(0, this.term.at - 1);
-        this.term.command = this.term.history[this.term.at];
-      },
-      historyForward() {
-        if (this.term.at < 0) return;
-        this.term.at++;
-        if (this.term.at >= this.term.history.length) { this.term.at = -1; this.term.command = ''; return; }
-        this.term.command = this.term.history[this.term.at];
-      },
-      async sendConsole() {
-        const command = this.term.command.trim();
-        if (!command || this.busy.term) return;
-        const prompt = (this.term.user || '') + '@' + this.term.host + ':' + (this.term.cwd || '~') + '$ ';
-        this.term.lines.push({ kind: 'cmd', prompt, text: command });
-        this.term.history.push(command);
-        this.term.at = -1;
-        this.term.command = '';
-        if (command === 'clear') { this.term.lines = []; return; }
-        if (command === 'exit') { this.closeConsole(); return; }
-        const body = { id: this.term.id, command, cwd: this.term.cwd, connection: this.term.id ? {} : { ...this.sshAdhoc } };
-        const r = await this.guarded('term', () => api('ssh/shell', { method: 'POST', body: JSON.stringify(body) }));
-        if (r) {
-          if (r.output !== '') this.term.lines.push({ kind: r.exitStatus ? 'err' : 'out', text: r.output });
-          if (r.exitStatus) this.term.lines.push({ kind: 'code', text: T('exit status {n}', { n: r.exitStatus }) });
-          this.term.cwd = r.cwd || this.term.cwd;
-        } else {
-          this.term.lines.push({ kind: 'err', text: (this.banner && this.banner.text) || T('The command could not be run.') });
-        }
-        this.$nextTick(() => {
-          const box = this.$refs.termBody;
-          if (box) box.scrollTop = box.scrollHeight;
-          if (this.$refs.termInput) this.$refs.termInput.focus();
-        });
-      },
-      sshTarget(extra) { return { id: this.sshConn, connection: this.sshConn ? {} : { ...this.sshAdhoc }, ...extra }; },
-      async runSshPreset() { this.sshRunResult = await this.guarded('sshrun', () => api('ssh/preset', { method: 'POST', body: JSON.stringify(this.sshTarget({ preset: this.sshPreset })) })); },
-      async runSshCommand() { this.sshRunResult = await this.guarded('sshrun', () => api('ssh/run', { method: 'POST', body: JSON.stringify(this.sshTarget({ command: this.sshCommand })) })); },
-      /** Open the console straight from the typed details, without saving. */
+      /** A console for details typed here and now, without saving them first. */
       async quickConsole() {
         this.sshConn = 0;
-        this.term = {
-          open: true, id: 0, host: this.sshAdhoc.host, user: this.sshAdhoc.username,
-          cwd: '', command: '', lines: [], history: [], at: -1,
-        };
-        this.$nextTick(() => this.$refs.termInput && this.$refs.termInput.focus());
+        const w = this.openTerminal('ssh', this.sshAdhoc.host, this.sshAdhoc.port || 22);
+        w.user = this.sshAdhoc.username || '';
       },
       saveSshAdhoc() {
         this.openConn(null, 'ssh');
@@ -3513,7 +3654,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
           ssh: () => [
             named(T('SSH'), this.sshResult), named('Telnet', this.telnetResult),
             named(T('Command'), this.sshRunResult),
-            named(T('Console'), this.term.lines.length ? this.term.lines.map((l) => l.text).join('\n') : null),
+            named(T('Console'), this.terms.length ? this.terms.map((w) => w.lines.map((l) => l.text).join('\n')).join('\n\n') : null),
           ],
           ntp: () => [named(T('Clock check'), this.ntpResult)],
           // NETBASE-STORE-REMOVED: nmap results
