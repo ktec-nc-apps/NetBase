@@ -351,7 +351,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
                    are. This one walks the addresses; the wait beneath is what a
                    port that says nothing costs, and it is the wait, not this,
                    that decides how long a long scan takes. -->
-              <label class="fl narrow pace" :title="t('How quickly the addresses are walked through. A slower speed finds more Wi-Fi devices, because a wireless network carries broadcasts slowly: on a /16 with ten devices, 15,000 a second found six of them and 1,500 found all ten.')">
+              <label class="fl narrow pace" v-if="!opts.arpOnly" :title="t('How quickly the addresses are walked through. A slower speed finds more Wi-Fi devices, because a wireless network carries broadcasts slowly: on a /16 with ten devices, 15,000 a second found six of them and 1,500 found all ten.')">
                 <span class="fl-label">{{ t('Scan speed') }}</span>
                 <select v-model="pace">
                   <option v-for="r in paceRates" :key="r" :value="String(r)">{{ paceLabel(r) }}</option>
@@ -361,14 +361,14 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
               <button class="btn" v-if="scanning" @click="cancelScan">{{ t('Stop') }}</button>
             </div>
             <div class="scan-opts">
-              <label :title="t('Asks each address for its own name, over NetBIOS and mDNS.')"><input type="checkbox" v-model="opts.names"> {{ t('Ask devices for their names') }}</label>
-              <label :title="t('Listens for the devices that announce themselves — mDNS, WS-Discovery and SSDP. It finds devices the sweep missed.')"><input type="checkbox" v-model="opts.multicast"> {{ t('Multicast discovery') }}</label>
-              <label :title="t('Connects to each device to see which ports answer. This is what tells a printer from a camera.')"><input type="checkbox" v-model="opts.ports"> {{ t('Check open ports') }}</label>
+              <label :title="t('Asks each address for its own name, over NetBIOS and mDNS.')" :class="{ off: opts.arpOnly }"><input type="checkbox" v-model="opts.names" :disabled="opts.arpOnly"> {{ t('Ask devices for their names') }}</label>
+              <label :title="t('Listens for the devices that announce themselves — mDNS, WS-Discovery and SSDP. It finds devices the sweep missed.')" :class="{ off: opts.arpOnly }"><input type="checkbox" v-model="opts.multicast" :disabled="opts.arpOnly"> {{ t('Multicast discovery') }}</label>
+              <label :title="t('Connects to each device to see which ports answer. This is what tells a printer from a camera.')" :class="{ off: opts.arpOnly }"><input type="checkbox" v-model="opts.ports" :disabled="opts.arpOnly"> {{ t('Check open ports') }}</label>
               <!-- Three depths rather than one compromise: the short list keeps
                    a scan quick, the long one explains the device the short list
                    does not, and the whole range is there for the interface a
                    maker hid on port 30443. -->
-              <label class="depth" v-if="opts.ports" :title="t('How many ports to try on each device.')">
+              <label class="depth" v-if="opts.ports && !opts.arpOnly" :title="t('How many ports to try on each device.')">
                 <select v-model="opts.portScan">
                   <option value="common">{{ t('Common ports') }} ({{ portCount('common') }})</option>
                   <option value="detailed">{{ t('Detailed search') }} ({{ portCount('detailed') }})</option>
@@ -376,13 +376,13 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
                 </select>
               </label>
               <!-- The number that actually decides how long this takes. -->
-              <label class="depth" v-if="opts.ports" :title="t('How long to wait for a port to answer. A port that refuses is instant whatever this is; the wait only applies to one that says nothing at all, which is what a firewall and a sleeping device both look like. Waiting less is quicker and misses more.')">
+              <label class="depth" v-if="opts.ports && !opts.arpOnly" :title="t('How long to wait for a port to answer. A port that refuses is instant whatever this is; the wait only applies to one that says nothing at all, which is what a firewall and a sleeping device both look like. Waiting less is quicker and misses more.')">
                 <span class="opt-label">{{ t('Wait per port') }}</span>
                 <select v-model.number="opts.portWait">
                   <option v-for="w in portWaits" :key="w" :value="w">{{ waitLabel(w) }}</option>
                 </select>
               </label>
-              <label :title="t('Asks the DNS server what name it has on record for each address.')"><input type="checkbox" v-model="opts.rdns"> {{ t('Reverse DNS') }}</label>
+              <label :title="t('Asks the DNS server what name it has on record for each address.')" :class="{ off: opts.arpOnly }"><input type="checkbox" v-model="opts.rdns" :disabled="opts.arpOnly"> {{ t('Reverse DNS') }}</label>
               <label :title="t('Skips the sweep and lists only the devices this server has already spoken to. It answers at once, but finds nothing new.')"><input type="checkbox" v-model="opts.arpOnly"> {{ t('Read ARP table only (instant)') }}</label>
             </div>
             <div class="progress" v-if="scan">
@@ -2126,6 +2126,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         if (!p) return scan ? (scan.message || scan.phase) : '';
         const v = { done: p.done, total: p.total };
         switch (p.key) {
+          case 'arp': return T('{done} devices in the ARP table', v);
           case 'sweep': return T('{done} / {total} addresses swept', v);
           case 'names': return T('Asking devices for their names ({done} / {total})', v);
           case 'names2': return T('Asking again, more slowly ({done} / {total})', v);

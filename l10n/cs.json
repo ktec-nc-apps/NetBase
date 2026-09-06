@@ -26,6 +26,7 @@
         "Scan speed": "Rychlost skenování",
         "Fast": "Rychle",
         "Gentle": "Šetrně",
+        "{done} devices in the ARP table": "{done} zařízení v tabulce ARP",
         "Scan every port": "Prohledat všechny porty",
         "Scanning… {done}%": "Prohledávání… {done} %",
         "Find web pages": "Najít webové stránky",

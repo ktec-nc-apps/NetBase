@@ -153,6 +153,8 @@
 #netbase-root .scan-row .btn { min-height: 40px; }
 #netbase-root .scan-opts { display: flex; flex-wrap: wrap; gap: 8px 20px; margin-top: 10px; }
 #netbase-root .scan-opts label { display: flex; align-items: center; gap: 7px; font-size: 13.5px; color: var(--muted); }
+/* An option that cannot apply says so by fading, rather than by lying. */
+#netbase-root .scan-opts label.off { opacity: .45; }
 #netbase-root .scan-opts label.depth select { font-size: 13px; padding: 2px 6px; }
 #netbase-root .scan-opts label.depth .opt-label { white-space: nowrap; }
 #netbase-root .progress { margin-top: 14px; }

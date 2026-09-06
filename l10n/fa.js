@@ -27,6 +27,7 @@ OC.L10N.register(
         "Scan speed": "سرعت پویش",
         "Fast": "سریع",
         "Gentle": "ملایم",
+        "{done} devices in the ARP table": "{done} دستگاه در جدول ARP",
         "Scan every port": "پویش همهٔ درگاه‌ها",
         "Scanning… {done}%": "در حال پویش… {done}٪",
         "Find web pages": "یافتن صفحه‌های وب",

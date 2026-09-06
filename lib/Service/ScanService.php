@@ -20,7 +20,7 @@ use Psr\Log\LoggerInterface;
  * hit a PHP or proxy timeout.
  */
 class ScanService {
-	public const PHASES = ['sweep', 'names', 'mcast', 'ports', 'rdns', 'done'];
+	public const PHASES = ['arp', 'sweep', 'names', 'mcast', 'ports', 'rdns', 'done'];
 
 	/**
 	 * How many connections one request's worth of port checking is allowed.
@@ -87,7 +87,7 @@ class ScanService {
 		$scan->setUserId($userId);
 		$scan->setTargets(json_encode($targets));
 		$scan->setOptions(json_encode($normalised));
-		$scan->setPhase($normalised['arpOnly'] ? 'names' : 'sweep');
+		$scan->setPhase($normalised['arpOnly'] ? 'arp' : 'sweep');
 		$scan->setState('running');
 		$scan->setCursor(0);
 		$scan->setTotal($total);
@@ -125,6 +125,7 @@ class ScanService {
 		try {
 			while (microtime(true) < $deadline && $scan->getPhase() !== 'done') {
 				match ($scan->getPhase()) {
+					'arp' => $this->stepArp($scan, $queue, $options),
 					'sweep' => $this->stepSweep($scan, $queue, $options),
 					'names' => $this->stepNames($scan, $queue, $options),
 					'mcast' => $this->stepMulticast($scan, $queue, $options),
@@ -163,6 +164,22 @@ class ScanService {
 	}
 
 	// ---------------------------------------------------------------- phases
+
+	/**
+	 * The ARP table, read, and nothing else.
+	 *
+	 * What the option says on the screen. No address is probed, nothing is
+	 * asked of any device, no port is opened and no name is looked up: the
+	 * kernel's table is read and the scan is over. It lists what this server
+	 * has already spoken to and no more, which is the whole point of it.
+	 */
+	private function stepArp(ScanEntity $scan, array &$queue, array $options): void {
+		$this->absorbNeighbours($queue, $options);
+		$total = max(1, count($queue['ips'] ?? []));
+		$scan->setCursor($scan->getTotal());
+		$this->progress($scan, 'arp', $total, $total);
+		$scan->setPhase('done');
+	}
 
 	private function stepSweep(ScanEntity $scan, array &$queue, array $options): void {
 		$chunk = (int)$options['chunk'];
@@ -745,6 +762,7 @@ class ScanService {
 		};
 		$ports = $depth === 'all' ? [] : ($options['portList'] ?? $default);
 		$ports = array_values(array_filter(array_map('intval', (array)$ports), static fn ($p) => $p > 0 && $p < 65536));
+		$arpOnly = (bool)($options['arpOnly'] ?? false);
 		$mode = $this->paceRate((string)($options['pace'] ?? self::PACE_DEFAULT));
 		$pace = $this->pacing($mode);
 		return [
@@ -752,16 +770,19 @@ class ScanService {
 			'chunk' => max(64, min($pace['chunk'], (int)($options['chunk'] ?? $pace['chunk']))),
 			'rate' => max(200, min(20000, (int)($options['rate'] ?? $pace['rate']))),
 			'settle' => max(50, min(2000, (int)($options['settle'] ?? $pace['settle']))),
-			'arpOnly' => (bool)($options['arpOnly'] ?? false),
-			'names' => (bool)($options['names'] ?? true),
-			'multicast' => (bool)($options['multicast'] ?? true),
-			'ports' => (bool)($options['ports'] ?? true),
+			'arpOnly' => $arpOnly,
+			// Reading the table is the whole of the work when it is asked for.
+			// Leaving these on would let a later step wander back into probing
+			// the very devices the option promised to leave alone.
+			'names' => !$arpOnly && (bool)($options['names'] ?? true),
+			'multicast' => !$arpOnly && (bool)($options['multicast'] ?? true),
+			'ports' => !$arpOnly && (bool)($options['ports'] ?? true),
 			'portScan' => $depth,
 			// How long to wait for a port to answer. This, not the send rate,
 			// is what decides how long a scan takes: a device that answers
 			// nothing costs the whole wait for every 512 attempts.
 			'portWait' => min(3.0, max(0.2, round((float)($options['portWait'] ?? 0.9), 2))),
-			'rdns' => (bool)($options['rdns'] ?? true),
+			'rdns' => !$arpOnly && (bool)($options['rdns'] ?? true),
 			'interface' => (string)($options['interface'] ?? ''),
 			'portList' => $ports ?: $default,
 		];

@@ -27,6 +27,7 @@ OC.L10N.register(
         "Scan speed": "Suchgeschwindigkeit",
         "Fast": "Schnell",
         "Gentle": "Schonend",
+        "{done} devices in the ARP table": "{done} Geräte in der ARP-Tabelle",
         "Scan every port": "Alle Ports prüfen",
         "Scanning… {done}%": "Wird geprüft … {done} %",
         "Find web pages": "Weboberflächen finden",

@@ -27,6 +27,7 @@ OC.L10N.register(
         "Scan speed": "ความเร็วการสแกน",
         "Fast": "เร็ว",
         "Gentle": "เบา",
+        "{done} devices in the ARP table": "มี {done} อุปกรณ์ในตาราง ARP",
         "Scan every port": "สแกนทุกพอร์ต",
         "Scanning… {done}%": "กำลังสแกน… {done}%",
         "Find web pages": "ค้นหาหน้าเว็บ",

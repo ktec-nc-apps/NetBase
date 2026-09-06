@@ -26,6 +26,7 @@
         "Scan speed": "Tarama hızı",
         "Fast": "Hızlı",
         "Gentle": "Yumuşak",
+        "{done} devices in the ARP table": "ARP tablosunda {done} aygıt",
         "Scan every port": "Tüm kapıları tara",
         "Scanning… {done}%": "Taranıyor… %{done}",
         "Find web pages": "Web sayfalarını bul",

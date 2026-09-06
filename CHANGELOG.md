@@ -2,6 +2,19 @@
 
 All notable changes to NetBase are documented here.
 
+## 0.3.19 — 2026-09-06
+
+### Fixed
+
+- **"Read ARP table only" now reads the ARP table only.** It had been skipping
+  the address sweep and nothing else, so it went on to ask every device for its
+  name over NetBIOS and mDNS, send multicast discovery, open TCP connections to
+  check ports, and look up reverse DNS — seventeen seconds of probing under an
+  option that says "instant", and it turned up a device that was never in the
+  table at all. It now reads the kernel's table and stops. The options it makes
+  meaningless — names, multicast, ports, reverse DNS, and the scan speed — are
+  shown as not applying while it is ticked, and are ignored if sent anyway.
+
 ## 0.3.18 — 2026-09-06
 
 ### Changed

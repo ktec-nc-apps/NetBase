@@ -27,6 +27,7 @@ OC.L10N.register(
         "Scan speed": "Tốc độ quét",
         "Fast": "Nhanh",
         "Gentle": "Nhẹ nhàng",
+        "{done} devices in the ARP table": "{done} thiết bị trong bảng ARP",
         "Scan every port": "Quét mọi cổng",
         "Scanning… {done}%": "Đang quét… {done}%",
         "Find web pages": "Tìm trang web",

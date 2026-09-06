@@ -27,6 +27,7 @@ OC.L10N.register(
         "Scan speed": "スキャン速度",
         "Fast": "速い",
         "Gentle": "ゆっくり",
+        "{done} devices in the ARP table": "ARPテーブルに{done}台",
         "Scan every port": "全ポートスキャン",
         "Scanning… {done}%": "検索中… {done}%",
         "Find web pages": "Web画面検索",

@@ -26,6 +26,7 @@
         "Scan speed": "Velocità della scansione",
         "Fast": "Veloce",
         "Gentle": "Delicato",
+        "{done} devices in the ARP table": "{done} dispositivi nella tabella ARP",
         "Scan every port": "Analizza tutte le porte",
         "Scanning… {done}%": "Analisi… {done}%",
         "Find web pages": "Trova le pagine web",

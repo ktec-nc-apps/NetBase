@@ -26,6 +26,7 @@
         "Scan speed": "स्कैन गति",
         "Fast": "तेज़",
         "Gentle": "धीमा",
+        "{done} devices in the ARP table": "ARP तालिका में {done} उपकरण",
         "Scan every port": "सभी पोर्ट स्कैन करें",
         "Scanning… {done}%": "स्कैन हो रहा है… {done}%",
         "Find web pages": "वेब पृष्ठ खोजें",

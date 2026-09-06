@@ -75,6 +75,7 @@ class ScanEntity extends Entity implements \JsonSerializable {
 		$done = (int)($progress['done'] ?? 0);
 		$total = (int)($progress['total'] ?? 0);
 		return match ($progress['key'] ?? '') {
+			'arp' => sprintf('%d devices in the ARP table', $done),
 			'sweep' => sprintf('%d / %d addresses swept', $done, $total),
 			'names' => sprintf('Asking devices for their names (%d / %d)', $done, $total),
 			'names2' => sprintf('Asking again, more slowly (%d / %d)', $done, $total),
