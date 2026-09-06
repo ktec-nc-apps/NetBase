@@ -2,6 +2,14 @@
 
 All notable changes to NetBase are documented here.
 
+## 0.3.17 — 2026-09-06
+
+### Changed
+
+- **Reading the neighbour table is on to begin with.** A scan started without
+  changing anything now answers at once, out of what this server has already
+  spoken to, instead of walking the addresses. Turn it off to sweep.
+
 ## 0.3.16 — 2026-09-06
 
 ### Added

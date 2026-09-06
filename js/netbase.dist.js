@@ -6459,7 +6459,10 @@ return function render(_ctx, _cache) {
         dragTab: '', overTab: '',
         devices: [], scan: null, scanning: false, advice: null,
         scanTargets: '', pace: '1500',
-        opts: { names: true, multicast: true, ports: true, portScan: 'common', portWait: 0.9, rdns: true, arpOnly: false },
+        // Reading the neighbour table is on to begin with: it answers at once,
+        // out of what this server has already spoken to, and a sweep is a
+        // deliberate thing to ask for rather than the first thing that happens.
+        opts: { names: true, multicast: true, ports: true, portScan: 'common', portWait: 0.9, rdns: true, arpOnly: true },
         openPort: '', openScheme: 'http',
         // One device asked about itself: which search is running, how far it
         // has got, and what it came back with.
