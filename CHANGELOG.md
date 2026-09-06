@@ -2,6 +2,24 @@
 
 All notable changes to NetBase are documented here.
 
+## 0.4.7 — 2026-09-06
+
+### Fixed
+
+- **A device on another network sharing the same wire is found.** A camera left
+  on its factory 192.168.1.120, plugged into a 10.0.0.0/16 network, was
+  invisible: it is off the server's subnet, so nothing routes to it, and it
+  cannot answer a question either — its reply goes to a gateway it does not
+  have. What it does do is announce itself to the multicast group, which is
+  carried at the level of the wire and arrives whatever the addresses say. So
+  NetBase now listens to the group as well as asking, and asks from the same
+  socket it is listening on, which turns a wait of half a minute for the
+  device's own timer into a few seconds.
+
+  This also fixes the silent stop behind it: `IP_ADD_MEMBERSHIP` is not defined
+  in every PHP build, and naming a constant that does not exist is a fatal
+  error rather than a failed call, so the step ended without a word.
+
 ## 0.4.6 — 2026-09-06
 
 ### Fixed

@@ -536,6 +536,81 @@ class DiscoveryService {
 	 *
 	 * @return array<string, list<string>>
 	 */
+	/**
+	 * Listen to a multicast group without asking anything.
+	 *
+	 * Asking only finds what can answer. A device whose address belongs to
+	 * another network — a camera still on its factory 192.168.1.120, plugged
+	 * into a 10.0.0.0/16 wire — hears the question perfectly well but cannot
+	 * reply: our address is off its own subnet, so its answer goes to a
+	 * gateway that is not there. What it does do, unprompted, is announce
+	 * itself to the group, and that is multicast at the level of the wire and
+	 * arrives whatever the addresses say. So NetBase listens as well as asks.
+	 *
+	 * @return array<string, list<string>> what was heard, by sender
+	 */
+	public function multicastHear(string $sourceIp, string $group, int $port, float $wait, int $ifIndex = 0, string $ask = ''): array {
+		if (!$this->hasSockets()) {
+			return [];
+		}
+		$sock = @socket_create(AF_INET, SOCK_DGRAM, SOL_UDP);
+		if ($sock === false) {
+			return [];
+		}
+		@socket_set_option($sock, SOL_SOCKET, SO_REUSEADDR, 1);
+		// The group's own port, because that is where an announcement is sent.
+		if (!@socket_bind($sock, '0.0.0.0', $port)) {
+			socket_close($sock);
+			return [];
+		}
+		// MCAST_JOIN_GROUP is what PHP 8 offers; IP_ADD_MEMBERSHIP is not defined
+		// in every build, and naming it where it is not defined is a fatal error
+		// rather than a failed call — which is why the whole step stopped
+		// without a word. The interface is named by index, and 0 means "let the
+		// kernel choose", which is right when the wire is the only one.
+		$joined = false;
+		if (defined('MCAST_JOIN_GROUP')) {
+			$joined = @socket_set_option($sock, IPPROTO_IP, MCAST_JOIN_GROUP, ['group' => $group, 'interface' => $ifIndex]);
+		}
+		if (!$joined && defined('IP_ADD_MEMBERSHIP')) {
+			$joined = @socket_set_option($sock, IPPROTO_IP, constant('IP_ADD_MEMBERSHIP'), ['group' => $group, 'interface' => $sourceIp]);
+		}
+		if (!$joined) {
+			socket_close($sock);
+			return [];
+		}
+		socket_set_nonblock($sock);
+		// Ask from the same socket that is listening to the group. A device on
+		// another network cannot answer us directly — its reply would go to a
+		// gateway it does not have — but plenty of them answer to the group,
+		// and that arrives. Without the question the only thing to wait for is
+		// the device's own timer, which on the camera here is half a minute.
+		if ($ask !== '') {
+			@socket_set_option($sock, IPPROTO_IP, IP_MULTICAST_TTL, 2);
+			for ($i = 0; $i < 3; $i++) {
+				@socket_sendto($sock, $ask, strlen($ask), 0, $group, $port);
+				usleep(180000);
+			}
+		}
+
+		$result = [];
+		$deadline = microtime(true) + $wait;
+		while (microtime(true) < $deadline) {
+			$buf = '';
+			$from = '';
+			$fromPort = 0;
+			if (@socket_recvfrom($sock, $buf, 8192, 0, $from, $fromPort) > 0) {
+				if ($from !== $sourceIp) {
+					$result[$from][] = $buf;
+				}
+			} else {
+				usleep(4000);
+			}
+		}
+		socket_close($sock);
+		return $result;
+	}
+
 	private function multicastAsk(int $ifIndex, string $sourceIp, string $group, int $port, string $payload, float $wait): array {
 		if (!$this->hasSockets()) {
 			// Picking the outgoing interface for a multicast datagram has no

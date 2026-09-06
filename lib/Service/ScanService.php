@@ -313,6 +313,25 @@ class ScanService {
 					'ssdp' => trim($info['server'] . ' ' . $info['location']),
 				]);
 			}
+			// And what announces itself without being asked. A device on
+			// another network sharing this wire — a camera left on its factory
+			// 192.168.1.120 — hears the question but cannot answer it, because
+			// our address is off its subnet and its reply goes to a gateway
+			// that is not there. Its own announcements arrive regardless.
+			$search = "M-SEARCH * HTTP/1.1\r\nHOST: 239.255.255.250:1900\r\nMAN: \"ssdp:discover\"\r\nMX: 2\r\nST: ssdp:all\r\n\r\n";
+			foreach ($this->discovery->multicastHear($source, '239.255.255.250', 1900, 6.0, (int)$if['index'], $search) as $ip => $said) {
+				$body = implode("\n", $said);
+				$this->upsert($ip, null, [
+					'source' => 'ssdp',
+					'ssdp' => trim(
+						(preg_match('/^SERVER:\s*(.+)$/mi', $body, $m) ? trim($m[1]) : '')
+						. ' ' . (preg_match('/^LOCATION:\s*(\S+)/mi', $body, $m2) ? trim($m2[1]) : '')
+					),
+				]);
+			}
+			foreach ($this->discovery->multicastHear($source, '224.0.0.251', 5353, 1.5, (int)$if['index']) as $ip => $said) {
+				$this->upsert($ip, null, ['source' => 'mdns']);
+			}
 		}
 		$this->absorbNeighbours($queue, $options);
 		$queue['idx'] = 0;
