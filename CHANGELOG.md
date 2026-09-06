@@ -2,6 +2,45 @@
 
 All notable changes to NetBase are documented here.
 
+## 0.4.0 — 2026-09-06
+
+Everything since 0.3.11, which is what the customer sites have been running,
+gathered into one release.
+
+### Added
+
+- **A device can be asked about itself**, from its details: every one of its
+  65,535 ports, and which of the open ones actually serve a web page. The port
+  scan opens 64 connections at a time rather than the sweep's 512, because
+  older hardware drops the flood and is missed at 512; the web search asks each
+  port for its front page rather than guessing from the number, and a port that
+  answers becomes a link in the list from then on.
+- **Zoom, fit and a screenshot in every device window**, and a row of buttons
+  where a sentence explaining the window used to be: the device's own address,
+  the page's text, and the clipboard into whichever field the cursor is in.
+- **Copy buttons throughout the device details** — the whole record, or any one
+  row of it.
+- **Four depths for the port check** (15, 106, 1,024 and all 65,535) and five
+  scan speeds, with the wait for a port to answer now a setting of its own,
+  since that is the number which decides how long a scan takes.
+
+### Fixed
+
+- **Device pages that would not open.** A device's redirect was arriving as a
+  200 with a Location nobody acted on, which left Brother, Canon, Kyocera and
+  Buffalo hardware showing nothing; four ASUS routers stepped outside their
+  window through `history.pushState`; and a Buffalo LinkStation reloaded itself
+  once a second for ever. Found by opening every device with port 80 or 443
+  across the nine sites — 73 of them — of which 32 displayed at the start.
+
+### Changed
+
+- **What to scan is chosen first and by name** — the whole network, or the ARP
+  table only — and the options beneath are arranged as the steps they are.
+- **Plainer words throughout**: the ARP table is called the ARP table, the scan
+  speed is a rate rather than an adjective, and links are made only for ports
+  NetBase can vouch for.
+
 ## 0.3.23 — 2026-09-06
 
 ### Fixed
