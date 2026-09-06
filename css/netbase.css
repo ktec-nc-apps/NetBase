@@ -149,9 +149,23 @@
 #netbase-root .check { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; font-size: 14px; }
 
 /* ---------- scan card ---------- */
+/* What is being scanned, chosen before anything about how. */
+#netbase-root .scan-what { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 16px; margin-bottom: 12px; }
+#netbase-root .scan-what label { display: inline-flex; align-items: center; gap: 7px; font-size: 13.5px; color: var(--text); }
+#netbase-root .scan-what .fl-label { margin-right: 2px; }
+#netbase-root .scan-what input[type='radio'] { width: auto; min-height: 0; margin: 0; }
+
 #netbase-root .scan-row { display: flex; align-items: flex-end; gap: 10px; }
+/* The field carries a bottom margin for use in a stacked form. In this row it
+   only pushes the box 12px above the button beside it, which is exactly the
+   height of the margin. The row provides its own spacing. */
+#netbase-root .scan-row .fl { margin-bottom: 0; }
+#netbase-root .scan-row .fl input, #netbase-root .scan-row .fl select { margin: 0; }
+/* An address needs far less room than the card is wide; the rest belongs to
+   the controls beside it. */
+#netbase-root .scan-row .fl { max-width: 32em; }
 #netbase-root .scan-row .btn { min-height: 40px; }
-#netbase-root .scan-opts { display: flex; flex-wrap: wrap; gap: 8px 20px; margin-top: 10px; }
+#netbase-root .scan-opts { display: flex; flex-wrap: wrap; gap: 8px 20px; margin-top: 14px; }
 #netbase-root .scan-opts label { display: flex; align-items: center; gap: 7px; font-size: 13.5px; color: var(--muted); }
 /* An option that cannot apply says so by fading, rather than by lying. */
 #netbase-root .scan-opts label.off { opacity: .45; }

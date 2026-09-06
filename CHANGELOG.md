@@ -2,6 +2,40 @@
 
 All notable changes to NetBase are documented here.
 
+## 0.3.21 — 2026-09-06
+
+### Changed
+
+- **What to scan is now chosen first, and by name.** Two radio buttons — the
+  whole network, or the ARP table only — where there had been a checkbox
+  buried among the options that quietly changed what Start did. The address box
+  and the scan speed belong to the first of them and appear only for it.
+- **The Start button says "Start scanning"**, and sits level with the box beside
+  it: the field's bottom margin and the three pixels Nextcloud gives every input
+  had been holding it apart.
+- **A fourth depth for the port check: the well-known ports, 1 to 1024.**
+  Between the 106-port list and all 65,535, which is where most of a device's
+  services actually sit.
+
+## 0.3.20 — 2026-09-06
+
+### Changed
+
+- **The option is called what it does: skip the address sweep.** Reading the
+  ARP table and stopping there was true to the old label but of little use — no
+  names, no open ports, nothing to go on. What is worth skipping is the walk
+  through every address in the network, not the work that follows it. Ticked,
+  the scan starts from the ARP table and whatever announces itself, and then
+  asks those devices for their names and their ports exactly as it would after
+  a sweep. A device that has never spoken to this server and does not announce
+  itself will not be found; everything else is, in seconds rather than minutes.
+
+### Fixed
+
+- **The Start button sits level with the box beside it.** The field carries a
+  bottom margin meant for a stacked form, which in that row lifted the box
+  twelve pixels above the button — the height of the margin.
+
 ## 0.3.19 — 2026-09-06
 
 ### Fixed

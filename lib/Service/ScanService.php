@@ -178,7 +178,11 @@ class ScanService {
 		$total = max(1, count($queue['ips'] ?? []));
 		$scan->setCursor($scan->getTotal());
 		$this->progress($scan, 'arp', $total, $total);
-		$scan->setPhase('done');
+		// Skipping the sweep is skipping the walk through every address. What
+		// follows is the part worth having — the names, the ports, the reverse
+		// lookups — and it runs on whatever the table and the multicast turned
+		// up, exactly as it would after a sweep.
+		$scan->setPhase($options['names'] ? 'names' : ($options['ports'] ? 'ports' : 'rdns'));
 	}
 
 	private function stepSweep(ScanEntity $scan, array &$queue, array $options): void {
@@ -402,6 +406,9 @@ class ScanService {
 		}
 		return match ($options['portScan'] ?? 'common') {
 			'all' => range(1, 65535),
+			// Everything IANA calls well known — where a service that expects to
+			// be found still puts itself.
+			'wellKnown' => range(1, 1024),
 			'detailed' => DiscoveryService::DETAILED_PORTS,
 			default => DiscoveryService::FINGERPRINT_PORTS,
 		};
@@ -752,15 +759,18 @@ class ScanService {
 		// one tells a printer from a camera without slowing the sweep, the long
 		// one explains the device the short list does not, and the whole range
 		// is there for the interface a maker hid on port 30443.
-		$depth = in_array($options['portScan'] ?? 'common', ['common', 'detailed', 'all'], true)
+		$depth = in_array($options['portScan'] ?? 'common', ['common', 'detailed', 'wellKnown', 'all'], true)
 			? (string)$options['portScan']
 			: 'common';
 		$default = match ($depth) {
-			'all' => [],
+			'all', 'wellKnown' => [],
 			'detailed' => DiscoveryService::DETAILED_PORTS,
 			default => DiscoveryService::FINGERPRINT_PORTS,
 		};
-		$ports = $depth === 'all' ? [] : ($options['portList'] ?? $default);
+		// The long ranges are built when they are needed rather than stored: a
+		// thousand numbers do not belong in a scan's saved options, let alone
+		// sixty-five thousand.
+		$ports = in_array($depth, ['all', 'wellKnown'], true) ? [] : ($options['portList'] ?? $default);
 		$ports = array_values(array_filter(array_map('intval', (array)$ports), static fn ($p) => $p > 0 && $p < 65536));
 		$arpOnly = (bool)($options['arpOnly'] ?? false);
 		$mode = $this->paceRate((string)($options['pace'] ?? self::PACE_DEFAULT));
@@ -771,18 +781,15 @@ class ScanService {
 			'rate' => max(200, min(20000, (int)($options['rate'] ?? $pace['rate']))),
 			'settle' => max(50, min(2000, (int)($options['settle'] ?? $pace['settle']))),
 			'arpOnly' => $arpOnly,
-			// Reading the table is the whole of the work when it is asked for.
-			// Leaving these on would let a later step wander back into probing
-			// the very devices the option promised to leave alone.
-			'names' => !$arpOnly && (bool)($options['names'] ?? true),
-			'multicast' => !$arpOnly && (bool)($options['multicast'] ?? true),
-			'ports' => !$arpOnly && (bool)($options['ports'] ?? true),
+			'names' => (bool)($options['names'] ?? true),
+			'multicast' => (bool)($options['multicast'] ?? true),
+			'ports' => (bool)($options['ports'] ?? true),
 			'portScan' => $depth,
 			// How long to wait for a port to answer. This, not the send rate,
 			// is what decides how long a scan takes: a device that answers
 			// nothing costs the whole wait for every 512 attempts.
 			'portWait' => min(3.0, max(0.2, round((float)($options['portWait'] ?? 0.9), 2))),
-			'rdns' => !$arpOnly && (bool)($options['rdns'] ?? true),
+			'rdns' => (bool)($options['rdns'] ?? true),
 			'interface' => (string)($options['interface'] ?? ''),
 			'portList' => $ports ?: $default,
 		];

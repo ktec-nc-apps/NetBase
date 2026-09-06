@@ -342,8 +342,20 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         <!-- ============ devices ============ -->
         <section v-if="tab==='devices'">
           <div class="card scan-card" v-if="allowed('scan')">
+            <!-- What is being scanned, before anything about how. The two are
+                 different jobs: one walks every address in the network, the
+                 other starts from what this server has already met. -->
+            <div class="scan-what">
+              <span class="fl-label">{{ t('What to scan') }}</span>
+              <label :title="t('Walks every address in the networks below. Thorough, and the slow one.')">
+                <input type="radio" value="network" v-model="scanWhat"> {{ t('The whole network') }}
+              </label>
+              <label :title="t('Starts from the ARP table and what announces itself, instead of walking every address. Seconds rather than minutes, and everything found is still asked for its name and its open ports — but a device that has never spoken to this server and does not announce itself will not be found.')">
+                <input type="radio" value="arp" v-model="scanWhat"> {{ t('The ARP table only') }}
+              </label>
+            </div>
             <div class="scan-row">
-              <label class="fl" :title="t('Which networks to look at. Left blank, it uses the ones this server is on. Several can be given, separated by commas.')">
+              <label class="fl" v-if="scanWhat === 'network'" :title="t('Which networks to look at. Left blank, it uses the ones this server is on. Several can be given, separated by commas.')">
                 <span class="fl-label">{{ t('Networks to scan') }}</span>
                 <input v-model="scanTargets" :placeholder="suggestedPlaceholder">
               </label>
@@ -351,39 +363,39 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
                    are. This one walks the addresses; the wait beneath is what a
                    port that says nothing costs, and it is the wait, not this,
                    that decides how long a long scan takes. -->
-              <label class="fl narrow pace" v-if="!opts.arpOnly" :title="t('How quickly the addresses are walked through. A slower speed finds more Wi-Fi devices, because a wireless network carries broadcasts slowly: on a /16 with ten devices, 15,000 a second found six of them and 1,500 found all ten.')">
+              <label class="fl narrow pace" v-if="scanWhat === 'network'" :title="t('How quickly the addresses are walked through. A slower speed finds more Wi-Fi devices, because a wireless network carries broadcasts slowly: on a /16 with ten devices, 15,000 a second found six of them and 1,500 found all ten.')">
                 <span class="fl-label">{{ t('Scan speed') }}</span>
                 <select v-model="pace">
                   <option v-for="r in paceRates" :key="r" :value="String(r)">{{ paceLabel(r) }}</option>
                 </select>
               </label>
-              <button class="btn primary" :disabled="scanning" @click="startScan()">{{ scanning ? t('Scanning…') : t('Start') }}</button>
+              <button class="btn primary" :disabled="scanning" @click="startScan()">{{ scanning ? t('Scanning…') : t('Start scanning') }}</button>
               <button class="btn" v-if="scanning" @click="cancelScan">{{ t('Stop') }}</button>
             </div>
             <div class="scan-opts">
-              <label :title="t('Asks each address for its own name, over NetBIOS and mDNS.')" :class="{ off: opts.arpOnly }"><input type="checkbox" v-model="opts.names" :disabled="opts.arpOnly"> {{ t('Ask devices for their names') }}</label>
-              <label :title="t('Listens for the devices that announce themselves — mDNS, WS-Discovery and SSDP. It finds devices the sweep missed.')" :class="{ off: opts.arpOnly }"><input type="checkbox" v-model="opts.multicast" :disabled="opts.arpOnly"> {{ t('Multicast discovery') }}</label>
-              <label :title="t('Connects to each device to see which ports answer. This is what tells a printer from a camera.')" :class="{ off: opts.arpOnly }"><input type="checkbox" v-model="opts.ports" :disabled="opts.arpOnly"> {{ t('Check open ports') }}</label>
+              <label :title="t('Asks each address for its own name, over NetBIOS and mDNS.')"><input type="checkbox" v-model="opts.names"> {{ t('Ask devices for their names') }}</label>
+              <label :title="t('Listens for the devices that announce themselves — mDNS, WS-Discovery and SSDP. It finds devices the sweep missed.')"><input type="checkbox" v-model="opts.multicast"> {{ t('Multicast discovery') }}</label>
+              <label :title="t('Connects to each device to see which ports answer. This is what tells a printer from a camera.')"><input type="checkbox" v-model="opts.ports"> {{ t('Check open ports') }}</label>
               <!-- Three depths rather than one compromise: the short list keeps
                    a scan quick, the long one explains the device the short list
                    does not, and the whole range is there for the interface a
                    maker hid on port 30443. -->
-              <label class="depth" v-if="opts.ports && !opts.arpOnly" :title="t('How many ports to try on each device.')">
+              <label class="depth" v-if="opts.ports" :title="t('How many ports to try on each device.')">
                 <select v-model="opts.portScan">
                   <option value="common">{{ t('Common ports') }} ({{ portCount('common') }})</option>
                   <option value="detailed">{{ t('Detailed search') }} ({{ portCount('detailed') }})</option>
+                  <option value="wellKnown">{{ t('Well-known ports') }} ({{ portCount('wellKnown') }})</option>
                   <option value="all">{{ t('Every port') }} ({{ portCount('all') }})</option>
                 </select>
               </label>
               <!-- The number that actually decides how long this takes. -->
-              <label class="depth" v-if="opts.ports && !opts.arpOnly" :title="t('How long to wait for a port to answer. A port that refuses is instant whatever this is; the wait only applies to one that says nothing at all, which is what a firewall and a sleeping device both look like. Waiting less is quicker and misses more.')">
+              <label class="depth" v-if="opts.ports" :title="t('How long to wait for a port to answer. A port that refuses is instant whatever this is; the wait only applies to one that says nothing at all, which is what a firewall and a sleeping device both look like. Waiting less is quicker and misses more.')">
                 <span class="opt-label">{{ t('Wait per port') }}</span>
                 <select v-model.number="opts.portWait">
                   <option v-for="w in portWaits" :key="w" :value="w">{{ waitLabel(w) }}</option>
                 </select>
               </label>
-              <label :title="t('Asks the DNS server what name it has on record for each address.')" :class="{ off: opts.arpOnly }"><input type="checkbox" v-model="opts.rdns" :disabled="opts.arpOnly"> {{ t('Reverse DNS') }}</label>
-              <label :title="t('Skips the sweep and lists only the devices this server has already spoken to. It answers at once, but finds nothing new.')"><input type="checkbox" v-model="opts.arpOnly"> {{ t('Read ARP table only (instant)') }}</label>
+              <label :title="t('Asks the DNS server what name it has on record for each address.')"><input type="checkbox" v-model="opts.rdns"> {{ t('Reverse DNS') }}</label>
             </div>
             <div class="progress" v-if="scan">
               <div class="bar"><div class="fill" :style="{width: scan.percent + '%'}"></div></div>
@@ -1941,10 +1953,13 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         dragTab: '', overTab: '',
         devices: [], scan: null, scanning: false, advice: null,
         scanTargets: '', pace: '1500',
+        // The ARP table to begin with: it answers in seconds, and walking a
+        // whole network is a deliberate thing to ask for.
+        scanWhat: 'arp',
         // Reading the neighbour table is on to begin with: it answers at once,
         // out of what this server has already spoken to, and a sweep is a
         // deliberate thing to ask for rather than the first thing that happens.
-        opts: { names: true, multicast: true, ports: true, portScan: 'common', portWait: 0.9, rdns: true, arpOnly: true },
+        opts: { names: true, multicast: true, ports: true, portScan: 'common', portWait: 0.9, rdns: true },
         openPort: '', openScheme: 'http',
         // One device asked about itself: which search is running, how far it
         // has got, and what it came back with.
@@ -2279,6 +2294,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
       /** How many ports each depth actually probes, straight from the server. */
       portCount(depth) {
         if (depth === 'all') return 65535;
+        if (depth === 'wellKnown') return 1024;
         const list = depth === 'detailed' ? this.status.detailedPorts : this.status.fingerprintPorts;
         return (list || []).length;
       },
@@ -2412,9 +2428,10 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         if (this.scanning) return;
         this.tab = 'devices';
         const targets = this.scanTargets.split(',').map((x) => x.trim()).filter(Boolean);
+        const options = { ...this.opts, pace: this.pace, arpOnly: this.scanWhat === 'arp' };
         try {
           this.advice = await api('scan/advice?' + qs({ targets }));
-          const r = await api('scan', { method: 'POST', body: JSON.stringify({ targets, options: { ...this.opts, pace: this.pace } }) });
+          const r = await api('scan', { method: 'POST', body: JSON.stringify({ targets, options }) });
           this.scan = r.scan;
           this.scanning = true;
           api('settings', { method: 'POST', body: JSON.stringify({ settings: { lastTargets: this.scanTargets } }) }).catch(() => {});
