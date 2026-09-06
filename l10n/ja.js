@@ -27,6 +27,7 @@ OC.L10N.register(
         "Scan speed": "スキャン速度",
         "Fast": "速い",
         "Gentle": "ゆっくり",
+        "High ports": "上位ポート",
         "Ports to try": "調べるポート",
         "What to scan": "スキャン対象",
         "The whole network": "ネットワーク全体",

@@ -2,6 +2,20 @@
 
 All notable changes to NetBase are documented here.
 
+## 0.4.1 — 2026-09-06
+
+### Fixed
+
+- **A radio button is drawn as a radio button.** It had no style of its own, so
+  it fell through to the rule for a text box and was rendered as one: a rounded
+  rectangle with twelve pixels of padding around the dot.
+
+### Added
+
+- **A fifth depth for the port check: the high ports, 1025 to 65535** — where a
+  maker hides an interface it would rather not advertise, such as the 22401 on
+  a router here.
+
 ## 0.4.0 — 2026-09-06
 
 Everything since 0.3.11, which is what the customer sites have been running,

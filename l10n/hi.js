@@ -27,6 +27,7 @@ OC.L10N.register(
         "Scan speed": "स्कैन गति",
         "Fast": "तेज़",
         "Gentle": "धीमा",
+        "High ports": "ऊपरी पोर्ट",
         "Ports to try": "आज़माने के पोर्ट",
         "What to scan": "क्या स्कैन करें",
         "The whole network": "पूरा नेटवर्क",

@@ -27,6 +27,7 @@ OC.L10N.register(
         "Scan speed": "Kecepatan pemindaian",
         "Fast": "Cepat",
         "Gentle": "Pelan",
+        "High ports": "Porta tinggi",
         "Ports to try": "Porta yang dicoba",
         "What to scan": "Apa yang dipindai",
         "The whole network": "Seluruh jaringan",

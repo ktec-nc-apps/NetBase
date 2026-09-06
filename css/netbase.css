@@ -49,6 +49,21 @@
 }
 #netbase-root select { height: auto; }
 #netbase-root input:focus, #netbase-root select:focus, #netbase-root textarea:focus { outline: 2px solid var(--primary); outline-offset: -1px; }
+/* A radio had no style of its own, so it fell through to the rule for a text
+   box and was drawn as one: a rounded rectangle with 12px of padding around a
+   dot. Round, like the control it is. */
+#netbase-root input[type='radio'] {
+  -webkit-appearance: none; appearance: none; width: 18px; height: 18px; min-width: 18px; min-height: 18px;
+  padding: 0; margin: 0; flex: 0 0 auto; position: relative; vertical-align: middle;
+  border: 2px solid var(--muted); border-radius: 50%; background: var(--surface-2); box-shadow: none;
+}
+#netbase-root input[type='radio']:checked { border-color: var(--primary); }
+#netbase-root input[type='radio']:checked::after {
+  content: ''; position: absolute; left: 3px; top: 3px; width: 8px; height: 8px;
+  border-radius: 50%; background: var(--primary);
+}
+#netbase-root input[type='radio']:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+
 #netbase-root input[type='checkbox'] {
   -webkit-appearance: none; appearance: none; width: 18px; height: 18px; min-width: 18px; min-height: 18px;
   padding: 0; margin: 0; flex: 0 0 auto; position: relative; vertical-align: middle;
@@ -153,7 +168,6 @@
 #netbase-root .scan-what { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 16px; margin-bottom: 12px; }
 #netbase-root .scan-what label { display: inline-flex; align-items: center; gap: 7px; font-size: 13.5px; color: var(--text); }
 #netbase-root .scan-what .fl-label { margin-right: 2px; }
-#netbase-root .scan-what input[type='radio'] { width: auto; min-height: 0; margin: 0; }
 
 #netbase-root .scan-row { display: flex; align-items: flex-end; gap: 10px; }
 /* The field carries a bottom margin for use in a stacked form. In this row it

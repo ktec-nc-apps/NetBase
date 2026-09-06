@@ -390,6 +390,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
                   <option value="common">{{ t('Common ports') }} ({{ portCount('common') }})</option>
                   <option value="detailed">{{ t('Detailed search') }} ({{ portCount('detailed') }})</option>
                   <option value="wellKnown">{{ t('Well-known ports') }} ({{ portCount('wellKnown') }})</option>
+                  <option value="high">{{ t('High ports') }} ({{ portCount('high') }})</option>
                   <option value="all">{{ t('Every port') }} ({{ portCount('all') }})</option>
                 </select>
               </label>
@@ -2299,6 +2300,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
       portCount(depth) {
         if (depth === 'all') return 65535;
         if (depth === 'wellKnown') return 1024;
+        if (depth === 'high') return 64511;
         const list = depth === 'detailed' ? this.status.detailedPorts : this.status.fingerprintPorts;
         return (list || []).length;
       },

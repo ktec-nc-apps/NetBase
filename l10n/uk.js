@@ -27,6 +27,7 @@ OC.L10N.register(
         "Scan speed": "Швидкість сканування",
         "Fast": "Швидко",
         "Gentle": "Обережно",
+        "High ports": "Верхні порти",
         "Ports to try": "Які порти пробувати",
         "What to scan": "Що сканувати",
         "The whole network": "Уся мережа",

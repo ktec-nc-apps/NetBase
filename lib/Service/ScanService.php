@@ -409,6 +409,9 @@ class ScanService {
 			// Everything IANA calls well known — where a service that expects to
 			// be found still puts itself.
 			'wellKnown' => range(1, 1024),
+			// And everything above it, which is where a maker hides a web
+			// interface it would rather not advertise — 22401 on a router here.
+			'high' => range(1025, 65535),
 			'detailed' => DiscoveryService::DETAILED_PORTS,
 			default => DiscoveryService::FINGERPRINT_PORTS,
 		};
@@ -759,18 +762,18 @@ class ScanService {
 		// one tells a printer from a camera without slowing the sweep, the long
 		// one explains the device the short list does not, and the whole range
 		// is there for the interface a maker hid on port 30443.
-		$depth = in_array($options['portScan'] ?? 'common', ['common', 'detailed', 'wellKnown', 'all'], true)
+		$depth = in_array($options['portScan'] ?? 'common', ['common', 'detailed', 'wellKnown', 'high', 'all'], true)
 			? (string)$options['portScan']
 			: 'common';
 		$default = match ($depth) {
-			'all', 'wellKnown' => [],
+			'all', 'wellKnown', 'high' => [],
 			'detailed' => DiscoveryService::DETAILED_PORTS,
 			default => DiscoveryService::FINGERPRINT_PORTS,
 		};
 		// The long ranges are built when they are needed rather than stored: a
 		// thousand numbers do not belong in a scan's saved options, let alone
 		// sixty-five thousand.
-		$ports = in_array($depth, ['all', 'wellKnown'], true) ? [] : ($options['portList'] ?? $default);
+		$ports = in_array($depth, ['all', 'wellKnown', 'high'], true) ? [] : ($options['portList'] ?? $default);
 		$ports = array_values(array_filter(array_map('intval', (array)$ports), static fn ($p) => $p > 0 && $p < 65536));
 		$arpOnly = (bool)($options['arpOnly'] ?? false);
 		$mode = $this->paceRate((string)($options['pace'] ?? self::PACE_DEFAULT));

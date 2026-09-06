@@ -27,6 +27,7 @@ OC.L10N.register(
         "Scan speed": "سرعت پویش",
         "Fast": "سریع",
         "Gentle": "ملایم",
+        "High ports": "درگاه‌های بالا",
         "Ports to try": "درگاه‌های آزمودنی",
         "What to scan": "چه چیزی پویش شود",
         "The whole network": "همهٔ شبکه",

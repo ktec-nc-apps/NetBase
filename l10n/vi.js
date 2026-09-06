@@ -27,6 +27,7 @@ OC.L10N.register(
         "Scan speed": "Tốc độ quét",
         "Fast": "Nhanh",
         "Gentle": "Nhẹ nhàng",
+        "High ports": "Cổng cao",
         "Ports to try": "Cổng cần thử",
         "What to scan": "Quét cái gì",
         "The whole network": "Toàn mạng",
