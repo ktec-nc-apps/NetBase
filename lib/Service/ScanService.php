@@ -42,6 +42,17 @@ class ScanService {
 	 */
 	public const PORT_WAITS = [0.3, 0.9, 2.0];
 
+	/**
+	 * How long a device that can only be heard stays listed after its last
+	 * announcement.
+	 *
+	 * The listener runs every five minutes; this is generous against a late
+	 * cron run rather than against the device, which announces itself every
+	 * forty-five seconds. Something genuinely unplugged drops off the list
+	 * within twenty minutes.
+	 */
+	public const HEARD_FOR = 1200;
+
 	public function __construct(
 		private DiscoveryService $discovery,
 		private OuiService $oui,
@@ -101,6 +112,9 @@ class ScanService {
 		$scan->setUpdated(time());
 
 		$this->devices->markAllOffline();
+		// What can only be heard, and was heard lately, is still here. It has
+		// no way of answering a scan, so a scan cannot say otherwise.
+		$this->devices->keepRecentlyHeard(time() - self::HEARD_FOR);
 		return $this->scans->insert($scan);
 	}
 
@@ -286,6 +300,137 @@ class ScanService {
 		$this->progress($scan, $retrying ? 'names2' : 'names', min(count($queue['asked'] ?? []), $total), $total);
 	}
 
+	/**
+	 * Listen, without scanning, for devices that can only announce themselves.
+	 *
+	 * A camera left on its factory 192.168.1.120 while this server is on
+	 * 10.0.x shares the wire but not the network: it hears a question and its
+	 * answer goes to a gateway that is not there. All that ever reaches us is
+	 * its own unprompted announcement — measured at one every 45 seconds — so
+	 * a scan's few-second listen finds it about one time in five. Sitting on
+	 * the group for a minute finds it every time, which is a job for the
+	 * background, not for someone waiting at the screen.
+	 *
+	 * @return list<string> the addresses heard
+	 */
+	public function listen(float $seconds = 50.0): array {
+		$wires = [];
+		foreach ($this->discovery->interfaces() as $if) {
+			if ($if['loopback'] || !$if['up'] || $if['addresses'] === []) {
+				continue;
+			}
+			foreach ($if['addresses'] as $addr) {
+				if ($addr['family'] === 'inet') {
+					$wires[] = ['index' => (int)$if['index'], 'ip' => $addr['ip']];
+					break;
+				}
+			}
+		}
+		if ($wires === []) {
+			return [];
+		}
+		$heard = [];
+		$channels = $this->discovery->announcementChannels();
+		foreach ($this->discovery->multicastHearMany($wires, $channels, $seconds) as $ip => $said) {
+			$update = $this->fromAnnouncements($ip, $said);
+			if ($update === []) {
+				continue;
+			}
+			$this->upsert($ip, null, $update);
+			$heard[] = $ip;
+		}
+		return array_values(array_unique($heard));
+	}
+
+	/**
+	 * What a device's own announcements tell us about it.
+	 *
+	 * Nothing here was asked for and nothing here can be checked, so only what
+	 * the device states about itself is recorded — its address, the dialect it
+	 * speaks, and the port it says its own interface is on.
+	 *
+	 * @param list<array{port: int, body: string}> $said
+	 */
+	private function fromAnnouncements(string $ip, array $said): array {
+		$update = [];
+		$ports = [];
+		foreach ($said as $one) {
+			$body = $one['body'];
+			switch ($one['port']) {
+				case 1900:
+					$where = preg_match('/^LOCATION:\s*(\S+)/mi', $body, $m) ? trim($m[1]) : '';
+					$server = preg_match('/^SERVER:\s*(.+)$/mi', $body, $m2) ? trim($m2[1]) : '';
+					$update['source'] = 'ssdp';
+					if ($where !== '' || $server !== '') {
+						$update['ssdp'] = trim($server . ' ' . $where);
+					}
+					// A device that cannot be reached can still be believed
+					// about itself. The camera says where its own interface
+					// is — port 49152, in one case — and that is worth
+					// recording even though nothing here can connect to it.
+					$told = $this->portFromUrl($where, $ip);
+					if ($told !== null) {
+						$ports[$told] = true;
+					}
+					// The kind of thing it is, when it names one.
+					if (preg_match('#urn:schemas-upnp-org:device:([A-Za-z0-9]+):#', $body, $m3)) {
+						$update['model'] = $m3[1];
+					}
+					break;
+				case 3702:
+					$update['source'] = 'wsd';
+					if (preg_match('#<[^>]*Types[^>]*>(.*?)</[^>]*Types>#s', $body, $m)) {
+						$update['wsd'] = trim($m[1]);
+					}
+					if (preg_match('#<[^>]*XAddrs[^>]*>(.*?)</[^>]*XAddrs>#s', $body, $m)) {
+						foreach (preg_split('/\s+/', trim($m[1])) as $addr) {
+							$told = $this->portFromUrl($addr, $ip);
+							if ($told !== null) {
+								$ports[$told] = true;
+							}
+						}
+					}
+					break;
+				case 5353:
+					$update['source'] = 'mdns';
+					break;
+				case 5355:
+					$update['source'] = 'llmnr';
+					break;
+			}
+		}
+		if ($ports !== []) {
+			$update['addPorts'] = array_map('intval', array_keys($ports));
+			sort($update['addPorts']);
+		}
+		return $update;
+	}
+
+	/**
+	 * What an SSDP announcement tells us about the device that sent it.
+	 *
+	 * @param list<string> $said
+	 */
+	private function fromAnnouncement(string $ip, array $said): array {
+		$body = implode("\n", $said);
+		$where = preg_match('/^LOCATION:\s*(\S+)/mi', $body, $m2) ? trim($m2[1]) : '';
+		$update = [
+			'source' => 'ssdp',
+			'ssdp' => trim(
+				(preg_match('/^SERVER:\s*(.+)$/mi', $body, $m) ? trim($m[1]) : '') . ' ' . $where
+			),
+		];
+		// A device that cannot be reached can still be believed about itself.
+		// The camera says where its own interface is — port 49152, in one
+		// case — and that is worth recording even though nothing here can
+		// connect to it.
+		$told = $this->portFromUrl($where, $ip);
+		if ($told !== null) {
+			$update['addPorts'] = [$told];
+		}
+		return $update;
+	}
+
 	private function stepMulticast(ScanEntity $scan, array &$queue, array $options): void {
 		foreach ($this->discovery->interfaces() as $if) {
 			if ($if['loopback'] || !$if['up'] || $if['addresses'] === []) {
@@ -319,15 +464,8 @@ class ScanService {
 			// our address is off its subnet and its reply goes to a gateway
 			// that is not there. Its own announcements arrive regardless.
 			$search = "M-SEARCH * HTTP/1.1\r\nHOST: 239.255.255.250:1900\r\nMAN: \"ssdp:discover\"\r\nMX: 2\r\nST: ssdp:all\r\n\r\n";
-			foreach ($this->discovery->multicastHear($source, '239.255.255.250', 1900, 6.0, (int)$if['index'], $search) as $ip => $said) {
-				$body = implode("\n", $said);
-				$this->upsert($ip, null, [
-					'source' => 'ssdp',
-					'ssdp' => trim(
-						(preg_match('/^SERVER:\s*(.+)$/mi', $body, $m) ? trim($m[1]) : '')
-						. ' ' . (preg_match('/^LOCATION:\s*(\S+)/mi', $body, $m2) ? trim($m2[1]) : '')
-					),
-				]);
+			foreach ($this->discovery->multicastHear($source, '239.255.255.250', 1900, 8.0, (int)$if['index'], $search) as $ip => $said) {
+				$this->upsert($ip, null, $this->fromAnnouncement($ip, $said));
 			}
 			foreach ($this->discovery->multicastHear($source, '224.0.0.251', 5353, 1.5, (int)$if['index']) as $ip => $said) {
 				$this->upsert($ip, null, ['source' => 'mdns']);
@@ -412,6 +550,21 @@ class ScanService {
 		} else {
 			$this->progress($scan, 'portsAll', $idx * $count + $at, count($ips) * $count);
 		}
+	}
+
+	/**
+	 * The port a device names in its own announcement, when the address in it
+	 * is the device's own. Nothing is inferred: it is what the device said.
+	 */
+	private function portFromUrl(string $url, string $ip): ?int {
+		if ($url === '' || preg_match('#^https?://([^/:]+)(?::(\d+))?#i', $url, $m) !== 1) {
+			return null;
+		}
+		if ($m[1] !== $ip) {
+			return null;
+		}
+		$port = isset($m[2]) && $m[2] !== '' ? (int)$m[2] : (str_starts_with(strtolower($url), 'https') ? 443 : 80);
+		return $port > 0 && $port < 65536 ? $port : null;
 	}
 
 	/**
@@ -579,6 +732,28 @@ class ScanService {
 		if (isset($update['ports']) && is_array($update['ports'])) {
 			$device->setPorts($update['ports'] === [] ? null : implode(',', $update['ports']));
 		}
+		// A port a device announced is one to add to what is already known,
+		// never the whole list. A scan speaks for every port it tried and may
+		// take one away; an announcement speaks for one port only. Written as
+		// the whole truth it wiped the rest: a camera here announces its own
+		// page on port 49152 every forty-five seconds, so within a minute of
+		// any scan the eight ports it had found were down to that one, and the
+		// web-page search that followed had nothing left to try but 49152 and
+		// never saw port 80.
+		if (isset($update['addPorts']) && is_array($update['addPorts'])) {
+			$known = array_values(array_filter(array_map(
+				'intval',
+				explode(',', (string)$device->getPorts()),
+			)));
+			foreach ($update['addPorts'] as $told) {
+				$told = (int)$told;
+				if ($told > 0 && $told < 65536 && !in_array($told, $known, true)) {
+					$known[] = $told;
+				}
+			}
+			sort($known);
+			$device->setPorts($known === [] ? null : mb_substr(implode(',', $known), 0, 512));
+		}
 		if (!empty($update['source'])) {
 			$sources = array_filter(explode(',', (string)$device->getSources()));
 			foreach (explode(',', (string)$update['source']) as $source) {
@@ -590,7 +765,7 @@ class ScanService {
 		}
 
 		$extra = $device->getExtra() ? (json_decode((string)$device->getExtra(), true) ?: []) : [];
-		foreach (['mdns', 'wsd', 'ssdp', 'rdns'] as $field) {
+		foreach (['mdns', 'wsd', 'ssdp', 'llmnr', 'rdns', 'model'] as $field) {
 			if (!empty($update[$field])) {
 				$extra[$field] = (string)$update[$field];
 			}
@@ -631,6 +806,11 @@ class ScanService {
 			return 'printer';
 		}
 		if ($has(554, 8554) || preg_match('/hikvision|dahua|axis communications|panasonic i-pro|vivotek|reolink/', $vendor)) {
+			return 'camera';
+		}
+		// A device out of reach has no ports to judge it by, but it says what
+		// it is in its own announcement, and that is worth believing.
+		if (preg_match('/digitalsecuritycamera|networkcamera|ipcam/', $name)) {
 			return 'camera';
 		}
 		if ($has(445) && preg_match('/buffalo|synology|qnap|western digital|iodata|i-o data|netgear/', $vendor)) {

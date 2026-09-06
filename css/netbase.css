@@ -238,6 +238,10 @@
     inset 0 1px 1px color-mix(in srgb, #fff 60%, transparent);
 }
 #netbase-root .c-name { display: flex; align-items: center; gap: 8px; }
+/* The name cell now holds two stacked lines, so the flex row moves inwards
+   to the first of them; the cell itself is an ordinary block again. */
+#netbase-root table.grid td.c-name { display: table-cell; }
+#netbase-root table.grid td.c-name .pair-a { display: flex; align-items: center; gap: 8px; }
 #netbase-root .c-name .nm { font-weight: 600; }
 
 #netbase-root .chips { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 10px; }
@@ -504,6 +508,9 @@
 /* The machine this is all running on, marked so it is not mistaken for a
    device somebody has to go and look at. */
 #netbase-root .badge.self { background: var(--primary); color: #fff; border-color: var(--primary); }
+/* Heard on this wire, but its address belongs somewhere else: present, and
+   out of reach. */
+#netbase-root .badge.away { background: var(--color-warning, #f0a020); color: #3a2a00; border-color: var(--color-warning, #f0a020); }
 
 #netbase-root .row-menu-veil { position: fixed; inset: 0; z-index: 4000; }
 #netbase-root .row-menu {
@@ -796,3 +803,78 @@
   #netbase-root .ip-row { gap: 5px; }
   #netbase-root .ip-row .btn.xs { padding: 6px 7px; }
 }
+
+/* A device this server cannot reach: why, and the one line that fixes it. */
+.away-note {
+	margin: 10px 0 4px;
+	padding: 10px 12px;
+	border: 1px solid var(--color-border);
+	border-left: 3px solid var(--color-warning, #c98600);
+	border-radius: var(--border-radius-large, 8px);
+	background: var(--color-background-hover);
+	font-size: 12px;
+	line-height: 1.6;
+}
+.away-note p { margin: 0 0 6px; }
+.away-note p:last-child { margin-bottom: 0; }
+.away-cmd {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	margin: 6px 0;
+}
+.away-cmd code {
+	flex: 1;
+	min-width: 0;
+	padding: 5px 8px;
+	overflow-x: auto;
+	white-space: nowrap;
+	border-radius: var(--border-radius, 4px);
+	background: var(--color-background-dark);
+}
+.away-act { margin: 8px 0 6px; }
+
+/* Paired columns: two facts about one device, stacked in one cell. */
+#netbase-root table.grid th.c-pair {
+	padding-top: 6px;
+	padding-bottom: 6px;
+}
+#netbase-root table.grid th.c-pair .th-line {
+	display: block;
+	line-height: 1.5;
+	cursor: pointer;
+}
+#netbase-root table.grid th.c-pair .th-line.plain { cursor: default; }
+#netbase-root table.grid th.c-pair .th-line:last-child { font-weight: 400; opacity: .75; }
+#netbase-root table.grid th.c-pair .th-line.sorted { color: var(--primary); opacity: 1; }
+#netbase-root table.grid th.c-pair .th-line.sorted.asc::after { content: ' ▲'; font-size: 9px; }
+#netbase-root table.grid th.c-pair .th-line.sorted.desc::after { content: ' ▼'; font-size: 9px; }
+#netbase-root table.grid td.c-pair {
+	padding-top: 6px;
+	padding-bottom: 6px;
+	line-height: 1.5;
+}
+#netbase-root table.grid td.c-pair .pair-b {
+	font-size: 11px;
+	opacity: .8;
+}
+#netbase-root table.grid td.c-name .nm.unnamed {
+	font-weight: 400;
+	font-style: italic;
+	opacity: .6;
+}
+
+/* The key-folder row in Settings: a path that takes the width it needs. */
+#netbase-root .fl-row .grow { flex: 1 1 auto; min-width: 0; }
+#netbase-root .fl-row { align-items: center; gap: 8px; }
+
+/* A real terminal screen: the emulator draws it, so the page only frames it. */
+#netbase-root .term-screen {
+	flex: 1 1 auto;
+	min-height: 0;
+	padding: 6px 4px 4px 8px;
+	background: #1b1d21;
+	overflow: hidden;
+}
+#netbase-root .term-screen .xterm { height: 100%; }
+#netbase-root .term-screen .xterm-viewport { overflow-y: auto; }

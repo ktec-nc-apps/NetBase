@@ -33,6 +33,15 @@
     return TOKEN;
   }
 
+  /**
+   * Terminal emulators, kept out of Vue's reach.
+   *
+   * Making one reactive would wrap it in a proxy, and xterm.js reads its own
+   * private fields — which a proxy is not allowed to do. The window keeps only
+   * its id; everything with machinery inside lives here, by that id.
+   */
+  const SCREENS = new Map();
+
   async function api(path, opts = {}) {
     const method = (opts.method || 'GET').toUpperCase();
     const doFetch = (tok) => fetch(BASE + 'api/' + path, {
@@ -417,30 +426,45 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
             <thead>
               <tr>
                 <th class="c-dot"></th>
-                <th @click="sortBy('name')" :class="sortClass('name')">{{ t('Name') }}</th>
-                <th @click="sortBy('ip')" :class="sortClass('ip')">{{ t('IPv4') }}</th>
-                <th class="c-extra" @click="sortBy('mac')" :class="sortClass('mac')">{{ t('MAC address') }}</th>
-                <th class="c-extra" @click="sortBy('vendor')" :class="sortClass('vendor')">{{ t('Vendor') }}</th>
-                <th class="c-extra" @click="sortBy('type')" :class="sortClass('type')">{{ t('Type') }}</th>
-                <th>{{ t('Open ports') }}</th>
+                <!-- Paired columns, stacked. What belongs to one device reads
+                     as one block instead of a line the eye has to track all
+                     the way across the screen. Both halves still sort. -->
+                <th class="c-pair">
+                  <span class="th-line" @click="sortBy('name')" :class="sortClass('name')">{{ t('Name') }}</span>
+                  <span class="th-line" @click="sortBy('ip')" :class="sortClass('ip')">{{ t('IPv4') }}</span>
+                </th>
+                <th class="c-pair c-extra">
+                  <span class="th-line" @click="sortBy('mac')" :class="sortClass('mac')">{{ t('MAC address') }}</span>
+                  <span class="th-line" @click="sortBy('vendor')" :class="sortClass('vendor')">{{ t('Vendor') }}</span>
+                </th>
+                <th class="c-pair">
+                  <span class="th-line" @click="sortBy('type')" :class="sortClass('type')">{{ t('Type') }}</span>
+                  <span class="th-line plain">{{ t('Open ports') }}</span>
+                </th>
                 <th class="c-extra" @click="sortBy('lastSeen')" :class="sortClass('lastSeen')">{{ t('Last seen') }}</th>
               </tr>
             </thead>
             <tbody>
               <tr v-for="d in shownDevices" :key="d.id" @click="openDevice(d)" @contextmenu.prevent="openRowMenu(d, $event)" :class="{offline: !d.online}">
                 <td class="c-dot"><span class="dot" :class="{on: d.online}" :title="d.online ? t('Online') : t('Not seen in the last sweep')"></span></td>
-                <td class="c-name"><span class="ic">{{ icon(d) }}</span><span class="nm">{{ d.name }}</span><span class="badge self" v-if="isSelf(d)">{{ t('this server') }}</span><span class="badge" v-if="d.label">{{ t('named') }}</span></td>
-                <td class="mono">{{ d.ip }}</td>
-                <td class="mono dim c-extra">{{ d.mac || '—' }}</td>
-                <td class="c-extra">{{ vendorText(d) }}</td>
-                <td class="c-extra">{{ t(typeLabel(d.type)) }}</td>
-                <td class="mono dim ports-cell" @click.stop>
-                  <template v-for="(p,i) in d.ports" :key="p">
-                    <a v-if="portLink(d, p)" href="#" :title="portLink(d, p).title" @click.prevent="openDeviceWindow(d, p)">{{ p }}</a>
-                    <a v-else-if="portTool(d, p)" href="#" :title="portTool(d, p).title" @click.prevent="openPortTool(d, p)">{{ p }}</a>
-                    <span v-else>{{ p }}</span><span v-if="i < d.ports.length - 1">, </span>
-                  </template>
-                  <span v-if="!d.ports.length">—</span>
+                <td class="c-pair c-name">
+                  <div class="pair-a"><span class="ic">{{ icon(d) }}</span><span class="nm" :class="{unnamed: !listName(d).named}">{{ listName(d).text }}</span><span class="badge self" v-if="isSelf(d)">{{ t('this server') }}</span><span class="badge away" v-if="offNetwork(d)" :title="t('It shares this wire but its address belongs to another network, so nothing here can reach it. Give it an address on this network, or give this server one on its own, to open it.')">{{ t('another network') }}</span><span class="badge" v-if="d.label">{{ t('named') }}</span></div>
+                  <div class="pair-b mono">{{ d.ip }}</div>
+                </td>
+                <td class="c-pair c-extra">
+                  <div class="pair-a mono">{{ d.mac || '—' }}</div>
+                  <div class="pair-b dim">{{ vendorText(d) }}</div>
+                </td>
+                <td class="c-pair">
+                  <div class="pair-a">{{ t(typeLabel(d.type)) }}</div>
+                  <div class="pair-b mono dim ports-cell" @click.stop>
+                    <template v-for="(p,i) in d.ports" :key="p">
+                      <a v-if="portLink(d, p)" href="#" :title="portLink(d, p).title" @click.prevent="openDeviceWindow(d, p)">{{ p }}</a>
+                      <a v-else-if="portTool(d, p)" href="#" :title="portTool(d, p).title" @click.prevent="openPortTool(d, p)">{{ p }}</a>
+                      <span v-else>{{ p }}</span><span v-if="i < d.ports.length - 1">, </span>
+                    </template>
+                    <span v-if="!d.ports.length">—</span>
+                  </div>
                 </td>
                 <td class="dim c-extra">{{ ago(d.lastSeen) }}</td>
               </tr>
@@ -1175,7 +1199,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
               </select>
               <template v-if="adhoc.authType==='key' && adhoc.kind==='sftp'">
                 <input v-model="adhoc.privateKeyPath" class="grow mono" :placeholder="t('Key file in your Nextcloud files')">
-                <button class="btn sm" @click="pickFile('Choose a key file', (p) => { adhoc.privateKeyPath = p; })">📂</button>
+                <button class="btn sm" @click="pickFile(t('Choose a key file'), (p) => { adhoc.privateKeyPath = p; }, false, settings.keyFolder)">📂</button>
               </template>
               <input v-else v-model="adhoc.secret" type="password" class="short" :placeholder="t('Password')" autocomplete="new-password">
               <input v-model="adhoc.path" class="short mono" :placeholder="t('Start folder (optional)')">
@@ -1270,7 +1294,6 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
               <input v-model.number="sshPort" type="number" class="tiny" min="1" max="65535">
               <button class="btn primary" :disabled="busy.ssh" @click="runSsh">{{ t('Inspect SSH') }}</button>
               <button class="btn" :disabled="busy.telnet" @click="runTelnet">{{ t('Try Telnet') }}</button>
-              <button class="btn" :disabled="!sshHost" @click="openTerminal('telnet', sshHost, 23)">🖳 {{ t('Open a Telnet window') }}</button>
             </div>
             <label class="opt"><input type="checkbox" v-model="sshAuthMethods"> {{ t('Also ask which sign-in methods are accepted (leaves one failed attempt in the server log)') }}</label>
           </div>
@@ -1324,12 +1347,26 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
             <div class="tool-row">
               <template v-if="sshAdhoc.authType === 'key'">
                 <input v-model="sshAdhoc.privateKeyPath" class="grow mono" :placeholder="t('Key file in your Nextcloud files')">
-                <button class="btn sm" @click="pickFile('Choose a key file', (p) => { sshAdhoc.privateKeyPath = p; })">📂 {{ t('Browse…') }}</button>
+                <button class="btn sm" @click="pickFile(t('Choose a key file'), (p) => { sshAdhoc.privateKeyPath = p; }, false, settings.keyFolder)">📂 {{ t('Browse…') }}</button>
                 <input v-model="sshAdhoc.passphrase" type="password" class="short" :placeholder="t('Key passphrase (if any)')" autocomplete="new-password">
               </template>
               <input v-else v-model="sshAdhoc.secret" type="password" class="short" :placeholder="t('Password')" autocomplete="new-password">
               <button class="btn primary" :disabled="busy.term || !sshAdhoc.host || !sshAdhoc.username" @click="quickConsole">🖳 {{ t('Connect') }}</button>
               <button class="btn" :disabled="!sshAdhoc.host" @click="saveSshAdhoc">{{ t('Save to the list') }}</button>
+            </div>
+          </div>
+
+          <div class="card tool-card" v-if="allowed('sshexec')">
+            <h3>Telnet</h3>
+            <p class="dim">{{ t('Equipment too old for SSH is worked on the same way, in a window of its own. The user name and password are asked for inside the window.') }}</p>
+            <p class="hint" v-if="sshHost && telnetAdhoc.host !== sshHost">
+              {{ t('Looking at {host} above?', { host: sshHost }) }}
+              <button class="btn xs" @click="telnetAdhoc.host = sshHost">{{ t('Use it here') }}</button>
+            </p>
+            <div class="tool-row">
+              <input v-model="telnetAdhoc.host" class="grow" :placeholder="t('Host name or IP address')" @keyup.enter="openTelnetWindow">
+              <input v-model.number="telnetAdhoc.port" type="number" class="tiny" min="1" max="65535">
+              <button class="btn primary" :disabled="!telnetAdhoc.host" @click="openTelnetWindow">🖳 {{ t('Open a Telnet window') }}</button>
             </div>
           </div>
 
@@ -1474,6 +1511,14 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
           </label>
           <p class="dim">{{ t('NetBase can speak a different language from the rest of Nextcloud — handy when the interface language and the language you think in are not the same.') }}</p>
 
+          <h3>{{ t('SSH key files') }}</h3>
+          <p class="dim">{{ t('Keys usually live in one folder. Name it here and the file chooser starts there every time, instead of at the top of your files.') }}</p>
+          <div class="fl-row">
+            <input v-model="settings.keyFolder" class="grow mono" :placeholder="t('Anywhere in your Nextcloud files')" @change="saveKeyFolder">
+            <button class="btn sm" @click="pickFile(t('Choose a folder'), (p) => { settings.keyFolder = p; saveKeyFolder(); }, true, settings.keyFolder)">📂 {{ t('Browse…') }}</button>
+            <button class="btn sm" :disabled="!settings.keyFolder" @click="settings.keyFolder = ''; saveKeyFolder()">{{ t('Clear') }}</button>
+          </div>
+
           <h3>{{ t('The list of tools') }}</h3>
           <p class="dim">{{ t('Drag the tools in the sidebar into the order you work in — or hold Alt and press the up and down arrows. The order is kept for your account.') }}</p>
           <button class="btn sm" :disabled="!(settings.tabOrder || []).length" @click="resetTabOrder">{{ t('Put them back in the original order') }}</button>
@@ -1481,6 +1526,46 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         <div class="drawer-foot">
           <span class="spacer"></span>
           <button class="btn primary" @click="themeBox=false">{{ t('Close') }}</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ sign in to a server, asked for on the spot ============ -->
+    <div v-if="sshAsk.open" class="drawer-backdrop centred" @click.self="sshAsk.open=false">
+      <div class="modal narrow">
+        <div class="drawer-head">
+          <span class="ic big">🖳</span>
+          <div><strong>{{ t('Sign in with details typed here') }}</strong><div class="dim">{{ t('Nothing has to be saved first. Fill this in and connect; save it to the list only if you want it again.') }}</div></div>
+          <span class="spacer"></span>
+          <button class="btn xs ib" :title="t('Close')" :aria-label="t('Close')" @click="sshAsk.open=false"><svg viewBox="0 0 24 24"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg></button>
+        </div>
+        <div class="drawer-body">
+          <div class="fl-row">
+            <label class="fl grow"><span class="fl-label">{{ t('Host') }}</span><input v-model="sshAsk.host" class="mono"></label>
+            <label class="fl short"><span class="fl-label">{{ t('Port') }}</span><input v-model.number="sshAsk.port" type="number" min="1" max="65535"></label>
+          </div>
+          <div class="fl-row">
+            <label class="fl grow"><span class="fl-label">{{ t('User name') }}</span><input v-model="sshAsk.username" autocomplete="off" @keyup.enter="connectAsk"></label>
+            <label class="fl short"><span class="fl-label">{{ t('Sign in with') }}</span>
+              <select v-model="sshAsk.authType">
+                <option value="password">{{ t('Password') }}</option>
+                <option value="key">{{ t('Private key') }}</option>
+              </select>
+            </label>
+          </div>
+          <template v-if="sshAsk.authType === 'key'">
+            <div class="fl-row">
+              <label class="fl grow"><span class="fl-label">{{ t('Private key') }}</span><input v-model="sshAsk.privateKeyPath" class="mono" :placeholder="t('Key file in your Nextcloud files')"></label>
+              <button class="btn sm" @click="pickFile(t('Choose a key file'), (p) => { sshAsk.privateKeyPath = p; }, false, settings.keyFolder)">📂 {{ t('Browse…') }}</button>
+            </div>
+            <label class="fl"><span class="fl-label">{{ t('Key passphrase (if any)') }}</span><input v-model="sshAsk.passphrase" type="password" autocomplete="new-password" @keyup.enter="connectAsk"></label>
+          </template>
+          <label class="fl" v-else><span class="fl-label">{{ t('Password') }}</span><input v-model="sshAsk.secret" type="password" autocomplete="new-password" @keyup.enter="connectAsk"></label>
+        </div>
+        <div class="drawer-foot">
+          <span class="spacer"></span>
+          <button class="btn" @click="sshAsk.open=false">{{ t('Cancel') }}</button>
+          <button class="btn primary" :disabled="!sshAsk.host || !sshAsk.username" @click="connectAsk">🖳 {{ t('Connect') }}</button>
         </div>
       </div>
     </div>
@@ -1602,7 +1687,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         <strong class="nm">{{ w.kind === 'telnet' ? 'Telnet' : 'SSH' }} · {{ w.host }}</strong>
         <span class="dim mono tiny addr">{{ w.prompt || (w.user ? w.user + '@' + w.host : w.host + ':' + w.port) }}</span>
         <span class="spacer"></span>
-        <button class="btn xs ib" :title="t('Clear')" :aria-label="t('Clear')" @click.stop="w.lines = []">
+        <button class="btn xs ib" :title="t('Clear')" :aria-label="t('Clear')" @click.stop="clearTerm(w)">
           <svg viewBox="0 0 24 24"><path d="M4 7h16"/><path d="M9.5 7V4.5h5V7"/><path d="M6.5 7l1 13h9l1-13"/></svg>
         </button>
         <button class="btn xs ib" v-if="!narrow" :title="t('Fill the screen')" :aria-label="t('Fill the screen')" @click.stop="toggleFull(w)">
@@ -1621,14 +1706,16 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         <button class="btn sm primary" :disabled="w.busy" @click="signInTerm(w)">{{ w.busy ? t('Connecting…') : t('Connect') }}</button>
         <span class="dim tiny">{{ t('Leave both empty if the device does not ask.') }}</span>
       </div>
-      <div class="term-body" :ref="'term' + w.id">
-        <p class="dim tiny">{{ w.kind === 'telnet'
-          ? t('Each line is its own connection: it signs in, sends the line, reads the answer and hangs up. Telnet carries everything in the clear, this window included.')
-          : t('Each line runs on its own connection and the working directory is carried over, so cd, ls and tail behave as expected. Programs that need a real terminal — vi, top, an interactive password prompt — cannot run here.') }}</p>
+      <!-- SSH gets a screen, not a transcript: one connection stays open and
+           the far end draws on it, so vi, top and a password prompt all work
+           exactly as they do at the machine itself. -->
+      <div class="term-screen" v-if="w.kind === 'ssh'" :ref="'screen' + w.id"></div>
+      <div class="term-body" v-else :ref="'term' + w.id">
+        <p class="dim tiny">{{ t('Each line is its own connection: it signs in, sends the line, reads the answer and hangs up. Telnet carries everything in the clear, this window included.') }}</p>
         <div v-for="(l,i) in w.lines" :key="i" :class="'term-line ' + l.kind"><span v-if="l.kind==='cmd'" class="term-prompt">{{ l.prompt }}</span>{{ l.text }}</div>
         <div v-if="w.busy" class="term-line dim">…</div>
       </div>
-      <div class="term-input" v-if="w.kind !== 'telnet' || w.signedIn">
+      <div class="term-input" v-if="w.kind === 'telnet' && w.signedIn">
         <span class="term-prompt mono">{{ termPrompt(w) }}</span>
         <input v-model="w.command" class="mono" autocomplete="off" spellcheck="false" :disabled="w.busy"
                @keydown.enter.prevent="sendTerm(w)" @keydown.up.prevent="termHistory(w, -1)" @keydown.down.prevent="termHistory(w, 1)">
@@ -1740,7 +1827,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
             <label class="fl"><span class="fl-label">{{ t('Key file in your Nextcloud files') }}</span>
               <span class="with-button">
                 <input v-model="connForm.privateKeyPath" class="mono" placeholder="Keys/id_ed25519">
-                <button class="btn sm" @click="pickFile('Choose a key file', (p) => { connForm.privateKeyPath = p; })">📂 {{ t('Browse…') }}</button>
+                <button class="btn sm" @click="pickFile(t('Choose a key file'), (p) => { connForm.privateKeyPath = p; }, false, settings.keyFolder)">📂 {{ t('Browse…') }}</button>
               </span>
             </label>
             <p class="dim">{{ t('Give the path of the private key inside your own Nextcloud files — the one without .pub. The server reads it when you save; the key itself never passes through the browser. Or paste it below instead.') }}</p>
@@ -1817,13 +1904,29 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
               <a class="btn sm ib" :href="l.href" target="_blank" rel="noopener noreferrer" :title="t('Only works from inside that network')" :aria-label="t('Only works from inside that network')"><svg viewBox="0 0 24 24"><path d="M14 4h6v6"/><path d="M20 4l-8.5 8.5"/><path d="M18 14.5V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4.5"/></svg></a>
             </div>
           </div>
+          <!-- A device on another network answers nothing, so the two
+               searches below would report "nothing found" when the truth is
+               "never asked". Say which it is, and say what would fix it. -->
+          <div class="away-note" v-if="offNetwork(selected)">
+            <p><strong>{{ t('This device is not on the same network as the Nextcloud server.') }}</strong>
+              {{ t('To connect to its address or scan its ports, the Nextcloud server needs an address on the same network as this device.') }}</p>
+            <p>{{ t('Open a console over SSH or similar and run the following command with administrator privileges.') }}</p>
+            <div class="away-cmd">
+              <code class="mono">{{ joinCommand(selected) }}</code>
+              <button class="btn xs ib" :title="t('Copy this')" :aria-label="t('Copy this')" @click="copyField(t('Command'), joinCommand(selected))"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2.2"/><path d="M6 15.5H5.5A2.5 2.5 0 0 1 3 13V5.5A2.5 2.5 0 0 1 5.5 3H13a2.5 2.5 0 0 1 2.5 2.5V6"/></svg></button>
+            </div>
+            <p class="away-act" v-if="serverAddress && allowed('sshexec')">
+              <button class="btn sm" @click="askSsh(serverAddress, 22)">🖳 {{ t('Open an SSH window') }}</button>
+            </p>
+            <p class="hint">{{ t('Note that the setting is erased when the server restarts.') }}</p>
+          </div>
           <div class="drawer-tools device">
             <!-- Asking this one device what a sweep has no time to ask: every
                  port it has, and which of those are really web pages. -->
-            <button class="btn sm" v-if="allowed('scan')" :disabled="!!deep.busy" @click="scanAllPorts(selected)">
+            <button class="btn sm" v-if="allowed('scan')" :disabled="!!deep.busy || offNetwork(selected)" @click="scanAllPorts(selected)">
               🔎 {{ deep.busy === 'ports' ? t('Scanning… {done}%', { done: deep.percent }) : t('Scan every port') }}
             </button>
-            <button class="btn sm" v-if="allowed('scan')" :disabled="!!deep.busy || !selected.ports.length" @click="findWebPages(selected)">
+            <button class="btn sm" v-if="allowed('scan')" :disabled="!!deep.busy || !selected.ports.length || offNetwork(selected)" @click="findWebPages(selected)">
               🌐 {{ deep.busy === 'web' ? t('Looking…') : t('Find web pages') }}
             </button>
             <!-- A device's page is not always on a port the scan noticed, and
@@ -2006,7 +2109,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         // and a device's page fills the screen instead of floating over it.
         menu: false, narrow: window.innerWidth <= 900,
         status: { canScan: false, canLookup: false, isAdmin: false, binaries: {}, nmap: { available: false }, ouiEntries: 0, targets: [] },
-        settings: { language: 'auto', theme: 'auto', languages: [], tabOrder: [] },
+        settings: { language: 'auto', theme: 'auto', languages: [], tabOrder: [], keyFolder: '' },
         dragTab: '', overTab: '',
         devices: [], scan: null, scanning: false, advice: null,
         scanTargets: '', pace: '1500',
@@ -2036,6 +2139,11 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         // NETBASE-STORE-REMOVED: portPresets: PORT_PRESETS,
         sshConn: 0, sshPreset: '', sshCommand: '', sshRunResult: null,
         sshAdhoc: { kind: 'ssh', host: '', port: 22, username: '', secret: '', authType: 'password', privateKeyPath: '', passphrase: '', mode: 'ssh' },
+        // A sign-in asked for on the spot, from wherever a console is needed —
+        // the notice about a device on another network, for one, where the
+        // command has to be run on this server and nowhere else.
+        sshAsk: { open: false, host: '', port: 22, username: '', authType: 'password', secret: '', privateKeyPath: '', passphrase: '' },
+        telnetAdhoc: { host: '', port: 23 },
         dnsTypes: ['A', 'AAAA', 'CNAME', 'MX', 'NS', 'TXT', 'SOA', 'SRV', 'CAA'],
         whoisQuery: '', whoisResult: null,
         // NETBASE-STORE-REMOVED: pingHost: '', pingResult: null, traceResult: null,
@@ -2088,6 +2196,19 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
       };
     },
     computed: {
+      /**
+       * This server's own address, as somewhere to open a console.
+       *
+       * The command that puts the server on another network has to be run on
+       * the server itself, so the SSH window offered beside it goes here and
+       * nowhere else. A container bridge is skipped: it is this machine too,
+       * but not the address anyone logs in on.
+       */
+      serverAddress() {
+        const mine = (this.devices || []).filter((d) => this.isSelf(d) && d.ip);
+        const real = mine.find((d) => !/^10\.88\./.test(d.ip));
+        return (real || mine[0] || {}).ip || '';
+      },
       visibleTabs() {
         // 'ping' covers traceroute too. Anyone allowed nothing at all never
         // reaches this page — the server answers 403 before it loads.
@@ -2232,7 +2353,53 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
       note(text) { this.banner = { kind: 'info', text }; },
 
       /** The machine NetBase is running on, which is in the list like any other. */
+      /**
+       * What to call a device on the list.
+       *
+       * The address now sits on its own line underneath, so a row that repeats
+       * it as the name says nothing twice. Say instead that there is no name.
+       */
+      listName(device) {
+        const real = (device && (device.label || device.hostname)) || '';
+        return real ? { text: real, named: true } : { text: T('- no name -'), named: false };
+      },
       isSelf(device) { return !!device && (device.sources || []).indexOf('self') >= 0; },
+      /**
+       * A device heard on this wire whose address belongs to somewhere else.
+       *
+       * It announced itself, so it is certainly here; but nothing on this
+       * server can route to it and it cannot answer, so its ports cannot be
+       * checked and its pages cannot be opened. Saying so is kinder than
+       * letting somebody click and wait.
+       */
+      offNetwork(device) {
+        if (!device || !device.ip || this.isSelf(device)) return false;
+        const own = (this.status.targets || []).map((t2) => t2.cidr);
+        if (!own.length) return false;
+        const value = (ip) => ip.split('.').reduce((n, o) => (n * 256) + Number(o), 0);
+        const here = value(device.ip);
+        if (!Number.isFinite(here)) return false;
+        return !own.some((cidr) => {
+          const [net, bitsText] = cidr.split('/');
+          const bits = Number(bitsText);
+          if (!net || !Number.isFinite(bits)) return false;
+          const mask = bits === 0 ? 0 : (-1 << (32 - bits)) >>> 0;
+          return (value(net) & mask) === (here & mask);
+        });
+      },
+      /**
+       * The one line that puts this server on a device's network.
+       *
+       * The last address on the network is picked because it is the one least
+       * likely to be handed out by a router's DHCP pool, and the interface is
+       * the one the announcement arrived on.
+       */
+      joinCommand(device) {
+        if (!device || !device.ip) return '';
+        const parts = device.ip.split('.');
+        const wire = device.interface || (this.status.targets || []).map((t2) => t2.interface).find(Boolean) || 'eth0';
+        return 'ip addr add ' + parts[0] + '.' + parts[1] + '.' + parts[2] + '.250/24 dev ' + wire;
+      },
       allowed(tool) { return !!(this.status.can || {})[tool]; },
       /** The speed, as the number of probes a second it actually sends. */
       paceLabel(mode) {
@@ -2407,6 +2574,14 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         this.settings = { ...this.settings, tabOrder: order };
         try {
           await api('settings', { method: 'POST', body: JSON.stringify({ settings: { tabOrder: order } }) });
+        } catch (e) { this.fail(e); }
+      },
+      /** Remember where the keys are kept, for this account. */
+      async saveKeyFolder() {
+        const folder = String(this.settings.keyFolder || '').replace(/^\/+|\/+$/g, '');
+        this.settings = { ...this.settings, keyFolder: folder };
+        try {
+          await api('settings', { method: 'POST', body: JSON.stringify({ settings: { keyFolder: folder } }) });
         } catch (e) { this.fail(e); }
       },
       async resetTabOrder() {
@@ -2875,12 +3050,15 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
        * of it. Ports 22 and 23 used to change tab, which closed the device and
        * left no way back to where the person was.
        */
-      openTerminal(kind, host, port) {
+      openTerminal(kind, host, port, auth = null) {
         const offset = this.narrow ? 0 : (this.terms.length % 6) * 26;
         const w = {
           id: ++this.windowSeq, kind, host, port: port || (kind === 'telnet' ? 23 : 22),
           user: '', password: '', signedIn: kind !== 'telnet', prompt: '',
           lines: [], command: '', history: [], at: -1, busy: false, cwd: '', full: false,
+          // How this window signs in, kept with the window: two consoles open
+          // on two servers must not share one set of credentials.
+          auth: auth ? { ...auth } : null,
           z: ++this.windowTop,
           x: this.narrow ? 0 : Math.max(20, Math.round(window.innerWidth / 2 - 430) + offset),
           y: this.narrow ? 0 : 96 + offset,
@@ -2891,12 +3069,149 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         const live = this.terms[this.terms.length - 1];
         this.selected = null;
         if (kind === 'ssh') {
-          live.user = (this.sshConn && this.sshConn.username) || '';
-          this.say(live, 'out', T('Type a command and press Enter.'));
+          live.sid = [...crypto.getRandomValues(new Uint8Array(16))].map((b) => b.toString(16).padStart(2, '0')).join('');
+          this.$nextTick(() => this.startPty(live));
         }
         return live;
       },
-      closeTerm(w) { this.terms = this.terms.filter((x) => x.id !== w.id); },
+      /**
+       * Open the screen and the connection behind it.
+       *
+       * The stream is one request that never returns until the session ends,
+       * so what arrives is written to the screen as it arrives. Keystrokes go
+       * back the other way, one small request at a time — a terminal types far
+       * more slowly than a network carries.
+       */
+      startPty(w) {
+        const box = this.$refs['screen' + w.id];
+        const el = Array.isArray(box) ? box[0] : box;
+        if (!el || !window.Terminal) {
+          this.termNote(w, T('This browser could not start a terminal.'));
+          return;
+        }
+        const dark = document.documentElement.dataset.themeDark !== undefined
+          || document.body.classList.contains('theme--dark')
+          || window.matchMedia('(prefers-color-scheme: dark)').matches;
+        const term = new window.Terminal({
+          fontSize: 13,
+          fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace',
+          cursorBlink: true,
+          scrollback: 5000,
+          theme: dark
+            ? { background: '#14161a', foreground: '#e6e6e6', cursor: '#e6e6e6' }
+            : { background: '#1b1d21', foreground: '#e6e6e6', cursor: '#e6e6e6' },
+        });
+        const fit = window.FitAddon ? new window.FitAddon.FitAddon() : null;
+        if (fit) term.loadAddon(fit);
+        term.open(el);
+        if (fit) { try { fit.fit(); } catch (e) { /* the window may not be laid out yet */ } }
+        SCREENS.set(w.id, { term, fit, abort: null });
+        term.onData((data) => this.ptyType(w, data));
+        term.onResize(({ cols, rows }) => this.ptySize(w, cols, rows));
+        term.focus();
+        this.streamPty(w);
+      },
+      async streamPty(w) {
+        const live = SCREENS.get(w.id);
+        if (!live) return;
+        const controller = new AbortController();
+        live.abort = controller;
+        const body = {
+          session: w.sid,
+          cols: live.term.cols || 80,
+          rows: live.term.rows || 24,
+        };
+        if (w.conn) {
+          body.id = w.conn;
+        } else {
+          const a = w.auth || {};
+          body.connection = {
+            kind: 'ssh', mode: 'ssh', host: w.host, port: w.port || 22,
+            username: w.user || a.username || '',
+            authType: a.authType === 'key' ? 'key' : 'password',
+            secret: a.secret || '', privateKeyPath: a.privateKeyPath || '', passphrase: a.passphrase || '',
+          };
+        }
+        try {
+          const r = await fetch(BASE + 'api/ssh/pty', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', requesttoken: TOKEN },
+            credentials: 'same-origin',
+            body: JSON.stringify(body),
+            signal: controller.signal,
+          });
+          if (!r.ok || !r.body) { this.termNote(w, T('Could not connect')); return; }
+          const reader = r.body.getReader();
+          for (;;) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            if (!value || !value.length) continue;
+            // A zero byte is the server asking whether anyone is still here;
+            // it is not part of what the shell said.
+            const said = value.some((b) => b === 0) ? value.filter((b) => b !== 0) : value;
+            if (said.length) live.term.write(said);
+          }
+        } catch (e) {
+          if (!controller.signal.aborted) this.termNote(w, String((e && e.message) || e));
+        }
+        this.termNote(w, T('The connection has closed.'));
+      },
+      termNote(w, text) {
+        const live = SCREENS.get(w.id);
+        if (live) live.term.write('\r\n\x1b[33m' + text + '\x1b[0m\r\n');
+      },
+      /**
+       * Keystrokes, in the order they were typed.
+       *
+       * One request per key would race: two of them in flight at once arrive
+       * in whichever order the server happens to take them, and "whoami"
+       * lands as "whaomi". So a window sends one request at a time and
+       * everything typed meanwhile rides along in the next one.
+       */
+      ptyType(w, data) {
+        const live = SCREENS.get(w.id);
+        if (!live || !w.sid) return;
+        live.outbox = (live.outbox || '') + data;
+        if (live.sending) return;
+        live.sending = true;
+        (async () => {
+          while (live.outbox) {
+            const chunk = live.outbox;
+            live.outbox = '';
+            try {
+              await api('ssh/pty/type', { method: 'POST', body: JSON.stringify({ session: w.sid, data: chunk }) });
+            } catch (e) { /* the stream reports a lost session; a lost key need not */ }
+          }
+          live.sending = false;
+        })();
+      },
+      async ptySize(w, cols, rows) {
+        if (!w.sid) return;
+        try {
+          await api('ssh/pty/size', { method: 'POST', body: JSON.stringify({ session: w.sid, cols, rows }) });
+        } catch (e) { /* the next redraw will sort itself out */ }
+      },
+      clearTerm(w) {
+        const live = SCREENS.get(w.id);
+        if (live) { live.term.clear(); return; }
+        w.lines = [];
+      },
+      /** Make the screen match the window it sits in. */
+      refitTerm(w) {
+        const live = SCREENS.get(w.id);
+        if (!live || !live.fit) return;
+        this.$nextTick(() => { try { live.fit.fit(); } catch (e) { /* mid-drag */ } });
+      },
+      closeTerm(w) {
+        const live = SCREENS.get(w.id);
+        if (live) {
+          if (live.abort) { try { live.abort.abort(); } catch (e) { /* already gone */ } }
+          try { live.term.dispose(); } catch (e) { /* already gone */ }
+          SCREENS.delete(w.id);
+        }
+        if (w.sid) api('ssh/pty/close', { method: 'POST', body: JSON.stringify({ session: w.sid }) }).catch(() => {});
+        this.terms = this.terms.filter((x) => x.id !== w.id);
+      },
       termPrompt(w) {
         if (w.kind === 'telnet') return w.prompt || (w.host + '>');
         return (w.user ? w.user + '@' : '') + w.host + ':' + (w.cwd || '~') + '$';
@@ -2926,6 +3241,51 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
           if (r.output) this.say(w, 'out', r.output);
         } catch (e) { this.fail(e); } finally { w.busy = false; }
       },
+      /**
+       * The connection a window signs in with, as the API wants it.
+       *
+       * A window opened from a saved connection sends its id; one opened by
+       * typing the details sends the details themselves, and they never go to
+       * the browser's storage — they live in the window and die with it.
+       */
+      sshTarget(w, extra) {
+        const a = w.auth || {};
+        return {
+          ...extra,
+          connection: {
+            kind: 'ssh', mode: 'ssh',
+            host: w.host, port: w.port || 22,
+            username: w.user || a.username || '',
+            authType: a.authType === 'key' ? 'key' : 'password',
+            secret: a.secret || '',
+            privateKeyPath: a.privateKeyPath || '',
+            passphrase: a.passphrase || '',
+          },
+        };
+      },
+      /** Telnet, in a window of its own; it asks who you are once it is open. */
+      openTelnetWindow() {
+        if (!this.telnetAdhoc.host) return;
+        this.openTerminal('telnet', this.telnetAdhoc.host, this.telnetAdhoc.port || 23);
+      },
+      /** Ask who to sign in as, before opening a console. */
+      askSsh(host, port = 22) {
+        this.sshAsk = {
+          open: true, host: host || '', port: port || 22,
+          username: '', authType: 'password', secret: '', privateKeyPath: '', passphrase: '',
+        };
+      },
+      connectAsk() {
+        const ask = this.sshAsk;
+        if (!ask.host || !ask.username) return;
+        this.sshAsk = { ...ask, open: false };
+        this.sshConn = 0;
+        const w = this.openTerminal('ssh', ask.host, ask.port || 22, {
+          username: ask.username, authType: ask.authType,
+          secret: ask.secret, privateKeyPath: ask.privateKeyPath, passphrase: ask.passphrase,
+        });
+        w.user = ask.username;
+      },
       async sendTerm(w) {
         const command = (w.command || '').trim();
         if (!command || w.busy) return;
@@ -2946,7 +3306,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
           }
           const target = w.conn
             ? { id: w.conn, command, cwd: w.cwd }
-            : this.sshTarget({ command, cwd: w.cwd });
+            : this.sshTarget(w, { command, cwd: w.cwd });
           const r = await api('ssh/shell', { method: 'POST', body: JSON.stringify(target) });
           if (r.cwd) w.cwd = r.cwd;
           if (r.output) this.say(w, 'out', r.output);
@@ -2977,11 +3337,13 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         if (w.full) {
           Object.assign(w, w.full);
           w.full = false;
+          this.refitTerm(w);
           return;
         }
         w.full = { x: w.x, y: w.y, w: w.w, h: w.h };
         Object.assign(w, { x: 12, y: 60, w: window.innerWidth - 24, h: window.innerHeight - 76 });
         this.focusWindow(w);
+        this.refitTerm(w);
       },
       startDrag(w, event) {
         this.focusWindow(w);
@@ -3008,9 +3370,13 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
           }
         };
         const up = () => {
+          const dragged = this.drag;
           this.drag = null;
           window.removeEventListener('mousemove', move);
           window.removeEventListener('mouseup', up);
+          // A terminal is measured in characters, so a resized window has to
+          // be told its new size before the next thing is drawn on it.
+          if (dragged && dragged.mode === 'size') this.refitTerm(dragged.w);
         };
         window.addEventListener('mousemove', move);
         window.addEventListener('mouseup', up);
@@ -3397,8 +3763,12 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
       /** A console for details typed here and now, without saving them first. */
       async quickConsole() {
         this.sshConn = 0;
-        const w = this.openTerminal('ssh', this.sshAdhoc.host, this.sshAdhoc.port || 22);
-        w.user = this.sshAdhoc.username || '';
+        const a = this.sshAdhoc;
+        const w = this.openTerminal('ssh', a.host, a.port || 22, {
+          username: a.username, authType: a.authType,
+          secret: a.secret, privateKeyPath: a.privateKeyPath, passphrase: a.passphrase,
+        });
+        w.user = a.username || '';
       },
       saveSshAdhoc() {
         this.openConn(null, 'ssh');

@@ -18,6 +18,7 @@ use OCA\NetBase\Service\EndpointService;
 use OCA\NetBase\Service\ExecService;
 use OCA\NetBase\Service\MailService;
 use OCA\NetBase\Service\ProbeService;
+use OCA\NetBase\Service\PtyService;
 use OCA\NetBase\Service\SshService;
 use OCA\NetBase\Service\TransferService;
 // NETBASE-STORE-REMOVED: use OCA\NetBase\Service\NmapService;
@@ -26,13 +27,17 @@ use OCA\NetBase\Service\PermissionService;
 use OCA\NetBase\Service\RequirementsService;
 use OCA\NetBase\Service\ScanService;
 use OCA\NetBase\Service\ToolService;
+use OCA\NetBase\Http\ProxyResponse;
 use OCP\AppFramework\Http;
+use OCP\AppFramework\Http\IOutput;
+use OCP\AppFramework\Http\Response;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\DataDisplayResponse;
 use OCP\AppFramework\Http\Attribute\UserRateLimit;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
+use OCP\ISession;
 use OCP\IConfig;
 use OCP\IRequest;
 use OCP\IURLGenerator;
@@ -52,6 +57,8 @@ class ApiController extends Controller {
 		private MailService $mail,
 		private ProbeService $probe,
 		private SshService $ssh,
+		private PtyService $pty,
+		private ISession $session,
 		private DnsService $dnsService,
 		private BrowserService $browser,
 		private DeviceProbeService $deviceProbe,
@@ -680,6 +687,73 @@ class ApiController extends Controller {
 	}
 
 	/**
+	 * A terminal, held open for as long as the browser keeps listening.
+	 *
+	 * This request does not return until the session ends. It is the session:
+	 * the SSH connection lives in its memory, so the moment it goes the
+	 * connection goes with it, and nothing is left holding a login open.
+	 */
+	#[NoAdminRequired]
+	#[UserRateLimit(limit: 30, period: 300)]
+	public function ptyOpen(string $session, int $id = 0, array $connection = [], int $cols = 80, int $rows = 24): Response {
+		if (!$this->permissions->can('sshexec')) {
+			return new JSONResponse(['error' => 'Not allowed'], Http::STATUS_FORBIDDEN);
+		}
+		$uid = (string)$this->uid();
+		$endpoint = $this->endpointFor($id, $connection);
+		$response = new ProxyResponse(function (IOutput $output) use ($endpoint, $uid, $session, $cols, $rows): void {
+			// Nextcloud locks the session file for the length of a request.
+			// This one lasts as long as the terminal does, and every keystroke
+			// arrives as a request of its own — so the lock has to go now, or
+			// nothing typed would ever be served.
+			$this->session->close();
+			while (ob_get_level() > 0) {
+				@ob_end_flush();
+			}
+			@ini_set('zlib.output_compression', '0');
+			@set_time_limit(0);
+			ignore_user_abort(false);
+			$this->pty->serve($endpoint, $uid, $session, $cols, $rows, function (string $chunk): bool {
+				if ($chunk !== '') {
+					echo $chunk;
+				} else {
+					// A byte the terminal throws away, so that a silent shell
+					// still tells us whether the browser is still there.
+					echo "\0";
+				}
+				@flush();
+				return connection_aborted() === 0;
+			});
+		});
+		// These belong on the response, not inside the callback: Nextcloud has
+		// already sent the headers by the time the callback runs, and nginx
+		// would otherwise hold the output in a buffer of its own until enough
+		// piled up — which for a terminal is the whole point missed.
+		$response->addHeader('Content-Type', 'application/octet-stream');
+		$response->addHeader('Cache-Control', 'no-store');
+		$response->addHeader('X-Accel-Buffering', 'no');
+		return $response;
+	}
+
+	#[NoAdminRequired]
+	#[UserRateLimit(limit: 6000, period: 60)]
+	public function ptyType(string $session, string $data = ''): JSONResponse {
+		return $this->guard(fn () => ['ok' => $this->pty->type((string)$this->uid(), $session, $data)], 'sshexec');
+	}
+
+	#[NoAdminRequired]
+	#[UserRateLimit(limit: 300, period: 60)]
+	public function ptySize(string $session, int $cols = 80, int $rows = 24): JSONResponse {
+		return $this->guard(fn () => ['ok' => $this->pty->resize((string)$this->uid(), $session, $cols, $rows)], 'sshexec');
+	}
+
+	#[NoAdminRequired]
+	#[UserRateLimit(limit: 300, period: 60)]
+	public function ptyClose(string $session): JSONResponse {
+		return $this->guard(fn () => ['ok' => $this->pty->hangUp((string)$this->uid(), $session)], 'sshexec');
+	}
+
+	/**
 	 * One line typed at a device over Telnet.
 	 *
 	 * Guarded by the same right as running a command over SSH: it is the same
@@ -830,6 +904,10 @@ class ApiController extends Controller {
 			'languages' => $this->availableLanguages(),
 			'theme' => $uid ? $this->config->getUserValue($uid, 'netbase', 'theme', 'auto') : 'auto',
 			'lastTargets' => $uid ? $this->config->getUserValue($uid, 'netbase', 'last_targets', '') : '',
+			// Where the file chooser starts when an SSH key is being picked.
+			// Keys tend to live in one folder, and hunting for it every time is
+			// a small annoyance repeated on every connection.
+			'keyFolder' => $uid ? $this->config->getUserValue($uid, 'netbase', 'key_folder', '') : '',
 			// The order the tools are listed in, as this person arranged them.
 			'tabOrder' => $uid ? array_values(array_filter(explode(',', $this->config->getUserValue($uid, 'netbase', 'tab_order', '')))) : [],
 			// Devices whose own page this person has agreed to show in full.
@@ -850,7 +928,7 @@ class ApiController extends Controller {
 		if ($uid === null) {
 			return new JSONResponse(['error' => 'Not signed in'], Http::STATUS_UNAUTHORIZED);
 		}
-		foreach (['language' => 'language', 'theme' => 'theme', 'lastTargets' => 'last_targets'] as $key => $stored) {
+		foreach (['language' => 'language', 'theme' => 'theme', 'lastTargets' => 'last_targets', 'keyFolder' => 'key_folder'] as $key => $stored) {
 			if (!isset($settings[$key])) {
 				continue;
 			}

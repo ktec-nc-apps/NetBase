@@ -611,6 +611,201 @@ class DiscoveryService {
 		return $result;
 	}
 
+	/**
+	 * The same, listening on every wire at once.
+	 *
+	 * One socket can join a group on several interfaces, and then the wait is
+	 * paid once instead of once per wire. That matters here because the wait
+	 * has to be longer than the announcement interval — three quarters of a
+	 * minute on the camera measured here — and paying that twice would make a
+	 * background job that runs for two minutes.
+	 *
+	 * @param list<array{index: int, ip: string}> $wires
+	 * @return array<string, list<string>> what was heard, by sender
+	 */
+	public function multicastHearAll(array $wires, string $group, int $port, float $wait, string $ask = ''): array {
+		if (!$this->hasSockets() || $wires === []) {
+			return [];
+		}
+		$sock = @socket_create(AF_INET, SOCK_DGRAM, SOL_UDP);
+		if ($sock === false) {
+			return [];
+		}
+		@socket_set_option($sock, SOL_SOCKET, SO_REUSEADDR, 1);
+		if (!@socket_bind($sock, '0.0.0.0', $port)) {
+			socket_close($sock);
+			return [];
+		}
+		$ours = [];
+		$joined = 0;
+		foreach ($wires as $wire) {
+			$ours[$wire['ip']] = true;
+			$ok = false;
+			if (defined('MCAST_JOIN_GROUP')) {
+				$ok = @socket_set_option($sock, IPPROTO_IP, MCAST_JOIN_GROUP, ['group' => $group, 'interface' => (int)$wire['index']]);
+			}
+			if (!$ok && defined('IP_ADD_MEMBERSHIP')) {
+				$ok = @socket_set_option($sock, IPPROTO_IP, constant('IP_ADD_MEMBERSHIP'), ['group' => $group, 'interface' => $wire['ip']]);
+			}
+			$joined += $ok ? 1 : 0;
+		}
+		if ($joined === 0) {
+			socket_close($sock);
+			return [];
+		}
+		socket_set_nonblock($sock);
+		if ($ask !== '') {
+			@socket_set_option($sock, IPPROTO_IP, IP_MULTICAST_TTL, 2);
+			foreach ($wires as $wire) {
+				@socket_set_option($sock, IPPROTO_IP, IP_MULTICAST_IF, (int)$wire['index']);
+				for ($i = 0; $i < 2; $i++) {
+					@socket_sendto($sock, $ask, strlen($ask), 0, $group, $port);
+					usleep(120000);
+				}
+			}
+		}
+
+		$result = [];
+		$deadline = microtime(true) + $wait;
+		while (microtime(true) < $deadline) {
+			$buf = '';
+			$from = '';
+			$fromPort = 0;
+			if (@socket_recvfrom($sock, $buf, 8192, 0, $from, $fromPort) > 0) {
+				if (!isset($ours[$from])) {
+					$result[$from][] = $buf;
+				}
+			} else {
+				usleep(4000);
+			}
+		}
+		socket_close($sock);
+		return $result;
+	}
+
+	/**
+	 * Listen to several announcement channels at once, on every wire.
+	 *
+	 * A device fresh out of its box announces itself in whichever dialect its
+	 * maker chose — SSDP for a camera, WS-Discovery for a printer, mDNS for
+	 * anything Apple has touched, LLMNR for Windows. Listening to one of them
+	 * and calling that "the network" misses most of what gets plugged in, and
+	 * listening to them one after another costs the announcement interval each
+	 * time. So they are all watched together, and the wait is paid once.
+	 *
+	 * Only ports above 1024 appear here. NetBIOS (137) and DHCP (67) would
+	 * both be worth hearing and both need a privileged port to bind, which
+	 * this app will not ask for.
+	 *
+	 * @param list<array{index: int, ip: string}> $wires
+	 * @param list<array{group: string, port: int, ask?: string}> $channels
+	 * @return array<string, list<array{port: int, body: string}>> what was heard, by sender
+	 */
+	public function multicastHearMany(array $wires, array $channels, float $wait): array {
+		if (!$this->hasSockets() || $wires === [] || $channels === []) {
+			return [];
+		}
+		$ours = [];
+		foreach ($wires as $wire) {
+			$ours[$wire['ip']] = true;
+		}
+
+		$socks = [];
+		$portOf = [];
+		foreach ($channels as $channel) {
+			$sock = @socket_create(AF_INET, SOCK_DGRAM, SOL_UDP);
+			if ($sock === false) {
+				continue;
+			}
+			@socket_set_option($sock, SOL_SOCKET, SO_REUSEADDR, 1);
+			if (!@socket_bind($sock, '0.0.0.0', $channel['port'])) {
+				socket_close($sock);
+				continue;
+			}
+			$joined = 0;
+			foreach ($wires as $wire) {
+				$ok = false;
+				if (defined('MCAST_JOIN_GROUP')) {
+					$ok = @socket_set_option($sock, IPPROTO_IP, MCAST_JOIN_GROUP, ['group' => $channel['group'], 'interface' => (int)$wire['index']]);
+				}
+				if (!$ok && defined('IP_ADD_MEMBERSHIP')) {
+					$ok = @socket_set_option($sock, IPPROTO_IP, constant('IP_ADD_MEMBERSHIP'), ['group' => $channel['group'], 'interface' => $wire['ip']]);
+				}
+				$joined += $ok ? 1 : 0;
+			}
+			if ($joined === 0) {
+				socket_close($sock);
+				continue;
+			}
+			socket_set_nonblock($sock);
+			// Ask as well as listen. Anything that can answer answers at once,
+			// and only what cannot is left to its own timer.
+			if (($channel['ask'] ?? '') !== '') {
+				@socket_set_option($sock, IPPROTO_IP, IP_MULTICAST_TTL, 2);
+				foreach ($wires as $wire) {
+					@socket_set_option($sock, IPPROTO_IP, IP_MULTICAST_IF, (int)$wire['index']);
+					@socket_sendto($sock, $channel['ask'], strlen($channel['ask']), 0, $channel['group'], $channel['port']);
+				}
+			}
+			$socks[] = $sock;
+			$portOf[] = $channel['port'];
+		}
+		if ($socks === []) {
+			return [];
+		}
+
+		$result = [];
+		$deadline = microtime(true) + $wait;
+		while (($left = $deadline - microtime(true)) > 0) {
+			$read = $socks;
+			$write = null;
+			$except = null;
+			$ready = @socket_select($read, $write, $except, (int)$left, (int)(fmod($left, 1) * 1000000));
+			if ($ready === false || $ready === 0) {
+				continue;
+			}
+			foreach ($read as $sock) {
+				$buf = '';
+				$from = '';
+				$fromPort = 0;
+				if (@socket_recvfrom($sock, $buf, 8192, 0, $from, $fromPort) > 0 && !isset($ours[$from])) {
+					$at = array_search($sock, $socks, true);
+					$result[$from][] = ['port' => $at === false ? 0 : $portOf[$at], 'body' => $buf];
+				}
+			}
+		}
+		foreach ($socks as $sock) {
+			socket_close($sock);
+		}
+		return $result;
+	}
+
+	/** The four announcement channels an unprivileged process can listen to. */
+	public function announcementChannels(): array {
+		$uuid = sprintf('urn:uuid:%s', $this->uuid4());
+		return [
+			[
+				'group' => '239.255.255.250',
+				'port' => 1900,
+				'ask' => "M-SEARCH * HTTP/1.1\r\nHOST: 239.255.255.250:1900\r\nMAN: \"ssdp:discover\"\r\nMX: 2\r\nST: ssdp:all\r\n\r\n",
+			],
+			[
+				'group' => '239.255.255.250',
+				'port' => 3702,
+				'ask' => '<?xml version="1.0" encoding="utf-8"?>'
+					. '<soap:Envelope xmlns:soap="http://www.w3.org/2003/05/soap-envelope"'
+					. ' xmlns:wsa="http://schemas.xmlsoap.org/ws/2004/08/addressing"'
+					. ' xmlns:wsd="http://schemas.xmlsoap.org/ws/2005/04/discovery">'
+					. '<soap:Header><wsa:To>urn:schemas-xmlsoap-org:ws:2005:04:discovery</wsa:To>'
+					. '<wsa:Action>http://schemas.xmlsoap.org/ws/2005/04/discovery/Probe</wsa:Action>'
+					. '<wsa:MessageID>' . $uuid . '</wsa:MessageID></soap:Header>'
+					. '<soap:Body><wsd:Probe/></soap:Body></soap:Envelope>',
+			],
+			['group' => '224.0.0.251', 'port' => 5353],
+			['group' => '224.0.0.252', 'port' => 5355],
+		];
+	}
+
 	private function multicastAsk(int $ifIndex, string $sourceIp, string $group, int $port, string $payload, float $wait): array {
 		if (!$this->hasSockets()) {
 			// Picking the outgoing interface for a multicast datagram has no

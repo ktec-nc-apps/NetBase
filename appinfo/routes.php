@@ -102,6 +102,13 @@ return [
 		['name' => 'api#sshRun', 'url' => '/api/ssh/run', 'verb' => 'POST'],
 		['name' => 'api#sshPreset', 'url' => '/api/ssh/preset', 'verb' => 'POST'],
 		['name' => 'api#sshShell', 'url' => '/api/ssh/shell', 'verb' => 'POST'],
+		// A terminal: one long request holds the connection and streams what
+		// the server says; the other three carry keystrokes, a new window
+		// shape, and the decision to hang up.
+		['name' => 'api#ptyOpen', 'url' => '/api/ssh/pty', 'verb' => 'POST'],
+		['name' => 'api#ptyType', 'url' => '/api/ssh/pty/type', 'verb' => 'POST'],
+		['name' => 'api#ptySize', 'url' => '/api/ssh/pty/size', 'verb' => 'POST'],
+		['name' => 'api#ptyClose', 'url' => '/api/ssh/pty/close', 'verb' => 'POST'],
 
 		// DNS in depth
 		['name' => 'api#dnsQuery', 'url' => '/api/dns/query', 'verb' => 'GET'],

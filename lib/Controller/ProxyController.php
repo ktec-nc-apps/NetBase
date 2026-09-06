@@ -61,7 +61,13 @@ class ProxyController extends Controller {
 			$method = strtoupper($this->request->getMethod());
 			$type = strtolower((string)$this->request->getHeader('Content-Type'));
 			$form = $type === '' || str_contains($type, 'form-urlencoded') || str_contains($type, 'multipart/');
-			$post = $method !== 'GET' && $form ? (array)$this->request->getParams() : [];
+			// Only what the request actually carried. Taken from the merged
+			// parameters, the address's own query string came back as a body:
+			// a camera's page asks it things with an empty POST and the
+			// question in the address, and handed a body it had not been
+			// promised the device answered 400 and its sign-in screen never
+			// showed the dialog it owes the person.
+			$post = $method !== 'GET' && $form ? (array)($_POST ?? []) : [];
 			unset($post['token'], $post['path'], $post['_route']);
 			// A page that talks to its device in JSON, or in anything else of its
 			// own devising, is carried through untouched rather than rebuilt.

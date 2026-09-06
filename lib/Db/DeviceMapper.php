@@ -61,6 +61,26 @@ class DeviceMapper extends QBMapper {
 		}
 	}
 
+	/**
+	 * Devices that only ever announce themselves, heard recently enough to
+	 * still be here.
+	 *
+	 * A device on another network sharing this wire cannot be asked anything —
+	 * its answer would go to a gateway it does not have — so the only proof it
+	 * is present is its own announcement, which may be half a minute apart. A
+	 * scan that happens to fall between two of them has learnt nothing about
+	 * whether it is still there, and should not say it has gone.
+	 */
+	public function keepRecentlyHeard(int $since): void {
+		$qb = $this->db->getQueryBuilder();
+		$qb->update($this->getTableName())
+			->set('online', $qb->createNamedParameter(true, IQueryBuilder::PARAM_BOOL))
+			->where($qb->expr()->gte('last_seen', $qb->createNamedParameter($since, IQueryBuilder::PARAM_INT)))
+			// Never in the ARP table means never reachable from here.
+			->andWhere($qb->expr()->notLike('sources', $qb->createNamedParameter('%arp%')));
+		$qb->executeStatement();
+	}
+
 	/** Mark every device as offline before a fresh sweep records what answers. */
 	public function markAllOffline(): void {
 		$qb = $this->db->getQueryBuilder();

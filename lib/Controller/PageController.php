@@ -45,7 +45,12 @@ class PageController extends Controller {
 			return $denied;
 		}
 
+		Util::addStyle(Application::APP_ID, 'vendor/xterm');
 		Util::addStyle(Application::APP_ID, 'netbase');
+		// A terminal needs a terminal emulator. xterm.js is carried in the app
+		// because a Nextcloud app may not fetch anything from outside.
+		Util::addScript(Application::APP_ID, 'vendor/xterm');
+		Util::addScript(Application::APP_ID, 'vendor/xterm-addon-fit');
 		// Runtime-only Vue with a precompiled render function, so the page needs
 		// no template compiler and therefore no eval().
 		Util::addScript(Application::APP_ID, 'vue.runtime.global.prod');

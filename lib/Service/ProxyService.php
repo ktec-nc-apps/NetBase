@@ -119,12 +119,13 @@ class ProxyService {
 	private const PASS_REQUEST_HEADERS = [
 		'accept', 'accept-language', 'range', 'if-none-match', 'if-modified-since',
 		'x-requested-with', 'content-type',
-		// Only what the device's own page set: the controller has already taken
-		// Nextcloud's cookies out, and the session above all never leaves here.
-		'cookie',
 	];
 
-	/** The referer is not passed through as it stands; it is rewritten first. */
+	/**
+	 * The referer is not passed through as it stands; it is rewritten first,
+	 * and the cookies the browser sends are handed to the cookie engine rather
+	 * than added as a header of their own.
+	 */
 
 	/**
 	 * Fetch one resource and hand it back for rewriting.
@@ -164,7 +165,7 @@ class ProxyService {
 		// the person again.
 		$credentials = $this->recallAuth($base, $userId);
 
-		$url = $base . '/' . ltrim($path, '/');
+		$url = $base . '/' . $this->safePath($path);
 		if ($query !== '') {
 			$url .= '?' . $query;
 		}
@@ -258,6 +259,16 @@ class ProxyService {
 		foreach ($this->loadCookies($userId, $base) as $cookie) {
 			curl_setopt($curl, CURLOPT_COOKIELIST, $cookie);
 		}
+		// What the device's own page set in the browser goes through the cookie
+		// engine as well, never as a header of its own. Sent as a header it
+		// became a second Cookie: line beside the engine's, and a small device
+		// web server reads only one of the two: a camera here took the line
+		// without its session cookie, called the sign-in it had just granted
+		// unknown, and sent every page after it back to the login screen.
+		$sent = (string)($given['cookie'] ?? '');
+		if ($sent !== '') {
+			curl_setopt($curl, CURLOPT_COOKIE, $sent);
+		}
 
 		if ($files !== []) {
 			// Sending a file to a device — new firmware, a saved configuration —
@@ -285,6 +296,15 @@ class ProxyService {
 			curl_setopt($curl, CURLOPT_POSTFIELDS, $rawBody);
 		} elseif ($post !== []) {
 			curl_setopt($curl, CURLOPT_POSTFIELDS, http_build_query($post));
+		} elseif ($method !== 'GET' && $method !== 'HEAD') {
+			// A request with nothing to send still has a length, and it is zero.
+			// Left unsaid, curl leaves out Content-Length altogether and a small
+			// device web server waits for a body that is never coming: a camera
+			// here asks itself for each page's settings with an empty POST and
+			// the question in the address, and every one of those requests hung
+			// until the camera gave up on it, so its pages came up with the
+			// fields blank. A browser always says zero; so does this now.
+			curl_setopt($curl, CURLOPT_POSTFIELDS, '');
 		}
 		if ($files === []) {
 			// Some devices answer and then simply stop: an NTT phone system here
@@ -406,6 +426,25 @@ class ProxyService {
 		return !str_contains($type, 'html')
 			&& !str_contains($type, 'css')
 			&& preg_match('#(java|ecma)script#', $type) !== 1;
+	}
+
+	/**
+	 * The path as a web address may carry it.
+	 *
+	 * The router hands the path over already decoded, so a file whose name has
+	 * a space in it arrives with a real space — and a real space cannot go into
+	 * a request. A camera here keeps three of its menu icons under names like
+	 * "Video Analytics.png", and every one of those came back as a broken
+	 * picture. Only what a path may not hold is escaped; anything already fit
+	 * to send, the percent sign included, is left exactly as it came so a path
+	 * that was never decoded is not encoded twice.
+	 */
+	private function safePath(string $path): string {
+		return (string)preg_replace_callback(
+			'/[^A-Za-z0-9\-._~!$&\'()*+,;=:@\/%]/',
+			static fn (array $m) => rawurlencode($m[0]),
+			ltrim($path, '/'),
+		);
 	}
 
 	/** @param array<string, string> $headers */

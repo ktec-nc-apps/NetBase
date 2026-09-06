@@ -14,7 +14,7 @@ NetBase turns your Nextcloud into a network console. It finds every device on yo
 
 ### Device discovery and inventory
 
-**How it works.** Nextcloud runs unprivileged, so raw sockets — and therefore ARP scanning in PHP — are not available. NetBase makes the kernel do the work instead: sending a datagram to an on-link address forces the kernel to resolve it, and the result lands in the neighbour table, which is world readable. Names come from the devices themselves over NetBIOS, mDNS, WS-Discovery and SSDP, all plain UDP, and vendors from the bundled IEEE registries — more than 53,000 prefixes, so no MAC address is ever sent anywhere. Open ports are checked at one of two depths: a short list of fifteen that keeps a sweep quick, or a detailed list of 106 for the device the short list leaves unexplained.
+**How it works.** Nextcloud runs unprivileged, so raw sockets — and therefore ARP scanning in PHP — are not available. NetBase makes the kernel do the work instead: sending a datagram to an on-link address forces the kernel to resolve it, and the result lands in the neighbour table, which is world readable. Names come from the devices themselves over NetBIOS, mDNS, WS-Discovery and SSDP, all plain UDP, and vendors from the bundled IEEE registries — more than 53,000 prefixes, so no MAC address is ever sent anywhere. Open ports are checked at one of five depths, from a short list of fifteen that keeps a sweep quick to every one of the 65,535. NetBase also listens, continuously and in the background, to the announcements devices make to the multicast group: those are carried at the level of the wire, so a device on a different subnet of the same cable — a camera left on its factory address, say — is found even though nothing can route to it and it can never answer a question. The server NetBase runs on is written down too; a machine never asks the network for its own address, so it is never in its own neighbour table.
 
 **What it is for.** Building the asset list a site never quite had. Finding the device nobody remembers installing. Seeing which addresses are free before assigning one. Exporting the lot as CSV for an inventory that lives outside Nextcloud.
 
@@ -62,9 +62,9 @@ NetBase turns your Nextcloud into a network console. It finds every device on yo
 
 ### SSH and Telnet
 
-**How it works.** The probe reads what a server offers before anything is encrypted — its identification string, its algorithm list, its host key fingerprint — so it needs no credentials at all. The signed-in half uses phpseclib with a password or a private key. PHP cannot hold a session open between requests, so the console reconnects for each line and carries the working directory across.
+**How it works.** The probe reads what a server offers before anything is encrypted — its identification string, its algorithm list, its host key fingerprint — so it needs no credentials at all. The signed-in half uses phpseclib with a password or a private key, either typed in or picked from your own Nextcloud files. PHP cannot hold a session open between requests, so the terminal keeps the session on the server and streams it to the browser.
 
-**What it is for.** Checking a branch server's disk, failed services and pending updates without opening a terminal. Auditing which SSH algorithms are still offered. Seeing what a Telnet port exposes — and being told plainly what leaving it open means.
+**What it is for.** Checking a branch server's disk, failed services and pending updates without opening a terminal — or opening a real one and editing a file in `vi`. Auditing which SSH algorithms are still offered. Seeing what a Telnet port exposes — and being told plainly what leaving it open means.
 
 ### Clock check
 
@@ -126,7 +126,9 @@ Two halves, deliberately separate.
 
 **The command half signs in** to a saved connection with its password or private key and runs one command, returning the output and the exit status. Presets cover the questions asked most often — a system snapshot, disk usage, failed services and recent errors, network configuration, listening sockets, pending updates, who is logged in and who failed — and there is a free-form command box next to them.
 
-**The console** is a window that behaves like a shell. PHP-FPM ends every request, so a session cannot be held open; instead each line reconnects and carries the working directory across, which is enough for `cd`, `ls`, `tail`, `systemctl` and everything else that finishes on its own. Command history is on the arrow keys, `clear` and `exit` work. What it cannot do is run a program that expects a terminal — `vi`, `top`, an interactive password prompt — because there is nothing on the other end to type into.
+**The terminal** is the real thing. PHP-FPM ends every request, so the session is held by the server rather than by the page: the browser opens one long-lived request that the answer streams down, and what is typed goes up alongside it, one batch at a time so that keystrokes cannot overtake each other. The far end is a proper pseudo-terminal, so `top`, `vi`, `less` and an interactive password prompt all work, colours and cursor movement work, and resizing the window resizes the terminal. It can be opened from a device's port 22, from the SSH page, or from the notice on a device that is out of reach — where the command that would reach it is waiting to be run on this server.
+
+**Signing in** asks for the host, the port, the account, and either a password or a private key from your own Nextcloud files. A default folder for keys can be set in Settings, so the picker opens where they are kept.
 
 ## Files: FTP and SFTP
 
@@ -138,7 +140,7 @@ FTP uses PHP's own `ext-ftp`, with or without TLS. SFTP uses the phpseclib copy 
 
 ## Telnet and the clock
 
-**Telnet** answers the option negotiation politely and shows you the login screen, which is usually enough to tell which device it is — and the finding says what Telnet being open means.
+**Telnet** sits with the tools for working on a server rather than the ones for looking at it: the window signs in, sends a line and reads the answer, a connection per line, so nothing is left open on the device in between. The credential-free probe is still there under the looking half — it answers the option negotiation politely and shows you the login screen, which is usually enough to tell which device it is, and the finding says what Telnet being open means.
 
 **Clock check** asks an NTP server for the time and reports the offset. A drifted clock is behind more certificate and sign-in failures than anything else, and this is the fastest way to rule it in or out.
 
@@ -208,7 +210,7 @@ Nextcloud 用のネットワーク総合ツールです。LAN上の機器を検�
 
 ### 機器の検出と台帳
 
-**仕組み** ― Nextcloud は非特権で動作するため raw ソケット（つまり PHP からの ARP スキャン）は使えません。そこでカーネルに仕事をさせます。同一リンク上のアドレスへデータグラムを送るとカーネルは必ずアドレス解決を行い、その結果が誰でも読める近隣テーブルに残ります。名前は NetBIOS・mDNS・WS-Discovery・SSDP という素の UDP で機器自身に尋ね、ベンダーは同梱の IEEE 登録簿（53,000件超）で判定します。MACアドレスを外部へ送ることはありません。 開いているポートの確認は2段階から選べます。掃引を速いまま保つ主要ポート15個と、それでは正体のつかめない機器のための詳細検索106個です。
+**仕組み** ― Nextcloud は非特権で動作するため raw ソケット（つまり PHP からの ARP スキャン）は使えません。そこでカーネルに仕事をさせます。同一リンク上のアドレスへデータグラムを送るとカーネルは必ずアドレス解決を行い、その結果が誰でも読める近隣テーブルに残ります。名前は NetBIOS・mDNS・WS-Discovery・SSDP という素の UDP で機器自身に尋ね、ベンダーは同梱の IEEE 登録簿（53,000件超）で判定します。MACアドレスを外部へ送ることはありません。 開いているポートの確認は5段階から選べます。掃引を速いまま保つ主要ポート15個から、65,535個すべてまでです。また、機器がマルチキャストグループへ送る「名乗り」を、背景で常時受信しています。これは配線の層で運ばれるため、同じ配線につながった別サブネットの機器 ― 出荷時アドレスのままのカメラなど ― も、経路が無く問い合わせに答えられない相手であっても見つかります。NetBase 自身が動いているサーバーも記録します。機器は自分自身のアドレスをネットワークに尋ねないため、自分の近隣テーブルには決して載らないからです。
 
 **用途** ― 作りかけのまま放置されがちな機器台帳の整備。誰も覚えていない機器の発見。IPアドレス払い出し前の空き確認。CSV 書き出しによる社内資産管理との連携。
 
@@ -256,9 +258,9 @@ Nextcloud 用のネットワーク総合ツールです。LAN上の機器を検�
 
 ### SSH・Telnet
 
-**仕組み** ― 調査側は暗号化前にサーバーが名乗る識別文字列とアルゴリズム一覧、ホスト鍵のフィンガープリントを読むため、資格情報を一切必要としません。ログイン側は phpseclib でパスワードまたは秘密鍵を使います。PHP は要求をまたいで接続を保持できないため、コンソールは1行ごとに再接続し、作業ディレクトリを引き継ぎます。
+**仕組み** ― 調査側は暗号化前にサーバーが名乗る識別文字列とアルゴリズム一覧、ホスト鍵のフィンガープリントを読むため、資格情報を一切必要としません。ログイン側は phpseclib でパスワードまたは秘密鍵（直接入力、または Nextcloud 上のファイルから選択）を使います。PHP は要求をまたいで接続を保持できないため、ターミナルはサーバー側でセッションを保持し、その内容をブラウザへ流し続けます。
 
-**用途** ― 端末を開かずに拠点サーバーの空き容量・停止サービス・保留更新を確認する。提示アルゴリズムの棚卸し。Telnet ポートが何を晒しているかの確認と、開けたままにする意味の提示。
+**用途** ― 端末を開かずに拠点サーバーの空き容量・停止サービス・保留更新を確認する。あるいは本物の端末を開いて `vi` で設定ファイルを直す。提示アルゴリズムの棚卸し。Telnet ポートが何を晒しているかの確認と、開けたままにする意味の提示。
 
 ### 時刻確認
 
@@ -320,7 +322,9 @@ Nextcloud 用のネットワーク総合ツールです。LAN上の機器を検�
 
 **コマンド実行は**、保存済み接続先へパスワードまたは秘密鍵でサインインし、コマンドを1つ実行して出力と終了コードを返します。よく使う確認はプリセットにしてあります（システム概況・ディスク使用状況・失敗したサービスと直近のエラー・ネットワーク設定・待受ソケット・未適用の更新・ログイン状況）。自由入力の欄も併設しています。
 
-**コンソール**は、シェルのように使えるウィンドウです。PHP-FPMはリクエストごとに終了するためセッションは保持できません。そこで1行ごとに接続し直し、カレントディレクトリを引き継ぐ方式にしました。`cd`・`ls`・`tail`・`systemctl` など、自分で終了するコマンドはこれで十分に動きます。コマンド履歴は上下キー、`clear` と `exit` も使えます。できないのは本物の端末を必要とするもの（`vi`・`top`・対話的なパスワード入力）です。入力を受け取る端末がそこに無いためです。
+**ターミナル**は本物の仮想端末です。PHP-FPM はリクエストごとに終了するため、セッションはページではなくサーバー側が保持します。ブラウザは長く開いたままの要求を1本張り、応答をそこへ流し続けます。入力はその横で、まとめて1回ずつ送ります（打鍵が追い越し合わないようにするためです）。接続先は本物の擬似端末なので、`top`・`vi`・`less`・対話的なパスワード入力がそのまま動き、色とカーソル移動も効きます。ウィンドウの大きさを変えると端末の桁数と行数も変わります。機器のポート22から、SSH の画面から、あるいは手の届かない機器の案内からも開けます（その案内には、届くようにするためのコマンドが、このサーバーで実行できる状態で用意されています）。
+
+**サインイン**では、ホスト・ポート・アカウントと、パスワードまたは Nextcloud 上の秘密鍵ファイルを指定します。鍵の既定フォルダを設定画面で決めておけば、選択画面はそこから開きます。
 
 ## ファイル: FTP・SFTP
 
@@ -332,7 +336,7 @@ FTPはPHP標準の `ext-ftp` を使い、TLSの有無どちらにも対応しま
 
 ## Telnet と時刻
 
-**Telnet** はオプション交渉に穏当に応答し、ログイン画面を表示します。多くの場合それだけで機器を特定できます。あわせて、Telnetが開いていること自体の意味も提示します。
+**Telnet** は「サーバーを調べる」ではなく「サーバーを操作する」側に置いています。ウィンドウでサインインし、1行送って応答を読みます。接続は1行ごとに張り直すため、機器側には何も開いたまま残しません。資格情報の要らない調査は「調べる」側に残っています。オプション交渉に穏当に応答してログイン画面を表示し、多くの場合それだけで機器を特定できます。あわせて、Telnet が開いていること自体の意味も提示します。
 
 **時刻確認** はNTPサーバーに時刻を尋ね、ずれを報告します。証明書エラーやサインイン失敗の原因として時刻ずれは最も多く、これはその可能性を最短で切り分ける手段です。
 

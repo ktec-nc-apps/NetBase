@@ -2,41 +2,106 @@
 
 All notable changes to NetBase are documented here.
 
-## 0.4.7 — 2026-09-06
+## 0.4.0 — 2026-09-07
+
+Everything since 0.3.11, which is what the customer sites have been running,
+gathered into one release.
+
+### Added
+
+- **A terminal, not a line at a time.** SSH had a box you typed one command
+  into and a box the answer came back in, which is enough for `uptime` and no
+  use for anything that draws a screen. There is now a real terminal: `top`,
+  `vi` and `less` run in it, colours and cursor movement work, and it is
+  resized by dragging the window. PHP cannot hold a connection open between
+  requests, so the server keeps the session and streams it — what is typed goes
+  up one batch at a time, and what comes back arrives as it is written.
+- **A sign-in dialog for SSH.** Host, port, account, and either a password or a
+  private key chosen from your own Nextcloud files. A default folder for keys
+  can be set in Settings, so the picker opens where the keys are kept instead
+  of at the top of the file tree.
+- **A device on another network, sharing the same wire, is found and stays
+  found.** A camera left on its factory 192.168.1.120, plugged into a
+  10.0.0.0/16 network, was invisible: it is off the server's subnet, so nothing
+  routes to it, and it cannot answer a question either — its reply goes to a
+  gateway it does not have. What it does do is announce itself to the multicast
+  group, which is carried at the level of the wire and arrives whatever the
+  addresses say. NetBase now listens to that group continuously, in the
+  background, so such a device appears without a scan and is not marked offline
+  for failing to answer something it was never able to answer. Its details
+  carry the one command that would put this server on its network, ready to
+  copy, and a button that opens a terminal on this server to run it.
+- **A device can be asked about itself**, from its details: every one of its
+  65,535 ports, and which of the open ones actually serve a web page. The port
+  scan opens 64 connections at a time rather than the sweep's 512, because
+  older hardware drops the flood and is missed at 512; the web search asks each
+  port for its front page rather than guessing from the number, and a port that
+  answers becomes a link in the list from then on.
+- **A right-click on a device offers the ways into it** — HTTP, HTTPS, FTP, SSH
+  and Telnet — built from the ports it actually has open, with Properties at the
+  bottom for the panel a left-click opens. Nothing speculative is listed: a port
+  that is not open is not offered, and a web page only for a port NetBase knows
+  serves one or has been shown to.
+- **SSH and Telnet open in a window**, the same movable, resizable frame a
+  device's web page uses, so several can stand open beside the device list at
+  once. Port 22 and port 23 in the device details open one instead of changing
+  tab — which used to close the device and leave nowhere to go back to.
+- **Telnet can now be used, not merely diagnosed.** It had a probe that read
+  the banner and warned about the plain text, and nothing that would let anyone
+  type at a switch. The window signs in, sends a line, reads the answer and
+  hangs up — a connection per line, because PHP cannot hold one open between
+  requests, which is also why nothing is left open on the device in between.
+  Option negotiation is refused throughout, so the device keeps talking without
+  our pretending to be a terminal.
+- **Zoom, fit and a screenshot in every device window**, and a row of buttons
+  where a sentence explaining the window used to be: the device's own address,
+  the page's text, and the clipboard into whichever field the cursor is in.
+- **Copy buttons throughout the device details** — the whole record, or any one
+  row of it.
+- **Five depths for the port check** (15, 106, 1,024, the high ports 1025 to
+  65535, and all 65,535) and five scan speeds, with the wait for a port to
+  answer now a setting of its own, since that is the number which decides how
+  long a scan takes. The high ports are where a maker hides an interface it
+  would rather not advertise, such as the 22401 on a router here.
+
+### Changed
+
+- **The device list is two lines to a column** — name over address, MAC over
+  vendor, type over open ports — so a row holds what used to need sideways
+  scrolling. A device that has told nobody its name is written `- no name -`
+  rather than left blank.
+- **What to scan is chosen first and by name** — the whole network, or the ARP
+  table only — and the options beneath are arranged as the steps they are.
+- **The SSH page says which boxes belong together.** It does two jobs — looking
+  at a server, which needs nothing, and working on one, which needs an account —
+  and ran them together in five cards with three separate host fields. Each job
+  now has a heading, Telnet sits with the work rather than the looking, and the
+  host typed at the top can be carried down to the sign-in with a click, so the
+  two are visibly the same machine.
+- **The wait for a port to answer says what it buys.** The seconds alone meant
+  nothing without having thought about what a silent port costs, and the "up to
+  N per device" beside them was arithmetic nobody asked for. Now: quick and
+  misses slow devices, the usual, or finds the slowest and takes longest.
+- **Plainer words throughout**: the ARP table is called the ARP table, the scan
+  speed is a rate rather than an adjective, and links are made only for ports
+  NetBase can vouch for.
 
 ### Fixed
 
-- **A device on another network sharing the same wire is found.** A camera left
-  on its factory 192.168.1.120, plugged into a 10.0.0.0/16 network, was
-  invisible: it is off the server's subnet, so nothing routes to it, and it
-  cannot answer a question either — its reply goes to a gateway it does not
-  have. What it does do is announce itself to the multicast group, which is
-  carried at the level of the wire and arrives whatever the addresses say. So
-  NetBase now listens to the group as well as asking, and asks from the same
-  socket it is listening on, which turns a wait of half a minute for the
-  device's own timer into a few seconds.
+Ten of these came out of two cameras — five from one at a customer site, five
+from one here — and every one of the ten was found the same way: by signing in
+and then actually using the pages behind the sign-in, rather than checking that
+the front page appeared and calling the window done. None of them is particular
+to a camera; they would meet any device whose own web interface is built the
+same way, and the second camera was still finding them after the first five
+were fixed.
 
-  This also fixes the silent stop behind it: `IP_ADD_MEMBERSHIP` is not defined
-  in every PHP build, and naming a constant that does not exist is a fatal
-  error rather than a failed call, so the step ended without a word.
-
-## 0.4.6 — 2026-09-06
-
-### Fixed
-
-- **The server NetBase runs on now appears in its own device list.** A machine
-  never asks the network for its own MAC address, so it is never in its own ARP
-  table — and NetBase, which discovers by reading that table, could see every
-  device on the network except the one it was running on. Its own interfaces
-  are now written down at the start of a scan, marked "this server" in the list.
-
-## 0.4.5 — 2026-09-06
-
-### Fixed
-
-Five faults in the device window, all found by trying to sign in to a camera at
-a customer site rather than only checking that its page appeared.
-
+- **Device pages that would not open.** A device's redirect was arriving as a
+  200 with a Location nobody acted on, which left Brother, Canon, Kyocera and
+  Buffalo hardware showing nothing; four ASUS routers stepped outside their
+  window through `history.pushState`; and a Buffalo LinkStation reloaded itself
+  once a second for ever. Found by opening every device with port 80 or 443
+  across the nine sites — 73 of them — of which 32 displayed at the start.
 - **A relative address that climbs with `..` no longer eats the ticket.** On the
   device the climb stops at the root; under the proxy the root is several
   segments deeper, so `../script/inputrestriction.js` from `/login.html`
@@ -62,117 +127,83 @@ a customer site rather than only checking that its page appeared.
   here: this camera turns away every page after the sign-in without it. The
   window now says same-origin — the referer never leaves this server — and the
   proxy rewrites it into the device's own address before sending it on.
-
-## 0.4.4 — 2026-09-06
-
-### Fixed
-
+- **A device window no longer sends its cookies twice.** Two sets have to go to
+  the device — the session it grants at the sign-in, which the server holds and
+  the browser never sees, and whatever its own page set in the browser — and
+  they were being sent as two separate `Cookie:` lines. A browser never does
+  that, and a small device web server reads only one of the two. This camera
+  read the second, which has no session in it, decided the sign-in it had
+  granted a moment earlier belonged to nobody, and answered every page after it
+  with a redirect back to the login screen. Both sets now go through the same
+  cookie engine and leave as the one line HTTP asks for.
+- **A request with an empty body no longer arrives with one.** The parameters
+  Nextcloud hands over are the query string and the body merged together, and
+  taking that as the body meant the address's own question came back a second
+  time as form data — `POST /action/get?subject=datetime` left here carrying
+  `subject=datetime` in a body 25 bytes long. That is how this camera's pages
+  ask it for their current settings, and it answered 400 to every one of them:
+  the sign-in screen never offered the dialog it owes a device still on its
+  factory password, and the pages behind it came up on their defaults. Only
+  what was actually sent as a body is sent on as one.
+- **A request with nothing to send now says how much that is.** With no body,
+  curl leaves out `Content-Length` altogether; a browser always writes
+  `Content-Length: 0`. Given the first, this camera's web server waits for a
+  body that is never coming and eventually closes the connection with nothing
+  said. Every settings page asks for its current values with exactly that kind
+  of empty POST, so every page came up with its fields blank or on the first
+  option in each list — the time zone reading GMT-14 when the camera was set to
+  GMT+08. Measured against the device directly: no `Content-Length`, no reply
+  at all; `Content-Length: 0`, the settings come back. All 27 fields on the
+  Date & Time page now match what the device itself shows.
+- **A file whose name has a space in it is fetched.** The browser escapes the
+  space, the router unescapes it, and what reaches the proxy is a real space —
+  which cannot go back into a request. Three of this camera's menu icons are
+  kept under names like `Video Analytics.png`, and all three were broken
+  pictures while the other eleven on the page were fine. What a path may not
+  carry is escaped again on the way out, and what is already fit to send,
+  the percent sign included, is left alone so that a path which was never
+  unescaped is not escaped twice.
+- **A port a device announced is added to what is known, not put in place of
+  it.** A port scan speaks for every port it tried and may rightly take one
+  away; an announcement speaks for one port only — the one the device's own
+  page is on. Written down as though it were the whole truth, it erased the
+  rest. This camera announces port 49152 every forty-five seconds, so a scan
+  that had just found eight open ports was down to that one inside a minute,
+  and the web-page search that followed had nothing left to try: it never saw
+  port 80, no matter how many times the scan was run.
 - **A device that answers and then stops no longer holds the window empty for
   thirty seconds.** An NTT phone system at one site sends its 403 in under a
-  second and then keeps the connection open without ever finishing the body;
-  the proxy waited out its whole timeout for a page that was never coming. A
-  connection carrying nothing at all for ten seconds is now treated as
+  second and then keeps the connection open without ever finishing the body.
+  A connection carrying nothing at all for ten seconds is now treated as
   finished, and the window says the device answered and then stopped rather
   than showing nothing. A stream that is genuinely working — a camera, a
   download — is carrying bytes and is never caught by this.
-
-### Changed
-
-- **The wait for a port to answer says what it buys.** The seconds alone meant
-  nothing without having thought about what a silent port costs, and the "up to
-  N per device" beside them was arithmetic nobody asked for. Now: quick and
-  misses slow devices, the usual, or finds the slowest and takes longest.
-
-## 0.4.3 — 2026-09-06
-
-### Added
-
-- **A right-click on a device offers the ways into it** — HTTP, HTTPS, FTP, SSH
-  and Telnet — built from the ports it actually has open, with Properties at the
-  bottom for the panel a left-click opens. Nothing speculative is listed: a port
-  that is not open is not offered, and a web page only for a port NetBase knows
-  serves one or has been shown to.
-
-### Changed
-
-- **Connecting from the SSH page opens a window**, the movable kind, rather than
-  a panel filling the screen that had to be closed to look at anything else.
-  Several can stand open at once, one per device. The Telnet window can be
-  opened from there too.
-- **The SSH page says which boxes belong together.** It does two jobs — looking
-  at a server, which needs nothing, and working on one, which needs an account —
-  and ran them together in five cards with three separate host fields. Each job
-  now has a heading, and the host typed at the top can be carried down to the
-  sign-in with a click, so the two are visibly the same machine.
-
-## 0.4.2 — 2026-09-06
-
-### Added
-
-- **SSH and Telnet open in a window**, the same movable, resizable frame a
-  device's web page uses, so several can stand open beside the device list at
-  once. Port 22 and port 23 in the device details open one instead of changing
-  tab — which used to close the device and leave nowhere to go back to.
-- **Telnet can now be used, not merely diagnosed.** It had a probe that read
-  the banner and warned about the plain text, and nothing that would let anyone
-  type at a switch. The window signs in, sends a line, reads the answer and
-  hangs up — a connection per line, because PHP cannot hold one open between
-  requests, which is also why nothing is left open on the device in between.
-  Option negotiation is refused throughout, so the device keeps talking without
-  our pretending to be a terminal.
-
-## 0.4.1 — 2026-09-06
-
-### Fixed
-
+- **The server NetBase runs on now appears in its own device list.** A machine
+  never asks the network for its own MAC address, so it is never in its own ARP
+  table — and NetBase, which discovers by reading that table, could see every
+  device on the network except the one it was running on. Its own interfaces
+  are now written down at the start of a scan, marked "this server" in the list.
+- **A device out of reach is no longer marked offline for failing to answer.**
+  A scan marks everything offline and then marks back what replies, which is
+  right for a device that could have replied and wrong for one that never
+  could. A device that has only ever been heard announcing itself — never seen
+  in the ARP table — keeps its state if it has been heard from recently.
 - **A radio button is drawn as a radio button.** It had no style of its own, so
   it fell through to the rule for a text box and was rendered as one: a rounded
   rectangle with twelve pixels of padding around the dot.
+- **A multicast step no longer stops without a word.** `IP_ADD_MEMBERSHIP` is
+  not defined in every PHP build, and naming a constant that does not exist is
+  a fatal error rather than a failed call, so the step ended silently and the
+  devices that only announce themselves were never heard.
+- **The standing listener actually runs.** A background job registered as
+  time-insensitive is held for the maintenance window, which on an instance
+  with one configured means it runs between 01:00 and 05:00 and at no other
+  time — so the listener that is supposed to be hearing announcements all day
+  heard none. `TIME_INSENSITIVE` is 0 and `TIME_SENSITIVE` is 1, the reverse of
+  what the names suggest at a glance, and the value is written once when the
+  job is first registered and never revised, so the registration has to be
+  removed and remade rather than merely corrected.
 
-### Added
-
-- **A fifth depth for the port check: the high ports, 1025 to 65535** — where a
-  maker hides an interface it would rather not advertise, such as the 22401 on
-  a router here.
-
-## 0.4.0 — 2026-09-06
-
-Everything since 0.3.11, which is what the customer sites have been running,
-gathered into one release.
-
-### Added
-
-- **A device can be asked about itself**, from its details: every one of its
-  65,535 ports, and which of the open ones actually serve a web page. The port
-  scan opens 64 connections at a time rather than the sweep's 512, because
-  older hardware drops the flood and is missed at 512; the web search asks each
-  port for its front page rather than guessing from the number, and a port that
-  answers becomes a link in the list from then on.
-- **Zoom, fit and a screenshot in every device window**, and a row of buttons
-  where a sentence explaining the window used to be: the device's own address,
-  the page's text, and the clipboard into whichever field the cursor is in.
-- **Copy buttons throughout the device details** — the whole record, or any one
-  row of it.
-- **Four depths for the port check** (15, 106, 1,024 and all 65,535) and five
-  scan speeds, with the wait for a port to answer now a setting of its own,
-  since that is the number which decides how long a scan takes.
-
-### Fixed
-
-- **Device pages that would not open.** A device's redirect was arriving as a
-  200 with a Location nobody acted on, which left Brother, Canon, Kyocera and
-  Buffalo hardware showing nothing; four ASUS routers stepped outside their
-  window through `history.pushState`; and a Buffalo LinkStation reloaded itself
-  once a second for ever. Found by opening every device with port 80 or 443
-  across the nine sites — 73 of them — of which 32 displayed at the start.
-
-### Changed
-
-- **What to scan is chosen first and by name** — the whole network, or the ARP
-  table only — and the options beneath are arranged as the steps they are.
-- **Plainer words throughout**: the ARP table is called the ARP table, the scan
-  speed is a rate rather than an adjective, and links are made only for ports
-  NetBase can vouch for.
 
 ## 0.3.23 — 2026-09-06
 

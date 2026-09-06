@@ -8,7 +8,7 @@
 
 Device windows are the heart of it. The server fetches a device's own web interface and rewrites every address inside it, so a router, a switch, a printer or a NAS can be signed into and configured from anywhere the Nextcloud is reachable — no VPN, no jump host, no site visit. Firmware can be sent, a configuration restored, a backup taken. Several windows can be open at once.
 
-Discovery needs no root, no agent and no extra packages: NetBase primes the kernel neighbour table, reads it back, and asks each device for its own name over NetBIOS, mDNS, WS-Discovery and SSDP. MAC addresses are resolved against a bundled IEEE registry of more than 53,000 vendor prefixes, offline.
+Discovery needs no root, no agent and no extra packages: NetBase primes the kernel neighbour table, reads it back, and asks each device for its own name over NetBIOS, mDNS, WS-Discovery and SSDP. It also listens for the announcements devices make, continuously and in the background, so a device sitting on another subnet of the same wire — one nothing here can reach, and which can never answer a question — still appears in the list. MAC addresses are resolved against a bundled IEEE registry of more than 53,000 vendor prefixes, offline.
 
 What each part is for:
 - Device windows — a device's own settings page, through Nextcloud, from anywhere
@@ -19,7 +19,7 @@ What each part is for:
 - TLS and HTTP — certificate, chain and expiry, accepted TLS versions, redirect chain, security headers
 - Mail — SPF, DKIM, DMARC, MTA-STS, DANE and blocklists, plus SMTP/IMAP/POP3 server tests, an open-relay test and a real test message
 - FTP and SFTP — browse a remote server and move files to and from your Nextcloud folders
-- SSH and Telnet — a credential-free probe, and commands or a console on a saved connection
+- SSH and Telnet — a credential-free probe, and commands or a full terminal on a saved connection
 - Benchmarks — internet speed, LAN throughput over iperf3, resolver comparison, HTTP timing
 - Every result can be copied, downloaded or saved straight into your own Nextcloud files
 
@@ -30,7 +30,7 @@ Available in twenty languages, and NetBase can be set to a different language fr
 
 中心となるのが「機器ウィンドウ」です。サーバーが機器のWeb管理画面を取得し、その中のアドレスをすべて書き換えて表示するため、ルーター・スイッチ・プリンタ・NASの設定を、Nextcloudに届く場所ならどこからでも操作できます。VPNも踏み台も訪問も不要です。ファームウェアの送信、設定の復元、バックアップの取得もそのまま行えます。複数のウィンドウを同時に開けます。
 
-検出にroot権限・エージェント・追加パッケージは不要です。カーネルの近隣テーブルを起こして読み取り、NetBIOS・mDNS・WS-Discovery・SSDPで各機器に名前を尋ねます。MACアドレスは同梱のIEEE登録簿（53,000件超）でオフライン判別します。
+検出にroot権限・エージェント・追加パッケージは不要です。カーネルの近隣テーブルを起こして読み取り、NetBIOS・mDNS・WS-Discovery・SSDPで各機器に名前を尋ねます。あわせて、機器が送る「名乗り」を背景で常時受信しているため、同じ配線につながった別サブネットの機器 ― こちらから到達できず、問い合わせにも答えられない相手 ― も一覧に現れます。MACアドレスは同梱のIEEE登録簿（53,000件超）でオフライン判別します。
 
 各機能の用途:
 - 機器ウィンドウ ― 機器の設定画面を、Nextcloud経由でどこからでも
@@ -41,14 +41,14 @@ Available in twenty languages, and NetBase can be set to a different language fr
 - TLS・HTTP ― 証明書とチェーンと有効期限、受け付けるTLSバージョン、リダイレクト連鎖、セキュリティヘッダー
 - メール ― SPF・DKIM・DMARC・MTA-STS・DANE・ブロックリスト、SMTP/IMAP/POP3のサーバー検査、第三者中継テスト、実際の試験送信
 - FTP・SFTP ― リモートサーバーの閲覧と、Nextcloudフォルダーとのファイル受け渡し
-- SSH・Telnet ― 資格情報なしの調査と、保存済み接続先でのコマンド実行・コンソール
+- SSH・Telnet ― 資格情報なしの調査と、保存済み接続先でのコマンド実行・仮想ターミナル
 - ベンチマーク ― 回線速度、iperf3によるLAN帯域、リゾルバ比較、HTTP時間内訳
 - どの結果もコピー・ダウンロード・Nextcloudのファイルへの保存が可能
 
 公開範囲はツール単位で設定できます。NetBaseは管理者向けのアプリで、ローカルネットワークに触れる機能は既定で管理者のみですが、管理設定から各ツールを指定グループや全員に開放できます。ネットワークそのものを渡すことなく、whois・DNSといった無害な調査だけを一般利用者に使ってもらえます。何も許可されていない利用者には、アプリメニューにも表示しません。
 
 20言語に対応し、NetBaseだけをNextcloud本体と別の言語に設定することもできます（利用者ごと）。]]></description>
-	<version>0.4.7</version>
+	<version>0.4.0</version>
 	<licence>agpl</licence>
 	<author>KTEC</author>
 	<namespace>NetBase</namespace>
@@ -66,6 +66,9 @@ Available in twenty languages, and NetBase can be set to a different language fr
 	<dependencies>
 		<nextcloud min-version="30" max-version="34"/>
 	</dependencies>
+	<background-jobs>
+		<job>OCA\NetBase\BackgroundJob\ListenJob</job>
+	</background-jobs>
 	<commands>
 		<command>OCA\NetBase\Command\Scan</command>
 		<command>OCA\NetBase\Command\Devices</command>
