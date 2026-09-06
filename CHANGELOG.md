@@ -2,6 +2,24 @@
 
 All notable changes to NetBase are documented here.
 
+## 0.3.13 — 2026-09-06
+
+### Added
+
+- **Zoom in a device window.** Twelve steps from half size to triple, with the
+  current figure between them — click it to go back to 100%. Device interfaces
+  are drawn for whatever screen their maker had in mind; some are unreadable in
+  a window and some waste half of it. The zoom is put on the device's own page
+  rather than on the frame, so the page reflows into the same window instead of
+  being scaled with it, and it is kept as the window moves from page to page.
+- **Fit to window**, beside the zoom and working as a toggle. It measures what
+  the page actually needs and picks the factor, then measures again on every
+  page the window opens. Reaching for the step buttons takes over from it.
+- **Screenshot**, which saves the page as a PNG. The picture is taken by the
+  server's own headless browser pointed at the window's proxy address, not at
+  the device — so it goes through the same ticket and the same stored session,
+  and shows the page as it is on screen rather than the login screen.
+
 ## 0.3.12 — 2026-09-06
 
 ### Changed

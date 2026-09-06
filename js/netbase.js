@@ -89,6 +89,14 @@
     return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
   }
 
+  /** The moment, in a shape a file name can carry. */
+  function stampFile(when) {
+    const d = when || new Date();
+    const pad = (n) => String(n).padStart(2, '0');
+    return d.getFullYear() + pad(d.getMonth() + 1) + pad(d.getDate())
+      + '-' + pad(d.getHours()) + pad(d.getMinutes()) + pad(d.getSeconds());
+  }
+
   /* NETBASE-STORE-REMOVED — the markup of the tools taken out for the app store.
    * Restore a block into the TEMPLATE literal (and its methods, data fields, route,
    * controller and service) to bring the tool back.
@@ -1508,6 +1516,17 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
           <span class="ic"><svg viewBox="0 0 24 24"><path d="M9 4.5H7A1.5 1.5 0 0 0 5.5 6v13A1.5 1.5 0 0 0 7 20.5h10a1.5 1.5 0 0 0 1.5-1.5V6A1.5 1.5 0 0 0 17 4.5h-2"/><rect x="9" y="2.5" width="6" height="3.5" rx="1"/><path d="M8.5 12h7"/><path d="M8.5 15.5h4.5"/></svg></span><span class="lb">{{ t('Paste') }}</span>
         </button>
         <span class="spacer"></span>
+        <!-- Device interfaces are drawn for a screen of their own era. Some
+             are unreadably small in a window; some waste half of it. -->
+        <button class="btn xs" :title="t('Take a picture of this page')" @mousedown.prevent @click.stop="shootWindow(w)">
+          <span class="ic"><svg viewBox="0 0 24 24"><path d="M3.5 8.5A1.5 1.5 0 0 1 5 7h2l1.2-2h7.6L17 7h2a1.5 1.5 0 0 1 1.5 1.5v9A1.5 1.5 0 0 1 19 19H5a1.5 1.5 0 0 1-1.5-1.5z"/><circle cx="12" cy="12.7" r="3.4"/></svg></span><span class="lb">{{ t('Screenshot') }}</span>
+        </button>
+        <span class="devwin-zoom">
+          <button class="btn xs ib" :class="{active: w.fit}" :title="t('Fit the page to the window')" :aria-label="t('Fit the page to the window')" @mousedown.prevent @click.stop="toggleFit(w)"><svg viewBox="0 0 24 24"><path d="M3.5 8.5V4.5H7.5"/><path d="M20.5 8.5V4.5H16.5"/><path d="M3.5 15.5V19.5H7.5"/><path d="M20.5 15.5V19.5H16.5"/></svg></button>
+          <button class="btn xs ib" :title="t('Smaller')" :aria-label="t('Smaller')" :disabled="!canZoom(w, -1)" @mousedown.prevent @click.stop="zoomWindow(w, -1)"><svg viewBox="0 0 24 24"><path d="M5 12h14"/></svg></button>
+          <button class="btn xs zoom-now" :title="t('Back to 100%')" @mousedown.prevent @click.stop="resetZoom(w)">{{ Math.round(w.zoom * 100) }}%</button>
+          <button class="btn xs ib" :title="t('Larger')" :aria-label="t('Larger')" :disabled="!canZoom(w, 1)" @mousedown.prevent @click.stop="zoomWindow(w, 1)"><svg viewBox="0 0 24 24"><path d="M12 5v14"/><path d="M5 12h14"/></svg></button>
+        </span>
         <span class="dim mono tiny">{{ w.base.replace(/^https?:\/\//, '') }}</span>
       </div>
       <div v-if="w.busy" class="devwin-note dim">{{ t('Connecting…') }}</div>
@@ -1837,6 +1856,9 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
     { host: '76.76.2.0', label: 'Control D' },
     { host: '185.228.168.9', label: 'CleanBrowsing' },
   ];
+
+  // The steps a device window zooms through, either side of its own size.
+  const ZOOM_STEPS = [0.5, 0.67, 0.8, 0.9, 1, 1.1, 1.25, 1.5, 1.75, 2, 2.5, 3];
 
   const WEB_PORTS = {
     80: 'http', 81: 'http', 591: 'http', 631: 'http', 2082: 'http', 3000: 'http', 5000: 'http',
@@ -2399,7 +2421,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         const base = scheme + '://' + host + (port === 80 || port === 443 ? '' : ':' + port);
         const offset = this.narrow ? 0 : (this.windows.length % 6) * 28;
         const w = {
-          id: ++this.windowSeq, base, url: '', src: '', error: '', busy: true, full: false, escapes: 0, field: null,
+          id: ++this.windowSeq, base, url: '', src: '', error: '', busy: true, full: false, escapes: 0, field: null, zoom: 1, fit: false, shooting: false,
           here: '', trail: [], trailAt: -1, rewinding: false, help: false, z: ++this.windowTop,
           title: (device.name || device.ip) + ' · ' + port,
           x: this.narrow ? 0 : Math.max(20, Math.round(window.innerWidth / 2 - 520) + offset),
@@ -2449,6 +2471,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
             const doc = frame.contentWindow.document;
             doc.addEventListener('focusin', (e) => { w.field = e.target; }, true);
           } catch (e) { /* not ours to listen to */ }
+          if (w.fit) { this.applyFit(w, frame.contentWindow); } else { this.applyZoom(w, frame.contentWindow); }
           return;                                       // still inside the proxy
         }
         if (here === 'about:blank') return;
@@ -2457,6 +2480,105 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         w.escapes = (w.escapes || 0) + 1;
         if (w.escapes > 2) { w.error = T('This page keeps leaving the device window.'); return; }
         frame.contentWindow.location.replace(prefix + here);
+      },
+      canZoom(w, direction) {
+        const at = ZOOM_STEPS.indexOf(w.zoom);
+        const next = (at < 0 ? ZOOM_STEPS.indexOf(1) : at) + direction;
+        return next >= 0 && next < ZOOM_STEPS.length;
+      },
+      /**
+       * Fit the page to the window, and keep it fitted.
+       *
+       * A device interface is drawn for whatever screen its maker had in mind
+       * — often 1024 wide, sometimes far more — and a window is whatever size
+       * the person dragged it to. This measures what the page actually needs
+       * and picks the factor, rather than making them hunt for it a step at a
+       * time. It stays on: every page the window goes to is measured again,
+       * and so is every drag of the window's corner.
+       */
+      toggleFit(w) {
+        w.fit = !w.fit;
+        if (w.fit) { this.applyFit(w); return; }
+        w.zoom = 1;
+        this.applyZoom(w);
+      },
+      applyFit(w, win) {
+        try {
+          const target = win || this.windowFrame(w);
+          const frame = document.querySelector('.devwin-frame[data-window="' + w.id + '"]');
+          if (!target || !target.document || !frame) return;
+          const root = target.document.documentElement;
+          const body = target.document.body;
+          // Measured at its own size, or the last factor is measured with it.
+          root.style.zoom = '';
+          const needs = Math.max(root.scrollWidth || 0, body ? body.scrollWidth : 0);
+          const room = frame.clientWidth;
+          if (!needs || !room) { this.applyZoom(w, target); return; }
+          const factor = Math.min(3, Math.max(0.25, room / needs));
+          w.zoom = Math.round(factor * 100) / 100;
+          root.style.zoom = w.zoom === 1 ? '' : String(w.zoom);
+        } catch (e) { /* a document we may not touch */ }
+      },
+      zoomWindow(w, direction) {
+        if (!this.canZoom(w, direction)) return;
+        // Reaching for the step buttons means taking over from the fitting.
+        w.fit = false;
+        const at = ZOOM_STEPS.indexOf(w.zoom);
+        w.zoom = ZOOM_STEPS[(at < 0 ? ZOOM_STEPS.indexOf(1) : at) + direction];
+        this.applyZoom(w);
+      },
+      resetZoom(w) { w.fit = false; w.zoom = 1; this.applyZoom(w); },
+      /**
+       * A picture of the page as it stands.
+       *
+       * Taken by the server's own headless browser, through the same proxy
+       * ticket this window is using — so it carries the same signed-in session
+       * and shows what is on the screen, not a login page.
+       */
+      async shootWindow(w) {
+        if (w.shooting || !w.url) return;
+        w.shooting = true;
+        try {
+          const frame = document.querySelector('.devwin-frame[data-window="' + w.id + '"]');
+          const token = w.url.replace(/\/$/, '').split('/').pop();
+          const url = BASE + 'api/window/shot?' + qs({
+            token,
+            path: w.path || '',
+            width: Math.round((frame && frame.clientWidth) || 1280),
+            height: Math.round((frame && frame.clientHeight) || 900),
+          });
+          const response = await fetch(url);
+          if (!response.ok) {
+            let said = '';
+            try { said = (await response.json()).error || ''; } catch (e) { said = ''; }
+            throw new Error(said || ('HTTP ' + response.status));
+          }
+          const blob = await response.blob();
+          const name = (w.title || 'device').replace(/[^\w.-]+/g, '-').replace(/^-+|-+$/g, '')
+            + '-' + stampFile() + '.png';
+          const link = document.createElement('a');
+          link.href = URL.createObjectURL(blob);
+          link.download = name;
+          link.click();
+          setTimeout(() => URL.revokeObjectURL(link.href), 4000);
+          this.note(T('Saved as {name}', { name }));
+        } catch (e) { this.fail(e); } finally { w.shooting = false; }
+      },
+      /**
+       * The zoom, put on the device's own document.
+       *
+       * Not on the frame: scaling the frame would scale the window with it.
+       * The page is on this origin, so its root element can simply be told to
+       * draw itself larger, and it reflows into the same window the way a
+       * browser's own zoom does. Every page the window goes on to show is a
+       * new document, so this is applied again on each load.
+       */
+      applyZoom(w, win) {
+        try {
+          const target = win || this.windowFrame(w);
+          if (!target || !target.document || !target.document.documentElement) return;
+          target.document.documentElement.style.zoom = w.zoom === 1 ? '' : String(w.zoom);
+        } catch (e) { /* a document we may not touch */ }
       },
       /** The frame of a window, while it is still showing what we put there. */
       windowFrame(w) {

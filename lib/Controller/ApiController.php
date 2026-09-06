@@ -565,6 +565,43 @@ class ApiController extends Controller {
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	#[UserRateLimit(limit: 60, period: 60)]
+	/**
+	 * A picture of the page a device window is showing.
+	 *
+	 * The server's own headless browser is pointed at the window's proxy
+	 * address rather than at the device, so it goes through the same ticket and
+	 * the same stored session: what comes back is the page as the person is
+	 * seeing it, signed in, and not the login screen they got past ten minutes
+	 * ago. The ticket has to be theirs — redeeming it here is what checks that.
+	 */
+	#[NoAdminRequired]
+	public function windowShot(string $token, string $path = '', int $width = 1280, int $height = 900) {
+		try {
+			$this->permissions->require('preview');
+			$ticket = $this->proxy->redeem($token);
+			if ($ticket['userId'] !== $this->permissions->uid()) {
+				throw new \RuntimeException('That window belongs to somebody else');
+			}
+			$url = rtrim($this->urls->getAbsoluteURL(
+				$this->urls->linkToRoute('netbase.proxy.open', ['token' => $token, 'path' => ltrim($path, '/')])
+			), '/');
+			$result = $this->browser->screenshot($url . ($path === '' ? '/' : ''), $width, $height, 5000, false);
+		} catch (\InvalidArgumentException $e) {
+			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_BAD_REQUEST);
+		} catch (\RuntimeException $e) {
+			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_FORBIDDEN);
+		} catch (\Throwable $e) {
+			$this->logger->error('NetBase: ' . $e->getMessage(), ['exception' => $e, 'app' => 'netbase']);
+			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_INTERNAL_SERVER_ERROR);
+		}
+		if (!$result['ok']) {
+			return new JSONResponse(['error' => $result['error']], Http::STATUS_BAD_GATEWAY);
+		}
+		$response = new DataDisplayResponse($result['image'], Http::STATUS_OK, ['Content-Type' => 'image/png']);
+		$response->cacheFor(0);
+		return $response;
+	}
+
 	public function preview(string $url, int $width = 1280, int $height = 900, int $wait = 4000, bool $full = false) {
 		try {
 			$this->permissions->require('preview');

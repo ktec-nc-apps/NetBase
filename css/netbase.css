@@ -479,6 +479,10 @@
 .devwin-bar .btn.xs { display: inline-flex; align-items: center; gap: 5px; }
 .devwin-bar .btn.xs svg { width: 13px; height: 13px; }
 .devwin-bar .tiny { font-size: .74em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* The zoom sits as one control: two steps either side of what it is now. */
+#netbase-root .devwin-zoom { display: inline-flex; align-items: center; gap: 2px; }
+#netbase-root .devwin-zoom .zoom-now { min-width: 3.6em; font-variant-numeric: tabular-nums; }
+#netbase-root .devwin-zoom .btn.active { background: var(--primary); color: #fff; border-color: var(--primary); }
 
 /* While a window is being moved or resized the pointer must stay with the
    window, not disappear into the page it is showing. */

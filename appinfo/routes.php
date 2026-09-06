@@ -92,6 +92,8 @@ return [
 
 		// device web page preview
 		['name' => 'api#preview', 'url' => '/api/preview', 'verb' => 'GET'],
+		// a picture of the page a device window is showing
+		['name' => 'api#windowShot', 'url' => '/api/window/shot', 'verb' => 'GET'],
 
 		// SSH commands
 		['name' => 'api#sshRun', 'url' => '/api/ssh/run', 'verb' => 'POST'],
