@@ -1814,18 +1814,35 @@ const _hoisted_920 = /*#__PURE__*/_createElementVNode("svg", { viewBox: "0 0 24 
 const _hoisted_921 = [
   _hoisted_920
 ]
-const _hoisted_922 = ["title"]
-const _hoisted_923 = ["placeholder", "aria-label"]
-const _hoisted_924 = ["aria-label"]
-const _hoisted_925 = /*#__PURE__*/_createElementVNode("option", { value: "http" }, "HTTP", -1 /* HOISTED */)
-const _hoisted_926 = /*#__PURE__*/_createElementVNode("option", { value: "https" }, "HTTPS", -1 /* HOISTED */)
-const _hoisted_927 = [
-  _hoisted_925,
-  _hoisted_926
+const _hoisted_922 = ["disabled"]
+const _hoisted_923 = ["disabled"]
+const _hoisted_924 = ["title"]
+const _hoisted_925 = ["placeholder", "aria-label"]
+const _hoisted_926 = ["aria-label"]
+const _hoisted_927 = /*#__PURE__*/_createElementVNode("option", { value: "http" }, "HTTP", -1 /* HOISTED */)
+const _hoisted_928 = /*#__PURE__*/_createElementVNode("option", { value: "https" }, "HTTPS", -1 /* HOISTED */)
+const _hoisted_929 = [
+  _hoisted_927,
+  _hoisted_928
 ]
-const _hoisted_928 = ["disabled"]
-const _hoisted_929 = { class: "drawer-foot" }
-const _hoisted_930 = /*#__PURE__*/_createElementVNode("span", { class: "spacer" }, null, -1 /* HOISTED */)
+const _hoisted_930 = ["disabled"]
+const _hoisted_931 = {
+  key: 2,
+  class: "deep-result",
+  ref: "deepResult"
+}
+const _hoisted_932 = {
+  key: 0,
+  class: "hint"
+}
+const _hoisted_933 = {
+  key: 1,
+  class: "kv"
+}
+const _hoisted_934 = { class: "mono" }
+const _hoisted_935 = ["onClick"]
+const _hoisted_936 = { class: "drawer-foot" }
+const _hoisted_937 = /*#__PURE__*/_createElementVNode("span", { class: "spacer" }, null, -1 /* HOISTED */)
 
 return function render(_ctx, _cache) {
   return (_openBlock(), _createElementBlock("div", {
@@ -5910,7 +5927,7 @@ return function render(_ctx, _cache) {
       ? (_openBlock(), _createElementBlock("div", {
           key: 7,
           class: "drawer-backdrop",
-          onClick: _cache[286] || (_cache[286] = _withModifiers($event => (_ctx.selected=null), ["self"]))
+          onClick: _cache[288] || (_cache[288] = _withModifiers($event => (_ctx.selected=null), ["self"]))
         }, [
           _createElementVNode("div", _hoisted_842, [
             _createElementVNode("div", _hoisted_843, [
@@ -6179,63 +6196,109 @@ return function render(_ctx, _cache) {
                     }, _hoisted_921, 8 /* PROPS */, _hoisted_919)
                   ], 64 /* STABLE_FRAGMENT */))
                 }), 128 /* KEYED_FRAGMENT */)),
+                _createCommentVNode(" Asking this one device what a sweep has no time to ask: every\n                 port it has, and which of those are really web pages. "),
+                (_ctx.allowed('scan'))
+                  ? (_openBlock(), _createElementBlock("button", {
+                      key: 0,
+                      class: "btn sm",
+                      disabled: !!_ctx.deep.busy,
+                      onClick: _cache[278] || (_cache[278] = $event => (_ctx.scanAllPorts(_ctx.selected)))
+                    }, " 🔎 " + _toDisplayString(_ctx.deep.busy === 'ports' ? _ctx.t('Scanning… {done}%', { done: _ctx.deep.percent }) : _ctx.t('Scan every port')), 9 /* TEXT, PROPS */, _hoisted_922))
+                  : _createCommentVNode("v-if", true),
+                (_ctx.allowed('scan'))
+                  ? (_openBlock(), _createElementBlock("button", {
+                      key: 1,
+                      class: "btn sm",
+                      disabled: !!_ctx.deep.busy || !_ctx.selected.ports.length,
+                      onClick: _cache[279] || (_cache[279] = $event => (_ctx.findWebPages(_ctx.selected)))
+                    }, " 🌐 " + _toDisplayString(_ctx.deep.busy === 'web' ? _ctx.t('Looking…') : _ctx.t('Find web pages')), 9 /* TEXT, PROPS */, _hoisted_923))
+                  : _createCommentVNode("v-if", true),
                 _createCommentVNode(" A device's page is not always on a port the scan noticed, and\n                 a maker is free to put it anywhere, so the number can simply\n                 be typed. "),
                 (_ctx.allowed('preview'))
                   ? (_openBlock(), _createElementBlock("span", {
-                      key: 0,
+                      key: 2,
                       class: "port-open",
                       title: _ctx.t('Opens a page on this device at a port of your choosing, through this server.')
                     }, [
                       _withDirectives(_createElementVNode("input", {
-                        "onUpdate:modelValue": _cache[278] || (_cache[278] = $event => ((_ctx.openPort) = $event)),
+                        "onUpdate:modelValue": _cache[280] || (_cache[280] = $event => ((_ctx.openPort) = $event)),
                         class: "tiny",
                         inputmode: "numeric",
                         placeholder: _ctx.t('Port'),
                         "aria-label": _ctx.t('Port'),
-                        onKeyup: _cache[279] || (_cache[279] = _withKeys((...args) => (_ctx.openTypedPort && _ctx.openTypedPort(...args)), ["enter"]))
-                      }, null, 40 /* PROPS, NEED_HYDRATION */, _hoisted_923), [
+                        onKeyup: _cache[281] || (_cache[281] = _withKeys((...args) => (_ctx.openTypedPort && _ctx.openTypedPort(...args)), ["enter"]))
+                      }, null, 40 /* PROPS, NEED_HYDRATION */, _hoisted_925), [
                         [_vModelText, _ctx.openPort]
                       ]),
                       _withDirectives(_createElementVNode("select", {
-                        "onUpdate:modelValue": _cache[280] || (_cache[280] = $event => ((_ctx.openScheme) = $event)),
+                        "onUpdate:modelValue": _cache[282] || (_cache[282] = $event => ((_ctx.openScheme) = $event)),
                         "aria-label": _ctx.t('Protocol')
-                      }, _hoisted_927, 8 /* PROPS */, _hoisted_924), [
+                      }, _hoisted_929, 8 /* PROPS */, _hoisted_926), [
                         [_vModelSelect, _ctx.openScheme]
                       ]),
                       _createElementVNode("button", {
                         class: "btn sm",
                         disabled: !_ctx.openPortReady,
-                        onClick: _cache[281] || (_cache[281] = (...args) => (_ctx.openTypedPort && _ctx.openTypedPort(...args)))
-                      }, "🖥 " + _toDisplayString(_ctx.t('Open this port')), 9 /* TEXT, PROPS */, _hoisted_928)
-                    ], 8 /* PROPS */, _hoisted_922))
+                        onClick: _cache[283] || (_cache[283] = (...args) => (_ctx.openTypedPort && _ctx.openTypedPort(...args)))
+                      }, "🖥 " + _toDisplayString(_ctx.t('Open this port')), 9 /* TEXT, PROPS */, _hoisted_930)
+                    ], 8 /* PROPS */, _hoisted_924))
                   : _createCommentVNode("v-if", true),
                 (_ctx.selected.mac && _ctx.allowed('wol'))
                   ? (_openBlock(), _createElementBlock("button", {
-                      key: 1,
+                      key: 3,
                       class: "btn sm",
-                      onClick: _cache[282] || (_cache[282] = $event => (_ctx.wake(_ctx.selected)))
+                      onClick: _cache[284] || (_cache[284] = $event => (_ctx.wake(_ctx.selected)))
                     }, "⏻ " + _toDisplayString(_ctx.t('Wake on LAN')), 1 /* TEXT */))
                   : _createCommentVNode("v-if", true)
-              ])
+              ]),
+              _createCommentVNode(" What the two searches came back with, for this device. "),
+              (_ctx.deep.note || _ctx.deep.pages.length)
+                ? (_openBlock(), _createElementBlock("div", _hoisted_931, [
+                    (_ctx.deep.note)
+                      ? (_openBlock(), _createElementBlock("p", _hoisted_932, _toDisplayString(_ctx.deep.note), 1 /* TEXT */))
+                      : _createCommentVNode("v-if", true),
+                    (_ctx.deep.pages.length)
+                      ? (_openBlock(), _createElementBlock("div", _hoisted_933, [
+                          (_openBlock(true), _createElementBlock(_Fragment, null, _renderList(_ctx.deep.pages, (page) => {
+                            return (_openBlock(), _createElementBlock("div", {
+                              key: page.port
+                            }, [
+                              _createElementVNode("span", _hoisted_934, _toDisplayString(page.scheme) + " · " + _toDisplayString(page.port), 1 /* TEXT */),
+                              _createElementVNode("code", null, [
+                                _createTextVNode(_toDisplayString(page.title || page.server || _ctx.t('a page')), 1 /* TEXT */),
+                                (_ctx.allowed('preview'))
+                                  ? (_openBlock(), _createElementBlock("button", {
+                                      key: 0,
+                                      class: "btn xs",
+                                      onClick: $event => (_ctx.openDeviceWindow(_ctx.selected, page.port, page.scheme))
+                                    }, _toDisplayString(_ctx.t('Open')), 9 /* TEXT, PROPS */, _hoisted_935))
+                                  : _createCommentVNode("v-if", true)
+                              ])
+                            ]))
+                          }), 128 /* KEYED_FRAGMENT */))
+                        ]))
+                      : _createCommentVNode("v-if", true)
+                  ], 512 /* NEED_PATCH */))
+                : _createCommentVNode("v-if", true)
             ]),
-            _createElementVNode("div", _hoisted_929, [
+            _createElementVNode("div", _hoisted_936, [
               (_ctx.allowed('scan'))
                 ? (_openBlock(), _createElementBlock("button", {
                     key: 0,
                     class: "btn danger sm",
-                    onClick: _cache[283] || (_cache[283] = $event => (_ctx.removeDevice(_ctx.selected)))
+                    onClick: _cache[285] || (_cache[285] = $event => (_ctx.removeDevice(_ctx.selected)))
                   }, _toDisplayString(_ctx.t('Forget this device')), 1 /* TEXT */))
                 : _createCommentVNode("v-if", true),
-              _hoisted_930,
+              _hoisted_937,
               _createElementVNode("button", {
                 class: "btn sm",
-                onClick: _cache[284] || (_cache[284] = $event => (_ctx.selected=null))
+                onClick: _cache[286] || (_cache[286] = $event => (_ctx.selected=null))
               }, _toDisplayString(_ctx.allowed('scan') ? _ctx.t('Cancel') : _ctx.t('Close')), 1 /* TEXT */),
               (_ctx.allowed('scan'))
                 ? (_openBlock(), _createElementBlock("button", {
                     key: 1,
                     class: "btn primary",
-                    onClick: _cache[285] || (_cache[285] = (...args) => (_ctx.saveDevice && _ctx.saveDevice(...args)))
+                    onClick: _cache[287] || (_cache[287] = (...args) => (_ctx.saveDevice && _ctx.saveDevice(...args)))
                   }, _toDisplayString(_ctx.t('Save')), 1 /* TEXT */))
                 : _createCommentVNode("v-if", true)
             ])
@@ -6398,6 +6461,9 @@ return function render(_ctx, _cache) {
         scanTargets: '', pace: '1500',
         opts: { names: true, multicast: true, ports: true, portScan: 'common', portWait: 0.9, rdns: true, arpOnly: false },
         openPort: '', openScheme: 'http',
+        // One device asked about itself: which search is running, how far it
+        // has got, and what it came back with.
+        deep: { busy: '', percent: 0, note: '', pages: [] },
         filter: '', onlyOnline: true, sortKey: 'ip', sortDir: 1,
         selected: null, editLabel: '', editTags: '', editNotes: '', editType: 'unknown',
         busy: {},
@@ -6638,6 +6704,87 @@ return function render(_ctx, _cache) {
       duration(seconds) {
         if (seconds < 90) return T('about {n} s', { n: Math.max(1, Math.round(seconds)) });
         return T('about {n} min', { n: Math.round(seconds / 60) });
+      },
+      /**
+       * Every port on this one device.
+       *
+       * A sweep gives each device a moment; a device asked on its own can be
+       * asked about all 65,535. It is walked in slices so no single request
+       * runs long, and what is found is written back to the device, so the
+       * list shows it afterwards.
+       */
+      async scanAllPorts(device) {
+        if (this.deep.busy || !device) return;
+        this.deep = { busy: 'ports', percent: 0, note: '', pages: [] };
+        const open = [];
+        try {
+          let from = 1;
+          for (;;) {
+            const slice = await api('device/ports', {
+              method: 'POST',
+              body: JSON.stringify({ ip: device.ip, from, wait: 0.3, save: false }),
+            });
+            open.push(...(slice.open || []));
+            this.deep.percent = Math.min(100, Math.round((slice.to / 65535) * 100));
+            if (slice.done) break;
+            from = slice.next;
+          }
+          // The last call writes the whole answer against the device, and adds
+          // its own patient look at the ports worth being sure about.
+          const settled = await api('device/ports', {
+            method: 'POST',
+            body: JSON.stringify({ ip: device.ip, from: 65535, wait: 0.1, save: true, open }),
+          });
+          const found = (settled.open || [...new Set(open)]).slice().sort((a, b) => a - b);
+          device.ports = found;
+          this.deep.note = found.length
+            ? T('{n} ports are open: {list}', { n: found.length, list: found.join(', ') })
+            : T('Nothing answered on any port.');
+          await this.loadDevices();
+          this.showResult();
+        } catch (e) { this.fail(e); this.deep.note = ''; } finally { this.deep.busy = ''; }
+      },
+      /**
+       * Which of this device's open ports are really web pages.
+       *
+       * Asking is the only honest way to know. The number is a poor guess: a
+       * router here answers on 22401, and plenty of devices have nothing at
+       * all on 8080. Each port is asked for its front page, and one that
+       * replies with a status line is a web page whatever its number.
+       */
+      async findWebPages(device) {
+        if (this.deep.busy || !device || !device.ports.length) return;
+        this.deep = { busy: 'web', percent: 0, note: '', pages: [] };
+        try {
+          const answer = await api('device/web', {
+            method: 'POST',
+            body: JSON.stringify({ ip: device.ip, ports: device.ports, save: true }),
+          });
+          this.deep.pages = answer.pages || [];
+          this.deep.note = this.deep.pages.length
+            ? T('{n} of {total} ports serve a web page.', { n: this.deep.pages.length, total: device.ports.length })
+            : T('None of these ports serve a web page.');
+          await this.loadDevices();
+          this.showResult();
+        } catch (e) { this.fail(e); this.deep.note = ''; } finally { this.deep.busy = ''; }
+      },
+      /** An answer that lands below the fold is an answer nobody sees. */
+      showResult() {
+        this.$nextTick(() => {
+          const el = this.$refs.deepResult;
+          if (el && el.scrollIntoView) el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+        });
+      },
+      /** The device list again, with the drawer still on the same device. */
+      async loadDevices() {
+        try {
+          const r = await api('devices');
+          this.devices = r.devices || this.devices;
+          if (this.selected) {
+            const same = this.devices.find((d) => d.id === this.selected.id);
+            if (same) this.selected = same;
+          }
+        } catch (e) { /* the panel still holds what it just found */ }
       },
       openTypedPort() {
         if (!this.openPortReady) return;
@@ -7200,10 +7347,15 @@ return function render(_ctx, _cache) {
       mainPort(port) {
         return (this.status.fingerprintPorts || []).indexOf(Number(port)) >= 0;
       },
+      /** Ports this device has been asked about and answered with a page. */
+      knownWeb(device) {
+        return (device && device.extra && Array.isArray(device.extra.web)) ? device.extra.web : [];
+      },
       portLink(device, port) {
         // Without the right to open a device page, the number is just a number:
         // better plain text than a link that can only fail.
-        const href = this.allowed('preview') && this.mainPort(port) ? this.webUrl(device, port) : null;
+        const worth = this.mainPort(port) || this.knownWeb(device).indexOf(Number(port)) >= 0;
+        const href = this.allowed('preview') && worth ? this.webUrl(device, port) : null;
         if (!href) return null;
         return { href, title: T('Open {url} in a window, through this server', { url: href }) };
       },
@@ -7996,7 +8148,14 @@ return function render(_ctx, _cache) {
         if (scheme) this.openScheme = scheme;
       },
       // Each device gets an empty box rather than the last one's number.
-      selected() { this.openPort = ''; this.openScheme = 'http'; },
+      // Only when it is a different device. Re-reading the list hands back a
+      // fresh object for the same row, and clearing the panel on that would
+      // wipe the answer the moment it arrived.
+      selected(now, before) {
+        if (now && before && now.id === before.id) return;
+        this.openPort = ''; this.openScheme = 'http';
+        this.deep = { busy: '', percent: 0, note: '', pages: [] };
+      },
       // The registry is bundled and the answer is local, so there is no reason
       // to make anyone press a button once the prefix is there.
       macQuery(value) {

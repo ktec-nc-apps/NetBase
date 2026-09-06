@@ -237,6 +237,11 @@
 #netbase-root .copy-one svg { width: 13px; height: 13px; }
 
 #netbase-root .drawer-tools { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+/* What the two searches came back with, under the buttons that ran them. */
+#netbase-root .deep-result { margin-top: 12px; }
+#netbase-root .deep-result .kv { margin-top: 6px; }
+#netbase-root .deep-result .kv code { display: flex; align-items: center; gap: 8px; }
+#netbase-root .deep-result .kv code .btn { margin-left: auto; }
 /* Typing a port number: the box only ever holds five digits, and the
    protocol sits beside it rather than being guessed silently. */
 #netbase-root .port-open { display: inline-flex; align-items: center; gap: 6px; }

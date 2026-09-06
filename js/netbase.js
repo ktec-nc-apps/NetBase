@@ -1749,6 +1749,14 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
               <button class="btn sm" v-if="allowed('preview') && status.preview" @click="showPage(l.href)">🖼 {{ t('Show the page') }}</button>
               <a class="btn sm ib" :href="l.href" target="_blank" rel="noopener noreferrer" :title="t('Only works from inside that network')" :aria-label="t('Only works from inside that network')"><svg viewBox="0 0 24 24"><path d="M14 4h6v6"/><path d="M20 4l-8.5 8.5"/><path d="M18 14.5V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4.5"/></svg></a>
             </template>
+            <!-- Asking this one device what a sweep has no time to ask: every
+                 port it has, and which of those are really web pages. -->
+            <button class="btn sm" v-if="allowed('scan')" :disabled="!!deep.busy" @click="scanAllPorts(selected)">
+              🔎 {{ deep.busy === 'ports' ? t('Scanning… {done}%', { done: deep.percent }) : t('Scan every port') }}
+            </button>
+            <button class="btn sm" v-if="allowed('scan')" :disabled="!!deep.busy || !selected.ports.length" @click="findWebPages(selected)">
+              🌐 {{ deep.busy === 'web' ? t('Looking…') : t('Find web pages') }}
+            </button>
             <!-- A device's page is not always on a port the scan noticed, and
                  a maker is free to put it anywhere, so the number can simply
                  be typed. -->
@@ -1761,6 +1769,16 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
               <button class="btn sm" :disabled="!openPortReady" @click="openTypedPort">🖥 {{ t('Open this port') }}</button>
             </span>
             <button class="btn sm" v-if="selected.mac && allowed('wol')" @click="wake(selected)">⏻ {{ t('Wake on LAN') }}</button>
+          </div>
+          <!-- What the two searches came back with, for this device. -->
+          <div class="deep-result" ref="deepResult" v-if="deep.note || deep.pages.length">
+            <p class="hint" v-if="deep.note">{{ deep.note }}</p>
+            <div class="kv" v-if="deep.pages.length">
+              <div v-for="page in deep.pages" :key="page.port">
+                <span class="mono">{{ page.scheme }} · {{ page.port }}</span>
+                <code>{{ page.title || page.server || t('a page') }}<button class="btn xs" v-if="allowed('preview')" @click="openDeviceWindow(selected, page.port, page.scheme)">{{ t('Open') }}</button></code>
+              </div>
+            </div>
           </div>
         </div>
         <div class="drawer-foot">
@@ -1925,6 +1943,9 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         scanTargets: '', pace: '1500',
         opts: { names: true, multicast: true, ports: true, portScan: 'common', portWait: 0.9, rdns: true, arpOnly: false },
         openPort: '', openScheme: 'http',
+        // One device asked about itself: which search is running, how far it
+        // has got, and what it came back with.
+        deep: { busy: '', percent: 0, note: '', pages: [] },
         filter: '', onlyOnline: true, sortKey: 'ip', sortDir: 1,
         selected: null, editLabel: '', editTags: '', editNotes: '', editType: 'unknown',
         busy: {},
@@ -2165,6 +2186,87 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
       duration(seconds) {
         if (seconds < 90) return T('about {n} s', { n: Math.max(1, Math.round(seconds)) });
         return T('about {n} min', { n: Math.round(seconds / 60) });
+      },
+      /**
+       * Every port on this one device.
+       *
+       * A sweep gives each device a moment; a device asked on its own can be
+       * asked about all 65,535. It is walked in slices so no single request
+       * runs long, and what is found is written back to the device, so the
+       * list shows it afterwards.
+       */
+      async scanAllPorts(device) {
+        if (this.deep.busy || !device) return;
+        this.deep = { busy: 'ports', percent: 0, note: '', pages: [] };
+        const open = [];
+        try {
+          let from = 1;
+          for (;;) {
+            const slice = await api('device/ports', {
+              method: 'POST',
+              body: JSON.stringify({ ip: device.ip, from, wait: 0.3, save: false }),
+            });
+            open.push(...(slice.open || []));
+            this.deep.percent = Math.min(100, Math.round((slice.to / 65535) * 100));
+            if (slice.done) break;
+            from = slice.next;
+          }
+          // The last call writes the whole answer against the device, and adds
+          // its own patient look at the ports worth being sure about.
+          const settled = await api('device/ports', {
+            method: 'POST',
+            body: JSON.stringify({ ip: device.ip, from: 65535, wait: 0.1, save: true, open }),
+          });
+          const found = (settled.open || [...new Set(open)]).slice().sort((a, b) => a - b);
+          device.ports = found;
+          this.deep.note = found.length
+            ? T('{n} ports are open: {list}', { n: found.length, list: found.join(', ') })
+            : T('Nothing answered on any port.');
+          await this.loadDevices();
+          this.showResult();
+        } catch (e) { this.fail(e); this.deep.note = ''; } finally { this.deep.busy = ''; }
+      },
+      /**
+       * Which of this device's open ports are really web pages.
+       *
+       * Asking is the only honest way to know. The number is a poor guess: a
+       * router here answers on 22401, and plenty of devices have nothing at
+       * all on 8080. Each port is asked for its front page, and one that
+       * replies with a status line is a web page whatever its number.
+       */
+      async findWebPages(device) {
+        if (this.deep.busy || !device || !device.ports.length) return;
+        this.deep = { busy: 'web', percent: 0, note: '', pages: [] };
+        try {
+          const answer = await api('device/web', {
+            method: 'POST',
+            body: JSON.stringify({ ip: device.ip, ports: device.ports, save: true }),
+          });
+          this.deep.pages = answer.pages || [];
+          this.deep.note = this.deep.pages.length
+            ? T('{n} of {total} ports serve a web page.', { n: this.deep.pages.length, total: device.ports.length })
+            : T('None of these ports serve a web page.');
+          await this.loadDevices();
+          this.showResult();
+        } catch (e) { this.fail(e); this.deep.note = ''; } finally { this.deep.busy = ''; }
+      },
+      /** An answer that lands below the fold is an answer nobody sees. */
+      showResult() {
+        this.$nextTick(() => {
+          const el = this.$refs.deepResult;
+          if (el && el.scrollIntoView) el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+        });
+      },
+      /** The device list again, with the drawer still on the same device. */
+      async loadDevices() {
+        try {
+          const r = await api('devices');
+          this.devices = r.devices || this.devices;
+          if (this.selected) {
+            const same = this.devices.find((d) => d.id === this.selected.id);
+            if (same) this.selected = same;
+          }
+        } catch (e) { /* the panel still holds what it just found */ }
       },
       openTypedPort() {
         if (!this.openPortReady) return;
@@ -2727,10 +2829,15 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
       mainPort(port) {
         return (this.status.fingerprintPorts || []).indexOf(Number(port)) >= 0;
       },
+      /** Ports this device has been asked about and answered with a page. */
+      knownWeb(device) {
+        return (device && device.extra && Array.isArray(device.extra.web)) ? device.extra.web : [];
+      },
       portLink(device, port) {
         // Without the right to open a device page, the number is just a number:
         // better plain text than a link that can only fail.
-        const href = this.allowed('preview') && this.mainPort(port) ? this.webUrl(device, port) : null;
+        const worth = this.mainPort(port) || this.knownWeb(device).indexOf(Number(port)) >= 0;
+        const href = this.allowed('preview') && worth ? this.webUrl(device, port) : null;
         if (!href) return null;
         return { href, title: T('Open {url} in a window, through this server', { url: href }) };
       },
@@ -3523,7 +3630,14 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         if (scheme) this.openScheme = scheme;
       },
       // Each device gets an empty box rather than the last one's number.
-      selected() { this.openPort = ''; this.openScheme = 'http'; },
+      // Only when it is a different device. Re-reading the list hands back a
+      // fresh object for the same row, and clearing the panel on that would
+      // wipe the answer the moment it arrived.
+      selected(now, before) {
+        if (now && before && now.id === before.id) return;
+        this.openPort = ''; this.openScheme = 'http';
+        this.deep = { busy: '', percent: 0, note: '', pages: [] };
+      },
       // The registry is bundled and the answer is local, so there is no reason
       // to make anyone press a button once the prefix is there.
       macQuery(value) {

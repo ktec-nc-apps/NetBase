@@ -94,6 +94,9 @@ return [
 		['name' => 'api#preview', 'url' => '/api/preview', 'verb' => 'GET'],
 		// a picture of the page a device window is showing
 		['name' => 'api#windowShot', 'url' => '/api/window/shot', 'verb' => 'GET'],
+		// one device, asked about itself
+		['name' => 'api#devicePorts', 'url' => '/api/device/ports', 'verb' => 'POST'],
+		['name' => 'api#deviceWeb', 'url' => '/api/device/web', 'verb' => 'POST'],
 
 		// SSH commands
 		['name' => 'api#sshRun', 'url' => '/api/ssh/run', 'verb' => 'POST'],

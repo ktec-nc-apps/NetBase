@@ -8,6 +8,7 @@ use OCA\NetBase\AppInfo\Application;
 use OCA\NetBase\Db\DeviceMapper;
 use OCA\NetBase\Db\ScanMapper;
 use OCA\NetBase\Service\BenchmarkService;
+use OCA\NetBase\Service\DeviceProbeService;
 use OCA\NetBase\Service\BrowserService;
 use OCA\NetBase\Service\ProxyService;
 use OCA\NetBase\Service\DiscoveryService;
@@ -52,6 +53,7 @@ class ApiController extends Controller {
 		private SshService $ssh,
 		private DnsService $dnsService,
 		private BrowserService $browser,
+		private DeviceProbeService $deviceProbe,
 		private ProxyService $proxy,
 		private IURLGenerator $urls,
 		private OuiService $oui,
@@ -154,6 +156,43 @@ class ApiController extends Controller {
 			static fn ($d) => $d->jsonSerialize(),
 			$this->devices->findAll()
 		)], 'devices');
+	}
+
+	/**
+	 * Every port on one device, a slice at a time.
+	 *
+	 * The browser asks again with `next` until `done`, so asking about all
+	 * 65,535 never sits in one request long enough to be cut off.
+	 */
+	#[NoAdminRequired]
+	public function devicePorts(string $ip, int $from = 1, float $wait = 0.3, bool $save = false, array $open = []): JSONResponse {
+		return $this->guard(function () use ($ip, $from, $wait, $save, $open) {
+			$slice = $this->deviceProbe->ports($ip, $from, $wait);
+			if ($save && $slice['done']) {
+				// The browser has been collecting as it went; what it hands back
+				// on the last slice is the whole answer — plus one patient look
+				// at the ports worth being sure about, which a brisk walk of
+				// sixty-five thousand cannot afford to give.
+				$all = array_map('intval', $open);
+				$all = array_values(array_unique(array_merge($all, $this->deviceProbe->careful($ip))));
+				sort($all);
+				$slice['open'] = $all;
+				$this->deviceProbe->remember($ip, $all, null);
+			}
+			return $slice;
+		}, 'scan');
+	}
+
+	/** Which of a device's open ports actually serve a web page. */
+	#[NoAdminRequired]
+	public function deviceWeb(string $ip, array $ports = [], bool $save = true): JSONResponse {
+		return $this->guard(function () use ($ip, $ports, $save) {
+			$pages = $this->deviceProbe->web($ip, $ports);
+			if ($save) {
+				$this->deviceProbe->remember($ip, null, array_column($pages, 'port'));
+			}
+			return ['pages' => $pages];
+		}, 'scan');
 	}
 
 	#[NoAdminRequired]

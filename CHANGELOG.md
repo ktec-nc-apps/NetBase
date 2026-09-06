@@ -2,6 +2,22 @@
 
 All notable changes to NetBase are documented here.
 
+## 0.3.16 — 2026-09-06
+
+### Added
+
+- **Scan every port**, on one device, from its details. A sweep can only give
+  each device a moment; a device asked on its own can be asked about all
+  65,535. It is walked in slices with the progress shown, and what is found is
+  written back, so the list carries it afterwards.
+- **Find web pages**, beside it. Asking is the only honest way to know which
+  ports serve an interface — the number is a poor guess, since a router here
+  answers on 22401 and plenty of devices have nothing on 8080. Each open port
+  is asked for its front page; one that replies with a status line is a web
+  page whatever its number, and its title is shown beside it with a button to
+  open it. A port confirmed this way becomes a link in the list from then on,
+  even though it is not one of the common ports.
+
 ## 0.3.15 — 2026-09-06
 
 ### Changed
