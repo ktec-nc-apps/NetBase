@@ -208,7 +208,11 @@ class BenchmarkService {
 
 		$latency = $this->httpLatency($downUrl . '1000');
 
-		$curl = curl_init($downUrl . $bytes);
+		// speed.cloudflare.com's __down endpoint returns HTTP 403 for a request of
+		// 100,000,000 bytes or more, so "100 MB" (100 * 1,000,000) failed outright.
+		// Cap the download for that endpoint at its limit (a custom endpoint is left as-is).
+		$downBytes = str_contains($downUrl, 'speed.cloudflare.com') ? min($bytes, 99999999) : $bytes;
+		$curl = curl_init($downUrl . $downBytes);
 		curl_setopt_array($curl, [
 			CURLOPT_RETURNTRANSFER => false,
 			CURLOPT_WRITEFUNCTION => static fn ($ch, $chunk) => strlen($chunk),
@@ -216,6 +220,7 @@ class BenchmarkService {
 			CURLOPT_CONNECTTIMEOUT => 15,
 			CURLOPT_USERAGENT => 'NetBase (Nextcloud)',
 			CURLOPT_ENCODING => 'identity',
+			CURLOPT_FAILONERROR => true,
 		]);
 		$ok = curl_exec($curl);
 		$download = $ok === false ? null : [
@@ -239,6 +244,7 @@ class BenchmarkService {
 				CURLOPT_CONNECTTIMEOUT => 15,
 				CURLOPT_USERAGENT => 'NetBase (Nextcloud)',
 				CURLOPT_HTTPHEADER => ['Content-Type: application/octet-stream', 'Expect:'],
+				CURLOPT_FAILONERROR => true,
 			]);
 			$ok = curl_exec($curl);
 			$uploadResult = $ok === false ? null : [

@@ -2,6 +2,22 @@
 
 All notable changes to NetBase are documented here.
 
+## 0.4.2 — 2026-09-08
+
+### Fixed
+
+- **The internet speed test now works at the 100 MB setting.** speed.cloudflare.com
+  rejects a download request for 100,000,000 bytes or more with HTTP 403, so "100 MB"
+  (100 × 1,000,000) fetched nothing and no number appeared. The download for that
+  endpoint is now capped just below the limit (99,999,999 bytes), and a refused
+  download is reported as an error instead of a silent zero. The 5/25/50 MB settings
+  were unaffected.
+  （インターネット速度テストの「100 MB」で数字が出なかった不具合を修正した。
+  speed.cloudflare.com は 100,000,000 バイト以上のダウンロード要求を HTTP 403 で拒否する
+  ため、100 MB ちょうど（100×1,000,000）が失敗していた。当該エンドポイントのダウンロード量を
+  上限直下（99,999,999 バイト）に丸め、拒否された場合は 0 ではなくエラー表示にした。
+  5/25/50 MB は影響なし。）
+
 ## 0.4.1 — 2026-09-08
 
 ### Fixed
