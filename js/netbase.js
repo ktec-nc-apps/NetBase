@@ -1483,7 +1483,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
     </div>
 
     <!-- ============ appearance (per user, NetBase only) ============ -->
-    <div v-if="themeBox" class="drawer-backdrop centred" @click.self="themeBox=false">
+    <div v-if="themeBox" class="drawer-backdrop centred">
       <div class="modal narrow">
         <div class="drawer-head">
           <span class="ic big">🎨</span>
@@ -1531,7 +1531,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
     </div>
 
     <!-- ============ sign in to a server, asked for on the spot ============ -->
-    <div v-if="sshAsk.open" class="drawer-backdrop centred" @click.self="sshAsk.open=false">
+    <div v-if="sshAsk.open" class="drawer-backdrop centred">
       <div class="modal narrow">
         <div class="drawer-head">
           <span class="ic big">🖳</span>
@@ -1788,7 +1788,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
     </div>
 
     <!-- ============ saved connection editor ============ -->
-    <div v-if="connModal" class="drawer-backdrop centred" @click.self="connModal=false">
+    <div v-if="connModal" class="drawer-backdrop centred">
       <div class="modal narrow">
         <div class="drawer-head">
           <span class="ic big">🔗</span>

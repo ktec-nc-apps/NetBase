@@ -2,6 +2,23 @@
 
 All notable changes to NetBase are documented here.
 
+## 0.4.1 — 2026-09-08
+
+### Fixed
+
+- **Fixed a bug where clicking outside a dialog while entering data made the dialog
+  disappear and discarded what you had typed.** It affected the data-entry dialogs —
+  the SSH sign-in dialog, the connection editor (new/edit a saved SSH/SFTP/FTP/SMTP
+  connection, including its password and private key), and the Settings dialog:
+  clicking the surrounding area no longer closes them, so nothing you were entering is
+  lost; close them with the ✕, Cancel or Save controls. View-only and picker dialogs
+  (system information, the file picker, the page/text preview and the device panel)
+  keep closing on an outside click, since they hold nothing you can lose.
+  （データ入力中にダイアログの外側をクリックすると、ダイアログが消えて入力が失われてしまうバグを
+  修正した。対象＝SSHサインイン・接続の新規/編集（SSH/SFTP/FTP/SMTP。パスワードや秘密鍵を含む）・
+  設定の各ダイアログ。外側クリックでは閉じなくなり、✕・キャンセル・保存で閉じる。閲覧/選択系
+  （システム情報・ファイル選択・プレビュー・機器パネル）は失う入力がないため従来どおり。）
+
 ## 0.4.0 — 2026-09-07
 
 Everything since 0.3.11, which is what the customer sites have been running,
