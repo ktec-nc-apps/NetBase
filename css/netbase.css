@@ -510,7 +510,11 @@
 #netbase-root .badge.self { background: var(--primary); color: #fff; border-color: var(--primary); }
 /* Heard on this wire, but its address belongs somewhere else: present, and
    out of reach. */
-#netbase-root .badge.away { background: var(--color-warning, #f0a020); color: #3a2a00; border-color: var(--color-warning, #f0a020); }
+/* Its own amber, not the host theme's --color-warning: that is undefined here
+   and inherits Nextcloud's, which on a dark theme is a dark colour — the badge
+   then came out a solid black box with its dark text lost inside it. Fixed
+   colours read on any theme, light or dark, like the .self badge above. */
+#netbase-root .badge.away { background: #f6ad3c; color: #3a2a00; border-color: #e08e10; }
 
 #netbase-root .row-menu-veil { position: fixed; inset: 0; z-index: 4000; }
 #netbase-root .row-menu {

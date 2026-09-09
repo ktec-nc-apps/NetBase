@@ -2,6 +2,19 @@
 
 All notable changes to NetBase are documented here.
 
+## 0.4.4 — 2026-09-09
+
+### Fixed
+
+- **The "another network" badge no longer shows as a solid black box on a dark
+  theme.** It took its colour from the host's `--color-warning`, which NetBase
+  does not define, so it inherited Nextcloud's — a dark colour on a dark theme —
+  and its fixed dark text was lost inside it. It now uses its own amber, readable
+  on any theme.
+  （「別ネットワーク」バッジがダークテーマで真っ黒な箱になっていた不具合を修正。背景に
+  NetBase 未定義の `--color-warning` を使っていたため Nextcloud 側の暗い色を継ぎ、固定の
+  暗い文字と重なって潰れていた。自前のアンバー配色にして、どのテーマでも読めるようにした。）
+
 ## 0.4.3 — 2026-09-09
 
 ### Fixed
