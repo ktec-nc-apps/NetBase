@@ -695,8 +695,7 @@ class ProxyService {
 		// _self would trap the page in whichever small frame the link sat in. Both
 		// are wrong: what the device means by "everything" is this window, which
 		// carries that name.
-		$body = preg_replace('#\btarget\s*=\s*(["\'])\s*_(top|parent|blank)\s*\1#i', 'target="' . self::WINDOW_NAME . '"', $body) ?? $body;
-		$body = preg_replace('#\btarget\s*=\s*_(top|parent|blank)(?=[\s>])#i', 'target=' . self::WINDOW_NAME, $body) ?? $body;
+		$body = self::rewriteTargets($body);
 
 		// A page that forwards itself with a meta refresh is common on routers
 		// and printers, and the address inside it needs the same treatment.
@@ -751,6 +750,34 @@ class ProxyService {
 			$body = $shim . $body;
 		}
 		return $body;
+	}
+
+	/**
+	 * Point a device's frame-busting targets at this window — but only where it
+	 * is a real HTML attribute.
+	 *
+	 * `target="_top"`, `_parent` and `_blank` mean "replace everything", which on
+	 * the device is the whole page and inside NetBase would walk out of the app;
+	 * they are aimed instead at this window, which carries that name.
+	 *
+	 * The rewrite must never reach inside a <script>. A device page (an ASUS
+	 * router's WAN page is one) builds HTML in a JavaScript string, and that
+	 * string can hold `target='_top'` in single quotes inside a double-quoted JS
+	 * string; swapping it for a double-quoted attribute there closes the JS
+	 * string early, the script stops on a syntax error, and everything it was
+	 * going to write — the page's labels — never appears. So a script block is
+	 * matched first and returned untouched; only what is left is an attribute.
+	 */
+	private static function rewriteTargets(string $body): string {
+		return preg_replace_callback(
+			'#(<script\b[^>]*>.*?</script\s*>)'
+			. '|\btarget\s*=\s*(["\'])\s*_(?:top|parent|blank)\s*\2'
+			. '|\btarget\s*=\s*_(?:top|parent|blank)(?=[\s>])#is',
+			static fn (array $m): string => ($m[1] ?? '') !== ''
+				? $m[1]
+				: 'target="' . self::WINDOW_NAME . '"',
+			$body,
+		) ?? $body;
 	}
 
 	/**

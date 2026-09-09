@@ -575,6 +575,19 @@
 }
 .devwin-note.error { color: var(--color-error, #c0392b); }
 
+/* A message about a window, shown inside it (see windowToast): the window sits
+   above the app's banner, so a note there would be hidden behind it. Absolute
+   within the window's own stacking context, so it floats over the page. */
+.devwin-toast {
+  position: absolute; left: 50%; top: 46px; transform: translateX(-50%);
+  max-width: 88%; padding: 8px 14px; border-radius: 8px;
+  font-size: 13px; line-height: 1.5; text-align: center;
+  color: #fff; background: #14304f; box-shadow: var(--shadow);
+  z-index: 5; cursor: pointer;
+}
+.devwin-toast.ok { background: var(--ok, #2e7d32); }
+.devwin-toast.error { background: var(--color-error, #c0392b); }
+
 /* The row of things a person reaches for while signing into a device. It sits
    where a sentence explaining the window used to be. */
 .devwin-bar {

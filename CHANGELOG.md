@@ -2,6 +2,32 @@
 
 All notable changes to NetBase are documented here.
 
+## 0.4.3 — 2026-09-09
+
+### Fixed
+
+- **A device page whose text is written by its own script no longer loses that
+  text in a device window.** Some router and printer pages (an ASUS router's WAN
+  page among them) build their labels in JavaScript, from strings that contain a
+  small piece of HTML with `target="_top"` inside. The rewrite that keeps such
+  links inside the window was reaching into those strings and breaking the script,
+  so the page came up with its text missing. That rewrite is now applied only to
+  real HTML attributes and never inside a `<script>`, so the page's own script
+  runs untouched and all of its text appears.
+  （機器ページが自身のスクリプトで文言を書き込む場合に、機器ウィンドウで文言が消えていた不具合を
+  修正。ASUS ルーターの WAN ページ等は JavaScript の文字列内に `target="_top"` を含む HTML 断片を
+  持ち、フレーム内に留めるための書き換えがその文字列を壊してスクリプトが止まっていた。書き換えを
+  「本物の HTML 属性」だけに限定し `<script>` 内には一切触れないようにしたため、ページのスクリプトが
+  そのまま動き、全ての文言が表示される。）
+- **The device-window "Screenshot" now shows its result inside the window.** A
+  device window is drawn above the app's own message bar, so a "Saved as…" note —
+  or the reason a picture could not be taken — was hidden behind the very window
+  it was about, and looked like nothing had happened. The message now appears in
+  the window itself.
+  （機器ウィンドウの「Screenshot」の結果を、ウィンドウ内に表示するようにした。機器ウィンドウは
+  アプリのメッセージ帯より前面に出るため、「保存しました」や失敗理由が対象ウィンドウの裏に隠れ、
+  何も起きていないように見えていた。メッセージをウィンドウ内に出すようにした。）
+
 ## 0.4.2 — 2026-09-08
 
 ### Fixed

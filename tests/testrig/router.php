@@ -40,6 +40,23 @@ switch ($path) {
 			. '<button type="submit">ログイン</button></form>');
 		return;
 
+	case '/wan':
+		// BUG2 reproduction, ASUS-style: the WAN labels are written by an inline
+		// script from a JavaScript string that itself contains an HTML fragment
+		// with target='_top' in single quotes. The old whole-body target rewrite
+		// replaced it with a double-quoted attribute, which closed the JS string
+		// early, broke the script, and left the labels blank. If you can read the
+		// two labels below, the script survived rewriting.
+		header('Content-Type: text/html; charset=UTF-8');
+		echo '<!DOCTYPE html><html><head><title>WAN</title></head><body>'
+			. '<h1>WAN</h1><div id="wan">…</div>'
+			. '<script>'
+			. "var row = \"<div>Connection Type: <a href='/inner' target='_top'>PPPoE</a></div>\";"
+			. 'document.getElementById("wan").innerHTML = row + "<div>IP Address: 203.0.113.5</div>";'
+			. '</script>'
+			. '</body></html>';
+		return;
+
 	case '/inner':
 		$page('内部ページ', '<p>ウィンドウの中にとどまっていれば成功。</p><p><a href="/">戻る</a></p>');
 		return;

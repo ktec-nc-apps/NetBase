@@ -1652,6 +1652,10 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
            links find this window. -->
       <iframe v-else :src="w.src" class="devwin-frame" :title="w.title" :data-window="w.id" name="_netbase_window" @load="onWindowLoad(w, $event)"
               sandbox="allow-scripts allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox allow-downloads allow-same-origin"></iframe>
+      <!-- A message about this window, shown inside it: a device window sits above
+           the app's own banner (its z-index is raised on every focus), so a note
+           put there would be hidden behind the window it is about. -->
+      <div v-if="w.toast" class="devwin-toast" :class="w.toast.kind" @click="w.toast = null">{{ w.toast.text }}</div>
       <div class="devwin-grip" @mousedown.prevent.stop="startResize(w, $event)"></div>
     </div>
 
@@ -2746,7 +2750,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         const base = scheme + '://' + host + (port === 80 || port === 443 ? '' : ':' + port);
         const offset = this.narrow ? 0 : (this.windows.length % 6) * 28;
         const w = {
-          id: ++this.windowSeq, base, url: '', src: '', error: '', busy: true, full: false, escapes: 0, field: null, zoom: 1, fit: false, shooting: false,
+          id: ++this.windowSeq, base, url: '', src: '', error: '', busy: true, full: false, escapes: 0, field: null, zoom: 1, fit: false, shooting: false, toast: null,
           here: '', trail: [], trailAt: -1, rewinding: false, help: false, z: ++this.windowTop,
           title: (device.name || device.ip) + ' · ' + port,
           x: this.narrow ? 0 : Math.max(20, Math.round(window.innerWidth / 2 - 520) + offset),
@@ -2886,8 +2890,23 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
           link.download = name;
           link.click();
           setTimeout(() => URL.revokeObjectURL(link.href), 4000);
-          this.note(T('Saved as {name}', { name }));
-        } catch (e) { this.fail(e); } finally { w.shooting = false; }
+          this.windowToast(w, T('Saved as {name}', { name }), 'ok');
+        } catch (e) {
+          let msg = String((e && e.message) || e);
+          if (/headless browser/i.test(msg)) { msg = T('This server has no headless browser installed, so it cannot take a picture of the page.'); }
+          this.windowToast(w, msg, 'error');
+        } finally { w.shooting = false; }
+      },
+      /**
+       * A short message shown inside a device window. A window's z-index is
+       * raised above the app's own banner on every focus, so a note put in the
+       * banner would be hidden behind the very window it is about; this puts it
+       * in the window instead.
+       */
+      windowToast(w, text, kind = 'ok') {
+        w.toast = { text, kind };
+        const shown = text;
+        setTimeout(() => { if (w.toast && w.toast.text === shown) { w.toast = null; } }, kind === 'error' ? 8000 : 4000);
       },
       /**
        * The zoom, put on the device's own document.
