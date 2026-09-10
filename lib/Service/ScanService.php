@@ -88,12 +88,19 @@ class ScanService {
 			throw new \InvalidArgumentException('No valid scan target');
 		}
 
-		$maxHosts = (int)$this->config->getAppValue('netbase', 'max_hosts', '65536');
-		if ($total > $maxHosts) {
-			throw new \InvalidArgumentException('Scan target exceeds the configured limit of ' . $maxHosts . ' addresses');
-		}
-
 		$normalised = $this->normaliseOptions($options);
+		// The host limit guards the address-by-address sweep. In ARP-only mode
+		// there is no sweep — only the kernel's neighbour table is read and its
+		// entries (at most the ARP cache, ~1024) are touched — so the CIDR's size
+		// is irrelevant. Enforcing it there wrongly rejected "Port scan" on a /16
+		// network (e.g. 10.0.0.0/16 = 65536 > the limit), which is exactly the
+		// common case: a home/office LAN that happens to be a /16.
+		if (empty($normalised['arpOnly'])) {
+			$maxHosts = (int)$this->config->getAppValue('netbase', 'max_hosts', '65536');
+			if ($total > $maxHosts) {
+				throw new \InvalidArgumentException('Scan target exceeds the configured limit of ' . $maxHosts . ' addresses');
+			}
+		}
 		$scan = new ScanEntity();
 		$scan->setUserId($userId);
 		$scan->setTargets(json_encode($targets));
@@ -115,6 +122,11 @@ class ScanService {
 		// What can only be heard, and was heard lately, is still here. It has
 		// no way of answering a scan, so a scan cannot say otherwise.
 		$this->devices->keepRecentlyHeard(time() - self::HEARD_FOR);
+		// Fold together any address that ended up on more than one row before
+		// now (a device whose MAC changed, or an older build that duplicated
+		// it), so the list starts clean rather than only the addresses this
+		// scan happens to re-find.
+		$this->dedupeExisting();
 		return $this->scans->insert($scan);
 	}
 
@@ -138,6 +150,15 @@ class ScanService {
 
 		try {
 			while (microtime(true) < $deadline && $scan->getPhase() !== 'done') {
+				// The multicast step blocks for several seconds while it listens.
+				// Announce that step and hand the response back first, so the
+				// browser shows "listening" instead of freezing on the previous
+				// step's label for the whole wait.
+				if ($scan->getPhase() === 'mcast' && empty($queue['mcastAnnounced'])) {
+					$queue['mcastAnnounced'] = true;
+					$this->progress($scan, 'mcastListen', 0, 0);
+					break;
+				}
 				match ($scan->getPhase()) {
 					'arp' => $this->stepArp($scan, $queue, $options),
 					'sweep' => $this->stepSweep($scan, $queue, $options),
@@ -190,6 +211,12 @@ class ScanService {
 	private function stepArp(ScanEntity $scan, array &$queue, array $options): void {
 		$this->absorbSelf($queue, $options);
 		$this->absorbNeighbours($queue, $options);
+		// Reading the table cannot tell a device that is here now from one
+		// powered off minutes ago — its entry lingers as STALE with the old MAC.
+		// So confirm the addresses on file with a quick TCP touch (no range
+		// walk): the ones still here answer and are marked online, the rest stay
+		// offline. This is what makes a re-scan's online/offline current.
+		$this->confirmLiveness($queue);
 		$total = max(1, count($queue['ips'] ?? []));
 		$scan->setCursor($scan->getTotal());
 		$this->progress($scan, 'arp', $total, $total);
@@ -227,6 +254,11 @@ class ScanService {
 			// One more read: replies that arrived late still land in the table.
 			usleep(200000);
 			$this->absorbNeighbours($queue, $options);
+			// The walk resolves addresses new to the table, but a previously
+			// known device that is now off leaves a stale entry the walk does
+			// not clear. Confirm the on-file addresses by TCP so the gone ones
+			// drop offline rather than lingering on their old MAC.
+			$this->confirmLiveness($queue);
 			$queue['idx'] = 0;
 			$scan->setPhase($options['names'] ? 'names' : ($options['ports'] ? 'ports' : 'rdns'));
 		}
@@ -276,11 +308,15 @@ class ScanService {
 				$update['workgroup'] = $netbios[$ip]['workgroup'] !== '' ? $netbios[$ip]['workgroup'] : null;
 				$update['mac'] = $netbios[$ip]['mac'] !== '' ? $netbios[$ip]['mac'] : null;
 				$update['source'] = 'netbios';
+				if (!empty($update['hostname'])) {
+					$update['nameFrom'] = 'netbios';
+				}
 			}
 			if (isset($mdns[$ip])) {
 				$name = preg_replace('/\.local$/i', '', $mdns[$ip]) ?? $mdns[$ip];
 				if (empty($update['hostname'])) {
 					$update['hostname'] = $name;
+					$update['nameFrom'] = 'mdns';
 				}
 				$update['mdns'] = $mdns[$ip];
 				$update['source'] = isset($update['source']) ? $update['source'] . ',mdns' : 'mdns';
@@ -489,6 +525,7 @@ class ScanService {
 		$idx = (int)($queue['idx'] ?? 0);
 		$ports = $this->portsFor($options);
 		$count = count($ports);
+		$wait = (float)$options['portWait'];
 
 		// The work is hosts times ports. With a short list that means many
 		// hosts at once; with the whole range it means one host, walked across
@@ -510,7 +547,6 @@ class ScanService {
 
 		$at = (int)($queue['portAt'] ?? 0);
 		$slice = array_slice($ports, $at, $window);
-		$wait = (float)$options['portWait'];
 		$open = $this->discovery->tcpSweep($batch, $slice, $wait);
 		$at += count($slice);
 		$finished = $at >= $count;
@@ -651,11 +687,19 @@ class ScanService {
 					continue;
 				}
 				$ip = (string)$address['ip'];
-				$this->upsert($ip, ($interface['mac'] ?? '') !== '' ? $interface['mac'] : null, [
+				// One NIC has one MAC but may hold several addresses (here eth0
+				// carries 10.0.0.1 and 192.168.1.250). Keying each of them by the
+				// shared MAC made them fight over a single row, so only the last
+				// address kept "this server" and the others lost the badge. Each
+				// of the server's own addresses is its own "this server" row,
+				// keyed by IP; the MAC, when known, is still recorded for display.
+				$this->upsert($ip, null, [
 					'interface' => $interface['name'],
 					'hostname' => gethostname() ?: null,
+					'nameFrom' => 'self',
 					'dtype' => 'server',
 					'source' => 'self',
+					'selfMac' => ($interface['mac'] ?? '') !== '' ? $interface['mac'] : null,
 				]);
 				if (!isset($known[$ip])) {
 					$queue['ips'][] = $ip;
@@ -663,6 +707,28 @@ class ScanService {
 				}
 			}
 		}
+	}
+
+	/**
+	 * Confirm which on-file addresses are actually here now, with a TCP touch,
+	 * and mark those online. The neighbour table cannot answer this — a stale
+	 * entry keeps a dead device's MAC — and priming does not refresh it, so the
+	 * reliable, root-free test is whether the host answers a connection at all
+	 * (open or refused). Off-link addresses are left to what they announce.
+	 */
+	private function confirmLiveness(array $queue): void {
+		$ips = $queue['ips'] ?? [];
+		foreach ($this->devices->findAll() as $d) {
+			$ip = (string)$d->getIp();
+			if ($ip !== '') {
+				$ips[] = $ip;
+			}
+		}
+		$ips = $this->discovery->onLinkOnly(array_values(array_unique($ips)));
+		if ($ips === []) {
+			return;
+		}
+		$this->devices->markOnline($this->discovery->alive($ips));
 	}
 
 	/** Read the ARP table and record everything new in it. */
@@ -675,6 +741,11 @@ class ScanService {
 			$this->upsert($ip, $entry['mac'], [
 				'interface' => $entry['interface'],
 				'source' => 'arp',
+				// A stale ARP entry (a device powered off but not yet evicted)
+				// keeps its old MAC, so it must not be counted as online; only a
+				// neighbour the kernel has confirmed lately does. Older readers
+				// without state say reachable=true, preserving prior behaviour.
+				'present' => $entry['reachable'] ?? true,
 			]);
 			if (!isset($known[$ip])) {
 				$queue['ips'][] = $ip;
@@ -696,11 +767,18 @@ class ScanService {
 
 		$device = $this->devices->findByKey($key);
 		if ($device === null) {
-			// Phases run in sequence and only some of them learn a MAC, so an
-			// address already on file must attach to that row rather than
-			// start a second one. When the MAC arrives later, the placeholder
-			// row is re-keyed instead of being duplicated.
+			// An address is held by one device at a time. If it is already on a
+			// row, take that row over rather than start a second one — even when
+			// the MAC differs, which is exactly what a privacy (randomised) MAC
+			// looks like each time it rotates. Otherwise every rotation, and
+			// every phase that learns a MAC after one that did not, left another
+			// row and the same IP appeared twice in the list.
 			$byIp = $this->devices->findByIp($ip);
+			// Attach to the row that holds this address only when it is the same
+			// device — same MAC, or a MAC-less placeholder waiting for one. When
+			// the address is now on a different MAC (a new machine took the
+			// lease), start a fresh row rather than re-labelling the old device
+			// as the new one; the stale row is removed by mergeDuplicateIps.
 			if ($byIp !== null && ($mac === null || $byIp->getMac() === null || $byIp->getMac() === $mac)) {
 				if ($mac !== null) {
 					$byIp->setDkey($key);
@@ -715,10 +793,22 @@ class ScanService {
 			$device->setDkey($key);
 			$device->setFirstSeen(time());
 		}
+		// Only a positive signal turns a device online and updates "last seen";
+		// the scan set everything offline at the start, so a "not present"
+		// reading (a stale ARP entry) leaves both as they are rather than
+		// claiming a powered-off device was seen just now.
+		if ($update['present'] ?? true) {
+			$device->setOnline(true);
+			$device->setLastSeen(time());
+		}
 		$device->setMac($mac ?? $device->getMac());
+		// The server's own MAC, recorded for display only: it is not the row's
+		// key (a NIC's several addresses each get their own row), so it fills in
+		// a blank without ever pulling two addresses onto one row.
+		if (!empty($update['selfMac']) && ($device->getMac() === null || $device->getMac() === '')) {
+			$device->setMac(strtolower((string)$update['selfMac']));
+		}
 		$device->setIp($ip);
-		$device->setOnline(true);
-		$device->setLastSeen(time());
 
 		if (!empty($update['hostname'])) {
 			$device->setHostname($this->cleanName((string)$update['hostname']));
@@ -770,12 +860,18 @@ class ScanService {
 				$extra[$field] = (string)$update[$field];
 			}
 		}
-		if ($extra !== []) {
-			$device->setExtra(json_encode($extra, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+		// Which lookup produced the name that is shown, so a device can say how
+		// it was identified. Recorded only when this update actually set a name.
+		if (!empty($update['hostname']) && !empty($update['nameFrom'])) {
+			$extra['nameFrom'] = (string)$update['nameFrom'];
 		}
 
-		if ($mac !== null) {
-			$described = $this->oui->describe($mac);
+		// Look up the vendor from the row's actual MAC, not just the one passed
+		// in: the server's own row learns its MAC through 'selfMac' with a null
+		// $mac, and without this its vendor stayed blank ("Not registered").
+		$effectiveMac = $device->getMac();
+		if ($effectiveMac !== null && $effectiveMac !== '') {
+			$described = $this->oui->describe($effectiveMac);
 			$vendor = $described['vendor'];
 			if ($vendor === '' && $described['local']) {
 				$vendor = '__randomized__';
@@ -785,11 +881,122 @@ class ScanService {
 
 		$device->setDtype($this->classify($device));
 
+		// Reverse DNS is the last resort for a name, so note it as the source.
 		if (empty($device->getHostname()) && !empty($extra['rdns'])) {
 			$device->setHostname($this->cleanName((string)$extra['rdns']));
+			$extra['nameFrom'] = 'rdns';
 		}
 
-		return $isNew ? $this->devices->insert($device) : $this->devices->update($device);
+		if ($extra !== []) {
+			$device->setExtra(json_encode($extra, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+		}
+
+		$saved = $isNew ? $this->devices->insert($device) : $this->devices->update($device);
+		$this->mergeDuplicateIps($saved);
+		return $saved;
+	}
+
+	/**
+	 * One row per address. A device whose MAC changes (a privacy address that
+	 * rotates, or a lease handed to another machine) could leave an older row
+	 * still holding the same IP; this folds any such row into the one that
+	 * holds the address now, carrying across a user's own label and notes and
+	 * the union of the ports and sources, then deletes it — so the list never
+	 * shows the same IP twice.
+	 */
+	private function mergeDuplicateIps(DeviceEntity $keep): void {
+		$ip = (string)$keep->getIp();
+		if ($ip === '') {
+			return;
+		}
+		$keepMac = ($keep->getMac() ?? '') !== '' ? $keep->getMac() : null;
+		$changed = false;
+		foreach ($this->devices->findAllByIp($ip) as $other) {
+			if ($other->getId() === $keep->getId()) {
+				continue;
+			}
+			$otherMac = ($other->getMac() ?? '') !== '' ? $other->getMac() : null;
+			// Same device, or a MAC-less placeholder for it: carry across what
+			// one copy knows and the other lacks. But two different MACs on one
+			// address mean the address was handed to another machine (an old PC
+			// giving up its lease to an Alexa): the departed device's name, type
+			// and ports must NOT follow the address to the new occupant, so its
+			// row is simply dropped.
+			$sameDevice = $keepMac === null || $otherMac === null || $keepMac === $otherMac;
+			if ($sameDevice) {
+				if (!$keep->getLabel() && $other->getLabel()) { $keep->setLabel($other->getLabel()); $changed = true; }
+				if (!$keep->getTags() && $other->getTags()) { $keep->setTags($other->getTags()); $changed = true; }
+				if (!$keep->getNotes() && $other->getNotes()) { $keep->setNotes($other->getNotes()); $changed = true; }
+				if (!$keep->getHostname() && $other->getHostname()) { $keep->setHostname($other->getHostname()); $changed = true; }
+				if ($other->getKnown() && !$keep->getKnown()) { $keep->setKnown(true); $changed = true; }
+				$ports = $this->mergePortList((string)$keep->getPorts(), (string)$other->getPorts());
+				if ($ports !== (string)$keep->getPorts()) { $keep->setPorts($ports === '' ? null : $ports); $changed = true; }
+				$sources = $this->mergeCsvSet((string)$keep->getSources(), (string)$other->getSources());
+				if ($sources !== (string)$keep->getSources()) { $keep->setSources($sources === '' ? null : $sources); $changed = true; }
+				if ($keep->getFirstSeen() !== null && $other->getFirstSeen() !== null && $other->getFirstSeen() < $keep->getFirstSeen()) {
+					$keep->setFirstSeen($other->getFirstSeen());
+					$changed = true;
+				}
+			}
+			$this->devices->delete($other);
+		}
+		if ($changed) {
+			$keep->setDtype($this->classify($keep));
+			$this->devices->update($keep);
+		}
+	}
+
+	/**
+	 * Fold every duplicated address down to one row. The survivor is the row
+	 * that is online, then the one with a MAC, then the most recently seen — so
+	 * the live device keeps the row and the stale copy is absorbed into it.
+	 */
+	public function dedupeExisting(): void {
+		foreach ($this->devices->duplicateIps() as $ip) {
+			$rows = $this->devices->findAllByIp($ip);
+			if (count($rows) < 2) {
+				continue;
+			}
+			usort($rows, static function (DeviceEntity $a, DeviceEntity $b): int {
+				$ao = $a->getOnline() ? 1 : 0;
+				$bo = $b->getOnline() ? 1 : 0;
+				if ($ao !== $bo) {
+					return $bo - $ao;
+				}
+				$am = ($a->getMac() ?? '') !== '' ? 1 : 0;
+				$bm = ($b->getMac() ?? '') !== '' ? 1 : 0;
+				if ($am !== $bm) {
+					return $bm - $am;
+				}
+				return (int)$b->getLastSeen() - (int)$a->getLastSeen();
+			});
+			$this->mergeDuplicateIps($rows[0]);
+		}
+	}
+
+	/** Union of two comma-separated port lists, as sorted numbers. */
+	private function mergePortList(string $a, string $b): string {
+		$ports = [];
+		foreach (array_merge(explode(',', $a), explode(',', $b)) as $p) {
+			$p = (int)trim($p);
+			if ($p > 0 && $p < 65536 && !in_array($p, $ports, true)) {
+				$ports[] = $p;
+			}
+		}
+		sort($ports);
+		return mb_substr(implode(',', $ports), 0, 512);
+	}
+
+	/** Union of two comma-separated string sets, order preserved. */
+	private function mergeCsvSet(string $a, string $b): string {
+		$out = [];
+		foreach (array_merge(explode(',', $a), explode(',', $b)) as $s) {
+			$s = trim($s);
+			if ($s !== '' && !in_array($s, $out, true)) {
+				$out[] = $s;
+			}
+		}
+		return implode(',', $out);
 	}
 
 	/**

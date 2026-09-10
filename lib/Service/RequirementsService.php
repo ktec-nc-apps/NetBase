@@ -52,6 +52,8 @@ class RequirementsService {
 			'phpVersion' => null,
 			'phpUser' => null,
 			'neighbourLimits' => null,
+			'container' => $report['container'],
+			'docker' => $report['docker'],
 			'components' => $report['components'],
 		];
 	}
@@ -83,7 +85,82 @@ class RequirementsService {
 			'phpUser' => function_exists('posix_getpwuid') && function_exists('posix_geteuid')
 				? (posix_getpwuid(posix_geteuid())['name'] ?? '') : '',
 			'neighbourLimits' => $this->discovery->neighbourLimits(),
+			'container' => $this->detectContainer(),
+			'docker' => $this->dockerRecipe($components),
 			'components' => $components,
+		];
+	}
+
+	/**
+	 * Whether NetBase is running inside a container (Docker, Podman, AIO, k8s).
+	 * The package-manager instructions do not fit there — the image is rebuilt
+	 * or updated as a whole — so a container gets the Docker recipe instead.
+	 */
+	private function detectContainer(): bool {
+		if (is_file('/.dockerenv') || is_file('/run/.containerenv')) {
+			return true;
+		}
+		$env = getenv('container');
+		if (is_string($env) && $env !== '') {
+			return true;
+		}
+		$cgroup = @file_get_contents('/proc/1/cgroup');
+		return is_string($cgroup) && preg_match('/docker|containerd|kubepods|lxc|podman/i', $cgroup) === 1;
+	}
+
+	/** Debian package name for a binary component, for the Docker (Debian) image. */
+	private const DOCKER_APT = [
+		'chromium' => 'chromium',
+		'iperf3' => 'iperf3',
+		'ss' => 'iproute2',
+	];
+
+	/**
+	 * A ready-to-use recipe for the official Nextcloud image (and AIO, which is
+	 * built on it). An app cannot ship PHP extensions, but the image runs any
+	 * script dropped into /docker-entrypoint-hooks.d/before-starting/ on every
+	 * start — so PHP extensions are added with docker-php-ext-install and system
+	 * packages with apt, once, and image updates keep working. Built from what
+	 * is actually missing here; verified against the current nextcloud image
+	 * (sockets was the missing extension; curl/ftp/posix were already present).
+	 *
+	 * @param list<array> $components
+	 */
+	private function dockerRecipe(array $components): array {
+		$php = [];
+		$apt = [];
+		foreach ($components as $c) {
+			if (!empty($c['present'])) {
+				continue;
+			}
+			if (($c['kind'] ?? '') === 'php') {
+				$php[] = (string)$c['probe'];
+			} elseif (isset(self::DOCKER_APT[$c['id']])) {
+				$apt[] = self::DOCKER_APT[$c['id']];
+			}
+		}
+		$php = array_values(array_unique($php));
+		$apt = array_values(array_unique($apt));
+
+		$lines = [
+			'#!/bin/sh',
+			'# /docker-entrypoint-hooks.d/before-starting/netbase.sh',
+			'# Adds what the base image does not include. It runs on every start,',
+			'# so it survives image updates without rebuilding.',
+		];
+		if ($php !== []) {
+			$lines[] = 'docker-php-ext-install ' . implode(' ', $php) . ' || true';
+		}
+		if ($apt !== []) {
+			$lines[] = 'apt-get update && apt-get install -y ' . implode(' ', $apt) . ' || true';
+		}
+
+		return [
+			'hooksDir' => '/docker-entrypoint-hooks.d/before-starting/',
+			'script' => implode("\n", $lines),
+			'phpExtensions' => $php,
+			'aptPackages' => $apt,
+			'nothingMissing' => $php === [] && $apt === [],
 		];
 	}
 

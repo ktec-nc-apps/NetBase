@@ -112,7 +112,12 @@ class ProxyController extends Controller {
 				try {
 					$result = $this->proxy->deliver($ticket['base'], $path, $query, $ticket['userId'], $prefix, $forward, $output);
 				} catch (\Throwable $e) {
-					$this->logger->error('NetBase proxy: ' . $e->getMessage(), ['exception' => $e, 'app' => 'netbase']);
+					// A probed device timing out, refusing the connection or failing
+					// TLS is an ordinary outcome for a network tool, not a fault in
+					// NetBase — the browser is still shown a problem page. Logged at
+					// info so a customer's admin log is not flooded with warnings
+					// every time a device is slow or asleep.
+					$this->logger->info('NetBase proxy: ' . $e->getMessage(), ['exception' => $e, 'app' => 'netbase']);
 					$output->setHttpResponseCode(Http::STATUS_BAD_GATEWAY);
 					$output->setHeader('Content-Type: text/html; charset=utf-8');
 					$output->setOutput($this->problemPage($e->getMessage()));
@@ -129,7 +134,7 @@ class ProxyController extends Controller {
 		} catch (\RuntimeException $e) {
 			return $this->problem($e->getMessage(), Http::STATUS_FORBIDDEN);
 		} catch (\Throwable $e) {
-			$this->logger->error('NetBase proxy: ' . $e->getMessage(), ['exception' => $e, 'app' => 'netbase']);
+			$this->logger->warning('NetBase proxy: ' . $e->getMessage(), ['exception' => $e, 'app' => 'netbase']);
 			return $this->problem($e->getMessage(), Http::STATUS_BAD_GATEWAY);
 		}
 

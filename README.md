@@ -16,7 +16,7 @@ NetBase turns your Nextcloud into a network console. It finds every device on yo
 
 **How it works.** Nextcloud runs unprivileged, so raw sockets — and therefore ARP scanning in PHP — are not available. NetBase makes the kernel do the work instead: sending a datagram to an on-link address forces the kernel to resolve it, and the result lands in the neighbour table, which is world readable. Names come from the devices themselves over NetBIOS, mDNS, WS-Discovery and SSDP, all plain UDP, and vendors from the bundled IEEE registries — more than 53,000 prefixes, so no MAC address is ever sent anywhere. Open ports are checked at one of five depths, from a short list of fifteen that keeps a sweep quick to every one of the 65,535. NetBase also listens, continuously and in the background, to the announcements devices make to the multicast group: those are carried at the level of the wire, so a device on a different subnet of the same cable — a camera left on its factory address, say — is found even though nothing can route to it and it can never answer a question. The server NetBase runs on is written down too; a machine never asks the network for its own address, so it is never in its own neighbour table.
 
-**What it is for.** Building the asset list a site never quite had. Finding the device nobody remembers installing. Seeing which addresses are free before assigning one. Exporting the lot as CSV for an inventory that lives outside Nextcloud.
+**What it is for.** Building the asset list a site never quite had. Finding the device nobody remembers installing. Seeing which addresses are free before assigning one. Exporting the lot as CSV for an inventory that lives outside Nextcloud. When a device is switched off its neighbour entry can linger; an optional helper an administrator installs (a one-line sudoers rule — the app shows the exact script, and it is entirely optional) lets NetBase clear the table so a refresh reflects only what is live now.
 
 ### DNS
 
@@ -24,11 +24,13 @@ NetBase turns your Nextcloud into a network console. It finds every device on yo
 
 **What it is for.** Watching a migration take effect. Explaining why one office resolves a name differently from another. Checking that your name servers do not hand the whole zone to strangers.
 
-### Whois
+### Whois and free-domain search
 
 **How it works.** IANA is asked first, then the registry it names, then the registrar it names — the referral chain followed to the end, over plain sockets. No `whois` binary is required.
 
-**What it is for.** Expiry dates before they surprise you. Who to contact about an address that is causing trouble. Which registrar a domain actually sits at, before a transfer.
+**Free-domain search.** Type a name without its ending and NetBase checks it across a whole range of endings at once — the common ones (48), all gTLDs, all ccTLDs, or everything (~1,180) — using DNS delegation first, then RDAP, then WHOIS. Each ending is marked free (○), taken (×, with a Whois button that opens its registration), likely-free (△), or could-not-check (?) when a registry rate-limits or refuses the query. The taken and the could-not-check results can each be hidden with a switch, results flow into two or three columns on a wide screen, and the whole list can be copied, downloaded or saved.
+
+**What it is for.** Expiry dates before they surprise you. Who to contact about an address that is causing trouble. Which registrar a domain actually sits at, before a transfer. Finding a domain name that is still free, without visiting a registrar.
 
 ### TLS and HTTP
 
@@ -212,7 +214,7 @@ Nextcloud 用のネットワーク総合ツールです。LAN上の機器を検�
 
 **仕組み** ― Nextcloud は非特権で動作するため raw ソケット（つまり PHP からの ARP スキャン）は使えません。そこでカーネルに仕事をさせます。同一リンク上のアドレスへデータグラムを送るとカーネルは必ずアドレス解決を行い、その結果が誰でも読める近隣テーブルに残ります。名前は NetBIOS・mDNS・WS-Discovery・SSDP という素の UDP で機器自身に尋ね、ベンダーは同梱の IEEE 登録簿（53,000件超）で判定します。MACアドレスを外部へ送ることはありません。 開いているポートの確認は5段階から選べます。掃引を速いまま保つ主要ポート15個から、65,535個すべてまでです。また、機器がマルチキャストグループへ送る「名乗り」を、背景で常時受信しています。これは配線の層で運ばれるため、同じ配線につながった別サブネットの機器 ― 出荷時アドレスのままのカメラなど ― も、経路が無く問い合わせに答えられない相手であっても見つかります。NetBase 自身が動いているサーバーも記録します。機器は自分自身のアドレスをネットワークに尋ねないため、自分の近隣テーブルには決して載らないからです。
 
-**用途** ― 作りかけのまま放置されがちな機器台帳の整備。誰も覚えていない機器の発見。IPアドレス払い出し前の空き確認。CSV 書き出しによる社内資産管理との連携。
+**用途** ― 作りかけのまま放置されがちな機器台帳の整備。誰も覚えていない機器の発見。IPアドレス払い出し前の空き確認。CSV 書き出しによる社内資産管理との連携。電源を切った機器の項目が残ることがありますが、管理者が任意で入れるヘルパー（1行の sudoers 設定。スクリプト全文はアプリが表示。導入は完全に任意）により、近隣テーブルをクリアして「今生きている機器」だけを表示できます。
 
 ### DNS 調査
 
@@ -220,11 +222,13 @@ Nextcloud 用のネットワーク総合ツールです。LAN上の機器を検�
 
 **用途** ― 移転作業の浸透確認。拠点ごとに名前の解決結果が違う理由の特定。自社の権威サーバーがゾーン全体を第三者に渡していないかの点検。
 
-### whois
+### whois・空きドメイン検索
 
 **仕組み** ― まず IANA に尋ね、示されたレジストリ、さらにレジストラへと、委譲の連鎖を最後まで自動で追跡します。素のソケットで行うため `whois` コマンドは不要です。
 
-**用途** ― ドメイン有効期限の事前把握。問題のあるアドレスの連絡先確認。移管前に、そのドメインが実際にどの登録業者にあるかの確認。
+**空きドメイン検索** ― ドットより前の名前を入れると、選んだ範囲の語尾を一括で調べます（主要48・全gTLD・全ccTLD・全部約1,180）。DNS委任 → RDAP → WHOIS の順で確認し、空き（○）・使用中（×、押すとWhois表示）・空きの可能性（△）・判定不能（?：レジストリがレート制限や拒否をした場合）を判定します。使用中と判定不能はそれぞれスイッチで隠せ、画面幅に余裕があれば2〜3列で表示、一覧はコピー・ダウンロード・保存できます。
+
+**用途** ― ドメイン有効期限の事前把握。問題のあるアドレスの連絡先確認。移管前に、そのドメインが実際にどの登録業者にあるかの確認。登録業者を訪れずに、まだ空いているドメイン名を探すこと。
 
 ### TLS・HTTP 検査
 

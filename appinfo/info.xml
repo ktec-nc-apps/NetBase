@@ -14,7 +14,7 @@ What each part is for:
 - Device windows — a device's own settings page, through Nextcloud, from anywhere
 - LAN sweep and inventory — name, IPv4, MAC, vendor, type and open ports, exportable as CSV
 - DNS — any record type from any resolver, resolver comparison, delegation trace, zone-transfer test
-- Whois — domains and addresses, following IANA referrals, with no whois binary
+- Whois and free-domain search — look up any domain or address (IANA referrals, no whois binary), or check a name across a whole range of endings at once to find one that is still free
 - Wake-on-LAN — wake a device by its MAC address
 - TLS and HTTP — certificate, chain and expiry, accepted TLS versions, redirect chain, security headers
 - Mail — SPF, DKIM, DMARC, MTA-STS, DANE and blocklists, plus SMTP/IMAP/POP3 server tests, an open-relay test and a real test message
@@ -30,13 +30,13 @@ Available in twenty languages, and NetBase can be set to a different language fr
 
 中心となるのが「機器ウィンドウ」です。サーバーが機器のWeb管理画面を取得し、その中のアドレスをすべて書き換えて表示するため、ルーター・スイッチ・プリンタ・NASの設定を、Nextcloudに届く場所ならどこからでも操作できます。VPNも踏み台も訪問も不要です。ファームウェアの送信、設定の復元、バックアップの取得もそのまま行えます。複数のウィンドウを同時に開けます。
 
-検出にroot権限・エージェント・追加パッケージは不要です。カーネルの近隣テーブルを起こして読み取り、NetBIOS・mDNS・WS-Discovery・SSDPで各機器に名前を尋ねます。あわせて、機器が送る「名乗り」を背景で常時受信しているため、同じ配線につながった別サブネットの機器 ― こちらから到達できず、問い合わせにも答えられない相手 ― も一覧に現れます。MACアドレスは同梱のIEEE登録簿（53,000件超）でオフライン判別します。
+検出にroot権限・エージェント・追加パッケージは不要です。カーネルの近隣テーブルを起こして読み取り、NetBIOS・mDNS・WS-Discovery・SSDPで各機器に名前を尋ねます。あわせて、機器が自ら発信する情報を背景で常時受信しているため、同じ配線につながった別サブネットの機器 ― こちらから到達できず、問い合わせにも答えられない相手 ― も一覧に現れます。MACアドレスは同梱のIEEE登録簿（53,000件超）でオフライン判別します。
 
 各機能の用途:
 - 機器ウィンドウ ― 機器の設定画面を、Nextcloud経由でどこからでも
 - LANスキャンと台帳 ― 機器名・IPv4・MAC・ベンダー・種別・開放ポート、CSV書き出し
 - DNS ― 任意のレコード種別を任意のDNSサーバーへ、リゾルバ比較、委任追跡、ゾーン転送検査
-- whois ― ドメインとIPアドレス、IANAからの委譲追跡（whoisコマンド不要）
+- whois・空きドメイン検索 ― ドメイン/IPアドレスの照会（IANA委譲追跡・whoisコマンド不要）と、ドット前の名前を語尾一括で調べて空きを探す検索
 - Wake-on-LAN ― MACアドレスを指定して機器を起動
 - TLS・HTTP ― 証明書とチェーンと有効期限、受け付けるTLSバージョン、リダイレクト連鎖、セキュリティヘッダー
 - メール ― SPF・DKIM・DMARC・MTA-STS・DANE・ブロックリスト、SMTP/IMAP/POP3のサーバー検査、第三者中継テスト、実際の試験送信
@@ -48,7 +48,7 @@ Available in twenty languages, and NetBase can be set to a different language fr
 公開範囲はツール単位で設定できます。NetBaseは管理者向けのアプリで、ローカルネットワークに触れる機能は既定で管理者のみですが、管理設定から各ツールを指定グループや全員に開放できます。ネットワークそのものを渡すことなく、whois・DNSといった無害な調査だけを一般利用者に使ってもらえます。何も許可されていない利用者には、アプリメニューにも表示しません。
 
 20言語に対応し、NetBaseだけをNextcloud本体と別の言語に設定することもできます（利用者ごと）。]]></description>
-	<version>0.4.4</version>
+	<version>0.5.0</version>
 	<licence>agpl</licence>
 	<author>KTEC</author>
 	<namespace>NetBase</namespace>

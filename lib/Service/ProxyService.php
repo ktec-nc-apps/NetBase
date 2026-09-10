@@ -797,6 +797,14 @@ class ProxyService {
 		// firmware are the window and never a variable of its own.
 		$body = preg_replace('#\b(?:window\s*\.\s*)?top\s*\.\s*location\b#', 'window.__nbTop.location', $body) ?? $body;
 		$body = preg_replace('#\b(?:window\s*\.\s*)?parent\s*\.\s*location\b#', 'window.__nbParent.location', $body) ?? $body;
+		// Assignments to top.location get a proxy of their own, so a frame-buster
+		// that asks for the address it already shows (beParent) can be dropped
+		// without touching reads of top.location or the page's own location.
+		$body = preg_replace(
+			'#\b__nbTop\s*\.\s*location\s*\.\s*(href\s*=(?!=)|assign\s*\(|replace\s*\()#',
+			'__nbTop.__nbTopLoc.$1',
+			$body,
+		) ?? $body;
 		$body = preg_replace('#\bwindow\s*\.\s*top\b(?!\s*=[^=])#', 'window.__nbTop', $body) ?? $body;
 		$body = preg_replace('#\bwindow\s*\.\s*parent\b(?!\s*=[^=])#', 'window.__nbParent', $body) ?? $body;
 		// document.location is the same object as window.location; saying so
@@ -828,6 +836,12 @@ class ProxyService {
 		$script = <<<'JS'
 (function () {
 	var P = __PREFIX__;
+	// The proxy path without the token — /apps/netbase/proxy/ — so an address
+	// already under ANY ticket is recognised as already-proxied. After an
+	// http→https redirect the device is served under a second token; a re-navigation
+	// to that path must not have this window's token prepended again (that made
+	// /apps/netbase/proxy/<t1>/apps/netbase/proxy/<t2>/… and a 404 on a RICOH MFP).
+	var PROXY_ROOT = (function () { var i = P.indexOf('/proxy/'); return i >= 0 ? P.slice(0, i + 7) : P; })();
 
 	// A device interface is written on the assumption that it is the whole
 	// page: that window.top is itself, and that the address bar shows its own
@@ -862,6 +876,44 @@ class ProxyService {
 		reload: function () { location.reload(); },
 	};
 
+	// Writing top.location goes here, and only here. A framed page climbing out
+	// to become the whole window — the Buffalo login page's beParent() does
+	// top.location.href = self.location.href — asks for the address it is
+	// already showing (through the proxy, top is this window). That is a no-op,
+	// so it is dropped: left to navigate it reloaded until looping() cut it off,
+	// which is the "three reloads". A genuine move to a DIFFERENT address still
+	// goes through. Reading top.location is untouched — it uses the real object
+	// — and a page's own refresh (location.reload / location.href) is not
+	// affected, so logging in and back out behaves as it did before.
+	// True when the address is already on screen — top itself, or any frame in
+	// its frameset. beParent from a child frame assigns that frame's own
+	// address to top; through the proxy that would replace the whole frameset
+	// with the one frame (the login/logout cycle that left only the content
+	// pane). A move to an address not already shown still goes through.
+	function __nbShownAlready(t) {
+		var top = window.__nbTop, target;
+		try { target = new URL(t, top.location.href).href.split('#')[0]; } catch (e) { return false; }
+		var seen = [];
+		(function walk(win, depth) {
+			try { seen.push(new URL(win.location.href).href.split('#')[0]); } catch (e) { return; }
+			if (depth <= 0) { return; }
+			try { for (var i = 0; i < win.frames.length; i++) { walk(win.frames[i], depth - 1); } } catch (e) { /* not ours to read */ }
+		})(top, 3);
+		return seen.indexOf(target) >= 0;
+	}
+	function __nbNavTop(u, replace) {
+		var t = fix(u);
+		if (__nbShownAlready(t)) { return; }
+		if (looping(t)) { return; }
+		var top = window.__nbTop;
+		if (replace) { top.location.replace(t); } else { top.location.href = t; }
+	}
+	window.__nbTopLoc = {
+		set href(u) { __nbNavTop(u, false); },
+		assign: function (u) { __nbNavTop(u, false); },
+		replace: function (u) { __nbNavTop(u, true); },
+	};
+
 	// The last resort, when a page still insists on going where it already is.
 	// A device that refreshes itself on a timer is doing something reasonable
 	// and is left alone; one that arrives at the same address three times
@@ -882,6 +934,8 @@ class ProxyService {
 	function fix(u) {
 		if (typeof u !== 'string' || !u) { return u; }
 		if (u.lastIndexOf(P, 0) === 0) { return u; }
+		// Already under the proxy path (this ticket or another) — never prepend again.
+		if (u.lastIndexOf(PROXY_ROOT, 0) === 0) { return u; }
 		if (u.charAt(0) === '/' && u.charAt(1) !== '/') { return P + u; }
 		// A climb with ".." stops at the device's root on the device itself.
 		// Here the root is several segments deeper, so left alone the climb
@@ -907,12 +961,12 @@ class ProxyService {
 		var here = location.origin + '/';
 		if (u.lastIndexOf(here, 0) === 0) {
 			var rest = u.slice(location.origin.length);
-			return rest.lastIndexOf(P, 0) === 0 ? u : location.origin + P + rest;
+			return (rest.lastIndexOf(P, 0) === 0 || rest.lastIndexOf(PROXY_ROOT, 0) === 0) ? u : location.origin + P + rest;
 		}
 		var loose = '//' + location.host + '/';
 		if (u.lastIndexOf(loose, 0) === 0) {
 			var tail = u.slice(loose.length - 1);
-			return tail.lastIndexOf(P, 0) === 0 ? u : loose.slice(0, -1) + P + tail;
+			return (tail.lastIndexOf(P, 0) === 0 || tail.lastIndexOf(PROXY_ROOT, 0) === 0) ? u : loose.slice(0, -1) + P + tail;
 		}
 		return u;
 	}

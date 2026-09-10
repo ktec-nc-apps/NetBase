@@ -38,9 +38,12 @@ return [
 		['name' => 'api#scanStep', 'url' => '/api/scan/{id}/step', 'verb' => 'POST'],
 		['name' => 'api#scanCancel', 'url' => '/api/scan/{id}', 'verb' => 'DELETE'],
 		['name' => 'api#scanHistory', 'url' => '/api/scans', 'verb' => 'GET'],
+		['name' => 'api#arpFlush', 'url' => '/api/arp-flush', 'verb' => 'POST'],
 
 		// tools
 		['name' => 'api#whois', 'url' => '/api/tools/whois', 'verb' => 'GET'],
+		['name' => 'api#availTiers', 'url' => '/api/tools/avail-tiers', 'verb' => 'GET'],
+		['name' => 'api#availCheck', 'url' => '/api/tools/avail-check', 'verb' => 'GET'],
 		['name' => 'api#dns', 'url' => '/api/tools/dns', 'verb' => 'GET'],
 		['name' => 'api#reverse', 'url' => '/api/tools/reverse', 'verb' => 'GET'],
 		// NETBASE-STORE-REMOVED: ping, traceroute and the port check

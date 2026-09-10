@@ -127,14 +127,14 @@
                 </optgroup>
               </select>
               <input v-model="pingHost" :placeholder="t('Host name or IP address')" @keyup.enter="runPing">
-              <button class="btn primary" :disabled="busy.ping" @click="runPing">{{ t('Ping') }}</button>
-              <button class="btn" :disabled="busy.trace" @click="runTrace">{{ t('Traceroute') }}</button>
-              <button class="btn" :disabled="busy.path" @click="runPath">{{ t('Path quality') }}</button>
+              <button class="btn primary" :disabled="busy.ping" :class="{working: busy.ping}" @click="runPing">{{ t('Ping') }}</button>
+              <button class="btn" :disabled="busy.trace" :class="{working: busy.trace}" @click="runTrace">{{ t('Traceroute') }}</button>
+              <button class="btn" :disabled="busy.path" :class="{working: busy.path}" @click="runPath">{{ t('Path quality') }}</button>
             </div>
             <div class="tool-row">
               <input v-model.number="tcpPingPort" type="number" class="tiny" min="1" max="65535">
-              <button class="btn" :disabled="busy.tcpping" @click="runTcpPing">{{ t('TCP ping (works without ICMP)') }}</button>
-              <button class="btn" :disabled="busy.mtu" @click="runMtu">{{ t('Find the path MTU') }}</button>
+              <button class="btn" :disabled="busy.tcpping" :class="{working: busy.tcpping}" @click="runTcpPing">{{ t('TCP ping (works without ICMP)') }}</button>
+              <button class="btn" :disabled="busy.mtu" :class="{working: busy.mtu}" @click="runMtu">{{ t('Find the path MTU') }}</button>
             </div>
           </div>
           <div class="card" v-if="tcpPingResult">
@@ -206,7 +206,7 @@
               </select>
               <input v-model="portHost" :placeholder="t('Host name or IP address')" @keyup.enter="runPorts">
               <input v-model="portList" class="narrow" :placeholder="t('22,80,443,8000-8100 (blank = common ports)')">
-              <button class="btn primary" :disabled="busy.ports" @click="runPorts">{{ t('Check') }}</button>
+              <button class="btn primary" :disabled="busy.ports" :class="{working: busy.ports}" @click="runPorts">{{ t('Check') }}</button>
             </div>
             <div class="chips">
               <button class="btn xs" v-for="p in portPresets" :key="p.label" @click="portList = p.ports; runPorts()">{{ t(p.label) }}</button>
@@ -249,7 +249,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
                 <select v-model="nmapPreset">
                   <option v-for="(p,k) in status.nmap.presets" :key="k" :value="k">{{ t(p.label) }}</option>
                 </select>
-                <button class="btn primary" :disabled="busy.nmap" @click="runNmap">{{ busy.nmap ? t('Scanning…') : t('Run') }}</button>
+                <button class="btn primary" :disabled="busy.nmap" :class="{working: busy.nmap}" @click="runNmap">{{ busy.nmap ? t('Scanning…') : t('Run') }}</button>
               </div>
               <div class="tool-row">
                 <input v-model="nmapExtra" :placeholder="t('Extra options (allow-listed), e.g. -Pn --top-ports 200')">
@@ -325,7 +325,12 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
                own, so the buttons every tab has keep their place beside the title. -->
           <div class="tab-actions" v-if="tab==='devices'">
             <input class="filter" v-model="filter" :placeholder="t('Filter by name, IP, MAC or vendor')">
-            <button class="btn sm" @click="onlyOnline=!onlyOnline" :class="{active: onlyOnline}">{{ onlyOnline ? t('Online only') : t('All records') }}</button>
+            <label class="switch" :title="t('On: only devices seen in the last scan. Off: every device on record.')">
+              <input type="checkbox" v-model="onlyOnline">
+              <span class="track"><span class="thumb"></span></span>
+              <span class="switch-label">{{ t('Online only') }}</span>
+            </label>
+            <button class="btn sm keep" v-if="allowed('scan')" :title="t('Edit the devices you have named, all in one place')" @click="openRegEditor"><span class="ic"><svg viewBox="0 0 24 24"><path d="M4 20h16"/><path d="M14.5 4.5l3 3L8 17l-3.5.5L5 14z"/></svg></span><span class="lb">{{ t('Edit named') }}</span></button>
             <button class="btn sm keep" :title="t('Download what this tool found')" @click="exportCsv" :disabled="!shownDevices.length"><span class="ic"><svg viewBox="0 0 24 24"><path d="M12 3.5v11.5"/><path d="M7.5 10.5L12 15l4.5-4.5"/><path d="M4 17.5V19a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-1.5"/></svg></span><span class="lb">CSV</span></button>
           </div>
           <!-- Whatever this tool has found: onto the clipboard, into a file, or
@@ -343,6 +348,10 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
       </div>
 
       <div class="content">
+        <!-- One "working" bar for every tool: a stripe slides across the top of
+             the panel whenever any request is in flight, so an operation with no
+             count of its own (whois, TLS, DNS, mail, SSH…) still shows it is running. -->
+        <div class="global-busy" :class="{on: anyBusy}" role="progressbar" :aria-label="t('Working…')"><span></span></div>
         <div v-if="banner" class="banner" :class="banner.kind">
           <span>{{ banner.text }}</span>
           <button class="btn xs ib" :title="t('Close')" :aria-label="t('Close')" @click="banner=null"><svg viewBox="0 0 24 24"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg></button>
@@ -356,11 +365,11 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
                  other starts from what this server has already met. -->
             <div class="scan-what">
               <span class="fl-label">{{ t('What to scan') }}</span>
-              <label :title="t('Walks every address in the networks below. Thorough, and the slow one.')">
-                <input type="radio" value="network" v-model="scanWhat"> {{ t('The whole network') }}
-              </label>
               <label :title="t('Starts from the ARP table and what announces itself, instead of walking every address. Seconds rather than minutes, and everything found is still asked for its name and its open ports — but a device that has never spoken to this server and does not announce itself will not be found.')">
                 <input type="radio" value="arp" v-model="scanWhat"> {{ t('The ARP table only') }}
+              </label>
+              <label :title="t('Walks every address in the networks below. Thorough, and the slow one.')">
+                <input type="radio" value="network" v-model="scanWhat"> {{ t('The whole network') }}
               </label>
             </div>
             <div class="scan-row">
@@ -378,7 +387,23 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
                   <option v-for="r in paceRates" :key="r" :value="String(r)">{{ paceLabel(r) }}</option>
                 </select>
               </label>
-              <button class="btn primary" :disabled="scanning" @click="startScan()">{{ scanning ? t('Scanning…') : t('Start scanning') }}</button>
+              <!-- Two buttons for two jobs. The first re-checks which devices
+                   are online and is fast because it skips the ports; the second
+                   is the full sweep that also reads each device's open ports.
+                   The per-device "every port" search lives in a device's own
+                   properties, and stays there. -->
+              <template v-if="!scanning">
+                <button class="btn primary" @click="startScan({ ports: false })" :title="t('Finds devices and rechecks which are online. Does not scan ports, so it is fast.')">{{ t('Refresh devices') }}</button>
+                <button class="btn" @click="startScan({ ports: true, names: false, multicast: false, rdns: false, arpOnly: true })" :title="t('Checks the open ports of the devices already found, without repeating the name and multicast discovery a refresh does.')">{{ t('Port scan') }}</button>
+                <!-- Clearing the neighbour (ARP) table needs privileges NetBase does
+                     not have; the button only works once an administrator installs a
+                     small helper, and the ? explains how. -->
+                <span class="arp-clear">
+                  <button class="btn" :disabled="!(status.arpFlush && status.arpFlush.available) || busy.arpflush" :class="{working: busy.arpflush}" @click="clearArp" :title="t('Forget every remembered address so a refresh shows only what answers now. Stale entries (a device switched off) disappear. Needs a helper an administrator installs.')">{{ t('Clear the ARP table') }}</button>
+                  <button v-if="!(status.arpFlush && status.arpFlush.available)" class="btn xs ib arp-help-btn" :title="t('How to switch this on')" :aria-label="t('How to switch this on')" @click="arpHelp = true">?</button>
+                </span>
+              </template>
+              <button class="btn primary" v-else disabled>{{ t('Scanning…') }}</button>
               <button class="btn" v-if="scanning" @click="cancelScan">{{ t('Stop') }}</button>
             </div>
             <!-- The four steps of a scan, in the order they happen, so the row
@@ -386,13 +411,13 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
             <div class="scan-opts">
               <label :title="t('Asks each address for its own name, over NetBIOS and mDNS.')"><input type="checkbox" v-model="opts.names"> {{ t('Ask devices for their names') }}</label>
               <label :title="t('Listens for the devices that announce themselves — mDNS, WS-Discovery and SSDP. It finds devices the sweep missed.')"><input type="checkbox" v-model="opts.multicast"> {{ t('Multicast discovery') }}</label>
-              <label :title="t('Connects to each device to see which ports answer. This is what tells a printer from a camera.')"><input type="checkbox" v-model="opts.ports"> {{ t('Check open ports') }}</label>
               <label :title="t('Asks the DNS server what name it has on record for each address.')"><input type="checkbox" v-model="opts.rdns"> {{ t('Reverse DNS') }}</label>
             </div>
-            <!-- The two settings that belong to the third of them, kept under it
-                 rather than in the row, where the wrapping used to put an
-                 unrelated checkbox between a port setting and its own box. -->
-            <div class="scan-sub" v-if="opts.ports">
+            <!-- The settings for the "Port scan" button, kept under the row so
+                 a depth can be chosen before it is pressed. They do nothing for
+                 "Refresh devices", which never scans ports. -->
+            <div class="scan-sub">
+              <span class="scan-sub-head">{{ t('Port scan') }}</span>
               <label :title="t('How many ports to try on each device.')">
                 <span class="opt-label">{{ t('Ports to try') }}</span>
                 <select v-model="opts.portScan">
@@ -411,9 +436,10 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
                 </select>
               </label>
             </div>
-            <div class="progress" v-if="scan">
-              <div class="bar"><div class="fill" :style="{width: scan.percent + '%'}"></div></div>
-              <div class="progress-text"><span>{{ progressText(scan) }}</span><span class="spacer"></span><span>{{ scan.percent }}%</span></div>
+            <div class="progress" v-if="scanning && scan">
+              <div class="phase-line"><span class="phase-step">{{ phaseLabel(scan) }}</span></div>
+              <div class="bar" :class="{ waiting: phaseWaiting(scan) }"><div class="fill" v-if="!phaseWaiting(scan)" :style="{width: scan.percent + '%'}"></div></div>
+              <div class="progress-text"><span>{{ progressText(scan) }}</span><span class="spacer"></span><span v-if="!phaseWaiting(scan)">{{ scan.percent }}%</span></div>
             </div>
             <p class="hint" v-if="advice && !advice.ok">
               ⚠ {{ t('This target has {hosts} addresses but the kernel ARP table holds {gc3}. The sweep still works, but the kernel will log overflow warnings. To avoid that, an administrator can run:', { hosts: advice.hosts, gc3: advice.gc3 }) }}
@@ -426,47 +452,57 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
             <thead>
               <tr>
                 <th class="c-dot"></th>
-                <!-- Paired columns, stacked. What belongs to one device reads
-                     as one block instead of a line the eye has to track all
-                     the way across the screen. Both halves still sort. -->
+                <!-- The header mirrors a row: the name on top, then the address
+                     line's fields (IPv4, MAC, vendor) beneath, each one its own
+                     sort with an arrow showing the direction. -->
+                <th class="c-name">
+                  <span class="th-line head" @click="sortBy('name')" :class="sortClass('name')" :title="t('The name a device reports over NetBIOS, mDNS or reverse DNS. A name you type yourself is shown instead when set.')">{{ t('Name') }}</span>
+                  <span class="th-sub">
+                    <span class="th-line" @click="sortBy('ip')" :class="sortClass('ip')">{{ t('IPv4') }}</span>
+                    <span class="th-sep">·</span>
+                    <span class="th-line" @click="sortBy('mac')" :class="sortClass('mac')">{{ t('MAC address') }}</span>
+                    <span class="th-sep">·</span>
+                    <span class="th-line" @click="sortBy('vendor')" :class="sortClass('vendor')">{{ t('Vendor') }}</span>
+                    <span class="th-sep">·</span>
+                    <span class="th-line plain">{{ t('Open ports') }}</span>
+                  </span>
+                </th>
                 <th class="c-pair">
-                  <span class="th-line" @click="sortBy('name')" :class="sortClass('name')">{{ t('Name') }}</span>
-                  <span class="th-line" @click="sortBy('ip')" :class="sortClass('ip')">{{ t('IPv4') }}</span>
+                  <span class="th-line head" @click="sortBy('type')" :class="sortClass('type')">{{ t('Type') }}</span>
                 </th>
-                <th class="c-pair c-extra">
-                  <span class="th-line" @click="sortBy('mac')" :class="sortClass('mac')">{{ t('MAC address') }}</span>
-                  <span class="th-line" @click="sortBy('vendor')" :class="sortClass('vendor')">{{ t('Vendor') }}</span>
-                </th>
-                <th class="c-pair">
-                  <span class="th-line" @click="sortBy('type')" :class="sortClass('type')">{{ t('Type') }}</span>
-                  <span class="th-line plain">{{ t('Open ports') }}</span>
-                </th>
-                <th class="c-extra" @click="sortBy('lastSeen')" :class="sortClass('lastSeen')">{{ t('Last seen') }}</th>
+                <th class="c-extra"><span class="th-line head" @click="sortBy('lastSeen')" :class="sortClass('lastSeen')">{{ t('Last seen') }}</span></th>
               </tr>
             </thead>
             <tbody>
-              <tr v-for="d in shownDevices" :key="d.id" @click="openDevice(d)" @contextmenu.prevent="openRowMenu(d, $event)" :class="{offline: !d.online}">
-                <td class="c-dot"><span class="dot" :class="{on: d.online}" :title="d.online ? t('Online') : t('Not seen in the last sweep')"></span></td>
-                <td class="c-pair c-name">
-                  <div class="pair-a"><span class="ic">{{ icon(d) }}</span><span class="nm" :class="{unnamed: !listName(d).named}">{{ listName(d).text }}</span><span class="badge self" v-if="isSelf(d)">{{ t('this server') }}</span><span class="badge away" v-if="offNetwork(d)" :title="t('It shares this wire but its address belongs to another network, so nothing here can reach it. Give it an address on this network, or give this server one on its own, to open it.')">{{ t('another network') }}</span><span class="badge" v-if="d.label">{{ t('named') }}</span></div>
-                  <div class="pair-b mono">{{ d.ip }}</div>
-                </td>
-                <td class="c-pair c-extra">
-                  <div class="pair-a mono">{{ d.mac || '—' }}</div>
-                  <div class="pair-b dim">{{ vendorText(d) }}</div>
+              <tr v-for="g in deviceGroups" :key="g.key" @click="openDevice(g.rep)" @contextmenu.prevent="openRowMenu(g.rep, $event)" :class="{offline: !g.online}">
+                <td class="c-dot"><span class="dot" :class="{on: g.online}" :title="g.online ? t('Online') : t('Not seen in the last sweep')"></span></td>
+                <td class="c-name">
+                  <div class="pair-a"><span class="ic">{{ icon(g.rep) }}</span><span class="nm" :class="{unnamed: !listName(g.rep).named}">{{ listName(g.rep).text }}</span><span class="badge self" v-if="g.isSelf">{{ t('this server') }}</span><span class="badge" v-if="g.rep.label">{{ t('named') }}</span></div>
+                  <!-- Ports belong to the address they are open on, so they sit
+                       on each address line and open a window on THAT IP — a
+                       device with several addresses shows each one's ports. -->
+                  <template v-for="(m, mi) in g.members" :key="m.id">
+                    <div class="addr-line mono" :class="{'addr-off': !m.online, 'addr-sep': mi > 0}">
+                      <span class="addr-net"><span class="badge" v-if="netBadge(m)" :class="netRank(m) >= 1 ? 'secondary' : 'away'" :title="netTitle(m)">{{ netBadge(m) }}</span></span>
+                      <span class="addr-ip">{{ m.ip }}<template v-if="cidrBitsFor(m)">/{{ cidrBitsFor(m) }}</template></span>
+                      <span class="addr-mac dim">{{ m.mac || '—' }}</span>
+                      <span class="addr-vendor dim" :title="macVendor(m)">{{ macVendor(m) ? '(' + macVendor(m) + ')' : '' }}</span>
+                      <span class="addr-ports dim" v-if="m.ports && m.ports.length" @click.stop>
+                        <span class="addr-ports-label">{{ t('ports') }}</span>
+                        <template v-for="(p,i) in m.ports" :key="p">
+                          <a v-if="portLink(m, p)" href="#" :title="portLink(m, p).title" @click.prevent="openDeviceWindow(m, p)">{{ p }}</a>
+                          <a v-else-if="portTool(m, p)" href="#" :title="portTool(m, p).title" @click.prevent="openPortTool(m, p)">{{ p }}</a>
+                          <span v-else>{{ p }}</span><span v-if="i < m.ports.length - 1">, </span>
+                        </template>
+                      </span>
+                    </div>
+                  </template>
+                  <div class="pair-note" v-if="g.rep.notes" :title="g.rep.notes">📝 {{ g.rep.notes }}</div>
                 </td>
                 <td class="c-pair">
-                  <div class="pair-a">{{ t(typeLabel(d.type)) }}</div>
-                  <div class="pair-b mono dim ports-cell" @click.stop>
-                    <template v-for="(p,i) in d.ports" :key="p">
-                      <a v-if="portLink(d, p)" href="#" :title="portLink(d, p).title" @click.prevent="openDeviceWindow(d, p)">{{ p }}</a>
-                      <a v-else-if="portTool(d, p)" href="#" :title="portTool(d, p).title" @click.prevent="openPortTool(d, p)">{{ p }}</a>
-                      <span v-else>{{ p }}</span><span v-if="i < d.ports.length - 1">, </span>
-                    </template>
-                    <span v-if="!d.ports.length">—</span>
-                  </div>
+                  <div class="pair-a">{{ t(typeLabel(g.rep.type)) }}</div>
                 </td>
-                <td class="dim c-extra">{{ ago(d.lastSeen) }}</td>
+                <td class="dim c-extra">{{ ago(g.lastSeen) }}</td>
               </tr>
             </tbody>
           </table>
@@ -484,7 +520,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
             <div class="card tool-card">
               <div class="tool-row">
                 <input v-model="dnsHost" :placeholder="t('example.com')" @keyup.enter="runDns">
-                <button class="btn primary" :disabled="busy.dns" @click="runDns">{{ t('Look up') }}</button>
+                <button class="btn primary" :disabled="busy.dns" :class="{working: busy.dns}" @click="runDns">{{ t('Look up') }}</button>
               </div>
               <div class="chips">
                 <label v-for="ty in dnsTypes" :key="ty"><input type="checkbox" :value="ty" v-model="dnsWanted"> {{ ty }}</label>
@@ -512,7 +548,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
                   <option v-for="r in knownResolvers" :key="r.host || 'self'" :value="r.host">{{ r.host ? r.host + ' — ' + r.label : t('This server') }}</option>
                 </select>
                 <input v-model="dnsServer" class="short" :placeholder="t('Resolver (blank = this server)')">
-                <button class="btn primary" :disabled="busy.dnsq" @click="runDnsQuery">{{ t('Ask') }}</button>
+                <button class="btn primary" :disabled="busy.dnsq" :class="{working: busy.dnsq}" @click="runDnsQuery">{{ t('Ask') }}</button>
               </div>
               <label class="opt"><input type="checkbox" v-model="dnsDnssec"> {{ t('Ask the resolver to validate DNSSEC') }}</label>
               <p class="dim">{{ t('Any record type, from any resolver — NetBase speaks DNS itself instead of going through PHP.') }}</p>
@@ -540,7 +576,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
               <div class="tool-row">
                 <input v-model="dnsHost" :placeholder="t('example.com')" @keyup.enter="runDnsCompare">
                 <select v-model="dnsType" class="tiny"><option v-for="ty in dnsAllTypes" :key="ty" :value="ty">{{ ty }}</option></select>
-                <button class="btn primary" :disabled="busy.dnsc" @click="runDnsCompare">{{ t('Compare resolvers') }}</button>
+                <button class="btn primary" :disabled="busy.dnsc" :class="{working: busy.dnsc}" @click="runDnsCompare">{{ t('Compare resolvers') }}</button>
               </div>
               <p class="dim">{{ t('Asks this server and the large public resolvers the same question, so you can see whether a change has spread yet.') }}</p>
             </div>
@@ -567,7 +603,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
               <div class="tool-row">
                 <input v-model="dnsHost" :placeholder="t('example.com')" @keyup.enter="runDnsTrace">
                 <select v-model="dnsType" class="tiny"><option v-for="ty in dnsAllTypes" :key="ty" :value="ty">{{ ty }}</option></select>
-                <button class="btn primary" :disabled="busy.dnst" @click="runDnsTrace">{{ t('Trace from the root') }}</button>
+                <button class="btn primary" :disabled="busy.dnst" :class="{working: busy.dnst}" @click="runDnsTrace">{{ t('Trace from the root') }}</button>
               </div>
               <p class="dim">{{ t('Follows the delegation the way a resolver does, so a broken hand-off between zones is visible.') }}</p>
             </div>
@@ -585,7 +621,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
               <div class="tool-row">
                 <input v-model="axfrZone" :placeholder="t('example.com')" @keyup.enter="runAxfr">
                 <input v-model="axfrServer" class="short" :placeholder="t('Name server (blank = all of them)')">
-                <button class="btn primary" :disabled="busy.axfr" @click="runAxfr">{{ t('Test zone transfer') }}</button>
+                <button class="btn primary" :disabled="busy.axfr" :class="{working: busy.axfr}" @click="runAxfr">{{ t('Test zone transfer') }}</button>
               </div>
               <p class="dim">{{ t('A name server that hands its whole zone to a stranger gives away every host name it knows. This checks whether yours refuses.') }}</p>
             </div>
@@ -612,10 +648,12 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
 
         <!-- ============ whois ============ -->
         <section v-if="tab==='whois'">
+          <!-- Whois lookup first: a single domain or IP, with its registration
+               shown just below. -->
           <div class="card tool-card">
             <div class="tool-row">
               <input v-model="whoisQuery" :placeholder="t('Domain name or IP address')" @keyup.enter="runWhois">
-              <button class="btn primary" :disabled="busy.whois" @click="runWhois">{{ t('Look up') }}</button>
+              <button class="btn primary" :disabled="busy.whois" :class="{working: busy.whois}" @click="runWhois">{{ t('Look up') }}</button>
             </div>
           </div>
           <div class="card" v-if="whoisResult">
@@ -627,6 +665,52 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
               <pre class="raw">{{ hop.response }}</pre>
             </details>
           </div>
+          <!-- Free-domain search below: type the name before the dot and every
+               common ending is checked at once. A free one gets an OK mark; a taken
+               one gets a Whois button that opens its registration above. -->
+          <div class="card tool-card">
+            <div class="tool-row">
+              <input v-model="availDomains" :placeholder="t('A name, without the ending — e.g. example')" @keyup.enter="runAvailability">
+              <button class="btn primary" :disabled="busy.avail || !availBase" :class="{working: busy.avail}" @click="runAvailability">{{ busy.avail ? t('Checking…') : t('Find a free domain') }}</button>
+            </div>
+            <div class="avail-scope">
+              <span class="fl-label">{{ t('Range to check') }}</span>
+              <label v-for="ti in availTierList" :key="ti.key" class="avail-scope-opt" :class="{on: availTier===ti.key}">
+                <input type="radio" :value="ti.key" v-model="availTier"> {{ t(ti.label) }} <span class="dim">({{ ti.count }})</span>
+              </label>
+              <span class="dim tiny avail-warn" v-if="availTier!=='core'">{{ t('A large range can take 30–60 seconds.') }}</span>
+            </div>
+            <div v-if="busy.avail || (availProgress.total && availProgress.done < availProgress.total)" class="progress avail-progress">
+              <div class="bar"><div class="fill" :style="{width: (availProgress.total ? Math.round(availProgress.done / availProgress.total * 100) : 0) + '%'}"></div></div>
+              <div class="progress-text"><span>{{ t('Checking “{name}”…', {name: availBase}) }}</span><span class="spacer"></span><span>{{ availProgress.done }} / {{ availProgress.total }}</span></div>
+            </div>
+            <div v-if="availResults.length" class="avail-list">
+              <div class="avail-filters">
+                <label class="switch" :title="t('On: shown. Off: hidden.')">
+                  <input type="checkbox" v-model="availShowTaken">
+                  <span class="track"><span class="thumb"></span></span>
+                  <span class="switch-label">{{ t('Show taken (×)') }}</span>
+                </label>
+                <label class="switch" :title="t('On: shown. Off: hidden.')">
+                  <input type="checkbox" v-model="availShowUnknown">
+                  <span class="track"><span class="thumb"></span></span>
+                  <span class="switch-label">{{ t('Show undetermined (?)') }}</span>
+                </label>
+              </div>
+              <div class="avail-legend dim tiny">○ {{ t('free') }} · × {{ t('taken') }} · △ {{ t('likely free (registry unreachable)') }} · ? {{ t('undetermined') }}</div>
+              <div class="avail-rows">
+                <div v-for="r in availShown" :key="r.domain" class="avail-row" :class="'avail-'+r.cls">
+                  <span class="avail-mark" :class="'m-'+r.cls" :title="r.note">{{ r.mark }}</span>
+                  <span class="avail-domain mono" :title="r.note">{{ r.domain }}</span>
+                  <button v-if="r.mark==='×'" class="btn xs avail-taken" :title="t('Taken — show the Whois registration')" @click="showWhoisFor(r)"><span class="ic">📇</span> Whois</button>
+                </div>
+              </div>
+              <div v-if="!availShown.length" class="avail-empty dim">
+                {{ t('All {n} results are hidden by the switches above.', {n: availResults.length}) }}
+                <a href="#" @click.prevent="availShowTaken=true; availShowUnknown=true">{{ t('Show all') }}</a>
+              </div>
+            </div>
+          </div>
         </section>
 
         <!-- ============ tls / http ============ -->
@@ -635,9 +719,9 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
             <div class="tool-row">
               <input v-model="tlsHost" :placeholder="t('example.com')" @keyup.enter="runTls">
               <input v-model.number="tlsPort" class="tiny" type="number">
-              <button class="btn primary" :disabled="busy.tls" @click="runTls">{{ t('Inspect certificate') }}</button>
-              <button class="btn" :disabled="busy.http" @click="runHttp">{{ t('HTTP headers') }}</button>
-              <button class="btn" :disabled="busy.tlsver" @click="runTlsVersions">{{ t('Which TLS versions?') }}</button>
+              <button class="btn primary" :disabled="busy.tls" :class="{working: busy.tls}" @click="runTls">{{ t('Inspect certificate') }}</button>
+              <button class="btn" :disabled="busy.http" :class="{working: busy.http}" @click="runHttp">{{ t('HTTP headers') }}</button>
+              <button class="btn" :disabled="busy.tlsver" :class="{working: busy.tlsver}" @click="runTlsVersions">{{ t('Which TLS versions?') }}</button>
             </div>
           </div>
           <div class="card" v-if="tlsVersionsResult">
@@ -713,7 +797,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
               </select>
               <label class="inline-check"><input type="checkbox" v-model="speedUpload"> {{ t('Also test upload') }}</label>
               <span class="spacer"></span>
-              <button class="btn primary" :disabled="busy.speed" @click="runSpeed">{{ busy.speed ? t('Measuring…') : t('Run') }}</button>
+              <button class="btn primary" :disabled="busy.speed" :class="{working: busy.speed}" @click="runSpeed">{{ busy.speed ? t('Measuring…') : t('Run') }}</button>
             </div>
             <p class="hint">{{ t('Traffic is exchanged with {host}. Nothing but the test payload is sent.', {host: speedEndpoint}) }}</p>
             <div class="bench-results" v-if="speedResult">
@@ -735,7 +819,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
                   <option :value="5">5s</option><option :value="10">10s</option><option :value="30">30s</option>
                 </select>
                 <label class="inline-check"><input type="checkbox" v-model="iperfReverse"> {{ t('Reverse') }}</label>
-                <button class="btn primary" :disabled="busy.iperf" @click="runIperf">{{ busy.iperf ? t('Measuring…') : t('Run') }}</button>
+                <button class="btn primary" :disabled="busy.iperf" :class="{working: busy.iperf}" @click="runIperf">{{ busy.iperf ? t('Measuring…') : t('Run') }}</button>
               </div>
               <div class="bench-results" v-if="iperfResult && !iperfResult.error">
                 <div class="big"><span class="lbl">{{ t('Sent') }}</span><span class="num">{{ iperfResult.sentMbps }}</span><span class="unit">Mbps</span></div>
@@ -757,7 +841,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
             <div class="bench-head">
               <h3>{{ t('DNS resolver comparison') }}</h3>
               <span class="spacer"></span>
-              <button class="btn primary" :disabled="busy.dnsbench" @click="runDnsBench">{{ busy.dnsbench ? t('Measuring…') : t('Compare') }}</button>
+              <button class="btn primary" :disabled="busy.dnsbench" :class="{working: busy.dnsbench}" @click="runDnsBench">{{ busy.dnsbench ? t('Measuring…') : t('Compare') }}</button>
             </div>
             <p class="hint">{{ t('Each resolver is asked for the same names, and the times are compared. The resolver this server uses is included.') }}</p>
             <table class="grid compact" v-if="dnsBench">
@@ -778,7 +862,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
             <div class="bench-head"><h3>{{ t('Where the time goes') }}</h3></div>
             <div class="tool-row">
               <input v-model="timingUrl" placeholder="https://example.com" @keyup.enter="runTiming">
-              <button class="btn primary" :disabled="busy.timing" @click="runTiming">{{ t('Measure') }}</button>
+              <button class="btn primary" :disabled="busy.timing" :class="{working: busy.timing}" @click="runTiming">{{ t('Measure') }}</button>
             </div>
             <template v-if="timingResult">
               <div class="kv">
@@ -855,7 +939,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
               <select v-model.number="splitPrefix" class="ip-prefix" :aria-label="t('Into networks of')">
                 <option v-for="p in splitPrefixes" :key="p" :value="p">{{ p }}</option>
               </select>
-              <button class="btn" :disabled="busy.split" @click="runSplit">{{ t('Split') }}</button>
+              <button class="btn" :disabled="busy.split" :class="{working: busy.split}" @click="runSplit">{{ t('Split') }}</button>
             </div>
             <table class="grid compact" v-if="splitResult">
               <thead><tr><th>{{ t('Network') }}</th><th>{{ t('First host') }}</th><th>{{ t('Last host') }}</th><th>{{ t('Broadcast') }}</th><th>{{ t('Hosts') }}</th></tr></thead>
@@ -888,7 +972,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
             </template>
             <textarea v-else v-model="aggregateInput" rows="3" class="mono tiny" :placeholder="t('192.168.1.0/24, 10.0.0.5, 10.0.0.8-10.0.0.20, 2001:db8::/48')"></textarea>
             <div class="tool-row">
-              <button class="btn" :disabled="busy.aggregate" @click="runAggregate">{{ t('Combine') }}</button>
+              <button class="btn" :disabled="busy.aggregate" :class="{working: busy.aggregate}" @click="runAggregate">{{ t('Combine') }}</button>
               <label class="fl-check"><input type="checkbox" v-model="aggregateFreeText">
                 <span>{{ t('Type them myself (ranges, IPv6)') }}</span></label>
             </div>
@@ -934,7 +1018,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
               <div class="tool-row">
                 <input v-model="mailDomain" :placeholder="t('example.com')" @keyup.enter="runMailAudit">
                 <input v-model="mailSelectors" class="short" :placeholder="t('DKIM selectors, comma separated')">
-                <button class="btn primary" :disabled="busy.mailAudit" @click="runMailAudit">{{ busy.mailAudit ? t('Checking…') : t('Check this domain') }}</button>
+                <button class="btn primary" :disabled="busy.mailAudit" :class="{working: busy.mailAudit}" @click="runMailAudit">{{ busy.mailAudit ? t('Checking…') : t('Check this domain') }}</button>
               </div>
               <label class="opt"><input type="checkbox" v-model="mailBlocklists"> {{ t('Also ask the public blocklists about each MX address') }}</label>
               <p class="dim">{{ t('Reads only public DNS and, for MTA-STS, one HTTPS file. Nothing is sent to your servers.') }}</p>
@@ -1020,7 +1104,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
                   <option value="none">{{ t('No encryption') }}</option>
                 </select>
                 <input v-model.number="mailPort" type="number" min="0" max="65535" class="tiny" :placeholder="t('Port')">
-                <button class="btn primary" :disabled="busy.mailProbe" @click="runMailProbe">{{ t('Test the server') }}</button>
+                <button class="btn primary" :disabled="busy.mailProbe" :class="{working: busy.mailProbe}" @click="runMailProbe">{{ t('Test the server') }}</button>
               </div>
               <div class="chips">
                 <button class="btn xs" v-for="p in mailPresets" :key="p.label" @click="applyMailPreset(p)">{{ p.label }}</button>
@@ -1050,7 +1134,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
               <div class="tool-row">
                 <input v-model="relayHost" :placeholder="t('mail.example.com')">
                 <input v-model.number="relayPort" type="number" class="tiny" min="1" max="65535">
-                <button class="btn" :disabled="busy.relay" @click="runRelay">{{ t('Test for open relay') }}</button>
+                <button class="btn" :disabled="busy.relay" :class="{working: busy.relay}" @click="runRelay">{{ t('Test for open relay') }}</button>
               </div>
               <div v-if="relayResult">
                 <div v-for="(f,i) in relayResult.findings" :key="i" class="finding" :class="f.level">
@@ -1065,7 +1149,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
               <h3>{{ t('Blocklist lookup') }}</h3>
               <div class="tool-row">
                 <input v-model="blIp" :placeholder="t('IPv4 address of a sending server')" @keyup.enter="runBlocklist">
-                <button class="btn" :disabled="busy.bl" @click="runBlocklist">{{ t('Check') }}</button>
+                <button class="btn" :disabled="busy.bl" :class="{working: busy.bl}" @click="runBlocklist">{{ t('Check') }}</button>
               </div>
               <div class="chips result" v-if="blResult">
                 <span v-for="r in blResult.results" :key="r.zone" class="pill" :class="r.listed ? 'bad' : (r.blocked ? 'no' : 'ok')" :title="r.reason || r.zone">{{ r.name }}</span>
@@ -1103,7 +1187,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
               </div>
               <textarea v-model="sendBody" rows="3" :placeholder="t('Message (optional)')"></textarea>
               <div class="tool-row">
-                <button class="btn primary" :disabled="busy.send || !sendTo || (!sendId && !smtpAdhoc.host)" @click="runSend">{{ busy.send ? t('Sending…') : t('Send the test message') }}</button>
+                <button class="btn primary" :disabled="busy.send || !sendTo || (!sendId && !smtpAdhoc.host)" :class="{working: busy.send}" @click="runSend">{{ busy.send ? t('Sending…') : t('Send the test message') }}</button>
               </div>
               <div v-if="sendResult" class="kv">
                 <div><span>{{ t('Result') }}</span><code :class="sendResult.ok ? 'good' : 'bad'">{{ sendResult.ok ? t('Accepted by the server') : (sendResult.error || t('Failed')) }}</code></div>
@@ -1120,7 +1204,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
                   <option :value="0">{{ t('Type the details below') }}</option>
                   <option v-for="c in mailboxConnections" :key="c.id" :value="c.id">{{ c.name }} ({{ c.kind.toUpperCase() }})</option>
                 </select>
-                <button class="btn" :disabled="busy.mailbox || (!mailboxId && !boxAdhoc.host)" @click="runMailbox">{{ t('Sign in') }}</button>
+                <button class="btn" :disabled="busy.mailbox || (!mailboxId && !boxAdhoc.host)" :class="{working: busy.mailbox}" @click="runMailbox">{{ t('Sign in') }}</button>
                 <button class="btn sm" v-if="!mailboxId" @click="saveMailAdhoc('box')">{{ t('Save to the list') }}</button>
               </div>
               <div class="tool-row" v-if="!mailboxId">
@@ -1157,7 +1241,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
                 <option v-for="s in ntpServers" :key="s.host" :value="s.host">{{ s.host }} — {{ s.label }}</option>
               </select>
               <input v-model="ntpHost" :placeholder="t('pool.ntp.org')" @keyup.enter="runNtp">
-              <button class="btn" :disabled="busy.ntp" @click="runNtp">{{ t('Compare clocks') }}</button>
+              <button class="btn" :disabled="busy.ntp" :class="{working: busy.ntp}" @click="runNtp">{{ t('Compare clocks') }}</button>
             </div>
             <p class="dim tiny">{{ t('Pick a well-known time server, or type any other.') }}</p>
             <div v-if="ntpResult">
@@ -1203,7 +1287,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
               </template>
               <input v-else v-model="adhoc.secret" type="password" class="short" :placeholder="t('Password')" autocomplete="new-password">
               <input v-model="adhoc.path" class="short mono" :placeholder="t('Start folder (optional)')">
-              <button class="btn primary" :disabled="busy.browse || !adhoc.host" @click="quickConnect">{{ t('Connect') }}</button>
+              <button class="btn primary" :disabled="busy.browse || !adhoc.host" :class="{working: busy.browse}" @click="quickConnect">{{ t('Connect') }}</button>
               <button class="btn" :disabled="!adhoc.host" @click="saveAdhoc">{{ t('Save to the list') }}</button>
             </div>
             <p class="dim" v-if="adhoc.kind==='ftp' && !adhoc.username">{{ t('Leave the user name blank to sign in anonymously.') }}</p>
@@ -1217,7 +1301,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
               </select>
               <button class="btn sm" @click="openConn(null,'sftp')">{{ t('+ Add connection') }}</button>
               <button class="btn sm" v-if="filesConn" @click="openConn(connById(filesConn))">{{ t('Edit') }}</button>
-              <button class="btn sm" v-if="filesConn" :disabled="busy.conntest" @click="testConn(connById(filesConn))">{{ t('Test') }}</button>
+              <button class="btn sm" v-if="filesConn" :disabled="busy.conntest" :class="{working: busy.conntest}" @click="testConn(connById(filesConn))">{{ t('Test') }}</button>
             </div>
             <p class="dim" v-if="!connCaps.sftp && !connCaps.ftp">{{ t('Neither FTP nor SFTP is available in this PHP build.') }}</p>
           </div>
@@ -1248,7 +1332,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
                   <td class="dim">{{ e.modified ? ago(e.modified) : '' }}</td>
                   <td class="mono dim tiny">{{ e.permissions }}</td>
                   <td class="row-actions">
-                    <button class="btn xs" v-if="!e.directory" :disabled="busy.dl" @click="downloadFile(e)">⤓ {{ t('To my files') }}</button>
+                    <button class="btn xs" v-if="!e.directory" :disabled="busy.dl" :class="{working: busy.dl}" @click="downloadFile(e)">⤓ {{ t('To my files') }}</button>
                     <button class="btn xs" @click="fileAction('rename', e)">{{ t('Rename') }}</button>
                     <button class="btn xs danger" @click="fileAction(e.directory ? 'rmdir' : 'delete', e)">{{ t('Delete') }}</button>
                   </td>
@@ -1268,7 +1352,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
             <div class="tool-row">
               <input v-model="filesSource" class="mono" :placeholder="t('Path in your Nextcloud files, e.g. Documents/report.pdf')">
               <button class="btn sm" @click="pickFile('Choose a file to upload', (p) => { filesSource = p; })">📂 {{ t('Browse…') }}</button>
-              <button class="btn" :disabled="busy.ul || !filesSource" @click="uploadFile">⤒ {{ t('Upload to this folder') }}</button>
+              <button class="btn" :disabled="busy.ul || !filesSource" :class="{working: busy.ul}" @click="uploadFile">⤒ {{ t('Upload to this folder') }}</button>
             </div>
             <p v-if="transferNote" class="note-line">{{ transferNote }}</p>
           </div>
@@ -1292,8 +1376,8 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
               </select>
               <input v-model="sshHost" :placeholder="t('Host name or IP address')" @keyup.enter="runSsh">
               <input v-model.number="sshPort" type="number" class="tiny" min="1" max="65535">
-              <button class="btn primary" :disabled="busy.ssh" @click="runSsh">{{ t('Inspect SSH') }}</button>
-              <button class="btn" :disabled="busy.telnet" @click="runTelnet">{{ t('Try Telnet') }}</button>
+              <button class="btn primary" :disabled="busy.ssh" :class="{working: busy.ssh}" @click="runSsh">{{ t('Inspect SSH') }}</button>
+              <button class="btn" :disabled="busy.telnet" :class="{working: busy.telnet}" @click="runTelnet">{{ t('Try Telnet') }}</button>
             </div>
             <label class="opt"><input type="checkbox" v-model="sshAuthMethods"> {{ t('Also ask which sign-in methods are accepted (leaves one failed attempt in the server log)') }}</label>
           </div>
@@ -1351,7 +1435,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
                 <input v-model="sshAdhoc.passphrase" type="password" class="short" :placeholder="t('Key passphrase (if any)')" autocomplete="new-password">
               </template>
               <input v-else v-model="sshAdhoc.secret" type="password" class="short" :placeholder="t('Password')" autocomplete="new-password">
-              <button class="btn primary" :disabled="busy.term || !sshAdhoc.host || !sshAdhoc.username" @click="quickConsole">🖳 {{ t('Connect') }}</button>
+              <button class="btn primary" :disabled="busy.term || !sshAdhoc.host || !sshAdhoc.username" :class="{working: busy.term}" @click="quickConsole">🖳 {{ t('Connect') }}</button>
               <button class="btn" :disabled="!sshAdhoc.host" @click="saveSshAdhoc">{{ t('Save to the list') }}</button>
             </div>
           </div>
@@ -1386,11 +1470,11 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
                 <option value="">{{ t('Or type a command below…') }}</option>
                 <option v-for="(p,id) in sshPresets" :key="id" :value="id">{{ t(p.label) }}</option>
               </select>
-              <button class="btn primary" :disabled="busy.sshrun || !sshConn || !sshPreset" @click="runSshPreset">{{ t('Run') }}</button>
+              <button class="btn primary" :disabled="busy.sshrun || !sshConn || !sshPreset" :class="{working: busy.sshrun}" @click="runSshPreset">{{ t('Run') }}</button>
             </div>
             <div class="tool-row">
               <input v-model="sshCommand" class="mono" :placeholder="t('uptime')" @keyup.enter="runSshCommand">
-              <button class="btn" :disabled="busy.sshrun || !sshConn || !sshCommand" @click="runSshCommand">{{ t('Run command') }}</button>
+              <button class="btn" :disabled="busy.sshrun || !sshConn || !sshCommand" :class="{working: busy.sshrun}" @click="runSshCommand">{{ t('Run command') }}</button>
               <button class="btn" :disabled="!sshConn" @click="openConsole">🖳 {{ t('Open a console') }}</button>
             </div>
             <div v-if="sshRunResult">
@@ -1473,11 +1557,92 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
               <div class="dim" v-else>{{ t('Ask an administrator to install it.') }}</div>
             </div>
           </div>
+
+          <!-- Docker/AIO: the per-distro install commands above do not apply in a
+               container, so show the recipe that does — verified on the official
+               Nextcloud image. Only when running in a container and something is
+               actually missing. -->
+          <template v-if="requirements && requirements.container && requirements.docker && !requirements.docker.nothingMissing">
+            <h3>{{ t('Running in Docker or Nextcloud-AIO') }}</h3>
+            <p class="dim">{{ t('An app cannot bundle PHP extensions, but the official Nextcloud image runs any script placed in this folder on every start — so it adds what is missing once and survives image updates, with no rebuild.') }}</p>
+            <div class="dim mono">{{ requirements.docker.hooksDir }}</div>
+            <template v-if="status.isAdmin">
+              <pre class="raw">{{ requirements.docker.script }}</pre>
+              <button class="btn sm" @click="copyField(t('Docker recipe'), requirements.docker.script)">{{ t('Copy') }}</button>
+            </template>
+            <div class="dim" v-else>{{ t('Ask an administrator to set this up.') }}</div>
+          </template>
         </div>
         <div class="drawer-foot">
           <a class="btn sm" v-if="status.isAdmin" :href="adminUrl">{{ t('Open administration settings') }}</a>
           <span class="spacer"></span>
           <button class="btn primary" @click="sysInfo=false">{{ t('Close') }}</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ edit the named (registered) devices ============ -->
+    <div v-if="editReg" class="drawer-backdrop centred" @click.self="editReg=false">
+      <div class="modal wide">
+        <div class="drawer-head">
+          <span class="ic big">🛠</span>
+          <div><strong>{{ t('Edit named devices') }}</strong><div class="dim">{{ t('The devices you have given a name. Rename them, change the type, edit the note, or remove one.') }}</div></div>
+          <span class="spacer"></span>
+          <button class="btn xs ib" :title="t('Close')" :aria-label="t('Close')" @click="editReg=false"><svg viewBox="0 0 24 24"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg></button>
+        </div>
+        <div class="drawer-body reg-body">
+          <p v-if="!editRegRows.length" class="dim">{{ t('No named devices yet. Open a device from the list and give it a name to add it here.') }}</p>
+          <table v-else class="reg-table">
+            <thead><tr><th>{{ t('Name') }}</th><th>{{ t('Type') }}</th><th>{{ t('Notes') }}</th><th class="reg-id">{{ t('IPv4') }} / {{ t('MAC address') }}</th><th></th></tr></thead>
+            <tbody>
+              <tr v-for="r in editRegRows" :key="r.id" :class="{'reg-del': r.remove}">
+                <td><input v-model="r.label" :placeholder="r.hostname || r.ip" :disabled="r.remove"></td>
+                <td><select v-model="r.type" :disabled="r.remove"><option v-for="(l,k) in typeLabels" :key="k" :value="k">{{ t(l) }}</option></select></td>
+                <td><input v-model="r.notes" :disabled="r.remove"></td>
+                <td class="reg-id mono dim">{{ r.ip }}<br>{{ r.mac || '—' }}</td>
+                <td><button class="btn xs ib" :title="r.remove ? t('Keep') : t('Remove')" :aria-label="r.remove ? t('Keep') : t('Remove')" @click="r.remove = !r.remove"><svg v-if="!r.remove" viewBox="0 0 24 24"><path d="M4 7h16"/><path d="M9 7V5h6v2"/><path d="M6 7l1 13h10l1-13"/></svg><svg v-else viewBox="0 0 24 24"><path d="M4 12a8 8 0 1 1 2.3 5.6"/><path d="M4 20v-5h5"/></svg></button></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="drawer-foot">
+          <span class="dim" v-if="editRegRows.some((r) => r.remove)">{{ t('{n} to remove', {n: editRegRows.filter((r) => r.remove).length}) }}</span>
+          <span class="spacer"></span>
+          <button class="btn sm" @click="editReg=false">{{ t('Cancel') }}</button>
+          <button class="btn primary" :disabled="busy.reg" :class="{working: busy.reg}" @click="saveRegEditor">{{ busy.reg ? t('Saving…') : t('Save') }}</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- How to switch the "Clear the ARP table" button on. NetBase runs
+         unprivileged and cannot flush the kernel table itself; an administrator
+         installs a tiny helper and a one-line sudoers rule, and NetBase then
+         detects it and enables the button on its own. -->
+    <div v-if="arpHelp" class="drawer-backdrop centred" @click.self="arpHelp=false">
+      <div class="modal wide">
+        <div class="drawer-head">
+          <span class="ic big">🧹</span>
+          <div><strong>{{ t('Switch on “Clear the ARP table”') }}</strong><div class="dim">{{ t('NetBase runs without special privileges, so clearing the kernel neighbour (ARP) table needs a small helper an administrator installs once.') }}</div></div>
+          <span class="spacer"></span>
+          <button class="btn xs ib" :title="t('Close')" :aria-label="t('Close')" @click="arpHelp=false"><svg viewBox="0 0 24 24"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg></button>
+        </div>
+        <div class="drawer-body arp-help-body">
+          <p class="arp-warn">⚠ {{ t('This is optional. NetBase works fully without it — “Refresh devices” already re-checks what is online. It grants the web user one root command, so if you are not confident about the security trade-off, do not install it.') }}</p>
+          <p class="dim">{{ t('When the helper is installed and the check passes, the button turns on by itself (reload this page).') }}</p>
+
+          <h4>{{ t('On the server (bare metal or VM)') }}</h4>
+          <p class="dim tiny">{{ t('Run as an administrator. This writes the helper and a sudoers rule that lets only the web user ({user}) run only this one command.', {user: arpUser()}) }}</p>
+          <div class="arp-code"><button class="btn xs ib arp-copy" :title="t('Copy')" @click="copyText(arpBareSteps())"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2.2"/><path d="M6 15.5H5.5A2.5 2.5 0 0 1 3 13V5.5A2.5 2.5 0 0 1 5.5 3H13a2.5 2.5 0 0 1 2.5 2.5V6"/></svg></button><pre>{{ arpBareSteps() }}</pre></div>
+
+          <h4>{{ t('Docker / Podman') }}</h4>
+          <p class="dim tiny">{{ t('The image is rebuilt as a whole, so install the helper from a start-up hook and give the container the NET_ADMIN capability (and the host network to reach the LAN).') }}</p>
+          <div class="arp-code"><button class="btn xs ib arp-copy" :title="t('Copy')" @click="copyText(arpDockerHook())"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2.2"/><path d="M6 15.5H5.5A2.5 2.5 0 0 1 3 13V5.5A2.5 2.5 0 0 1 5.5 3H13a2.5 2.5 0 0 1 2.5 2.5V6"/></svg></button><pre>{{ arpDockerHook() }}</pre></div>
+
+          <p class="dim tiny">{{ t('The helper only ever runs “ip neigh flush all”. You can read it before installing; NetBase probes it with a harmless “--check”.') }}</p>
+        </div>
+        <div class="drawer-foot">
+          <span class="spacer"></span>
+          <button class="btn sm" @click="arpHelp=false">{{ t('Close') }}</button>
         </div>
       </div>
     </div>
@@ -1650,8 +1815,16 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
            policy pins everything it loads or sends to the proxy path, so it cannot
            reach a Nextcloud endpoint. The name is how its own "replace everything"
            links find this window. -->
-      <iframe v-else :src="w.src" class="devwin-frame" :title="w.title" :data-window="w.id" name="_netbase_window" @load="onWindowLoad(w, $event)"
-              sandbox="allow-scripts allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox allow-downloads allow-same-origin"></iframe>
+      <div v-else class="devwin-body">
+        <iframe :src="w.src" class="devwin-frame" :title="w.title" :data-window="w.id" name="_netbase_window" @load="onWindowLoad(w, $event)"
+                sandbox="allow-scripts allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox allow-downloads allow-same-origin"></iframe>
+        <!-- A slow line or a sleepy device leaves the frame blank; this sits over
+             it until the page loads, so it is clear it is still working. -->
+        <div v-if="w.loading" class="devwin-loading">
+          <span class="devwin-spinner"></span>
+          <span class="devwin-loading-text">{{ t('Loading…') }}<template v-if="w.loadSecs >= 3"> {{ t('({s}s)', {s: w.loadSecs}) }}</template></span>
+        </div>
+      </div>
       <!-- A message about this window, shown inside it: a device window sits above
            the app's own banner (its z-index is raised on every focus), so a note
            put there would be hidden behind the window it is about. -->
@@ -1849,7 +2022,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
           <button class="btn danger sm" v-if="connForm.id" @click="deleteConn(connForm)">{{ t('Delete') }}</button>
           <span class="spacer"></span>
           <button class="btn sm" @click="connModal=false">{{ t('Cancel') }}</button>
-          <button class="btn primary" :disabled="busy.conn" @click="saveConn">{{ t('Save') }}</button>
+          <button class="btn primary" :disabled="busy.conn" :class="{working: busy.conn}" @click="saveConn">{{ t('Save') }}</button>
         </div>
       </div>
     </div>
@@ -1860,8 +2033,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         <div class="drawer-head">
           <span class="ic big">{{ icon(selected) }}</span>
           <div>
-            <input class="dev-name" v-model="editLabel" :placeholder="selected.hostname || selected.ip" :readonly="!allowed('scan')">
-            <div class="dim mono">{{ selected.ip }}<button class="btn xs ib copy-one" :title="t('Copy this')" :aria-label="t('Copy this')" @click="copyField(t('IPv4'), selected.ip)"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2.2"/><path d="M6 15.5H5.5A2.5 2.5 0 0 1 3 13V5.5A2.5 2.5 0 0 1 5.5 3H13a2.5 2.5 0 0 1 2.5 2.5V6"/></svg></button> · {{ selected.mac || t('no MAC') }}<template v-if="selected.mac"><button class="btn xs ib copy-one" :title="t('Copy this')" :aria-label="t('Copy this')" @click="copyField(t('MAC address'), selected.mac)"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2.2"/><path d="M6 15.5H5.5A2.5 2.5 0 0 1 3 13V5.5A2.5 2.5 0 0 1 5.5 3H13a2.5 2.5 0 0 1 2.5 2.5V6"/></svg></button></template></div>
+            <div class="dev-title" :class="{unnamed: !(selected.label || selected.hostname)}">{{ selected.label || selected.hostname || selected.ip }}</div>
           </div>
           <span class="spacer"></span>
           <!-- The whole record, and below, each row on its own: a device is
@@ -1872,8 +2044,17 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         </div>
         <div class="drawer-body">
           <div class="kv">
+            <!-- Name first, and as a bordered field so it is clearly the one
+                 thing here you fill in yourself; then the address, MAC and
+                 vendor, top to bottom. -->
+            <div class="kv-edit"><span>{{ t('Name') }}</span>
+              <input v-if="allowed('scan')" class="kv-input" v-model="editLabel" :placeholder="selected.hostname || selected.ip" :title="t('A name you give this device. It is kept against the device (its MAC) and shown in place of the obtained name, so you can tell a device apart even when it reports no name of its own.')">
+              <code v-else>{{ selected.label || '—' }}</code>
+            </div>
+            <div><span>{{ t('IPv4') }} / {{ t('Netmask') }}</span><code>{{ selected.ip }}<span class="dim" v-if="netmaskFor(selected)"> / {{ netmaskFor(selected) }}</span></code><button class="btn xs ib copy-one" :title="t('Copy this')" :aria-label="t('Copy this')" @click="copyField(t('IPv4'), selected.ip)"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2.2"/><path d="M6 15.5H5.5A2.5 2.5 0 0 1 3 13V5.5A2.5 2.5 0 0 1 5.5 3H13a2.5 2.5 0 0 1 2.5 2.5V6"/></svg></button></div>
+            <div><span>{{ t('MAC address') }}</span><code>{{ selected.mac || t('no MAC') }}</code><button v-if="selected.mac" class="btn xs ib copy-one" :title="t('Copy this')" :aria-label="t('Copy this')" @click="copyField(t('MAC address'), selected.mac)"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2.2"/><path d="M6 15.5H5.5A2.5 2.5 0 0 1 3 13V5.5A2.5 2.5 0 0 1 5.5 3H13a2.5 2.5 0 0 1 2.5 2.5V6"/></svg></button></div>
             <div><span>{{ t('Vendor') }}</span><code>{{ vendorText(selected) }}</code><button class="btn xs ib copy-one" :title="t('Copy this')" :aria-label="t('Copy this')" @click="copyField(t('Vendor'), vendorText(selected))"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2.2"/><path d="M6 15.5H5.5A2.5 2.5 0 0 1 3 13V5.5A2.5 2.5 0 0 1 5.5 3H13a2.5 2.5 0 0 1 2.5 2.5V6"/></svg></button></div>
-            <div><span>{{ t('Reported name') }}</span><code>{{ selected.hostname || '—' }}</code><button class="btn xs ib copy-one" :title="t('Copy this')" :aria-label="t('Copy this')" @click="copyField(t('Reported name'), selected.hostname)"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2.2"/><path d="M6 15.5H5.5A2.5 2.5 0 0 1 3 13V5.5A2.5 2.5 0 0 1 5.5 3H13a2.5 2.5 0 0 1 2.5 2.5V6"/></svg></button></div>
+            <div><span>{{ t('Reported name') }}</span><code>{{ selected.hostname || '—' }}<span class="dim src-tag" v-if="selected.hostname && nameSource(selected)"> · {{ nameSource(selected) }}</span></code><button class="btn xs ib copy-one" :title="t('Copy this')" :aria-label="t('Copy this')" @click="copyField(t('Reported name'), selected.hostname)"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2.2"/><path d="M6 15.5H5.5A2.5 2.5 0 0 1 3 13V5.5A2.5 2.5 0 0 1 5.5 3H13a2.5 2.5 0 0 1 2.5 2.5V6"/></svg></button></div>
             <div v-if="selected.workgroup"><span>{{ t('Workgroup') }}</span><code>{{ selected.workgroup }}</code><button class="btn xs ib copy-one" :title="t('Copy this')" :aria-label="t('Copy this')" @click="copyField(t('Workgroup'), selected.workgroup)"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2.2"/><path d="M6 15.5H5.5A2.5 2.5 0 0 1 3 13V5.5A2.5 2.5 0 0 1 5.5 3H13a2.5 2.5 0 0 1 2.5 2.5V6"/></svg></button></div>
             <div><span>{{ t('Open ports') }}</span><code>
               <template v-for="(p,i) in selected.ports" :key="p">
@@ -1894,11 +2075,9 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
             <label class="fl"><span class="fl-label">{{ t('Type') }}</span>
               <select v-model="editType"><option v-for="(l,k) in typeLabels" :key="k" :value="k">{{ t(l) }}</option></select>
             </label>
-            <label class="fl"><span class="fl-label">{{ t('Tags') }}</span><input v-model="editTags" :placeholder="t('office, 2F, spare')"></label>
             <label class="fl"><span class="fl-label">{{ t('Notes') }}</span><textarea v-model="editNotes" rows="2"></textarea></label>
           </template>
-          <div class="kv" v-else-if="selected.tags.length || selected.notes">
-            <div v-if="selected.tags.length"><span>{{ t('Tags') }}</span><code>{{ selected.tags.join(', ') }}</code></div>
+          <div class="kv" v-else-if="selected.notes">
             <div v-if="selected.notes"><span>{{ t('Notes') }}</span><code class="wrap">{{ selected.notes }}</code></div>
           </div>
           <div class="drawer-tools">
@@ -2108,7 +2287,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
     template: TEMPLATE,
     data() {
       return {
-        version: '', tab: 'devices', banner: null, authenticated: true,
+        version: '', tab: 'devices', banner: null, noteTimer: null, authenticated: true,
         // On a narrow screen the tool list is a drawer rather than a column,
         // and a device's page fills the screen instead of floating over it.
         menu: false, narrow: window.innerWidth <= 900,
@@ -2129,7 +2308,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         // has got, and what it came back with.
         deep: { busy: '', percent: 0, note: '', pages: [] },
         filter: '', onlyOnline: true, sortKey: 'ip', sortDir: 1,
-        selected: null, editLabel: '', editTags: '', editNotes: '', editType: 'unknown',
+        selected: null, editLabel: '', editNotes: '', editType: 'unknown',
         busy: {},
         dnsHost: '', dnsWanted: ['A', 'AAAA', 'MX', 'NS', 'TXT'], dnsResult: null,
         dnsView: 'records', dnsViews: DNS_VIEWS, dnsAllTypes: DNS_ALL_TYPES,
@@ -2150,6 +2329,14 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         telnetAdhoc: { host: '', port: 23 },
         dnsTypes: ['A', 'AAAA', 'CNAME', 'MX', 'NS', 'TXT', 'SOA', 'SRV', 'CAA'],
         whoisQuery: '', whoisResult: null,
+        availDomains: '', availResults: [],
+        availTier: 'core', availTiers: {}, availProgress: { done: 0, total: 0 },
+        // Two slide switches over the results: taken (×) shown by default,
+        // undetermined (?) hidden by default so the list leads with what is free
+        // or clearly taken, not the ones that could not be checked.
+        availShowTaken: true, availShowUnknown: false,
+        editReg: false, editRegRows: [],
+        arpHelp: false,
         // NETBASE-STORE-REMOVED: pingHost: '', pingResult: null, traceResult: null,
         // NETBASE-STORE-REMOVED: portHost: '', portList: '', portResult: null,
         tlsHost: '', tlsPort: 443, tlsResult: null, httpResult: null,
@@ -2280,6 +2467,27 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         return !!this.resultBundle();
       },
       onlineCount() { return this.devices.filter((d) => d.online).length; },
+      // True while any tool is waiting on the server, so a single "working" bar can
+      // show across the top for every operation — most are one request of unknown
+      // length (whois, TLS, DNS, mail, SSH…) with no count to fill.
+      anyBusy() { return Object.values(this.busy).some(Boolean); },
+      // The name before the dot, cleaned to what a domain label may contain.
+      availBase() { return (String(this.availDomains).split('.')[0] || '').trim().toLowerCase().replace(/[^a-z0-9-]/g, ''); },
+      // Results after the two show/hide switches: taken (×) and undetermined (?)
+      // can each be dropped from view; free (○) and likely-free (△) always show.
+      availShown() {
+        return this.availResults.filter((r) => {
+          if (r.cls === 'taken') { return this.availShowTaken; }
+          if (r.cls === 'unknown') { return this.availShowUnknown; }
+          return true;
+        });
+      },
+      // The tier radios, with their sizes from the server (labels localised).
+      availTierList() {
+        const labels = { core: 'Major', gtld: 'gTLD', cctld: 'ccTLD', all: 'All' };
+        const order = ['core', 'gtld', 'cctld', 'all'];
+        return order.filter((k) => this.availTiers[k]).map((k) => ({ key: k, label: labels[k] || k, count: this.availTiers[k] }));
+      },
       speedEndpoint() { return (this.speedResult && this.speedResult.endpoint) || 'speed.cloudflare.com'; },
       fileConnections() { return this.connections.filter((c) => c.kind === 'ftp' || c.kind === 'sftp'); },
       sshConnections() { return this.connections.filter((c) => c.kind === 'ssh' || c.kind === 'sftp'); },
@@ -2300,7 +2508,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         const needle = this.filter.trim().toLowerCase();
         let list = this.devices.filter((d) => (!this.onlyOnline || d.online));
         if (needle) {
-          list = list.filter((d) => [d.name, d.ip, d.mac, d.vendor, d.hostname, (d.tags || []).join(' ')]
+          list = list.filter((d) => [d.name, d.ip, d.mac, d.vendor, d.hostname, d.notes]
             .filter(Boolean).some((v) => String(v).toLowerCase().includes(needle)));
         }
         const key = this.sortKey;
@@ -2311,6 +2519,30 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
           if (typeof x === 'string' || typeof y === 'string') { x = String(x || ''); y = String(y || ''); return this.sortDir * x.localeCompare(y); }
           return this.sortDir * ((x || 0) - (y || 0));
         });
+      },
+      // One entry per physical device: rows that share a MAC (the server's two
+      // addresses, say) are folded together and their addresses listed under
+      // the one name. Devices without a MAC stand alone.
+      deviceGroups() {
+        const groups = [];
+        const byKey = {};
+        const rank = (z) => (z.label ? 2 : (z.hostname ? 1 : 0));
+        for (const d of this.shownDevices) {
+          // This server's own addresses are one machine even across its several
+          // interfaces (eth0 and the container bridge have different MACs), so
+          // they group as "this server". Everything else groups by MAC.
+          const self = this.isSelf(d) || this.onHostBridge(d.ip);
+          const key = self ? 'self' : (d.mac ? ('mac:' + d.mac) : ('id:' + d.id));
+          let g = byKey[key];
+          if (!g) { g = byKey[key] = { key, members: [], rep: d, online: false, lastSeen: 0, isSelf: self }; groups.push(g); }
+          g.members.push(d);
+          if (d.online) g.online = true;
+          if ((d.lastSeen || 0) > g.lastSeen) g.lastSeen = d.lastSeen || 0;
+          if (rank(d) > rank(g.rep)) g.rep = d;
+        }
+        const ipn = (ip) => String(ip || '').split('.').reduce((n, o) => (n * 256) + Number(o), 0);
+        for (const g of groups) g.members.sort((a, b) => ipn(a.ip) - ipn(b.ip));
+        return groups;
       },
     },
     methods: {
@@ -2327,12 +2559,32 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
           case 'sweep': return T('{done} / {total} addresses swept', v);
           case 'names': return T('Asking devices for their names ({done} / {total})', v);
           case 'names2': return T('Asking again, more slowly ({done} / {total})', v);
+          case 'mcastListen': return T('Waiting for devices to announce themselves — this takes a few seconds');
           case 'mcast': return T('Multicast discovery complete');
           case 'ports': return T('Checking services ({done} / {total})', v);
           case 'portsAll': return T('Checking ports ({done} / {total})', v);
           case 'rdns': return T('Reverse DNS ({done} / {total})', v);
           default: return scan.message || scan.phase;
         }
+      },
+      // A short word for the step under way, so the bar resetting between steps
+      // reads as "now doing the next thing" rather than "going backwards".
+      phaseLabel(scan) {
+        const key = (scan && scan.progress && scan.progress.key) || (scan && scan.phase) || '';
+        switch (key) {
+          case 'arp': return T('Reading the ARP table');
+          case 'sweep': return T('Searching for devices');
+          case 'names': case 'names2': return T('Asking for names');
+          case 'mcastListen': case 'mcast': return T('Listening for announcements');
+          case 'ports': case 'portsAll': return T('Checking ports');
+          case 'rdns': return T('Reverse DNS');
+          default: return T('Working…');
+        }
+      },
+      // The listening step has no count to show a fraction of, so the bar runs
+      // as an indeterminate stripe instead of sitting at a misleading 0%.
+      phaseWaiting(scan) {
+        return !!(scan && scan.progress && scan.progress.key === 'mcastListen');
       },
       icon(d) { return TYPE_ICON[d.type] || TYPE_ICON.unknown; },
       typeLabel(type) { return TYPE_LABEL[type] || TYPE_LABEL.unknown; },
@@ -2351,10 +2603,21 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         };
         return map[key] || key;
       },
-      sortBy(key) { if (this.sortKey === key) { this.sortDir *= -1; } else { this.sortKey = key; this.sortDir = 1; } },
+      sortBy(key) {
+        if (this.sortKey === key) { this.sortDir *= -1; } else { this.sortKey = key; this.sortDir = 1; }
+        try { localStorage.setItem('netbase.sort', JSON.stringify({ key: this.sortKey, dir: this.sortDir })); } catch (e) { /* private window */ }
+      },
       sortClass(key) { return this.sortKey === key ? (this.sortDir > 0 ? 'sorted asc' : 'sorted desc') : ''; },
-      fail(e) { this.banner = { kind: 'error', text: String((e && e.message) || e) }; },
-      note(text) { this.banner = { kind: 'info', text }; },
+      fail(e) { clearTimeout(this.noteTimer); this.banner = { kind: 'error', text: String((e && e.message) || e) }; },
+      note(text) {
+        this.banner = { kind: 'info', text };
+        // An informational notice (a finished scan, a saved file) fades on its
+        // own; an error stays until it is read and closed.
+        clearTimeout(this.noteTimer);
+        this.noteTimer = setTimeout(() => {
+          if (this.banner && this.banner.kind === 'info') this.banner = null;
+        }, 6000);
+      },
 
       /** The machine NetBase is running on, which is in the list like any other. */
       /**
@@ -2368,6 +2631,18 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         return real ? { text: real, named: true } : { text: T('- no name -'), named: false };
       },
       isSelf(device) { return !!device && (device.sources || []).indexOf('self') >= 0; },
+      // How the reported name was obtained, so an obtained name is never taken
+      // for a NetBIOS name when it came from mDNS or a reverse lookup.
+      nameSource(device) {
+        const from = device && device.extra && device.extra.nameFrom;
+        switch (from) {
+          case 'netbios': return T('NetBIOS name');
+          case 'mdns': return T('mDNS name');
+          case 'rdns': return T('reverse DNS');
+          case 'self': return T('this server');
+          default: return '';
+        }
+      },
       /**
        * A device heard on this wire whose address belongs to somewhere else.
        *
@@ -2376,16 +2651,134 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
        * checked and its pages cannot be opened. Saying so is kinder than
        * letting somebody click and wait.
        */
+      // The netmask for a device's address, when it sits on one of this
+      // server's own subnets; blank for an address off this server's networks.
+      netmaskFor(device) {
+        if (!device || !device.ip) return '';
+        const value = (ip) => ip.split('.').reduce((n, o) => (n * 256) + Number(o), 0);
+        const here = value(device.ip);
+        if (!Number.isFinite(here)) return '';
+        for (const t2 of (this.status.targets || [])) {
+          const [net, bitsText] = String(t2.cidr || '').split('/');
+          const bits = Number(bitsText);
+          if (!net || !Number.isFinite(bits)) continue;
+          const mask = bits === 0 ? 0 : (-1 << (32 - bits)) >>> 0;
+          if ((value(net) & mask) === (here & mask)) {
+            const dotted = [24, 16, 8, 0].map((s) => (mask >>> s) & 255).join('.');
+            return dotted + ' (/' + bits + ')';
+          }
+        }
+        return '';
+      },
+      // The prefix length (e.g. 16) for a device's address when it is on one of
+      // this server's own subnets, for the "IP/NN" form; null when off-network.
+      cidrBitsFor(device) {
+        if (!device || !device.ip) return null;
+        const value = (ip) => String(ip).split('.').reduce((n, o) => (n * 256) + Number(o), 0);
+        const here = value(device.ip);
+        if (!Number.isFinite(here)) return null;
+        for (const [net, bits] of this.localSubnets()) {
+          const mask = bits === 0 ? 0 : (-1 << (32 - bits)) >>> 0;
+          if ((value(net) & mask) === (here & mask)) return bits;
+        }
+        return null;
+      },
+      // Every IPv4 subnet this server has an interface on — its own networks,
+      // including the container bridges (podman0, docker0). Used both for the
+      // "IP/NN" prefix and to tell which addresses live on this machine.
+      localSubnets() {
+        const out = [];
+        for (const ifc of (this.status.interfaces || [])) {
+          if (ifc.loopback) continue;
+          for (const a of (ifc.addresses || [])) {
+            if ((a.family === 'inet') && a.network && Number.isFinite(Number(a.cidr))) {
+              out.push([a.network, Number(a.cidr), String(ifc.name || '')]);
+            }
+          }
+        }
+        // Fall back to the scan targets if the interface list is not available.
+        if (out.length === 0) {
+          for (const t2 of (this.status.targets || [])) {
+            const [net, bitsText] = String(t2.cidr || '').split('/');
+            if (net && Number.isFinite(Number(bitsText))) out.push([net, Number(bitsText), String(t2.interface || '')]);
+          }
+        }
+        return out;
+      },
+      // Is this address on one of the host's own container bridges (podman0,
+      // docker0, virbr…)? Such addresses are containers on this very machine, so
+      // they belong under "this server", not as separate devices.
+      onHostBridge(ip) {
+        if (!ip) return false;
+        const value = (x) => String(x).split('.').reduce((n, o) => (n * 256) + Number(o), 0);
+        const here = value(ip);
+        if (!Number.isFinite(here)) return false;
+        const bridge = /^(docker|podman|virbr|lxc|cni|br[-0-9])/i;
+        for (const [net, bits, name] of this.localSubnets()) {
+          if (!bridge.test(name)) continue;
+          const mask = bits === 0 ? 0 : (-1 << (32 - bits)) >>> 0;
+          if ((value(net) & mask) === (here & mask)) return true;
+        }
+        return false;
+      },
+      // The networks this server routes through a router, in order: [0] is the
+      // primary (lowest-metric default route), [1..] are secondaries of a
+      // redundant / multi-homed setup. From the server; the container bridges
+      // and unrouted subnets are deliberately not here.
+      routedNets() { return this.status.routedNetworks || []; },
+      systemCidr() { const n = this.routedNets(); return n.length ? n[0].cidr : ''; },
+      // Which routed network an address sits on: 0 = primary, 1.. = secondary,
+      // -1 = none (a container bridge, an unused range, or a foreign device) —
+      // "another network".
+      netRank(device) {
+        if (!device || !device.ip) return -1;
+        const value = (ip) => String(ip).split('.').reduce((n, o) => (n * 256) + Number(o), 0);
+        const here = value(device.ip);
+        if (!Number.isFinite(here)) return -1;
+        const nets = this.routedNets();
+        for (let i = 0; i < nets.length; i++) {
+          const [net, bitsText] = String(nets[i].cidr || '').split('/');
+          const bits = Number(bitsText);
+          if (!net || !Number.isFinite(bits)) continue;
+          const mask = bits === 0 ? 0 : (-1 << (32 - bits)) >>> 0;
+          if ((value(net) & mask) === (here & mask)) return i;
+        }
+        return -1;
+      },
+      // The label for an address's network: primary shows nothing (it is the
+      // norm), a secondary shows which one, anything else is "another network".
+      netBadge(device) {
+        const r = this.netRank(device);
+        if (r === 0) return '';
+        if (r >= 1) return T('Secondary network {n}', { n: r });
+        return T('another network');
+      },
+      netTitle(device) {
+        const r = this.netRank(device);
+        const nets = this.routedNets();
+        if (r >= 1 && nets[r]) return T('A secondary routed network of this system, via {gw}.', { gw: nets[r].gateway });
+        if (r < 0) return T('This address is on a network other than the system network ({net}).', { net: this.systemCidr() });
+        return '';
+      },
+      // Vendor text for the address line's "(…)"; blank when there is nothing
+      // useful to show (no MAC, or a MAC not in the registry).
+      macVendor(device) {
+        if (!device || !device.vendor) return '';
+        return device.vendor === '__randomized__' ? T('Randomised (privacy) address') : device.vendor;
+      },
       offNetwork(device) {
         if (!device || !device.ip || this.isSelf(device)) return false;
-        const own = (this.status.targets || []).map((t2) => t2.cidr);
-        if (!own.length) return false;
+        // "Off network" means the server has no interface on this address's
+        // subnet, so it cannot reach it — judged against every local subnet,
+        // container bridges (podman0/docker0) included. Judging it against only
+        // the scan targets (the physical NICs) wrongly flagged a container on
+        // 10.88.x, which the server does reach through its bridge.
+        const nets = this.localSubnets();
+        if (!nets.length) return false;
         const value = (ip) => ip.split('.').reduce((n, o) => (n * 256) + Number(o), 0);
         const here = value(device.ip);
         if (!Number.isFinite(here)) return false;
-        return !own.some((cidr) => {
-          const [net, bitsText] = cidr.split('/');
-          const bits = Number(bitsText);
+        return !nets.some(([net, bits]) => {
           if (!net || !Number.isFinite(bits)) return false;
           const mask = bits === 0 ? 0 : (-1 << (32 - bits)) >>> 0;
           return (value(net) & mask) === (here & mask);
@@ -2665,11 +3058,18 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         } catch (e) { this.fail(e); }
       },
 
-      async startScan() {
+      async startScan(override = {}) {
         if (this.scanning) return;
+        // A new scan clears whatever the last one, or another tool, left in the
+        // notice bar, so "scan finished" from before is never shown over a scan
+        // that is only just under way.
+        clearTimeout(this.noteTimer);
+        this.banner = null;
         this.tab = 'devices';
         const targets = this.scanTargets.split(',').map((x) => x.trim()).filter(Boolean);
-        const options = { ...this.opts, pace: this.pace, arpOnly: this.scanWhat === 'arp' };
+        // The override wins over everything, including arpOnly, so "Port scan"
+        // can turn the discovery phases off and not repeat what a refresh did.
+        const options = { ...this.opts, pace: this.pace, arpOnly: this.scanWhat === 'arp', ...override };
         try {
           this.advice = await api('scan/advice?' + qs({ targets }));
           const r = await api('scan', { method: 'POST', body: JSON.stringify({ targets, options }) });
@@ -2697,11 +3097,62 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         this.scanning = false;
         try { await api('scan/' + this.scan.id, { method: 'DELETE' }); } catch (e) { /* already gone */ }
       },
+      // Clear the kernel neighbour (ARP) table through the admin-installed helper,
+      // then refresh so the list shows only what answers now.
+      async clearArp() {
+        const r = await this.guarded('arpflush', () => api('arp-flush', { method: 'POST', body: '{}' }));
+        if (!r) return;
+        this.note(r.cleared ? T('Cleared {n} entries from the ARP table', { n: r.cleared }) : T('The ARP table was cleared'));
+        this.startScan({ ports: false });
+      },
+      // The exact files an administrator installs to switch the button on.
+      arpHelperPath() { return (this.status.arpFlush && this.status.arpFlush.helper) || '/usr/local/sbin/netbase-arp-flush'; },
+      arpUser() { return (this.status.arpFlush && this.status.arpFlush.user) || 'www-data'; },
+      arpSudoersPath() { return (this.status.arpFlush && this.status.arpFlush.sudoers) || '/etc/sudoers.d/netbase-arp'; },
+      arpScript() {
+        return [
+          '#!/bin/sh',
+          '# netbase-arp-flush — let NetBase clear the neighbour (ARP) table.',
+          '# Installed by an administrator; run only by the sudoers rule below.',
+          'case "$1" in',
+          '  --check) exit 0 ;;   # NetBase probes with this; it does nothing',
+          '  *) exec ip neigh flush all ;;',
+          'esac',
+        ].join('\n');
+      },
+      arpSudoers() { return this.arpUser() + ' ALL=(root) NOPASSWD: ' + this.arpHelperPath() + '\n'; },
+      arpBareSteps() {
+        const h = this.arpHelperPath();
+        return [
+          'sudo tee ' + h + ' >/dev/null <<\'EOF\'\n' + this.arpScript() + '\nEOF',
+          'sudo chown root:root ' + h,
+          'sudo chmod 755 ' + h,
+          'sudo tee ' + this.arpSudoersPath() + ' >/dev/null <<\'EOF\'\n' + this.arpSudoers().trimEnd() + '\nEOF',
+          'sudo chmod 440 ' + this.arpSudoersPath(),
+        ].join('\n');
+      },
+      arpDockerHook() {
+        const h = this.arpHelperPath();
+        return [
+          '# In the official image, drop this at',
+          '# /docker-entrypoint-hooks.d/before-starting/netbase-arp.sh so it is',
+          '# reinstalled on every start, and run the container with',
+          '#   --cap-add=NET_ADMIN   (Podman: --cap-add=NET_ADMIN)',
+          '# The container also needs the host network (--network=host) to reach',
+          '# the LAN it is clearing.',
+          '#!/bin/sh',
+          'cat > ' + h + " <<'EOF'",
+          this.arpScript(),
+          'EOF',
+          'chmod 755 ' + h,
+          'printf \'%s\\n\' "' + this.arpSudoers().trimEnd() + '" > ' + this.arpSudoersPath(),
+          'chmod 440 ' + this.arpSudoersPath(),
+        ].join('\n');
+      },
 
       openDevice(d) {
         this.selected = d;
         this.editLabel = d.label || '';
-        this.editTags = (d.tags || []).join(', ');
         this.editNotes = d.notes || '';
         this.editType = d.type || 'unknown';
       },
@@ -2709,12 +3160,40 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         try {
           const r = await api('devices/' + this.selected.id, {
             method: 'PATCH',
-            body: JSON.stringify({ label: this.editLabel, tags: this.editTags, notes: this.editNotes, dtype: this.editType, known: true }),
+            body: JSON.stringify({ label: this.editLabel, notes: this.editNotes, dtype: this.editType, known: true }),
           });
           const i = this.devices.findIndex((d) => d.id === r.device.id);
           if (i >= 0) this.devices.splice(i, 1, r.device);
           this.selected = null;
         } catch (e) { this.fail(e); }
+      },
+      // The named devices, gathered for editing in one place rather than one
+      // drawer at a time. "Named" is anything you have saved — given a name, or
+      // otherwise marked as known.
+      openRegEditor() {
+        this.editRegRows = this.devices
+          .filter((d) => d.known || d.label)
+          .slice()
+          .sort((a, b) => String(a.label || a.hostname || a.ip).localeCompare(String(b.label || b.hostname || b.ip)))
+          .map((d) => ({ id: d.id, ip: d.ip, mac: d.mac, hostname: d.hostname, label: d.label || '', type: d.type || 'unknown', notes: d.notes || '', remove: false }));
+        this.editReg = true;
+      },
+      async saveRegEditor() {
+        this.busy.reg = true;
+        try {
+          for (const r of this.editRegRows) {
+            if (r.remove) {
+              await api('devices/' + r.id, { method: 'DELETE' }).catch(() => {});
+              continue;
+            }
+            await api('devices/' + r.id, {
+              method: 'PATCH',
+              body: JSON.stringify({ label: r.label, notes: r.notes, dtype: r.type, known: true }),
+            }).catch(() => {});
+          }
+          await this.loadDevices();
+          this.editReg = false;
+        } finally { this.busy.reg = false; }
       },
       async removeDevice(d) {
         try {
@@ -2751,6 +3230,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         const offset = this.narrow ? 0 : (this.windows.length % 6) * 28;
         const w = {
           id: ++this.windowSeq, base, url: '', src: '', error: '', busy: true, full: false, escapes: 0, field: null, zoom: 1, fit: false, shooting: false, toast: null,
+          loading: false, loadSecs: 0, loadTimer: null,
           here: '', trail: [], trailAt: -1, rewinding: false, help: false, z: ++this.windowTop,
           title: (device.name || device.ip) + ' · ' + port,
           x: this.narrow ? 0 : Math.max(20, Math.round(window.innerWidth / 2 - 520) + offset),
@@ -2768,10 +3248,28 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
           const res = await api('proxy/ticket', { method: 'POST', body: JSON.stringify({ base }) });
           live.url = res.url;
           live.src = res.url + '?_nb=' + Date.now();
+          this.startWindowLoad(live);
         } catch (e) {
           live.error = e.message || String(e);
         }
         live.busy = false;
+      },
+      // A slow line or a sleepy device can leave the frame blank for a while;
+      // this shows that it is working, and how long it has been, until the page
+      // loads (onWindowLoad) or an error replaces it.
+      startWindowLoad(w) {
+        if (!w) return;
+        w.loading = true;
+        w.loadSecs = 0;
+        clearInterval(w.loadTimer);
+        const t0 = Date.now();
+        w.loadTimer = setInterval(() => { w.loadSecs = Math.floor((Date.now() - t0) / 1000); }, 1000);
+      },
+      endWindowLoad(w) {
+        if (!w) return;
+        w.loading = false;
+        clearInterval(w.loadTimer);
+        w.loadTimer = null;
       },
       /**
        * The net under the window.
@@ -2789,10 +3287,11 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
       onWindowLoad(w, event) {
         const frame = event && event.target;
         let here = '';
-        try { here = frame.contentWindow.location.pathname + frame.contentWindow.location.search; } catch (e) { return; }
-        if (!here || !w.url) return;
+        try { here = frame.contentWindow.location.pathname + frame.contentWindow.location.search; } catch (e) { this.endWindowLoad(w); return; }
+        if (!here || !w.url) { this.endWindowLoad(w); return; }
         const prefix = w.url.replace(/\/$/, '');
         if (here.indexOf(prefix) === 0) {
+          this.endWindowLoad(w);                        // the page is here — stop the loading indicator
           // Clicking a button up here takes the focus off whatever was being
           // typed into down there, so the field has to be remembered while it
           // still has it.
@@ -2807,7 +3306,8 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         // Twice is a mistake worth correcting; a third time is a page that
         // will not be helped, and would only bounce here for ever.
         w.escapes = (w.escapes || 0) + 1;
-        if (w.escapes > 2) { w.error = T('This page keeps leaving the device window.'); return; }
+        if (w.escapes > 2) { w.error = T('This page keeps leaving the device window.'); this.endWindowLoad(w); return; }
+        this.startWindowLoad(w);                         // a correction reload is coming; keep showing progress
         frame.contentWindow.location.replace(prefix + here);
       },
       canZoom(w, direction) {
@@ -3060,7 +3560,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         if (has(23) && this.allowed('sshexec')) out.push({ icon: '🖳', label: T('Open a Telnet window'), run: () => this.openTerminal('telnet', device.ip, 23) });
         return out;
       },
-      closeWindow(w) { this.windows = this.windows.filter((x) => x.id !== w.id); },
+      closeWindow(w) { clearInterval(w.loadTimer); this.windows = this.windows.filter((x) => x.id !== w.id); },
 
       // ---- terminal windows: the same frame as a device window, holding a
       // line of text rather than a page ----
@@ -3350,7 +3850,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
       },
       reloadWindow(w) {
         const at = w.here || w.url;
-        if (at) w.src = at + (at.includes('?') ? '&' : '?') + '_nb=' + Date.now();
+        if (at) { w.src = at + (at.includes('?') ? '&' : '?') + '_nb=' + Date.now(); this.startWindowLoad(w); }
       },
       toggleFull(w) {
         if (w.full) {
@@ -3796,6 +4296,64 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
 
       async runDns() { this.dnsResult = await this.guarded('dns', () => api('tools/dns?' + qs({ host: this.dnsHost, types: this.dnsWanted }))); },
       async runWhois() { this.whoisResult = await this.guarded('whois', () => api('tools/whois?' + qs({ query: this.whoisQuery }))); },
+      // Check one or more names for availability. A whois lookup per name says
+      // whether the registry has a record; no record (with a clear "no match")
+      // is a free domain. Done one at a time so a registry is not hammered.
+      // Fetch the tier sizes once, so the radios can show how many endings each
+      // covers.
+      async loadAvailTiers() {
+        if (Object.keys(this.availTiers).length) return;
+        try { this.availTiers = await api('tools/avail-tiers'); } catch (e) { /* optional */ }
+      },
+      // Check the label across the chosen tier. The server does the whole tier
+      // (DNS/RDAP/WHOIS with the registries' rate limits) and returns a mark per
+      // ending: ○ free, × taken, △ likely free, ? undetermined.
+      async runAvailability() {
+        const base = this.availBase;
+        if (!base) return;
+        const tier = this.availTier;
+        const cls = (m) => (m === '○' ? 'free' : (m === '×' ? 'taken' : (m === '△' ? 'maybe' : 'unknown')));
+        this.busy.avail = true;
+        this.availResults = [];
+        this.availProgress = { done: 0, total: this.availTiers[tier] || 0 };
+        const LIMIT = 24;
+        let offset = 0;
+        const ask = () => api('tools/avail-check?' + qs({ label: base, tier, offset, limit: LIMIT }));
+        try {
+          for (;;) {
+            // One window at a time, so results appear and the bar moves instead
+            // of the whole tier arriving at once after a long wait.
+            let r;
+            try {
+              r = await ask();
+            } catch (e) {
+              // A transient hiccup (or a brief rate-limit on a long "all" sweep)
+              // should not throw away the whole run: wait, try the same window
+              // once more, and if it still fails, stop with what we have.
+              await new Promise((res) => setTimeout(res, 1500));
+              try { r = await ask(); }
+              catch (e2) { this.note(T('Stopped early — {done} of {total} checked', { done: this.availProgress.done, total: this.availProgress.total })); break; }
+            }
+            if (r.total) this.availProgress.total = r.total;
+            const rows = (r.results || []).map((x) => ({ domain: x.fqdn, tld: x.tld, mark: x.mark, cls: cls(x.mark), note: x.note || '', whois: null }));
+            this.availResults = this.availResults.concat(rows);
+            // Advance by the server's authoritative next index when it gives one,
+            // so paging stays aligned even if a window returns fewer rows than its
+            // raw size (deduped); fall back to the row count otherwise.
+            offset = (typeof r.next === 'number' && r.next > offset) ? r.next : offset + rows.length;
+            this.availProgress.done = this.availProgress.total ? Math.min(offset, this.availProgress.total) : offset;
+            if (r.done || rows.length === 0) break;
+          }
+        } catch (e) { this.fail(e); } finally { this.busy.avail = false; }
+      },
+      // Show a taken domain's registration in the Whois panel below (fetched on
+      // demand — the availability pass does not carry the full record).
+      async showWhoisFor(row) {
+        if (!row) return;
+        this.whoisQuery = row.domain;
+        if (!row.whois) { try { row.whois = await this.guarded('whois', () => api('tools/whois?' + qs({ query: row.domain }))); } catch (e) { return; } }
+        this.whoisResult = row.whois;
+      },
       // NETBASE-STORE-REMOVED: runPing, runTrace and runPorts
 //       async runPing() {
 //         this.rememberHost(this.pingHost); this.pingResult = await this.guarded('ping', () => api('tools/ping?' + qs({ host: this.pingHost }))); },
@@ -4017,7 +4575,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
             named(T('Resolver comparison'), this.dnsCompareResult), named(T('Delegation trace'), this.dnsTraceResult),
             named(T('Zone transfer'), this.axfrResult),
           ],
-          whois: () => [named(T('Whois'), this.whoisResult)],
+          whois: () => [named(T('Whois'), this.whoisResult), named(T('Free-domain search'), this.availResults.length ? this.availAsText() : null)],
           // NETBASE-STORE-REMOVED: ping and ports results
 //           ping: () => [
 //             named(T('Ping'), this.pingResult), named(T('Traceroute'), this.traceResult),
@@ -4087,6 +4645,15 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         ].join('\t'));
         return ['status\tip\tname\tmac\tvendor\ttype\tports', ...rows].join('\n');
       },
+      /** The free-domain results as text — the rows on screen (after the two
+       *  show/hide switches), each as "<mark> <domain>", with a header noting how
+       *  many of the total are shown. */
+      availAsText() {
+        const rows = this.availShown;
+        const lines = rows.map((r) => r.mark + '\t' + r.domain + ((r.cls === 'maybe' || r.cls === 'unknown') && r.note ? '\t' + r.note : ''));
+        const head = T('{shown} of {total} shown', { shown: rows.length, total: this.availResults.length });
+        return head + '\n' + lines.join('\n');
+      },
       /** Text onto the clipboard, whichever way this browser allows. */
       async copyText(text, said) {
         if (!text) return;
@@ -4130,7 +4697,6 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
           ['mDNS', extra.mdns || ''],
           [T('Reverse DNS'), extra.rdns || ''],
           ['SSDP', extra.ssdp || ''],
-          [T('Tags'), (device.tags || []).join(', ')],
           [T('Notes'), device.notes || ''],
         ];
         return rows.filter((r) => String(r[1]).trim() !== '');
@@ -4168,10 +4734,10 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         } catch (e) { this.fail(e); }
       },
       exportCsv() {
-        const head = ['name', 'ip', 'mac', 'vendor', 'type', 'ports', 'workgroup', 'tags', 'firstSeen', 'lastSeen', 'online'];
+        const head = ['name', 'ip', 'mac', 'vendor', 'type', 'ports', 'workgroup', 'firstSeen', 'lastSeen', 'online'];
         const rows = this.shownDevices.map((d) => [
           d.name, d.ip, d.mac, this.vendorText(d), d.type, d.ports.join(' '), d.workgroup,
-          (d.tags || []).join(' '), stamp(d.firstSeen), stamp(d.lastSeen), d.online ? 'yes' : 'no',
+          stamp(d.firstSeen), stamp(d.lastSeen), d.online ? 'yes' : 'no',
         ]);
         const esc = (v) => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"';
         const csv = [head, ...rows].map((r) => r.map(esc).join(',')).join('\r\n');
@@ -4207,8 +4773,14 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         this.macTimer = setTimeout(() => this.runMac(), 250);
       },
       tab(value) {
+        // A notice belongs to the tool that raised it. Leaving a tab clears it,
+        // so a result or an error from one tool is never left sitting over
+        // another — and "scan finished" does not follow the eye onto Whois.
+        clearTimeout(this.noteTimer);
+        this.banner = null;
         // Saved connections are shared by the mail and file tabs; fetch them the
         // first time either one is opened.
+        if (value === 'whois') this.loadAvailTiers();
         if ((value === 'files' || value === 'mail' || value === 'ssh') && !this.connections.length) this.loadConnections();
         if (value === 'files' && this.filesConn && !this.filesData) this.browse('');
         // Polling counters from a tab nobody is looking at is just noise.
@@ -4222,6 +4794,11 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
     },
     mounted() {
       rootProxy = this;
+      // The sort column and direction the person last chose for the device list.
+      try {
+        const s = JSON.parse(localStorage.getItem('netbase.sort') || 'null');
+        if (s && s.key) { this.sortKey = String(s.key); this.sortDir = s.dir === -1 ? -1 : 1; }
+      } catch (e) { /* private window or nothing saved */ }
       window.addEventListener('message', this.onWindowMessage);
       window.addEventListener('resize', this.onViewportResize);
       const root = document.getElementById('netbase-root');

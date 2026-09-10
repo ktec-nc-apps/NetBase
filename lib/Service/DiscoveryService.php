@@ -43,8 +43,16 @@ class DiscoveryService {
 	public function __construct(
 		private OuiService $oui,
 		private LoggerInterface $logger,
+		private ExecService $exec,
 	) {
 	}
+
+	/** Neighbour states (from `ip neigh`) that mean the device is present now.
+	 *  STALE/FAILED/INCOMPLETE mean the kernel has not confirmed it lately — a
+	 *  powered-off device lingers as STALE with its old MAC, so those must not
+	 *  count as online. */
+	private const REACHABLE_STATES = ['REACHABLE', 'PERMANENT', 'NOARP'];
+	private const NUD_STATES = ['REACHABLE', 'STALE', 'DELAY', 'PROBE', 'PERMANENT', 'NOARP', 'FAILED', 'INCOMPLETE', 'NONE'];
 
 	// ---------------------------------------------------------------- interfaces
 
@@ -113,6 +121,78 @@ class DiscoveryService {
 	}
 
 	/**
+	 * The networks this server routes through a router, in preference order —
+	 * the first is the primary (the default route with the lowest metric), the
+	 * rest are secondaries of a redundant / multi-homed setup. A subnet that is
+	 * only directly attached with no gateway (a container bridge like podman0,
+	 * or an unused address) is deliberately NOT here: it is a separate network,
+	 * not one of the system's routed ones.
+	 *
+	 * @return list<array{cidr: string, interface: string, gateway: string, metric: int}>
+	 */
+	public function routedNetworks(): array {
+		$lines = @file('/proc/net/route') ?: [];
+		array_shift($lines);
+		$toIp = static function (string $hex): string {
+			$hex = str_pad($hex, 8, '0', STR_PAD_LEFT);
+			return implode('.', array_map('hexdec', array_reverse(str_split($hex, 2))));
+		};
+		$maskBits = static function (string $hex): int {
+			$n = (int)hexdec($hex);
+			$c = 0;
+			while ($n) { $c += $n & 1; $n >>= 1; }
+			return $c;
+		};
+		$defaults = [];
+		$connected = [];
+		foreach ($lines as $line) {
+			$f = preg_split('/\s+/', trim($line));
+			if (count($f) < 8) {
+				continue;
+			}
+			[$iface, $dest, $gw] = [$f[0], $f[1], $f[2]];
+			$metric = (int)$f[6];
+			$mask = $f[7];
+			if ($dest === '00000000' && $mask === '00000000') {
+				if ($gw !== '00000000') {
+					$defaults[] = ['iface' => $iface, 'gateway' => $toIp($gw), 'metric' => $metric];
+				}
+			} elseif ($gw === '00000000') {
+				$connected[] = ['iface' => $iface, 'network' => $toIp($dest), 'cidr' => $maskBits($mask)];
+			}
+		}
+		usort($defaults, static fn (array $a, array $b): int => $a['metric'] <=> $b['metric']);
+		$ipval = static fn (string $ip): int => (int)array_reduce(explode('.', $ip), static fn ($n, $o) => ($n * 256) + (int)$o, 0);
+		$out = [];
+		$seen = [];
+		foreach ($defaults as $d) {
+			$best = null;
+			foreach ($connected as $c) {
+				$mask = $c['cidr'] === 0 ? 0 : ((-1 << (32 - $c['cidr'])) & 0xFFFFFFFF);
+				if (($ipval($c['network']) & $mask) === ($ipval($d['gateway']) & $mask)) {
+					$best = $c;
+					break;
+				}
+			}
+			if ($best === null) {
+				foreach ($connected as $c) {
+					if ($c['iface'] === $d['iface']) { $best = $c; break; }
+				}
+			}
+			if ($best === null) {
+				continue;
+			}
+			$cidr = $best['network'] . '/' . $best['cidr'];
+			if (isset($seen[$cidr])) {
+				continue;
+			}
+			$seen[$cidr] = true;
+			$out[] = ['cidr' => $cidr, 'interface' => $best['iface'], 'gateway' => $d['gateway'], 'metric' => $d['metric']];
+		}
+		return $out;
+	}
+
+	/**
 	 * Interfaces that belong to container and VM plumbing rather than to a
 	 * real network. Their subnets are usually a /16 of nothing, so offering
 	 * them as a default scan target only wastes a sweep.
@@ -173,12 +253,134 @@ class DiscoveryService {
 		return is_array($lines) ? max(0, count($lines) - 1) : 0;
 	}
 
+	/** The path of the administrator-installed ARP-flush helper. */
+	public const ARP_FLUSH_HELPER = '/usr/local/sbin/netbase-arp-flush';
+
+	/**
+	 * Whether this server can clear the neighbour (ARP) table on request.
+	 *
+	 * NetBase runs unprivileged and the kernel will not let it flush neighbours,
+	 * so an administrator installs a tiny root-owned helper and a sudoers rule
+	 * that lets the web user run just that one command. We probe it with the
+	 * helper's no-op "--check" so the button only lights up once it truly works.
+	 *
+	 * @return array{available: bool, helper: string, user: string, sudoers: string, container: bool}
+	 */
+	public function arpFlushInfo(): array {
+		$user = (function_exists('posix_getpwuid') && function_exists('posix_geteuid'))
+			? (posix_getpwuid(posix_geteuid())['name'] ?? 'www-data') : 'www-data';
+		$available = false;
+		if (is_file(self::ARP_FLUSH_HELPER)) {
+			$r = $this->exec->run('sudo', ['-n', self::ARP_FLUSH_HELPER, '--check'], 5.0);
+			$available = ((int)($r['code'] ?? 1)) === 0;
+		}
+		return [
+			'available' => $available,
+			'helper' => self::ARP_FLUSH_HELPER,
+			'user' => $user,
+			'sudoers' => '/etc/sudoers.d/netbase-arp',
+			'container' => is_file('/.dockerenv') || is_file('/run/.containerenv'),
+		];
+	}
+
+	/**
+	 * Clear the neighbour (ARP) table via the installed helper.
+	 *
+	 * @return array{ok: bool, cleared: int}
+	 */
+	public function arpFlush(): array {
+		if (!is_file(self::ARP_FLUSH_HELPER)) {
+			throw new \RuntimeException('The ARP-clear helper is not installed on this server.');
+		}
+		$before = $this->neighbourCount();
+		$r = $this->exec->run('sudo', ['-n', self::ARP_FLUSH_HELPER], 12.0);
+		if (((int)($r['code'] ?? 1)) !== 0) {
+			throw new \RuntimeException(trim((string)($r['stderr'] ?? '')) ?: 'The ARP table could not be cleared.');
+		}
+		return ['ok' => true, 'cleared' => max(0, $before - $this->neighbourCount())];
+	}
+
 	/**
 	 * The kernel neighbour (ARP) table, keyed by IPv4 address.
 	 *
 	 * @return array<string, array{mac: string, interface: string, flags: int}>
 	 */
 	public function neighbours(?string $interface = null): array {
+		// `ip neigh` carries the neighbour state, which /proc/net/arp does not:
+		// there every completed entry is flags 0x2 whether the device is here now
+		// (REACHABLE) or gone but not yet evicted (STALE with a dead MAC). Use it
+		// when available so a powered-off device is not reported as present.
+		$viaIp = $this->neighboursViaIp($interface);
+		if ($viaIp !== null) {
+			return $viaIp;
+		}
+		return $this->neighboursViaProc($interface);
+	}
+
+	/**
+	 * @return array<string, array{mac: string, interface: string, flags: int, state: string, reachable: bool}>|null
+	 *   null when `ip` is unavailable or the command fails.
+	 */
+	private function neighboursViaIp(?string $interface): ?array {
+		if (!$this->exec->available('ip')) {
+			return null;
+		}
+		$r = $this->exec->run('ip', ['-4', 'neigh', 'show'], 5.0);
+		if (empty($r['ok'])) {
+			return null;
+		}
+		$out = [];
+		foreach (explode("\n", (string)$r['stdout']) as $line) {
+			$line = trim($line);
+			if ($line === '') {
+				continue;
+			}
+			// "10.0.0.2 dev eth0 lladdr aa:bb:cc:dd:ee:ff REACHABLE"
+			$f = preg_split('/\s+/', $line);
+			$ip = $f[0] ?? '';
+			if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) === false) {
+				continue;
+			}
+			$dev = '';
+			$mac = '';
+			$state = '';
+			$n = count($f);
+			for ($i = 1; $i < $n; $i++) {
+				if ($f[$i] === 'dev' && isset($f[$i + 1])) {
+					$dev = $f[$i + 1];
+					$i++;
+				} elseif ($f[$i] === 'lladdr' && isset($f[$i + 1])) {
+					$mac = strtolower($f[$i + 1]);
+					$i++;
+				} elseif (in_array($f[$i], self::NUD_STATES, true)) {
+					$state = $f[$i];
+				}
+			}
+			if ($mac === '' || $mac === '00:00:00:00:00:00') {
+				continue; // INCOMPLETE / FAILED with no address to show
+			}
+			if ($interface !== null && $dev !== $interface) {
+				continue;
+			}
+			$out[$ip] = [
+				'mac' => $mac,
+				'interface' => $dev,
+				'flags' => 2,
+				'state' => $state,
+				'reachable' => in_array($state, self::REACHABLE_STATES, true),
+			];
+		}
+		return $out;
+	}
+
+	/**
+	 * Fallback for hosts without the `ip` command: /proc/net/arp cannot tell a
+	 * present device from a stale entry, so a completed entry is treated as
+	 * reachable — the previous behaviour, best effort.
+	 *
+	 * @return array<string, array{mac: string, interface: string, flags: int, state: string, reachable: bool}>
+	 */
+	private function neighboursViaProc(?string $interface): array {
 		$out = [];
 		$lines = @file('/proc/net/arp') ?: [];
 		array_shift($lines);
@@ -194,7 +396,13 @@ class DiscoveryService {
 			if ($interface !== null && $dev !== $interface) {
 				continue;
 			}
-			$out[$ip] = ['mac' => strtolower($mac), 'interface' => $dev, 'flags' => (int)hexdec(ltrim($flags, '0x') ?: '0')];
+			$out[$ip] = [
+				'mac' => strtolower($mac),
+				'interface' => $dev,
+				'flags' => (int)hexdec(ltrim($flags, '0x') ?: '0'),
+				'state' => '',
+				'reachable' => true,
+			];
 		}
 		return $out;
 	}
@@ -910,6 +1118,109 @@ class DiscoveryService {
 			$open[$ip] = array_values(array_unique($ports2));
 		}
 		return $open;
+	}
+
+	/**
+	 * Which of these addresses answer a TCP connection — the reliable, root-free
+	 * "is it here now?" test. A host that is up answers a connection attempt
+	 * whether the port is open (SYN-ACK) or closed (RST); only a host that is
+	 * absent, off, or silently firewalling every port stays silent. This is what
+	 * tells a device that is still here from one whose stale ARP entry lingers
+	 * after it was switched off. A common spread of ports is tried so one of them
+	 * lands.
+	 *
+	 * @param list<string> $ips
+	 * @return list<string> the addresses that answered
+	 */
+	public function alive(array $ips, array $ports = [80, 443, 22, 445, 139, 8080, 631, 9100, 53, 23, 3389, 8443], float $timeout = 0.8, int $maxSockets = 512): array {
+		$up = [];
+		$pairs = [];
+		foreach ($ips as $ip) {
+			foreach ($ports as $port) {
+				$pairs[] = [$ip, $port];
+			}
+		}
+		foreach (array_chunk($pairs, $maxSockets) as $chunk) {
+			$pending = [];
+			foreach ($chunk as [$ip, $port]) {
+				if (isset($up[$ip])) {
+					continue; // already answered on an earlier port
+				}
+				$target = str_contains($ip, ':') ? '[' . $ip . ']' : $ip;
+				$sock = @stream_socket_client(
+					'tcp://' . $target . ':' . $port,
+					$errno,
+					$errstr,
+					$timeout,
+					STREAM_CLIENT_ASYNC_CONNECT | STREAM_CLIENT_CONNECT
+				);
+				if ($sock !== false) {
+					$pending[] = ['sock' => $sock, 'ip' => $ip];
+				}
+			}
+			$deadline = microtime(true) + $timeout;
+			while ($pending !== [] && microtime(true) < $deadline) {
+				$write = array_column($pending, 'sock');
+				$read = null;
+				$except = $write;
+				$remain = max(0.0, $deadline - microtime(true));
+				$ready = @stream_select($read, $write, $except, 0, (int)($remain * 1_000_000));
+				if ($ready === false || $ready === 0) {
+					break;
+				}
+				foreach ($pending as $key => $entry) {
+					$sock = $entry['sock'];
+					if (!in_array($sock, $write, true) && !in_array($sock, $except, true)) {
+						continue;
+					}
+					// Ready either way means the host answered — SYN-ACK (open) or
+					// RST (closed). Both prove it is here. A timeout never lands here.
+					$up[$entry['ip']] = true;
+					@fclose($sock);
+					unset($pending[$key]);
+				}
+				$pending = array_values($pending);
+			}
+			foreach ($pending as $entry) {
+				@fclose($entry['sock']);
+			}
+		}
+		return array_keys($up);
+	}
+
+	/**
+	 * Keep only the addresses on one of this server's own subnets. A TCP probe
+	 * to an off-link address would test the route, not the device, so presence
+	 * there is judged by what the device announces, not by this.
+	 *
+	 * @param list<string> $ips
+	 * @return list<string>
+	 */
+	public function onLinkOnly(array $ips): array {
+		$nets = [];
+		foreach ($this->interfaces() as $if) {
+			if ($if['loopback'] || !$if['up']) {
+				continue;
+			}
+			foreach ($if['addresses'] as $addr) {
+				if (($addr['family'] ?? '') === 'inet' && isset($addr['network'], $addr['cidr'])) {
+					$nets[] = [$addr['network'], (int)$addr['cidr']];
+				}
+			}
+		}
+		$out = [];
+		foreach ($ips as $ip) {
+			if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) === false) {
+				continue;
+			}
+			foreach ($nets as [$net, $cidr]) {
+				if ($this->networkOf($ip, $cidr) === $net) {
+					$out[] = $ip;
+					break;
+				}
+			}
+		}
+		return array_values(array_unique($out));
 	}
 
 	/** Reverse DNS for a batch of addresses, with the resolver timeout kept short. */

@@ -27,6 +27,7 @@ use OCA\NetBase\Service\PermissionService;
 use OCA\NetBase\Service\RequirementsService;
 use OCA\NetBase\Service\ScanService;
 use OCA\NetBase\Service\ToolService;
+use OCA\NetBase\Service\WhoisAvailabilityService;
 use OCA\NetBase\Http\ProxyResponse;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\IOutput;
@@ -72,6 +73,7 @@ class ApiController extends Controller {
 		private ScanMapper $scans,
 		private IConfig $config,
 		private LoggerInterface $logger,
+		private WhoisAvailabilityService $avail,
 	) {
 		parent::__construct(Application::APP_ID, $request);
 	}
@@ -131,6 +133,7 @@ class ApiController extends Controller {
 			'isAdmin' => $this->permissions->isAdmin(),
 			'interfaces' => $this->permissions->can('scan') ? $this->discovery->interfaces() : [],
 			'defaultRoute' => $this->permissions->can('scan') ? $this->discovery->defaultRoute() : [],
+			'routedNetworks' => $this->permissions->can('scan') ? $this->discovery->routedNetworks() : [],
 			'targets' => $this->permissions->can('scan') ? $this->discovery->suggestedTargets() : [],
 			'binaries' => $binaries,
 			'ouiEntries' => $this->oui->count(),
@@ -149,6 +152,7 @@ class ApiController extends Controller {
 			'paceDefault' => ScanService::PACE_DEFAULT,
 			'neighbourLimits' => $this->discovery->neighbourLimits(),
 			'neighbourCount' => $this->discovery->neighbourCount(),
+			'arpFlush' => $this->permissions->can('scan') ? $this->discovery->arpFlushInfo() : ['available' => false],
 			'sockets' => extension_loaded('sockets'),
 			'procOpen' => function_exists('proc_open'),
 			'sshPresets' => SshService::PRESETS,
@@ -270,6 +274,11 @@ class ApiController extends Controller {
 	}
 
 	#[NoAdminRequired]
+	public function arpFlush(): JSONResponse {
+		return $this->guard(fn () => $this->discovery->arpFlush(), 'scan');
+	}
+
+	#[NoAdminRequired]
 	public function scanHistory(): JSONResponse {
 		return $this->guard(fn () => ['scans' => array_map(
 			static fn ($s) => $s->jsonSerialize(),
@@ -283,6 +292,20 @@ class ApiController extends Controller {
 	#[UserRateLimit(limit: 60, period: 60)]
 	public function whois(string $query): JSONResponse {
 		return $this->guard(fn () => $this->tools->whois($query), 'whois');
+	}
+
+	#[NoAdminRequired]
+	public function availTiers(): JSONResponse {
+		return $this->guard(fn () => $this->avail->tiers(), 'whois');
+	}
+
+	#[NoAdminRequired]
+	// The "all" tier is ~1180 endings = ~50 windows of 24; at 30/60 the client's
+	// own paging tripped NetBase's rate limit mid-run. Raised so a full sweep of
+	// any one tier fits, while still capping abuse.
+	#[UserRateLimit(limit: 150, period: 60)]
+	public function availCheck(string $label, string $tier = 'core', int $offset = 0, int $limit = 0): JSONResponse {
+		return $this->guard(fn () => $this->avail->check($label, $tier, $offset, $limit), 'whois');
 	}
 
 	#[NoAdminRequired]

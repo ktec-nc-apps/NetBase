@@ -79,6 +79,7 @@ class ScanEntity extends Entity implements \JsonSerializable {
 			'sweep' => sprintf('%d / %d addresses swept', $done, $total),
 			'names' => sprintf('Asking devices for their names (%d / %d)', $done, $total),
 			'names2' => sprintf('Asking again, more slowly (%d / %d)', $done, $total),
+			'mcastListen' => 'Waiting for devices to announce themselves',
 			'mcast' => 'Multicast discovery complete',
 			'ports' => sprintf('Checking services (%d / %d)', $done, $total),
 			'portsAll' => sprintf('Checking ports (%d / %d)', $done, $total),

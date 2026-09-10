@@ -112,6 +112,16 @@
 #netbase-root .topbar-actions .filter { width: 260px; }
 /* A tab's own controls sit in the row with the rest until the room runs out. */
 #netbase-root .tab-actions { display: contents; }
+/* "Online only" as an on/off switch: label fixed, the slider says the state. */
+#netbase-root .switch { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; user-select: none; white-space: nowrap; }
+#netbase-root .switch input { position: absolute; opacity: 0; width: 0; height: 0; }
+#netbase-root .switch .track { position: relative; flex: 0 0 auto; width: 34px; height: 20px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--border); transition: background .18s ease, border-color .18s ease; }
+#netbase-root .switch .thumb { position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: 50%; background: var(--muted); transition: transform .18s ease, background .18s ease; }
+#netbase-root .switch input:checked + .track { background: var(--primary); border-color: var(--primary); }
+#netbase-root .switch input:checked + .track .thumb { transform: translateX(14px); background: var(--primary-ink); }
+#netbase-root .switch input:focus-visible + .track { outline: 2px solid var(--primary); outline-offset: 2px; }
+#netbase-root .switch .switch-label { font-size: 13px; color: var(--muted); }
+#netbase-root .switch input:checked ~ .switch-label { color: var(--text); }
 #netbase-root .content { flex: 1 1 auto; overflow-y: auto; padding: 18px 20px 40px; }
 
 /* ---------- primitives ---------- */
@@ -190,12 +200,39 @@
   margin: 8px 0 0 26px; padding-left: 12px;
   border-left: 2px solid var(--border);
 }
+#netbase-root .scan-sub .scan-sub-head { font-size: 12.5px; font-weight: 600; color: var(--muted); letter-spacing: .02em; }
 #netbase-root .scan-sub label { display: inline-flex; align-items: center; gap: 7px; font-size: 13.5px; color: var(--muted); }
 #netbase-root .scan-sub select { font-size: 13px; padding: 4px 8px; min-height: 0; width: auto; margin: 0; }
 #netbase-root .scan-sub .opt-label { white-space: nowrap; }
 #netbase-root .progress { margin-top: 14px; }
+#netbase-root .progress .phase-line { display: flex; align-items: center; margin-bottom: 6px; }
+#netbase-root .progress .phase-step { font-size: 13px; font-weight: 600; color: var(--text); }
 #netbase-root .progress .bar { height: 6px; border-radius: 999px; background: var(--surface-2); overflow: hidden; }
 #netbase-root .progress .fill { height: 100%; background: var(--primary); transition: width .25s ease; }
+/* No count to fill, so a stripe slides across to say "working, please wait". */
+#netbase-root .progress .bar.waiting { position: relative; }
+#netbase-root .progress .bar.waiting::after {
+  content: ""; position: absolute; top: 0; left: 0; height: 100%; width: 35%;
+  border-radius: 999px; background: var(--primary);
+  animation: netbase-indeterminate 1.1s ease-in-out infinite;
+}
+@keyframes netbase-indeterminate { 0% { left: -35%; } 100% { left: 100%; } }
+/* One "working" bar across the top of the panel for any in-flight request. */
+#netbase-root .global-busy { position: sticky; top: 0; z-index: 20; height: 0; overflow: hidden; transition: height .15s ease; pointer-events: none; }
+#netbase-root .global-busy.on { height: 3px; }
+#netbase-root .global-busy > span { display: block; position: absolute; top: 0; left: 0; height: 100%; width: 35%; border-radius: 999px; background: var(--primary); animation: netbase-indeterminate 1.1s ease-in-out infinite; }
+/* A small spinner prepended to a button while its own request is running, so the
+   button you pressed visibly shows it is working (alongside any busy label). */
+#netbase-root .btn.working { pointer-events: none; opacity: .9; }
+#netbase-root .btn.working::before { content: ""; display: inline-block; width: 12px; height: 12px; margin-right: 6px; vertical-align: -2px; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: netbase-spin .6s linear infinite; }
+/* ARP-clear button + its setup help. */
+#netbase-root .arp-clear { display: inline-flex; align-items: center; gap: 4px; }
+#netbase-root .arp-help-btn { font-weight: 700; width: 1.9em; }
+#netbase-root .arp-help-body h4 { margin: 16px 0 2px; }
+#netbase-root .arp-warn { background: color-mix(in srgb, #f6ad3c 16%, transparent); border: 1px solid #f6ad3c; border-radius: 8px; padding: 8px 11px; margin: 0 0 10px; }
+#netbase-root .arp-code { position: relative; margin: 6px 0 12px; }
+#netbase-root .arp-code pre { background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; overflow-x: auto; font-size: 12px; white-space: pre; margin: 0; }
+#netbase-root .arp-code .arp-copy { position: absolute; top: 6px; right: 6px; background: var(--surface); }
 #netbase-root .progress-text { display: flex; font-size: 12.5px; color: var(--muted); margin-top: 6px; }
 #netbase-root .hint code { background: var(--surface-2); padding: 2px 6px; border-radius: 6px; display: inline-block; margin-top: 4px; }
 
@@ -266,7 +303,12 @@
 #netbase-root .drawer-head > div { flex: 1 1 auto; min-width: 0; }
 #netbase-root .drawer-head .dim.mono { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 12.5px; }
 #netbase-root .drawer-head .ic.big { font-size: 28px; }
-#netbase-root .drawer-head .dev-name { font-size: 17px; font-weight: 700; border: 0; padding: 2px 0; background: none; border-bottom: 1px dashed var(--border); border-radius: 0; min-height: 0; }
+#netbase-root .drawer-head .dev-title { font-size: 17px; font-weight: 700; padding: 2px 0; overflow-wrap: anywhere; }
+#netbase-root .drawer-head .dev-title.unnamed { font-weight: 500; font-style: italic; opacity: .7; }
+/* The name field sits in the property list but, unlike the read-only rows, is a
+   real bordered input so it reads as "type here". */
+#netbase-root .kv > div.kv-edit { align-items: center; }
+#netbase-root .kv .kv-input { flex: 1 1 auto; width: auto; min-width: 0; font-size: 13px; min-height: 32px; padding: 5px 9px; border-radius: 8px; }
 #netbase-root .drawer-body { flex: 1 1 auto; overflow-y: auto; padding: 16px 18px; }
 /* A copy button on every row. It stays out of the way until the row is under
    the pointer, and is always there for a keyboard or a touch screen, where
@@ -515,6 +557,7 @@
    then came out a solid black box with its dark text lost inside it. Fixed
    colours read on any theme, light or dark, like the .self badge above. */
 #netbase-root .badge.away { background: #f6ad3c; color: #3a2a00; border-color: #e08e10; }
+#netbase-root .badge.secondary { background: #5aa0e6; color: #06233f; border-color: #2f7dc9; }
 
 #netbase-root .row-menu-veil { position: fixed; inset: 0; z-index: 4000; }
 #netbase-root .row-menu {
@@ -561,7 +604,21 @@
 }
 #netbase-root .devwin-head .btn.ib { color: var(--text); }
 #netbase-root .devwin-head .btn.ib:hover:not(:disabled) { color: var(--primary); border-color: var(--primary); }
+#netbase-root .devwin-body { position: relative; flex: 1 1 auto; min-height: 0; display: flex; }
 #netbase-root .devwin-frame { flex: 1 1 auto; width: 100%; border: 0; background: #fff; }
+/* Shown over a device frame while it loads, so a slow line or device does not
+   look like nothing is happening. */
+#netbase-root .devwin-loading {
+  position: absolute; inset: 0; z-index: 1; pointer-events: none;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px;
+  background: var(--surface); color: var(--muted); font-size: 13px;
+}
+#netbase-root .devwin-spinner {
+  width: 30px; height: 30px; border-radius: 50%;
+  border: 3px solid var(--border); border-top-color: var(--primary);
+  animation: netbase-spin .8s linear infinite;
+}
+@keyframes netbase-spin { to { transform: rotate(360deg); } }
 #netbase-root .devwin-grip {
   position: absolute; right: 0; bottom: 0; width: 16px; height: 16px; cursor: nwse-resize;
   background: linear-gradient(135deg, transparent 50%, var(--border) 50%);
@@ -866,6 +923,24 @@
 #netbase-root table.grid th.c-pair .th-line.sorted { color: var(--primary); opacity: 1; }
 #netbase-root table.grid th.c-pair .th-line.sorted.asc::after { content: ' ▲'; font-size: 9px; }
 #netbase-root table.grid th.c-pair .th-line.sorted.desc::after { content: ' ▼'; font-size: 9px; }
+
+/* Sortable column headers, in every header cell (the name column included), so
+   the title reads like a row: the field name on top, its address parts beneath,
+   each field its own click and the active one showing the direction clearly. */
+#netbase-root table.grid th { cursor: default; }
+#netbase-root table.grid th .th-line { display: inline-block; cursor: pointer; }
+#netbase-root table.grid th .th-line.head { display: block; }
+#netbase-root table.grid th .th-line.plain { cursor: default; }
+#netbase-root table.grid th .th-line:hover:not(.plain) { color: var(--text); }
+#netbase-root table.grid th .th-sub {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 6px; margin-top: 4px;
+  font-size: 10.5px; font-weight: 600; text-transform: none; letter-spacing: 0; color: var(--muted);
+}
+#netbase-root table.grid th .th-sub .th-line { opacity: .85; }
+#netbase-root table.grid th .th-sep { cursor: default; opacity: .45; }
+#netbase-root table.grid th .th-line.sorted { color: var(--primary); opacity: 1; font-weight: 800; }
+#netbase-root table.grid th .th-line.sorted.asc::after { content: ' ▲'; font-size: 10px; }
+#netbase-root table.grid th .th-line.sorted.desc::after { content: ' ▼'; font-size: 10px; }
 #netbase-root table.grid td.c-pair {
 	padding-top: 6px;
 	padding-bottom: 6px;
@@ -874,6 +949,48 @@
 #netbase-root table.grid td.c-pair .pair-b {
 	font-size: 11px;
 	opacity: .8;
+}
+/* The note shown under a device, so what you wrote about it is visible in the
+   list rather than only in its properties. One line, ellipsised; full text on
+   hover. */
+/* One line per address under the device name: IP/prefix, MAC and vendor. */
+#netbase-root table.grid td.c-name .addr-line {
+	display: flex; flex-wrap: nowrap; align-items: baseline; gap: 3px 8px;
+	font-size: 11.5px; margin-top: 2px;
+}
+/* The network badge leads every address line in a fixed-width slot (wide enough
+   for 副ネットワーク9 / another-network), reserved even on the main network so
+   every IP — badged or not — starts at the same column. */
+#netbase-root table.grid td.c-name .addr-line .addr-net { flex: 0 0 8.5em; overflow: hidden; }
+#netbase-root table.grid td.c-name .addr-line .addr-net .badge { margin: 0; }
+/* Every column is fixed-width so the one after it always starts at the same x:
+   IP  = "255.255.255.255/32" = 18ch, MAC = "aa:bb:cc:dd:ee:ff" = 17ch.
+   Vendor is fixed at 54ch — half of the OUI database's longest name (108ch);
+   the ~99th percentile (52ch) fits on one line, and the rare longer name wraps
+   within the box (never truncated). Ports then follow at a constant column. */
+#netbase-root table.grid td.c-name .addr-line .addr-ip { color: var(--text); font-weight: 500; flex: 0 0 18ch; }
+#netbase-root table.grid td.c-name .addr-line .addr-mac { font-size: 11px; flex: 0 0 17ch; }
+#netbase-root table.grid td.c-name .addr-line .addr-vendor { font-size: 11px; flex: 0 0 54ch; min-width: 0; white-space: normal; word-break: break-word; }
+#netbase-root table.grid td.c-name .addr-line.addr-off .addr-ip { opacity: .5; }
+#netbase-root table.grid td.c-name .addr-line.addr-off .addr-mac { opacity: .6; }
+/* Several addresses on one device are separated by a thin dotted rule. */
+#netbase-root table.grid td.c-name .addr-line.addr-sep { border-top: 1px dotted var(--border); margin-top: 6px; padding-top: 6px; }
+/* Ports follow the vendor on the same line (the line never wraps as a whole);
+   because every preceding column is fixed-width, the ports' leading edge lands
+   at the same column on every row. A long port list wraps *within* this column
+   (it takes the remaining width), so the leading edge stays put. */
+#netbase-root table.grid td.c-name .addr-ports { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 5px; font-size: 11px; flex: 1 1 auto; min-width: 0; }
+#netbase-root table.grid td.c-name .addr-ports .addr-ports-label { opacity: .55; margin-right: 2px; }
+#netbase-root table.grid td.c-name .addr-ports a { color: var(--primary); text-decoration: none; }
+#netbase-root table.grid td.c-name .addr-ports a:hover { text-decoration: underline; }
+#netbase-root table.grid td.c-name .pair-note {
+	font-size: 11px;
+	color: var(--muted);
+	margin-top: 2px;
+	max-width: 22em;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
 }
 #netbase-root table.grid td.c-name .nm.unnamed {
 	font-weight: 400;
@@ -895,3 +1012,45 @@
 }
 #netbase-root .term-screen .xterm { height: 100%; }
 #netbase-root .term-screen .xterm-viewport { overflow-y: auto; }
+
+/* Free-domain search results. */
+#netbase-root .avail-list { margin-top: 10px; }
+/* Results flow into as many columns as the width allows (roughly one per 300px),
+   so a wide screen shows two or three columns and a narrow one shows a single
+   list. */
+#netbase-root .avail-rows { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 0 18px; }
+#netbase-root .avail-row { display: flex; align-items: center; gap: 10px; padding: 6px 0; border-top: 1px solid var(--border); min-width: 0; }
+/* The domain (its ending is the whole point) always shows in full; the diagnostic
+   note beside it is what gives way — it shrinks and ellipsises first. */
+#netbase-root .avail-domain { flex: 0 0 auto; white-space: nowrap; font-weight: 600; }
+#netbase-root .avail-ok { color: var(--ok, #10b981); font-weight: 600; white-space: nowrap; }
+#netbase-root .avail-taken { white-space: nowrap; }
+
+/* Edit-named-devices table. */
+#netbase-root .reg-body { max-height: 70vh; overflow: auto; }
+#netbase-root .reg-table { width: 100%; border-collapse: collapse; }
+#netbase-root .reg-table th { text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); padding: 4px 8px; border-bottom: 1px solid var(--border); }
+#netbase-root .reg-table td { padding: 5px 8px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+#netbase-root .reg-table input, #netbase-root .reg-table select { min-height: 32px; padding: 5px 8px; font-size: 13px; width: 100%; }
+#netbase-root .reg-table .reg-id { font-size: 11px; line-height: 1.4; white-space: nowrap; }
+#netbase-root .reg-table tr.reg-del td { opacity: .5; }
+
+/* Free-domain search: scope radios, marks, legend. */
+#netbase-root .avail-scope { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; margin-top: 10px; }
+#netbase-root .avail-scope .avail-scope-opt { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; }
+#netbase-root .avail-scope .avail-warn { flex-basis: 100%; }
+#netbase-root .avail-filters { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 20px; margin: 4px 0 8px; }
+#netbase-root .avail-legend { margin: 8px 0 4px; }
+#netbase-root .avail-row .avail-mark { flex: 0 0 auto; width: 1.4em; text-align: center; font-weight: 700; font-size: 15px; }
+#netbase-root .avail-row .avail-mark.m-free { color: var(--ok, #10b981); }
+#netbase-root .avail-row .avail-mark.m-taken { color: var(--muted); }
+#netbase-root .avail-row .avail-mark.m-maybe { color: #f6ad3c; }
+#netbase-root .avail-row .avail-mark.m-unknown { color: var(--muted); opacity: .7; }
+#netbase-root .avail-row .avail-note { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#netbase-root .avail-row.avail-free { background: color-mix(in srgb, var(--ok, #10b981) 8%, transparent); }
+/* Status is shown on the name itself instead of an English note: a taken domain
+   (× — already in use) is simply greyed out; one that could not be checked
+   (? — undetermined) is greyed out and struck through once. The full reason
+   stays in the hover tooltip. */
+#netbase-root .avail-row.avail-taken .avail-domain { color: var(--muted); }
+#netbase-root .avail-row.avail-unknown .avail-domain { text-decoration: line-through; color: var(--muted); opacity: .75; }

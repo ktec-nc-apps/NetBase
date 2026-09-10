@@ -231,7 +231,11 @@ class MailService {
 		// so a record already near the line breaks the moment a provider grows.
 		$nested = $lookups;
 		foreach (array_slice($includes, 0, 12) as $include) {
-			$nested += $this->countSpfLookups($include, 1);
+			// The include's own DNS lookup is already in $lookups (counted when the
+			// term was seen), and countSpfLookups() also counts that fetch as its
+			// first lookup — so add only the FURTHER lookups it pulls in, or a
+			// working record with a few includes reads as over the limit.
+			$nested += max(0, $this->countSpfLookups($include, 1) - 1);
 		}
 		if ($nested > 10) {
 			$findings[] = $this->finding('bad', 'SPF', $this->l->t('About %d DNS lookups, over the limit of 10. Receivers return permerror and SPF stops working.', [$nested]));
@@ -746,6 +750,9 @@ class MailService {
 					$reply = $this->command($stream, 'EHLO ' . $helo, 'smtp', $transcript);
 					$caps = $this->smtpCapabilities($reply);
 				}
+				if ($mode === 'starttls' && $tlsInfo === null) {
+					throw new \RuntimeException('STARTTLS was not established, so the password would be sent in the clear — stopped. Use TLS, or a port that offers STARTTLS.');
+				}
 				$this->smtpAuth($stream, $caps, $user, $pass, $transcript);
 				$out['details'] = ['capabilities' => $caps];
 				$this->command($stream, 'QUIT', 'smtp', $transcript);
@@ -756,6 +763,9 @@ class MailService {
 						$this->command($stream, 'a2 STARTTLS', 'imap', $transcript);
 						$tlsInfo = $this->enableCrypto($stream, $host);
 					}
+				}
+				if ($mode === 'starttls' && $tlsInfo === null) {
+					throw new \RuntimeException('STARTTLS was not established, so the password would be sent in the clear — stopped. Use TLS, or a port that offers STARTTLS.');
 				}
 				$reply = $this->command($stream, 'a3 LOGIN ' . $this->imapQuote($user) . ' ' . $this->imapQuote($pass), 'imap', $transcript, true);
 				if (!preg_match('/^a3 OK/mi', $reply)) {
@@ -785,6 +795,9 @@ class MailService {
 						$this->command($stream, 'STLS', 'pop3', $transcript);
 						$tlsInfo = $this->enableCrypto($stream, $host);
 					}
+				}
+				if ($mode === 'starttls' && $tlsInfo === null) {
+					throw new \RuntimeException('STARTTLS was not established, so the password would be sent in the clear — stopped. Use TLS, or a port that offers STARTTLS.');
 				}
 				$reply = $this->command($stream, 'USER ' . $user, 'pop3', $transcript);
 				$reply = $this->command($stream, 'PASS ' . $pass, 'pop3', $transcript, true);
@@ -847,6 +860,9 @@ class MailService {
 				$caps = $this->smtpCapabilities($reply);
 			}
 			if ((string)$endpoint->getUsername() !== '') {
+				if ($mode === 'starttls' && $tlsInfo === null) {
+					throw new \RuntimeException('STARTTLS was not established, so the password would be sent in the clear — the message was not sent. Use TLS, or a port that offers STARTTLS.');
+				}
 				$this->smtpAuth($stream, $caps, (string)$endpoint->getUsername(), $this->endpoints->secret($endpoint), $transcript);
 			}
 			$this->expect($this->command($stream, 'MAIL FROM:<' . $from . '>', 'smtp', $transcript), '2');

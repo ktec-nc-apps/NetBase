@@ -2,6 +2,260 @@
 
 All notable changes to NetBase are documented here.
 
+## 0.5.0 — 2026-09-10
+
+### Added
+
+- **Clear the ARP table (optional, opt-in).** A "Clear the ARP table" button in
+  the device list forgets every remembered address so a refresh shows only what
+  answers now. NetBase runs unprivileged and cannot flush the kernel table itself,
+  so the button stays off until an administrator installs a tiny root helper and a
+  one-line sudoers rule — a "?" beside the button shows the exact script and steps
+  (for bare metal/VM and for Docker/Podman with NET_ADMIN), and NetBase probes the
+  helper with a harmless "--check" and switches the button on by itself once it
+  works. It is clearly marked optional, with a note not to install it if the
+  security trade-off (granting the web user one root command) is unwelcome.
+  （【任意・オプトイン】ARPテーブルのクリア機能を追加。機器一覧の「ARPテーブルをクリア」で
+  記憶したアドレスを忘れ、更新時に今応答する機器だけを表示します。NetBaseは無権限のため自身では
+  消せず、管理者が小さなrootヘルパーとsudoers設定を入れるまでボタンは無効。横の「?」から
+  スクリプトと手順（物理/仮想・Docker/Podman＝NET_ADMIN）を表示し、NetBaseは無害な「--check」で
+  検出して自動的にボタンを有効化します。任意である旨と、セキュリティ上のトレードオフに納得
+  できない場合は設置しない注意も明記。）
+- **Every tool now shows when it is working.** A slim bar slides across the top of
+  the panel while any request is in flight, and the button you pressed shows a
+  spinner — so an operation with no progress count of its own (Whois, TLS, DNS,
+  mail, SSH, NTP…) no longer looks like nothing is happening.
+  （各機能の「実行中」表示を追加。リクエスト中はパネル上部に細いバーが流れ、押したボタンに
+  スピナーが出ます。進捗の数値を持たない操作（Whois・TLS・DNS・メール・SSH・NTPなど）でも
+  実行中だと分かります。）
+
+- **You can now give a device your own name.** Type a name in a device's
+  properties and it is shown everywhere in place of the discovered one; if a name
+  was picked up from the network, that reported name stays visible in the
+  properties as well. The name you give is kept against the device, so it holds
+  even when the device offers no name of its own.
+  （自分で機器名前をつけることが出来るようにしました。プロパティであなたが記入した名称を
+  優先的に表示し、もしアナウンス名が取得できている場合は、プロパティで確認できます。）
+- **The properties now say how a name was obtained** — NetBIOS, mDNS or reverse
+  DNS — so a reported name is never mistaken for a NetBIOS name when it came from
+  somewhere else.
+  （プロパティに、その名前をどの方式で取得したか（NetBIOS／mDNS／逆引きDNS）を表示する
+  ようにしました。取得元が分かるので、mDNSや逆引きの名前をNetBIOS名と取り違えません。）
+- **In Docker or Nextcloud-AIO, the Requirements screen now shows a ready-to-use
+  setup recipe.** An app cannot bundle PHP extensions, but the official Nextcloud
+  image runs any script placed in `/docker-entrypoint-hooks.d/before-starting/`
+  on every start. When NetBase detects it is in a container, it lists exactly what
+  the base image is missing (verified on the official image: the `sockets`
+  extension, and `chromium`/`iperf3`/`iproute2`) as a one-off script that survives
+  image updates without a rebuild.
+  （Docker・Nextcloud-AIO で動作している場合、「必要要件」画面にそのまま使える導入手順を
+  表示するようにしました。アプリはPHP拡張を同梱できませんが、公式Nextcloudイメージは
+  `/docker-entrypoint-hooks.d/before-starting/` に置いたスクリプトを起動のたびに実行します。
+  コンテナ内と判定すると、ベースイメージに不足している要素（公式イメージで確認：`sockets`拡張と
+  `chromium`/`iperf3`/`iproute2`）を、再ビルド不要で更新後も維持される一度きりのスクリプトとして
+  提示します。）
+
+- **A device that has been switched off is no longer shown as online.** Its
+  entry lingers in the kernel neighbour table as STALE, keeping its old MAC, and
+  /proc/net/arp cannot tell that apart from a device that is here now — so a
+  powered-off machine kept a green dot. NetBase now reads the neighbour state
+  (via `ip neigh`) and, without walking the whole range, confirms the addresses
+  on file with a quick TCP touch: a host that is here answers a connection
+  (open or refused), one that is gone stays silent and is marked offline. On a
+  re-scan the online/offline column is current. (Announce-only devices — an
+  Amazon Echo, say — are still kept online by what they broadcast over mDNS/SSDP
+  in a normal scan.)
+  （電源を切った機器がオンライン表示のままになる不具合を修正。カーネルの近隣テーブルに
+  STALE として古いMACのまま残り、/proc/net/arp では在席中の機器と区別できないため、緑点が
+  残っていた。近隣の状態を `ip neigh` で読み、全アドレス走査はせずに、記録済みアドレスを
+  短いTCP接触で確認するようにした（在席なら接続に応答＝開放でも拒否でも、不在なら無応答で
+  オフライン判定）。再スキャンでオンライン/オフラインが最新になる。※mDNS/SSDPで自ら告知する
+  機器（Amazon Echo等）は、通常スキャンでは告知により在席のまま維持される。）
+
+### Removed
+
+- **Device tags have been removed.** They could not be seen in the list and
+  served little purpose; identify a device with the name you give it (above)
+  instead. Notes are kept.
+  （機器のタグを廃止しました。一覧に表示されず用途が薄かったためで、機器の識別は上記の
+  「自分でつけた名前」で行ってください。メモは残しています。）
+
+### Changed
+
+- **The free-domain search can hide the taken and the could-not-check results.**
+  Two slide switches (the same control the device list uses) sit over the
+  results: one for taken (×) names, one for the ones that could not be checked
+  (?). Undetermined names are hidden by default, so the list leads with what is
+  free or clearly taken. A taken name is shown greyed out; an unchecked one is
+  greyed and struck through once, with the reason in its hover tooltip — no
+  English text on the row.
+  （空きドメイン検索で、使用済みと調査不能のドメインを隠せるようにしました。結果の上に
+  スライドスイッチを2つ（接続機器調査と同じ部品）置き、使用済み（×）用と調査不能（?）用を
+  用意。調査不能は初期状態で非表示にし、空きと使用済みが先に見えるようにしています。使用済みは
+  グレー表示、調査不能はグレー＋一重打ち消し線で示し、理由はマウスオーバーで表示します（行に
+  英語は出しません）。）
+- **The free-domain search shows its results in columns on a wide screen.** The
+  list flows into as many columns as the width allows (roughly one per 300px), so
+  a wide window shows two or three side by side and a narrow one stays a single
+  list. Each ending's name always shows in full; the diagnostic note beside it is
+  what gives way when space is tight.
+  （空きドメイン検索の結果を、画面幅に余裕があるとき複数列で表示するようにしました。幅に応じて
+  自動で2〜3列になり、狭いときは1列に戻ります。語尾（ドメイン名）は常に全部表示し、横の理由
+  表示のほうを省略します。）
+- **Every column in a device's address lines is now aligned.** A device with
+  several addresses lays them out in fixed columns so the eye can read down them:
+  the network badge leads in a fixed-width slot (sized for 副ネットワーク9 / another
+  network), then the IP and MAC at their known maxima (18 and 17 characters), then
+  the full vendor name in a column half the width of the OUI database's longest
+  name (54 characters, wrapping if longer, never truncated), then the open ports —
+  which, because everything before them is fixed-width, begin at the same column on
+  every row. Several addresses on one device are separated by a thin dotted rule.
+  （機器のアドレス行の各列を整列させました。複数アドレスを持つ機器では、ネットワークバッジ
+  （副ネットワーク9／別ネットワークに合わせた固定幅）→IP・MAC（最大幅18・17文字）→ベンダー名
+  （OUI辞書の最長の約半分＝54文字の固定幅・超過は折返し・省略なし）→開放ポート、の順に固定幅で
+  並べ、ポートの先頭が全行で同じ位置から始まるようにしました。複数アドレスは細い点線で区切ります。）
+- **The device scan is now two buttons: "Refresh devices" and "Port scan".**
+  "Refresh devices" re-checks which devices are online without scanning ports, so
+  it is fast; "Port scan" is the fuller sweep that also reads each device's open
+  ports. The per-device "Scan every port" search stays in a device's own
+  properties, now labelled as being for that one device.
+  （機器スキャンを「機器一覧を更新」と「ポートスキャン」の2つのボタンに分けました。
+  「機器一覧を更新」はポートを調べずオンライン/オフラインを再判定する高速版、「ポートスキャン」は
+  各機器の開放ポートも調べる本格版です。機器ごとの全ポート調査はプロパティ内に残し、「この機器の」と
+  明示しました。）
+- **"Online only" is now an on/off switch** instead of a button that swapped its
+  own label.
+  （「オンラインのみ」を、ラベルが入れ替わるボタンから、オン/オフのスライドスイッチにしました。）
+- **The scan progress is clearer.** Each step is named as it runs (reading the
+  ARP table, searching for devices, asking for names, multicast discovery,
+  checking ports, reverse DNS), the multicast step shows a "listening" state
+  while it waits instead of appearing frozen, and the bar no longer reads as
+  going backwards between steps.
+  （スキャンの進捗表示を分かりやすくしました。実行中の工程名（ARPテーブル読み込み／機器を探索／
+  名前を問い合わせ／マルチキャスト探索／ポート確認／逆引きDNS）を表示し、マルチキャストの受信待ちを
+  「探索中」と示して固まって見えないようにし、工程が変わるたびにバーが戻って見えないようにしました。）
+- **"What to scan" lists "The ARP table only" first**, before "The whole
+  network".
+  （「スキャン対象」の並びを、「ARPテーブルのみ」を先頭にしました。）
+- **A device's note is now shown in the list and is searchable.** It used to be
+  visible only in the properties; now it appears under the device (one line,
+  full text on hover) and the filter box matches it too, so a note like "2F
+  printer" is actually useful for finding and telling devices apart.
+  （機器のメモを一覧にも表示し、検索対象にしました。これまではプロパティでしか見えません
+  でしたが、機器の下に1行（全文はホバー）で表示し、絞り込み欄でも一致するようにしたので、
+  「2Fの複合機」のようなメモが機器の識別・検索に役立ちます。）
+
+### Fixed
+
+- **Mail: STARTTLS mode never sends the password in the clear.** If a server does
+  not offer STARTTLS (or a network strips it), the sign-in, mailbox and send-test
+  now stop with a clear message instead of falling through to plaintext AUTH.
+  （メール：STARTTLSモードで平文送信しないよう修正。サーバーがSTARTTLSを提供しない（または
+  経路で除去された）場合、平文認証に進まず明確なメッセージで停止します。）
+- **Mail: the SPF DNS-lookup count no longer double-counts includes.** A top-level
+  `include:` was counted twice, so a healthy record with a few includes could be
+  reported as over the 10-lookup limit; it now counts each lookup once.
+  （メール：SPFのDNSルックアップ数がincludeを二重計上する不具合を修正。正常な記録が上限超過と
+  誤表示されることがありました。）
+- **HTTP check: an unreachable host is reported as unreachable.** A host that
+  refuses the connection or times out was shown as a reachable server missing every
+  security header; it now says it could not connect. A redirect's target host is
+  validated too, so a page cannot bounce the fetch onto an internal address.
+  （HTTP確認：到達不能なホストを「稼働中でヘッダ欠落」と誤表示せず「接続できませんでした」と
+  表示。リダイレクト先ホストも検証し、内部アドレスへ飛ばされないようにしました。）
+- **A registered .jp/.co.jp domain is no longer reported as free.** JPRS answers
+  with a "Domain Information" block whose fields are letter-prefixed
+  ("a. [Domain Name]", "p. [Name Server]"), which the registered-check did not
+  recognise, so a plainly taken name (google.co.jp) — and a suspended/pending-
+  delete one (granz.co.jp) — came back undecided and was then labelled likely-free.
+  A [Domain Name] / [State] block now means taken; a bare "No match!!" still means
+  free.
+  （登録済みの .jp/.co.jp が「空き」と表示される不具合を修正。JPRSは項目名が
+  「a. [Domain Name]」のように接頭辞付きで返るため登録判定に一致せず、明らかに使用中の名前
+  （google.co.jp）や停止中の名前（granz.co.jp）が「空きの可能性」になっていた。[Domain Name]／
+  [State] があれば使用中、「No match!!」なら空き、と正しく判定するようにした。）
+- **A domain the registry throttled or refused is no longer shown as "likely
+  free".** In a gTLD sweep the shared RDAP servers — Identity Digital most of all,
+  which serves 100+ endings from one host and rate-limits this server outright —
+  answer HTTP 429/403; those were marked △ "likely free (registry unreachable)",
+  which is misleadingly optimistic. They are now honestly "?" ("could not check"),
+  and a group that answers 429/403 is dropped at once so the rest of its endings
+  are marked quickly instead of each waiting out a doomed retry.
+  （レジストリに制限・拒否された結果を「空きの可能性」と表示しない。gTLD一括照会では
+  共有RDAP（特に Identity Digital。1台で100以上の語尾を担当し当サーバーを丸ごと制限）が
+  HTTP 429/403 を返すが、これを△「空きの可能性」と楽観的に表示していた。正直に「?（判定不能／
+  確認できず）」とし、429/403 を返したグループは即座に打ち切って残りを素早く判定するようにした。）
+- **Port scan no longer fails on a /16 (or larger) network.** The host-count
+  limit that guards the address-by-address sweep was also applied in ARP-table
+  mode, where there is no sweep — only the neighbour table (at most ~1024 entries)
+  is touched — so "Port scan" on a common /16 LAN (65 536 addresses) was rejected
+  with "Scan target exceeds the configured limit". The limit is now enforced only
+  when a sweep will actually run.
+  （/16 以上のネットワークでポートスキャンが失敗する不具合を修正。総当たり探索を守る
+  ホスト数上限を、探索を行わないARPテーブルのみモード（近傍テーブル≒最大1024件しか触らない）
+  にも適用していたため、よくある /16 のLAN（65,536アドレス）で「上限超過」で弾かれていた。
+  実際に総当たりを行うときだけ上限を判定するようにした。）
+- **A port-scan step no longer logs "Undefined variable $wait".** In
+  `ScanService::stepPorts()` the port budget was computed from `$wait` before the
+  variable was assigned, which logged a PHP warning on every step and, reading
+  null as 0.1, over-computed the budget nine-fold. `$wait` is now set before use.
+  （ポートスキャンの各ステップで `Undefined variable $wait` を記録する不具合を修正。
+  `stepPorts()` で `$wait` を代入前に予算計算に使っていたため毎回PHP警告が出て、nullを0.1と
+  読み予算が9倍に膨らんでいた。使用前に定義するよう是正。）
+- **A free domain in the availability search no longer shows a raw "HTTP 404".**
+  The diagnostic reason (e.g. RDAP's 404 that means "not registered") was printed
+  next to the ○ mark; it is now kept only as the mark's tooltip, and the visible
+  reason is shown only for the uncertain cases (△ / ?).
+  （空きドメイン検索で、空き（○）の行に内部的な「HTTP 404」が出る不具合を修正。判定理由
+  （例：未登録を意味するRDAPの404）は○の吹き出しにのみ残し、本文の理由表示は不確定
+  （△／?）の場合だけに限定した。）
+- **A slow or unreachable device no longer floods the admin log with errors.**
+  The device-view proxy logged every connection timeout, TLS failure or refused
+  connection at error level; these are ordinary outcomes for a network tool and
+  are now logged at info (the browser is still shown a problem page).
+  （応答の遅い・届かない機器で管理ログがエラーで溢れる問題を解消。機器ビューのプロキシが
+  接続タイムアウト・TLS失敗・接続拒否をすべてエラー級で記録していたが、ネットワークツールに
+  とっては通常の結果のため info 級に格下げした（ブラウザには従来どおり問題ページを表示）。）
+- **The DNS tool no longer fails a whole lookup when CAA is included.** CAA was
+  passed to `dns_get_record()` as the wire type number 257, which PHP 8 rejects
+  with a `ValueError` that the `@` operator does not suppress, so a query with CAA
+  ticked errored out entirely. CAA now uses the `DNS_CAA` constant.
+  （DNS調査でCAAを含めると照会全体がエラーになる不具合を修正。CAAを `dns_get_record()` に
+  型番号257で渡していたため、PHP8が `ValueError` を投げ（`@`でも抑制されない）、CAA選択時に
+  照会全体が落ちていた。CAAを `DNS_CAA` 定数に修正した。）
+- **A notice no longer lingers on another tab or over a new scan.** The message
+  bar was shared across the whole app and never cleared, so "scan finished" sat on
+  the Whois and DNS tabs and over the next scan's progress, making a running scan
+  look finished. A notice is now cleared when you switch tabs and when a new scan
+  starts, and an informational notice fades on its own; the progress bar shows
+  only while a scan is running.
+  （通知が別タブや次のスキャンに残る不具合を修正。メッセージ帯が全画面共有で消えないため、
+  「調査完了」がWhoisやDNSタブ、次のスキャンの進捗の上に残り、実行中なのに完了に見えていた。
+  タブ切替時とスキャン開始時に通知を消し、情報通知は自動で消えるようにした。進捗バーはスキャン中のみ
+  表示する。）
+- **The same address no longer appears on more than one row.** A device whose MAC
+  changes (a privacy address that rotates, or a lease handed to another machine)
+  left a second row for the same IP. Duplicate rows are now folded into one, both
+  as they are found and once at the start of every scan.
+  （同じIPアドレスが一覧に複数行出る不具合を修正。MACが変わる機器（ランダム化MACの変更や、
+  リースが別機に渡った場合）で同一IPの行が二重にできていた。重複行は、検出時とスキャン開始時の
+  両方で1行に統合するようにした。）
+- **A name no longer follows an address to a different device.** When an address
+  was handed to another machine (an old PC's lease going to an Alexa), the old
+  device's name could show on the new one. A name, type and ports are now kept
+  only for the same device, never carried to a different MAC that later holds the
+  same address.
+  （アドレスが別の機器に再割り当てされたとき、旧機器の名前が新機器に残る不具合を修正。
+  旧PCのリースがAlexaに渡った等の場合に旧名が表示されていた。名前・種別・ポートは同一機器に対して
+  のみ保持し、同じアドレスを後から持つ別MACには引き継がないようにした。）
+- **"This server" is shown on every one of the server's own addresses.** When one
+  network card holds several addresses (here 10.0.0.1 and 192.168.1.250 on the
+  same card), keying them by the shared MAC let only the last one keep the badge.
+  Each of the server's addresses is now its own row and each is marked.
+  （サーバー自身の各アドレスすべてに「このサーバー」を表示するようにした。1枚のNICが複数の
+  アドレスを持つ場合（同一NICの10.0.0.1と192.168.1.250）、共有MACをキーにしていたため最後の
+  1つしかバッジが付かなかった。各アドレスを独立した行にし、それぞれに印を付けるようにした。）
+
 ## 0.4.4 — 2026-09-09
 
 ### Fixed

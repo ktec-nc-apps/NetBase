@@ -111,12 +111,40 @@ class ToolService {
 		}
 
 		$body = end($chain)['response'] ?? '';
+		$fields = $isIp ? $this->parseIpWhois($body) : $this->parseDomainWhois($body);
 		return [
 			'query' => $query,
 			'kind' => $isIp ? 'ip' : 'domain',
 			'chain' => $chain,
-			'fields' => $isIp ? $this->parseIpWhois($body) : $this->parseDomainWhois($body),
+			'fields' => $fields,
+			// Whether the domain looks unregistered (free to take). null for an
+			// address, where the question does not apply.
+			'available' => $isIp ? null : $this->domainLooksAvailable($body, $fields),
 		];
+	}
+
+	/**
+	 * A domain looks free when the registry has no record of it. Registration
+	 * data (a registrar, a creation date) means it is taken; otherwise a clear
+	 * "no match" from the registry is what says it is available. Anything else
+	 * is treated as taken, so a doubtful case is shown for the eye to judge
+	 * rather than wrongly called free.
+	 */
+	private function domainLooksAvailable(string $body, array $fields): bool {
+		if ($fields !== []) {
+			return false;
+		}
+		$b = strtolower($body);
+		foreach ([
+			'no match', 'not found', 'no entries found', 'no data found', 'no object found',
+			'not registered', 'no matching record', 'domain not found', 'nothing found',
+			'status: available', 'status: free', 'is available for registration', 'available for registration',
+		] as $needle) {
+			if (str_contains($b, $needle)) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	private function whoisAsk(string $server, string $query, bool $isIp): string {
@@ -203,7 +231,10 @@ class ToolService {
 
 	public function dns(string $host, array $types = []): array {
 		$host = $this->validateHost($host);
-		$all = ['A' => DNS_A, 'AAAA' => DNS_AAAA, 'CNAME' => DNS_CNAME, 'MX' => DNS_MX, 'NS' => DNS_NS, 'TXT' => DNS_TXT, 'SOA' => DNS_SOA, 'SRV' => DNS_SRV, 'CAA' => 257, 'PTR' => DNS_PTR];
+		// CAA must be the DNS_CAA bitmask constant, not the wire type number
+		// 257: dns_get_record() rejects a raw type with a ValueError, which @
+		// does not suppress in PHP 8.
+		$all = ['A' => DNS_A, 'AAAA' => DNS_AAAA, 'CNAME' => DNS_CNAME, 'MX' => DNS_MX, 'NS' => DNS_NS, 'TXT' => DNS_TXT, 'SOA' => DNS_SOA, 'SRV' => DNS_SRV, 'CAA' => DNS_CAA, 'PTR' => DNS_PTR];
 		$wanted = $types === [] ? ['A', 'AAAA', 'CNAME', 'MX', 'NS', 'TXT', 'SOA'] : array_values(array_intersect(array_map('strtoupper', $types), array_keys($all)));
 
 		$records = [];
@@ -518,6 +549,13 @@ class ToolService {
 					$headers[strtolower(trim($parts[0]))] = trim($parts[1]);
 				}
 			}
+			// No HTTP response line at all (status 0) means nothing answered —
+			// connection refused, timed out, DNS or TLS failed. Say so, instead of
+			// returning an empty result that reads as a reachable server missing
+			// every security header.
+			if ($status === 0) {
+				throw new \RuntimeException('Could not connect to ' . (string)parse_url($current, PHP_URL_HOST) . ' — no response (refused, timed out, or TLS/DNS failed).');
+			}
 			$chain[] = ['url' => $current, 'status' => $status, 'ms' => $ms, 'server' => $headers['server'] ?? ''];
 			if ($status >= 300 && $status < 400 && !empty($headers['location'])) {
 				$next = $headers['location'];
@@ -525,6 +563,9 @@ class ToolService {
 					$base = parse_url($current);
 					$next = ($base['scheme'] ?? 'https') . '://' . ($base['host'] ?? '') . (str_starts_with($next, '/') ? '' : '/') . $next;
 				}
+				// A redirect target is validated too, so a page cannot bounce the
+				// fetch onto a loopback or internal address (SSRF).
+				$this->validateHost((string)parse_url($next, PHP_URL_HOST));
 				$current = $next;
 				continue;
 			}
