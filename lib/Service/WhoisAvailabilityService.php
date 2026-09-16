@@ -111,27 +111,29 @@ class WhoisAvailabilityService {
 
 		foreach ($list as $tld) {
 			$fqdn = $ascii . '.' . $tld;
-			$out[$tld] = ['tld' => $tld, 'fqdn' => $fqdn, 'mark' => '?', 'via' => '', 'note' => 'not checked'];
+			$out[$tld] = ['tld' => $tld, 'fqdn' => $fqdn, 'mark' => '?', 'via' => '', 'note' => 'not checked', 'why' => 'not-checked'];
 			if (isset($hasNs[$fqdn])) {
-				$out[$tld] = ['tld' => $tld, 'fqdn' => $fqdn, 'mark' => '×', 'via' => 'DNS', 'note' => 'NS delegation'];
+				$out[$tld] = ['tld' => $tld, 'fqdn' => $fqdn, 'mark' => '×', 'via' => 'DNS', 'note' => 'NS delegation', 'why' => 'taken-dns'];
 				continue;
 			}
 			$dnsNone[$tld] = true;
 			[$m, $srv, $pat] = $this->method($tld);
 			if ($m === 'rdap') {
 				$bases = $this->rdapBases($fqdn);
-				if (!$bases) { $out[$tld]['note'] = 'no RDAP server'; continue; }
+				if (!$bases) { $out[$tld]['note'] = 'no RDAP server'; $out[$tld]['why'] = 'no-service'; continue; }
 				$rdapJobs[$tld] = rtrim($bases[0], '/') . '/domain/' . rawurlencode($fqdn);
 			} elseif ($m === 'jprs') {
 				if (in_array($tld, ['jp', 'co.jp', 'or.jp', 'ne.jp', 'gr.jp', 'ac.jp', 'ed.jp', 'ad.jp', 'lg.jp'], true)) {
 					$whoisJobs[$tld] = ['whois.jprs.jp', $fqdn . '/e', 'No match!!'];
 				} else {
 					$out[$tld]['note'] = 'JPRS rate limit — DNS only';
+					$out[$tld]['why'] = 'limited';
 				}
 			} elseif ($m === 'whois') {
 				$whoisJobs[$tld] = [$srv, $fqdn, $pat];
 			} else {
 				$out[$tld]['note'] = 'registry offers no RDAP/WHOIS';
+				$out[$tld]['why'] = 'no-service';
 			}
 		}
 
@@ -149,12 +151,14 @@ class WhoisAvailabilityService {
 			if ($a['mark'] !== '?') { continue; }
 			if ($this->timeLeft() < 1.5) { break; }
 			if (!isset($dnsNone[$tld])) {
-				$out[$tld] = ['tld' => $tld, 'fqdn' => $a['fqdn'], 'mark' => '×', 'via' => 'DNS', 'note' => 'NS delegation (' . $a['note'] . ')'];
+				$out[$tld] = ['tld' => $tld, 'fqdn' => $a['fqdn'], 'mark' => '×', 'via' => 'DNS', 'note' => 'NS delegation (' . $a['note'] . ')', 'why' => 'taken-dns'];
 			} elseif (preg_match('/(429|403|rate limit|refus|limiting|too many|query limit|time budget)/i', (string)$a['note']) === 1) {
 				$out[$tld]['note'] = 'could not check — ' . $a['note'];
+				$out[$tld]['why'] = 'limited';
 			} else {
 				$out[$tld]['mark'] = '△';
 				$out[$tld]['note'] = 'registry unreachable (' . $a['note'] . '); no DNS delegation';
+				$out[$tld]['why'] = 'maybe-free';
 			}
 		}
 
@@ -285,13 +289,13 @@ class WhoisAvailabilityService {
 	}
 
 	private function judgeRdap(int $code, $body): array {
-		if ($code === 404) { return ['○', 'HTTP 404']; }
+		if ($code === 404) { return ['○', 'HTTP 404', 'free-rdap']; }
 		$j = is_string($body) ? json_decode($body, true) : null;
-		if (is_array($j) && (int)($j['errorCode'] ?? 0) === 404) { return ['○', 'errorCode 404']; }
-		if ($code === 200 && is_array($j) && (isset($j['ldhName']) || ($j['objectClassName'] ?? '') === 'domain')) { return ['×', 'HTTP 200']; }
-		if ($code === 429) { return ['?', 'HTTP 429']; }
-		if ($code === 0) { return ['?', 'timeout']; }
-		return ['?', 'HTTP ' . $code];
+		if (is_array($j) && (int)($j['errorCode'] ?? 0) === 404) { return ['○', 'errorCode 404', 'free-rdap']; }
+		if ($code === 200 && is_array($j) && (isset($j['ldhName']) || ($j['objectClassName'] ?? '') === 'domain')) { return ['×', 'HTTP 200', 'taken-rdap']; }
+		if ($code === 429) { return ['?', 'HTTP 429', 'limited']; }
+		if ($code === 0) { return ['?', 'timeout', 'timeout']; }
+		return ['?', 'HTTP ' . $code, 'undecided'];
 	}
 
 	/** Run the RDAP jobs with curl_multi, honouring per-registry groups. */
@@ -328,7 +332,7 @@ class WhoisAvailabilityService {
 					$grp = $this->groupOf($host);
 					if (($hostActive[$host] ?? 0) >= self::AVAIL_PER_HOST) { continue; }
 					if ($grp !== null) {
-						if (!empty($groupBlocked[$grp])) { unset($queue[$tld]); $out[$tld]['mark'] = '?'; $out[$tld]['via'] = $host; $out[$tld]['note'] = 'registry refusing/limiting (skipped)'; continue; }
+						if (!empty($groupBlocked[$grp])) { unset($queue[$tld]); $out[$tld]['mark'] = '?'; $out[$tld]['via'] = $host; $out[$tld]['note'] = 'registry refusing/limiting (skipped)'; $out[$tld]['why'] = 'limited'; continue; }
 						if (($groupBusy[$grp] ?? 0) >= (self::GROUP_CONC[$grp] ?? 1) || microtime(true) < ($groupNextOk[$grp] ?? 0)) { continue; }
 						$groupBusy[$grp] = ($groupBusy[$grp] ?? 0) + 1;
 					}
@@ -355,14 +359,14 @@ class WhoisAvailabilityService {
 					$code = (int)curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
 					$body = curl_multi_getcontent($ch);
 					if ($grp !== null) { $groupBusy[$grp]--; $groupNextOk[$grp] = microtime(true) + (self::GROUP_GAP[$grp] ?? 1.0); if ($code === 403 || $code === 429) { $groupBlocked[$grp] = true; $this->cachePut('groupblock', $grp, ['t' => time()]); } }
-					[$mark, $note] = $this->judgeRdap($code, $body);
-					$out[$tld] = ['tld' => $tld, 'fqdn' => $out[$tld]['fqdn'], 'mark' => $mark, 'via' => $host, 'note' => $note];
+					[$mark, $note, $why] = $this->judgeRdap($code, $body);
+					$out[$tld] = ['tld' => $tld, 'fqdn' => $out[$tld]['fqdn'], 'mark' => $mark, 'via' => $host, 'note' => $note, 'why' => $why];
 					if ($mark === '?' && $code !== 403) { $next[$tld] = $url; }
 					curl_multi_remove_handle($mh, $ch);
 					curl_close($ch);
 				}
 				$add();
-				if (!$running && $queue && $this->timeLeft() < 4) { foreach ($queue as $tld => $url) { $out[$tld]['note'] = 'time budget'; $out[$tld]['via'] = $this->hostOf($url); } $queue = []; }
+				if (!$running && $queue && $this->timeLeft() < 4) { foreach ($queue as $tld => $url) { $out[$tld]['note'] = 'time budget'; $out[$tld]['why'] = 'not-checked'; $out[$tld]['via'] = $this->hostOf($url); } $queue = []; }
 			} while (($running || $queue || $active) && $st === CURLM_OK);
 			curl_multi_close($mh);
 			$jobs = $next;
@@ -371,20 +375,20 @@ class WhoisAvailabilityService {
 	}
 
 	private function judgeWhois(?string $resp, string $pattern): array {
-		if ($resp === null || trim($resp) === '') { return ['?', 'no WHOIS response']; }
-		if (strlen($resp) < 400 && preg_match('/queries exceeded|query limit|rate limit|too many|quota|access denied|blocked|exceeded/i', $resp)) { return ['?', 'WHOIS query limit']; }
-		if (stripos($resp, 'large amount of requests') !== false) { return ['?', 'JPRS rate limit']; }
-		if ($pattern !== '' && stripos($resp, $pattern) !== false) { return ['○', 'WHOIS: ' . $pattern]; }
-		if (preg_match('/\b(no match|not found|no entries found|no data found|no data was found|no matching record|does not exist|not registered|not been registered|no object found|is available|status:\s*(available|free)|nothing found|no such domain|no record found|(?<!not )available for registration|object does not exist|not found in database)\b/i', $resp, $m)) { return ['○', 'WHOIS: ' . $m[1]]; }
+		if ($resp === null || trim($resp) === '') { return ['?', 'no WHOIS response', 'unreachable']; }
+		if (strlen($resp) < 400 && preg_match('/queries exceeded|query limit|rate limit|too many|quota|access denied|blocked|exceeded/i', $resp)) { return ['?', 'WHOIS query limit', 'limited']; }
+		if (stripos($resp, 'large amount of requests') !== false) { return ['?', 'JPRS rate limit', 'limited']; }
+		if ($pattern !== '' && stripos($resp, $pattern) !== false) { return ['○', 'WHOIS: ' . $pattern, 'free-whois']; }
+		if (preg_match('/\b(no match|not found|no entries found|no data found|no data was found|no matching record|does not exist|not registered|not been registered|no object found|is available|status:\s*(available|free)|nothing found|no such domain|no record found|(?<!not )available for registration|object does not exist|not found in database)\b/i', $resp, $m)) { return ['○', 'WHOIS: ' . $m[1], 'free-whois']; }
 		// JPRS (.jp/.co.jp) answers with a "Domain Information" block whose fields
 		// carry a letter prefix ("a. [Domain Name]", "p. [Name Server]"), so the
 		// line-anchored check below never matches it and a plainly registered name
 		// (google.co.jp) came back "undecided". A [Domain Name] or [State] block
 		// means the name is on file — taken — including the "Suspended"/pending-
 		// delete states (e.g. granz.co.jp), which are registered, not free.
-		if (preg_match('/\[(Domain Name|State)\]/i', $resp)) { return ['×', 'WHOIS: registered']; }
-		if (preg_match('/^\s*(domain name|domain|\[domain name\]|nserver|name server|registrar|registrant|created|creation date|registered on)\s*[:\]]/im', $resp)) { return ['×', 'WHOIS: registered']; }
-		return ['?', 'WHOIS undecided'];
+		if (preg_match('/\[(Domain Name|State)\]/i', $resp)) { return ['×', 'WHOIS: registered', 'taken-whois']; }
+		if (preg_match('/^\s*(domain name|domain|\[domain name\]|nserver|name server|registrar|registrant|created|creation date|registered on)\s*[:\]]/im', $resp)) { return ['×', 'WHOIS: registered', 'taken-whois']; }
+		return ['?', 'WHOIS undecided', 'undecided'];
 	}
 
 	/** Run the WHOIS:43 jobs and judge them. */
@@ -394,8 +398,8 @@ class WhoisAvailabilityService {
 		foreach ($jobs as $tld => [$srv, $q]) { $plain[$tld] = [$srv, $q]; }
 		$resp = $this->whoisMulti($plain, microtime(true) + max(2.0, $this->timeLeft() - 1.5), 24, ['whois.jprs.jp' => 1]);
 		foreach ($jobs as $tld => [$srv, $q, $pat]) {
-			[$mark, $note] = $this->judgeWhois($resp[$tld] ?? null, $pat);
-			$out[$tld] = ['tld' => $tld, 'fqdn' => $out[$tld]['fqdn'], 'mark' => $mark, 'via' => $srv, 'note' => $note];
+			[$mark, $note, $why] = $this->judgeWhois($resp[$tld] ?? null, $pat);
+			$out[$tld] = ['tld' => $tld, 'fqdn' => $out[$tld]['fqdn'], 'mark' => $mark, 'via' => $srv, 'note' => $note, 'why' => $why];
 		}
 	}
 

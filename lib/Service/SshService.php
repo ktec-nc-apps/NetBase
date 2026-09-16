@@ -13,7 +13,8 @@ use Psr\Log\LoggerInterface;
  * This is the maintenance half of the SSH tools — the probe half asks a server
  * what it offers without credentials. Authentication is by password or private
  * key, both kept encrypted in the saved connection, and the library is the
- * phpseclib copy Nextcloud already ships.
+ * phpseclib 3 copy NetBase carries with it — Nextcloud's own is phpseclib 2,
+ * which cannot read a modern private key.
  *
  * PHP-FPM ends every request, so a shell session cannot outlive one. The
  * console therefore reconnects for each line and carries the working directory

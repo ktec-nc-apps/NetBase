@@ -30,9 +30,24 @@ class BenchmarkService {
 	/** Names used for resolver timing — spread across operators on purpose. */
 	private const PROBE_DOMAINS = ['nextcloud.com', 'wikipedia.org', 'github.com', 'cloudflare.com', 'apple.com'];
 
+	/**
+	 * Where a measurement may be taken.
+	 *
+	 * M-Lab names the server nearest to this machine, so it is what 'auto'
+	 * reaches for; Cloudflare is one fixed endpoint, reachable from places
+	 * M-Lab's WebSocket is not. Either can be named outright, because a
+	 * network that reaches one may not reach the other, and because the two
+	 * do not always agree about the same line.
+	 */
+	public const VIA_AUTO = 'auto';
+	public const VIA_MLAB = 'mlab';
+	public const VIA_CLOUDFLARE = 'cloudflare';
+
 	public function __construct(
 		private ExecService $exec,
 		private DiscoveryService $discovery,
+		private L10nService $l,
+		private MlabService $mlab,
 		private IConfig $config,
 		private LoggerInterface $logger,
 	) {
@@ -197,7 +212,147 @@ class BenchmarkService {
 	 *
 	 * @return array{download: ?array, upload: ?array, latency: ?array, endpoint: string}
 	 */
-	public function speedTest(int $megabytes = 25, bool $upload = true): array {
+	/**
+	 * The same measurement, but reported while it happens.
+	 *
+	 * A speed test that only gives its answer at the end tells you the average
+	 * and hides everything interesting — the ramp-up, a stall, a line that
+	 * fades under load. cURL calls back many times a second during a transfer,
+	 * so each call is a chance to say how far along it is; $emit is handed one
+	 * sample at a time and returns false once the browser has gone.
+	 *
+	 * What is measured is unchanged: this server's own line, not the browser's.
+	 *
+	 * @param callable(array): bool $emit
+	 */
+	private function cloudflareStream(int $megabytes, bool $upload, callable $emit): void {
+		if (!function_exists('curl_init')) {
+			$emit(['phase' => 'error', 'error' => 'The PHP cURL extension is required for the speed test']);
+			return;
+		}
+		$megabytes = max(1, min(200, $megabytes));
+		$bytes = $megabytes * 1000000;
+		$downUrl = $this->config->getAppValue('netbase', 'speedtest_down', 'https://speed.cloudflare.com/__down?bytes=');
+		$upUrl = $this->config->getAppValue('netbase', 'speedtest_up', 'https://speed.cloudflare.com/__up');
+
+		// Say something at once. Measuring the latency takes a few seconds, and
+		// without this the browser would sit silent through all of it.
+		if (!$emit(['phase' => 'start', 'megabytes' => $megabytes, 'upload' => $upload])) {
+			return;
+		}
+		$latency = $this->httpLatency($downUrl . '1000');
+		if (!$emit(['phase' => 'latency', 'latency' => $latency])) {
+			return;
+		}
+
+		// The same cap as the one-shot test: this endpoint refuses 100 MB.
+		$downBytes = str_contains($downUrl, 'speed.cloudflare.com') ? min($bytes, 99999999) : $bytes;
+		$alive = true;
+		$started = microtime(true);
+		$carried = 0;
+		$lastSent = 0.0;
+
+		$curl = curl_init($downUrl . $downBytes);
+		curl_setopt_array($curl, [
+			CURLOPT_RETURNTRANSFER => false,
+			CURLOPT_WRITEFUNCTION => function ($handle, string $chunk) use (&$alive, &$carried, &$lastSent, $started, $emit): int {
+				$carried += strlen($chunk);
+				$now = microtime(true);
+				// One sample every tenth of a second: often enough to draw a
+				// line, seldom enough not to drown the browser in them.
+				if ($now - $lastSent >= 0.1) {
+					$lastSent = $now;
+					$seconds = max(0.001, $now - $started);
+					$alive = $emit([
+						'phase' => 'down',
+						'bytes' => $carried,
+						'seconds' => round($seconds, 3),
+						'mbps' => round($carried * 8 / $seconds / 1000000, 2),
+					]);
+				}
+				return $alive ? strlen($chunk) : 0;
+			},
+			CURLOPT_TIMEOUT => 120,
+			CURLOPT_CONNECTTIMEOUT => 15,
+			CURLOPT_USERAGENT => 'NetBase (Nextcloud)',
+			CURLOPT_ENCODING => 'identity',
+			CURLOPT_FAILONERROR => true,
+		]);
+		$ok = curl_exec($curl);
+		$download = $ok === false && $alive ? null : [
+			'bytes' => (int)curl_getinfo($curl, CURLINFO_SIZE_DOWNLOAD),
+			'seconds' => round((float)curl_getinfo($curl, CURLINFO_TOTAL_TIME) - (float)curl_getinfo($curl, CURLINFO_PRETRANSFER_TIME), 3),
+			'mbps' => round((float)curl_getinfo($curl, CURLINFO_SPEED_DOWNLOAD) * 8 / 1000000, 2),
+		];
+		$downloadError = ($ok === false && $alive) ? curl_error($curl) : null;
+		curl_close($curl);
+		if (!$alive) {
+			return;
+		}
+		if (!$emit(['phase' => 'downDone', 'download' => $download, 'error' => $downloadError])) {
+			return;
+		}
+
+		$uploadResult = null;
+		$uploadError = null;
+		if ($upload) {
+			$payload = str_repeat('0', min($bytes, 25000000));
+			$upStarted = microtime(true);
+			$lastSent = 0.0;
+			$curl = curl_init($upUrl);
+			curl_setopt_array($curl, [
+				CURLOPT_POST => true,
+				CURLOPT_POSTFIELDS => $payload,
+				CURLOPT_RETURNTRANSFER => true,
+				CURLOPT_TIMEOUT => 120,
+				CURLOPT_CONNECTTIMEOUT => 15,
+				CURLOPT_USERAGENT => 'NetBase (Nextcloud)',
+				CURLOPT_HTTPHEADER => ['Content-Type: application/octet-stream', 'Expect:'],
+				CURLOPT_FAILONERROR => true,
+				// Sending is one call with the whole body, so there is no write
+				// callback to count it; this is where the far end reports back.
+				CURLOPT_NOPROGRESS => false,
+				CURLOPT_XFERINFOFUNCTION => function ($handle, $downTotal, $downNow, $upTotal, $upNow) use (&$alive, &$lastSent, $upStarted, $emit): int {
+					$now = microtime(true);
+					if ($upNow > 0 && $now - $lastSent >= 0.1) {
+						$lastSent = $now;
+						$seconds = max(0.001, $now - $upStarted);
+						$alive = $emit([
+							'phase' => 'up',
+							'bytes' => (int)$upNow,
+							'seconds' => round($seconds, 3),
+							'mbps' => round($upNow * 8 / $seconds / 1000000, 2),
+						]);
+					}
+					return $alive ? 0 : 1;
+				},
+			]);
+			$ok = curl_exec($curl);
+			$uploadResult = ($ok === false && $alive) ? null : [
+				'bytes' => (int)curl_getinfo($curl, CURLINFO_SIZE_UPLOAD),
+				'seconds' => round((float)curl_getinfo($curl, CURLINFO_TOTAL_TIME) - (float)curl_getinfo($curl, CURLINFO_PRETRANSFER_TIME), 3),
+				'mbps' => round((float)curl_getinfo($curl, CURLINFO_SPEED_UPLOAD) * 8 / 1000000, 2),
+			];
+			$uploadError = ($ok === false && $alive) ? curl_error($curl) : null;
+			curl_close($curl);
+			if (!$alive) {
+				return;
+			}
+		}
+
+		$emit([
+			'phase' => 'done',
+			'endpoint' => parse_url($downUrl, PHP_URL_HOST) ?: 'speed.cloudflare.com',
+			'megabytes' => $megabytes,
+			'latency' => $latency,
+			'download' => $download,
+			'downloadError' => $downloadError,
+			'upload' => $uploadResult,
+			'uploadError' => $uploadError,
+		]);
+	}
+
+	private function cloudflareTest(int $megabytes = 25, bool $upload = true): array {
 		if (!function_exists('curl_init')) {
 			throw new \RuntimeException('The PHP cURL extension is required for the speed test');
 		}
@@ -265,6 +420,182 @@ class BenchmarkService {
 			'uploadError' => $uploadError,
 			'latency' => $latency,
 		];
+	}
+
+	/**
+	 * Measure the line, as the rest of the world measures it.
+	 *
+	 * The work is done against M-Lab — the measurement behind Google's own
+	 * speed test — because it names the nearest server rather than pulling from
+	 * one fixed endpoint somewhere. Where that cannot be reached at all (an
+	 * instance with no way out, a blocked WebSocket) the older HTTP test still
+	 * stands behind it, so the tool never simply stops working.
+	 *
+	 * @param callable(array): bool $emit returns false once the browser is gone
+	 */
+	public function speedTestStream(int $megabytes, bool $upload, callable $emit, string $via = 'auto'): void {
+		$via = $this->provider($via);
+		if ($via === self::VIA_CLOUDFLARE) {
+			$this->cloudflareStream($megabytes, $upload, $emit);
+			return;
+		}
+		$servers = $this->mlab->available() ? $this->mlab->servers() : [];
+		if ($servers === []) {
+			// Named outright, so say it could not be done. Quietly measuring
+			// against the other one would hand back a figure the caller would
+			// read as M-Lab's.
+			if ($via === self::VIA_MLAB) {
+				$emit(['phase' => 'error', 'error' => $this->l->t('No M-Lab measurement server could be reached. Choose Cloudflare instead, or let NetBase choose.')]);
+				return;
+			}
+			$this->cloudflareStream($megabytes, $upload, $emit);
+			return;
+		}
+		$this->mlabStream($megabytes, $upload, $emit, $this->mlab->nearest($servers));
+	}
+
+	/** The same measurement, reported once at the end. */
+	public function speedTest(int $megabytes = 25, bool $upload = true, string $via = 'auto'): array {
+		$via = $this->provider($via);
+		if ($via === self::VIA_CLOUDFLARE) {
+			return $this->cloudflareTest($megabytes, $upload);
+		}
+		$servers = $this->mlab->available() ? $this->mlab->servers() : [];
+		if ($servers !== []) {
+			$out = null;
+			$this->mlabStream($megabytes, $upload, function (array $sample) use (&$out): bool {
+				if (($sample['phase'] ?? '') === 'done') { $out = $sample; }
+				return true;
+			}, $this->mlab->nearest($servers));
+			if ($out !== null) {
+				return $out;
+			}
+		}
+		if ($via === self::VIA_MLAB) {
+			// The shape a finished measurement has, carrying the reason instead
+			// of a number: the caller asked for M-Lab and must not be handed
+			// Cloudflare's figure under M-Lab's name.
+			return [
+				'endpoint' => 'measurement-lab.org',
+				'where' => '',
+				'megabytes' => $megabytes,
+				'latency' => null,
+				'download' => null,
+				'downloadError' => $this->l->t('No M-Lab measurement server could be reached. Choose Cloudflare instead, or let NetBase choose.'),
+				'upload' => null,
+				'uploadError' => null,
+			];
+		}
+		return $this->cloudflareTest($megabytes, $upload);
+	}
+
+	/**
+	 * Which of the two measurements was asked for.
+	 *
+	 * Anything unrecognised is treated as 'auto' rather than refused: an
+	 * older browser that sends nothing, or a newer one that sends a name this
+	 * version has not heard of, still gets a measurement.
+	 */
+	private function provider(string $via): string {
+		$via = strtolower(trim($via));
+		return in_array($via, [self::VIA_MLAB, self::VIA_CLOUDFLARE], true) ? $via : self::VIA_AUTO;
+	}
+
+	/**
+	 * One measurement against a named M-Lab server, reported as it runs.
+	 *
+	 * The readings are sent in the same shape the HTTP test always used, so the
+	 * browser draws the same graph without knowing which of the two ran.
+	 *
+	 * @param array<string, mixed> $server
+	 * @param callable(array): bool $emit
+	 */
+	private function mlabStream(int $megabytes, bool $upload, callable $emit, array $server): void {
+		$megabytes = max(1, min(500, $megabytes));
+		$cap = $megabytes * 1000000;
+		$where = trim(((string)($server['city'] ?? '')) . ' ' . ((string)($server['country'] ?? '')));
+
+		if (!$emit(['phase' => 'start', 'megabytes' => $megabytes, 'upload' => $upload, 'server' => $where])) {
+			return;
+		}
+		// The first reading anybody sees. It is timed against the very machine
+		// about to be measured: connecting to somewhere else would report that
+		// other network's round trip beside M-Lab's throughput figures, which
+		// is what used to happen here. The measurement server reports its own
+		// round trip as well, and that lands in the final result where the two
+		// accounts can be compared rather than one of them simply believed.
+		// Timed against the very host the data will come from. That is not the
+		// server's own name: M-Lab lists mlab3-hnd02..., while the bytes arrive
+		// from ndt-mlab3-hnd02..., and only the latter answers on 443 at all.
+		// Timing the listed name gave no reading; timing a fixed endpoint
+		// elsewhere, as this once did, reported another network's round trip
+		// beside M-Lab's throughput. Where the data host gives nothing back,
+		// that fixed endpoint still supplies a figure rather than a blank.
+		$dataHost = (string)parse_url((string)($server['download'] ?? ''), PHP_URL_HOST);
+		$latency = $dataHost !== '' ? $this->httpLatency('https://' . $dataHost . '/') : null;
+		if ($latency === null) {
+			$latency = $this->httpLatency('https://speed.cloudflare.com/__down?bytes=1000');
+		}
+		if (!$emit(['phase' => 'latency', 'latency' => $latency])) {
+			return;
+		}
+
+		$live = true;
+		$down = $this->mlab->measure('download', $server, 10.0, $cap, function (int $bytes, float $seconds) use ($emit, &$live): bool {
+			$live = $emit([
+				'phase' => 'down',
+				'bytes' => $bytes,
+				'seconds' => round($seconds, 3),
+				'mbps' => $seconds > 0 ? round($bytes * 8 / $seconds / 1000000, 2) : 0.0,
+			]);
+			return $live;
+		});
+		if (!$live) {
+			return;
+		}
+		$downResult = ($down['error'] ?? null) === null
+			? ['bytes' => $down['bytes'], 'seconds' => $down['seconds'], 'mbps' => $down['mbps']]
+			: null;
+		if (!$emit(['phase' => 'downDone', 'download' => $downResult, 'error' => $down['error'] ?? null])) {
+			return;
+		}
+
+		$upResult = null;
+		$upError = null;
+		$upRemote = null;
+		if ($upload) {
+			$up = $this->mlab->measure('upload', $server, 10.0, $cap, function (int $bytes, float $seconds) use ($emit, &$live): bool {
+				$live = $emit([
+					'phase' => 'up',
+					'bytes' => $bytes,
+					'seconds' => round($seconds, 3),
+					'mbps' => $seconds > 0 ? round($bytes * 8 / $seconds / 1000000, 2) : 0.0,
+				]);
+				return $live;
+			});
+			if (!$live) {
+				return;
+			}
+			$upError = $up['error'] ?? null;
+			$upResult = $upError === null ? ['bytes' => $up['bytes'], 'seconds' => $up['seconds'], 'mbps' => $up['mbps']] : null;
+			$upRemote = $this->mlab->remoteView($up['remote'] ?? null, 'upload');
+		}
+
+		$emit([
+			'phase' => 'done',
+			'endpoint' => (string)($server['machine'] ?? 'measurement-lab.org'),
+			'where' => $where,
+			'megabytes' => $megabytes,
+			'latency' => $latency,
+			'download' => $downResult,
+			'downloadError' => $down['error'] ?? null,
+			'upload' => $upResult,
+			'uploadError' => $upError,
+			// What the far end saw, so the two accounts can be compared rather
+			// than one of them simply believed.
+			'remote' => $this->mlab->remoteView($down['remote'] ?? null),
+			'remoteUpload' => $upRemote,
+		]);
 	}
 
 	/** Connect latency and jitter, from a handful of small requests. */
@@ -434,7 +765,7 @@ class BenchmarkService {
 			return $host;
 		}
 		if (!preg_match('/^(?=.{1,253}$)([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?\.)*[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$/i', $host)) {
-			throw new \InvalidArgumentException('Not a valid host name: ' . $host);
+			throw new \InvalidArgumentException($this->l->t('Not a valid host name: %s', [$host]));
 		}
 		return $host;
 	}

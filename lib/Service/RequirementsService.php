@@ -193,7 +193,7 @@ class RequirementsService {
 				'probe' => 'ftp',
 				'name' => 'PHP FTP extension',
 				'enables' => 'Browsing FTP servers and moving files to and from your Nextcloud files',
-				'without' => 'SFTP still works — it uses the library Nextcloud already ships — but plain FTP servers cannot be opened.',
+				'without' => 'SFTP still works — it uses the library NetBase carries with it — but plain FTP servers cannot be opened.',
 				'packages' => ['apt-get' => 'php-ftp', 'dnf' => 'php-ftp', 'yum' => 'php-ftp', 'zypper' => 'php-ftp', 'pacman' => 'php', 'apk' => 'php-ftp', 'brew' => 'php'],
 				'after' => 'Restart PHP-FPM afterwards, for example: sudo systemctl restart php*-fpm',
 			],

@@ -13,8 +13,8 @@ use Psr\Log\LoggerInterface;
  * SSH is read straight off the wire — the identification string and the
  * KEXINIT packet the server sends before anything is encrypted give the full
  * algorithm list without logging in. The host key fingerprint additionally
- * needs a key exchange, which is done with the phpseclib copy Nextcloud
- * already ships.
+ * needs a key exchange, which is done with the phpseclib 3 copy NetBase
+ * carries with it.
  */
 class ProbeService {
 	/** Algorithms nobody should still be offering, with the reason. */
@@ -48,7 +48,7 @@ class ProbeService {
 	}
 
 	public static function ssh2Class(): ?string {
-		foreach (['phpseclib3\\Net\\SSH2', 'phpseclib\\Net\\SSH2'] as $class) {
+		foreach (['OCA\\NetBase\\Vendor\\phpseclib3\\Net\\SSH2', 'phpseclib3\\Net\\SSH2', 'phpseclib\\Net\\SSH2'] as $class) {
 			if (class_exists($class)) {
 				return $class;
 			}

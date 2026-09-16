@@ -15,11 +15,15 @@ use OCA\NetBase\Service\ProxyService;
 use OCA\NetBase\Service\DiscoveryService;
 use OCA\NetBase\Service\DnsService;
 use OCA\NetBase\Service\EndpointService;
+use OCA\NetBase\Service\FontService;
 use OCA\NetBase\Service\ExecService;
+use OCA\NetBase\Service\L10nService;
 use OCA\NetBase\Service\MailService;
 use OCA\NetBase\Service\ProbeService;
 use OCA\NetBase\Service\PtyService;
+use OCA\NetBase\Service\ShellGateService;
 use OCA\NetBase\Service\SshService;
+use OCA\NetBase\Service\TermLogService;
 use OCA\NetBase\Service\TransferService;
 // NETBASE-STORE-REMOVED: use OCA\NetBase\Service\NmapService;
 use OCA\NetBase\Service\OuiService;
@@ -59,6 +63,9 @@ class ApiController extends Controller {
 		private ProbeService $probe,
 		private SshService $ssh,
 		private PtyService $pty,
+		private ShellGateService $shellGate,
+		private TermLogService $termLog,
+		private FontService $fonts,
 		private ISession $session,
 		private DnsService $dnsService,
 		private BrowserService $browser,
@@ -68,6 +75,7 @@ class ApiController extends Controller {
 		private IURLGenerator $urls,
 		private OuiService $oui,
 		private ExecService $exec,
+		private L10nService $l10n,
 		private PermissionService $permissions,
 		private DeviceMapper $devices,
 		private ScanMapper $scans,
@@ -78,18 +86,138 @@ class ApiController extends Controller {
 		parent::__construct(Application::APP_ID, $request);
 	}
 
+	/**
+	 * Whether this refusal is only for want of the master key.
+	 *
+	 * Told apart before the message is translated, because the English source
+	 * is the one fixed thing about it — matching a translated sentence would
+	 * break in every language but one.
+	 */
+	private function needsMasterKey(\Throwable $e): bool {
+		return str_contains($e->getMessage(), 'master password');
+	}
+
+	/**
+	 * What went wrong, in the reader's own language.
+	 *
+	 * Errors are raised deep in the services as plain English, which is the
+	 * source language everything else in NetBase is written in too. Turning
+	 * them here means one place instead of an l10n dependency threaded through
+	 * every service — and a message with no translation simply comes back as
+	 * it was written, which is the old behaviour.
+	 */
+	private function say(\Throwable $e): string {
+		$message = $e->getMessage();
+		if ($message === '') {
+			return $message;
+		}
+		// Nextcloud runs every translated string through vsprintf, even when no
+		// parameters were given. A message that already carries a value — a path,
+		// a host, a percentage — can therefore contain a stray "%" that vsprintf
+		// would choke on. Doubling it makes vsprintf hand back the single "%" it
+		// started with, and the plain messages this is really here for contain no
+		// "%" at all, so their lookup is unaffected.
+		return $this->l10n->t(str_replace('%', '%%', $message));
+	}
+
 	/** Wrap a handler so a validation or permission failure becomes a clean JSON error. */
 	private function guard(callable $handler, string $tool): JSONResponse {
 		try {
 			$this->permissions->require($tool);
 			return new JSONResponse($handler());
 		} catch (\InvalidArgumentException $e) {
-			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_BAD_REQUEST);
+			return new JSONResponse(['error' => $this->say($e)], Http::STATUS_BAD_REQUEST);
 		} catch (\RuntimeException $e) {
-			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_FORBIDDEN);
+			return new JSONResponse(['error' => $this->say($e), 'needsKey' => $this->needsMasterKey($e)], Http::STATUS_FORBIDDEN);
 		} catch (\Throwable $e) {
 			$this->logger->error('NetBase: ' . $e->getMessage(), ['exception' => $e, 'app' => 'netbase']);
-			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_INTERNAL_SERVER_ERROR);
+			return new JSONResponse(['error' => $this->say($e)], Http::STATUS_INTERNAL_SERVER_ERROR);
+		}
+	}
+
+	/**
+	 * The same shape as guard(), but the only key is being an administrator.
+	 *
+	 * The local shell is not one of the grantable tools — no setting can hand
+	 * it to a group — so it is gated on administrator rights directly rather
+	 * than on a tool name.
+	 */
+	/** The terminal faces the browser is offered; anything else is refused. */
+	private const TERM_FONTS = ['system', 'menlo', 'dejavu', 'noto', 'gothic', 'plain'];
+
+	/**
+	 * The environment a shell starts with, for this account.
+	 *
+	 * The language is only ever one the server actually has: a LANG naming a
+	 * locale that is not installed leaves the shell complaining on every
+	 * command instead of speaking the language asked for. The rest is what the
+	 * administrator wrote, one NAME=value to a line.
+	 *
+	 * @return array<string, string>
+	 */
+	private function shellEnvironment(string $uid): array {
+		$env = [];
+		$lang = $this->config->getUserValue($uid, 'netbase', 'shell_lang', '');
+		if ($lang !== '' && in_array($lang, $this->shellLocales(), true)) {
+			$env['LANG'] = $lang;
+			$env['LC_ALL'] = $lang;
+		}
+		foreach (preg_split('/\R/', $this->config->getUserValue($uid, 'netbase', 'shell_env', '')) ?: [] as $line) {
+			$line = trim($line);
+			if ($line === '' || !str_contains($line, '=')) {
+				continue;
+			}
+			[$name, $value] = explode('=', $line, 2);
+			$name = trim($name);
+			if (preg_match('/^[A-Za-z_][A-Za-z0-9_]*$/', $name) !== 1) {
+				continue;
+			}
+			$env[$name] = str_replace(["\0", "\r", "\n"], '', $value);
+		}
+		return $env;
+	}
+
+	/**
+	 * The UTF-8 locales this server has.
+	 *
+	 * The picker offers these and nothing else, so a language can never be set
+	 * to one the machine cannot produce.
+	 *
+	 * @return list<string>
+	 */
+	/** Kept for the request: reading settings asks for this more than once. */
+	private ?array $localeCache = null;
+
+	private function shellLocales(): array {
+		if ($this->localeCache !== null) {
+			return $this->localeCache;
+		}
+		$result = $this->exec->run('locale', ['-a'], 5.0);
+		if (empty($result['ok'])) {
+			return [];
+		}
+		$found = [];
+		foreach (preg_split('/\R/', (string)$result['stdout']) ?: [] as $name) {
+			$name = trim($name);
+			if ($name !== '' && preg_match('/utf-?8$/i', $name) === 1 && !in_array($name, $found, true)) {
+				$found[] = $name;
+			}
+		}
+		sort($found);
+		return array_slice($found, 0, 200);
+	}
+
+	private function guardAdmin(callable $handler): JSONResponse {
+		try {
+			$this->permissions->requireAdmin();
+			return new JSONResponse($handler());
+		} catch (\InvalidArgumentException $e) {
+			return new JSONResponse(['error' => $this->say($e)], Http::STATUS_BAD_REQUEST);
+		} catch (\RuntimeException $e) {
+			return new JSONResponse(['error' => $this->say($e), 'needsKey' => $this->needsMasterKey($e)], Http::STATUS_FORBIDDEN);
+		} catch (\Throwable $e) {
+			$this->logger->error('NetBase: ' . $e->getMessage(), ['exception' => $e, 'app' => 'netbase']);
+			return new JSONResponse(['error' => $this->say($e)], Http::STATUS_INTERNAL_SERVER_ERROR);
 		}
 	}
 
@@ -126,9 +254,13 @@ class ApiController extends Controller {
 		foreach (['whois', 'dig', 'arp-scan', 'avahi-browse', 'ss', 'netstat', 'snmpwalk', 'nbtscan'] as $binary) {
 			$binaries[$binary] = $this->exec->available($binary);
 		}
+		// The local shell is administrator-only and not a grantable tool, so
+		// its visibility rides alongside the tool map rather than in it.
+		$can = $this->permissions->permissions();
+		$can['shell'] = $this->permissions->isAdmin();
 		return new JSONResponse([
 			'version' => $this->config->getAppValue('netbase', 'installed_version', ''),
-			'can' => $this->permissions->permissions(),
+			'can' => $can,
 			'canScan' => $this->permissions->can('scan'),
 			'isAdmin' => $this->permissions->isAdmin(),
 			'interfaces' => $this->permissions->can('scan') ? $this->discovery->interfaces() : [],
@@ -155,6 +287,9 @@ class ApiController extends Controller {
 			'arpFlush' => $this->permissions->can('scan') ? $this->discovery->arpFlushInfo() : ['available' => false],
 			'sockets' => extension_loaded('sockets'),
 			'procOpen' => function_exists('proc_open'),
+			// The local shell needs proc_open and python3; the tab warns when
+			// they are missing rather than offering a button that cannot work.
+			'localShell' => ['available' => $this->permissions->isAdmin() && $this->pty->localShellAvailable()],
 			'sshPresets' => SshService::PRESETS,
 			'preview' => $this->permissions->can('preview') && $this->browser->available(),
 			'transfer' => $this->transfer->capabilities(),
@@ -227,7 +362,10 @@ class ApiController extends Controller {
 			if ($known !== null) {
 				$device->setKnown($known);
 			}
-			if ($dtype !== null && $dtype !== '') {
+			// A template key or the user's own words ("Container"): trimmed, with
+			// control characters dropped, to the 32 characters the column holds.
+			$dtype = $dtype !== null ? trim((string)preg_replace('/[\x00-\x1F\x7F]/u', '', $dtype)) : '';
+			if ($dtype !== '') {
 				$device->setDtype(mb_substr($dtype, 0, 32));
 			}
 			return ['device' => $this->devices->update($device)->jsonSerialize()];
@@ -393,8 +531,8 @@ class ApiController extends Controller {
 
 	#[NoAdminRequired]
 	#[UserRateLimit(limit: 10, period: 300)]
-	public function speedTest(int $megabytes = 25, bool $upload = true): JSONResponse {
-		return $this->guard(fn () => $this->bench->speedTest($megabytes, $upload), 'bench');
+	public function speedTest(int $megabytes = 25, bool $upload = true, string $via = 'auto'): JSONResponse {
+		return $this->guard(fn () => $this->bench->speedTest($megabytes, $upload, $via), 'bench');
 	}
 
 	#[NoAdminRequired]
@@ -445,8 +583,62 @@ class ApiController extends Controller {
 		return $this->guardAny(fn () => [
 			'connections' => $this->endpoints->list($this->uid()),
 			'kinds' => EndpointService::KINDS,
+			'groups' => EndpointService::GROUPS,
 			'capabilities' => $this->transfer->capabilities(),
+			// Where connections are kept, and whether that is usable yet: the
+			// list is empty for "none saved" and for "nowhere to save them",
+			// and the browser has to be able to tell those apart.
+			'setup' => $this->endpoints->setup($this->uid()),
 		], ['files', 'mail', 'sshexec']);
+	}
+
+	/** Where connections are kept: the collections, the fields, the mapping. */
+	#[NoAdminRequired]
+	public function connSetup(): JSONResponse {
+		return $this->guardAny(fn () => ['setup' => $this->endpoints->setup($this->uid())], ['files', 'mail', 'sshexec']);
+	}
+
+	/**
+	 * Hand over the RegiBase master password for this browser session.
+	 *
+	 * The password is not stored and not returned; only the key derived from it
+	 * is held, in the session, until that session ends.
+	 */
+	#[NoAdminRequired]
+	#[UserRateLimit(limit: 20, period: 300)]
+	public function connUnlock(string $password = ''): JSONResponse {
+		return $this->guardAny(function () use ($password) {
+			$ok = $this->endpoints->unlock($this->uid(), $password);
+			return ['ok' => $ok, 'setup' => $this->endpoints->setup($this->uid())];
+		}, ['files', 'mail', 'sshexec']);
+	}
+
+	/** Give the key up now, rather than waiting for the session to end. */
+	#[NoAdminRequired]
+	public function connLock(): JSONResponse {
+		return $this->guardAny(function () {
+			$this->endpoints->lock();
+			return ['ok' => true, 'setup' => $this->endpoints->setup($this->uid())];
+		}, ['files', 'mail', 'sshexec']);
+	}
+
+	/** Point NetBase at a collection, and say which field means what. */
+	#[NoAdminRequired]
+	public function connMapping(string $group = '', int $collection = 0, array $mapping = []): JSONResponse {
+		return $this->guardAny(
+			fn () => ['setup' => $this->endpoints->mapTo($this->uid(), $group, $collection, $mapping)],
+			['files', 'mail', 'sshexec'],
+		);
+	}
+
+	/** Build a collection shaped for connections, for somebody starting out. */
+	#[NoAdminRequired]
+	#[UserRateLimit(limit: 10, period: 300)]
+	public function connCollection(string $group = '', string $name = ''): JSONResponse {
+		return $this->guardAny(
+			fn () => ['setup' => $this->endpoints->createCollection($this->uid(), $group, $name)],
+			['files', 'mail', 'sshexec'],
+		);
 	}
 
 	#[NoAdminRequired]
@@ -504,34 +696,123 @@ class ApiController extends Controller {
 
 	#[NoAdminRequired]
 	#[UserRateLimit(limit: 120, period: 60)]
-	public function filesList(int $id = 0, string $path = '', array $connection = []): JSONResponse {
-		return $this->guard(fn () => $this->transfer->listDirectory($this->endpointFor($id, $connection), $path), 'files');
+	/**
+	 * @param string $sudoPassword typed on the spot when the reader asks to look
+	 *                              as root. It is used for this one request and
+	 *                              kept nowhere — not in the settings, not in
+	 *                              RegiBase, not on disk — so it has to be given
+	 *                              again next time. That is the point of it.
+	 */
+	public function filesList(int $id = 0, string $path = '', array $connection = [], string $sudoPassword = '', string $prefer = ''): JSONResponse {
+		return $this->guard(fn () => $this->transfer->listDirectory($this->endpointFor($id, $connection), $path, $sudoPassword, $prefer), 'files');
 	}
 
 	#[NoAdminRequired]
 	#[UserRateLimit(limit: 60, period: 60)]
-	public function filesDownload(string $path, int $id = 0, string $target = 'NetBase', array $connection = []): JSONResponse {
-		return $this->guard(fn () => $this->transfer->download($this->endpointFor($id, $connection), $this->uid(), $path, $target), 'files');
+	/**
+	 * @param bool $folder the row is a folder: bring it back as one ZIP file
+	 *                     rather than refusing, which is what it did before.
+	 */
+	public function filesDownload(string $path, int $id = 0, string $target = 'NetBase', array $connection = [], string $prefer = '', bool $folder = false, string $sudoPassword = ''): JSONResponse {
+		return $this->guard(function () use ($id, $connection, $path, $target, $prefer, $folder, $sudoPassword) {
+			$endpoint = $this->endpointFor($id, $connection);
+			return $folder
+				? $this->transfer->downloadFolder($endpoint, $this->uid(), $path, $target, $prefer, $sudoPassword)
+				: $this->transfer->download($endpoint, $this->uid(), $path, $target, $prefer);
+		}, 'files');
 	}
 
 	#[NoAdminRequired]
 	#[UserRateLimit(limit: 60, period: 60)]
-	public function filesUpload(string $source, int $id = 0, string $remoteDir = '', array $connection = []): JSONResponse {
-		return $this->guard(fn () => $this->transfer->upload($this->endpointFor($id, $connection), $this->uid(), $source, $remoteDir), 'files');
+	public function filesUpload(string $source, int $id = 0, string $remoteDir = '', array $connection = [], string $prefer = ''): JSONResponse {
+		return $this->guard(fn () => $this->transfer->upload($this->endpointFor($id, $connection), $this->uid(), $source, $remoteDir, $prefer), 'files');
+	}
+
+	/**
+	 * One transfer, reported line by line while it runs.
+	 *
+	 * A file worth moving takes long enough that silence looks like a hang, so
+	 * the bytes are sent back as they pass. Closing the page stops the transfer
+	 * rather than leaving it running into a window nobody is watching.
+	 */
+	#[NoAdminRequired]
+	#[UserRateLimit(limit: 120, period: 60)]
+	public function filesTransfer(
+		string $direction = 'down', int $id = 0, string $remote = '', string $local = '',
+		string $target = 'NetBase', array $connection = [], string $prefer = '', string $sudoPassword = '',
+		bool $folder = false,
+	): Response {
+		if (!$this->permissions->can('files')) {
+			return new JSONResponse(['error' => $this->l10n->t('Not allowed')], Http::STATUS_FORBIDDEN);
+		}
+		$response = new ProxyResponse(function (IOutput $output) use ($direction, $id, $remote, $local, $target, $connection, $prefer, $sudoPassword, $folder): void {
+			// The session lock would be held for the whole transfer, which stops
+			// every other request from this browser until it finishes.
+			$this->session->close();
+			while (ob_get_level() > 0) {
+				@ob_end_flush();
+			}
+			@ini_set('zlib.output_compression', '0');
+			@set_time_limit(0);
+			ignore_user_abort(false);
+			$emit = static function (array $line): bool {
+				echo json_encode($line, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) . "\n";
+				@flush();
+				return connection_aborted() === 0;
+			};
+			try {
+				$endpoint = $this->endpointFor($id, $connection);
+				if ($folder && $direction === 'up') {
+					$this->transfer->uploadFolder($endpoint, $this->uid(), $local, $remote, $emit, $prefer, $sudoPassword);
+				} else {
+					$this->transfer->transferStream($endpoint, $this->uid(), [
+						'direction' => $direction, 'remote' => $remote, 'local' => $local, 'target' => $target,
+					], $emit, $prefer, $sudoPassword);
+				}
+			} catch (\Throwable $e) {
+				// The status line has already gone out, so a failure has to be
+				// reported in the body like everything else.
+				$emit(['stage' => 'error', 'message' => $this->say($e)]);
+			}
+		});
+		$response->addHeader('Content-Type', 'application/x-ndjson');
+		$response->addHeader('Cache-Control', 'no-store');
+		$response->addHeader('X-Accel-Buffering', 'no');
+		return $response;
+	}
+
+	/** A file's contents, as text, for a window to show and edit. */
+	#[NoAdminRequired]
+	#[UserRateLimit(limit: 120, period: 60)]
+	public function filesText(string $path, int $id = 0, array $connection = [], string $prefer = '', string $sudoPassword = ''): JSONResponse {
+		return $this->guard(fn () => $this->transfer->readText($this->endpointFor($id, $connection), $path, $prefer, $sudoPassword), 'files');
+	}
+
+	/** Edited text, put back the way it came. */
+	#[NoAdminRequired]
+	#[UserRateLimit(limit: 60, period: 60)]
+	public function filesSaveText(
+		string $path, string $text, int $id = 0, string $encoding = 'UTF-8', string $newline = 'lf',
+		array $connection = [], string $prefer = '', string $sudoPassword = '',
+	): JSONResponse {
+		return $this->guard(fn () => $this->transfer->writeText(
+			$this->endpointFor($id, $connection), $path, $text, $encoding, $newline, $prefer, $sudoPassword
+		), 'files');
 	}
 
 	#[NoAdminRequired]
 	#[UserRateLimit(limit: 60, period: 60)]
-	public function filesManage(string $action, string $path, int $id = 0, string $extra = '', array $connection = []): JSONResponse {
-		return $this->guard(fn () => $this->transfer->manage($this->endpointFor($id, $connection), $action, $path, $extra), 'files');
+	/** @param string $sudoPassword as filesList(): for this request only, stored nowhere. */
+	public function filesManage(string $action, string $path, int $id = 0, string $extra = '', array $connection = [], string $sudoPassword = '', string $prefer = ''): JSONResponse {
+		return $this->guard(fn () => $this->transfer->manage($this->endpointFor($id, $connection), $action, $path, $extra, $sudoPassword, $prefer), 'files');
 	}
 
 
 	/** The user's own Nextcloud files, for choosing a key, a source or a target. */
 	#[NoAdminRequired]
 	#[UserRateLimit(limit: 240, period: 60)]
-	public function nextcloudFiles(string $path = '', bool $foldersOnly = false): JSONResponse {
-		return $this->guardAny(fn () => $this->transfer->browseNextcloud($this->uid(), $path, $foldersOnly), ['files', 'mail', 'sshexec']);
+	public function nextcloudFiles(string $path = '', bool $foldersOnly = false, bool $create = false): JSONResponse {
+		return $this->guardAny(fn () => $this->transfer->browseNextcloud($this->uid(), $path, $foldersOnly, $create), ['files', 'mail', 'sshexec']);
 	}
 
 	// ---------------------------------------------------------------- mail
@@ -582,15 +863,15 @@ class ApiController extends Controller {
 	public function saveResult(string $name, string $content, string $folder = 'NetBase'): JSONResponse {
 		$uid = $this->permissions->uid();
 		if ($uid === null) {
-			return new JSONResponse(['error' => 'Not signed in'], Http::STATUS_UNAUTHORIZED);
+			return new JSONResponse(['error' => $this->l10n->t('Not signed in')], Http::STATUS_UNAUTHORIZED);
 		}
 		try {
 			$saved = $this->transfer->saveToFiles($uid, $folder, $name, $content);
 		} catch (\InvalidArgumentException $e) {
-			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_BAD_REQUEST);
+			return new JSONResponse(['error' => $this->say($e)], Http::STATUS_BAD_REQUEST);
 		} catch (\Throwable $e) {
 			$this->logger->error('NetBase: ' . $e->getMessage(), ['exception' => $e, 'app' => 'netbase']);
-			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_INTERNAL_SERVER_ERROR);
+			return new JSONResponse(['error' => $this->say($e)], Http::STATUS_INTERNAL_SERVER_ERROR);
 		}
 		return new JSONResponse($saved);
 	}
@@ -611,12 +892,12 @@ class ApiController extends Controller {
 			$this->permissions->require('preview');
 			$token = $this->proxy->issue($base, (string)$this->permissions->uid());
 		} catch (\InvalidArgumentException $e) {
-			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_BAD_REQUEST);
+			return new JSONResponse(['error' => $this->say($e)], Http::STATUS_BAD_REQUEST);
 		} catch (\RuntimeException $e) {
-			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_FORBIDDEN);
+			return new JSONResponse(['error' => $this->say($e), 'needsKey' => $this->needsMasterKey($e)], Http::STATUS_FORBIDDEN);
 		} catch (\Throwable $e) {
 			$this->logger->error('NetBase: ' . $e->getMessage(), ['exception' => $e, 'app' => 'netbase']);
-			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_INTERNAL_SERVER_ERROR);
+			return new JSONResponse(['error' => $this->say($e)], Http::STATUS_INTERNAL_SERVER_ERROR);
 		}
 		// The trailing slash matters: everything the device page points at is
 		// resolved against this address, and without it the last segment — the
@@ -658,12 +939,12 @@ class ApiController extends Controller {
 			), '/');
 			$result = $this->browser->screenshot($url . ($path === '' ? '/' : ''), $width, $height, 5000, false);
 		} catch (\InvalidArgumentException $e) {
-			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_BAD_REQUEST);
+			return new JSONResponse(['error' => $this->say($e)], Http::STATUS_BAD_REQUEST);
 		} catch (\RuntimeException $e) {
-			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_FORBIDDEN);
+			return new JSONResponse(['error' => $this->say($e), 'needsKey' => $this->needsMasterKey($e)], Http::STATUS_FORBIDDEN);
 		} catch (\Throwable $e) {
 			$this->logger->error('NetBase: ' . $e->getMessage(), ['exception' => $e, 'app' => 'netbase']);
-			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_INTERNAL_SERVER_ERROR);
+			return new JSONResponse(['error' => $this->say($e)], Http::STATUS_INTERNAL_SERVER_ERROR);
 		}
 		if (!$result['ok']) {
 			return new JSONResponse(['error' => $result['error']], Http::STATUS_BAD_GATEWAY);
@@ -678,12 +959,12 @@ class ApiController extends Controller {
 			$this->permissions->require('preview');
 			$result = $this->browser->screenshot($url, $width, $height, $wait, $full);
 		} catch (\InvalidArgumentException $e) {
-			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_BAD_REQUEST);
+			return new JSONResponse(['error' => $this->say($e)], Http::STATUS_BAD_REQUEST);
 		} catch (\RuntimeException $e) {
-			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_FORBIDDEN);
+			return new JSONResponse(['error' => $this->say($e), 'needsKey' => $this->needsMasterKey($e)], Http::STATUS_FORBIDDEN);
 		} catch (\Throwable $e) {
 			$this->logger->error('NetBase: ' . $e->getMessage(), ['exception' => $e, 'app' => 'netbase']);
-			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_INTERNAL_SERVER_ERROR);
+			return new JSONResponse(['error' => $this->say($e)], Http::STATUS_INTERNAL_SERVER_ERROR);
 		}
 		if (!$result['ok']) {
 			return new JSONResponse(['error' => $result['error']], Http::STATUS_BAD_GATEWAY);
@@ -720,10 +1001,14 @@ class ApiController extends Controller {
 	#[UserRateLimit(limit: 30, period: 300)]
 	public function ptyOpen(string $session, int $id = 0, array $connection = [], int $cols = 80, int $rows = 24): Response {
 		if (!$this->permissions->can('sshexec')) {
-			return new JSONResponse(['error' => 'Not allowed'], Http::STATUS_FORBIDDEN);
+			return new JSONResponse(['error' => $this->l10n->t('Not allowed')], Http::STATUS_FORBIDDEN);
 		}
 		$uid = (string)$this->uid();
 		$endpoint = $this->endpointFor($id, $connection);
+		// Whether this terminal is recorded, and where it is going, are settled
+		// here: the callback below closes the session before the first byte
+		// moves, and a closed session can no longer be read for settings.
+		$this->termLog->begin($uid, $session, 'ssh', (string)$endpoint->getHost());
 		$response = new ProxyResponse(function (IOutput $output) use ($endpoint, $uid, $session, $cols, $rows): void {
 			// Nextcloud locks the session file for the length of a request.
 			// This one lasts as long as the terminal does, and every keystroke
@@ -736,8 +1021,9 @@ class ApiController extends Controller {
 			@ini_set('zlib.output_compression', '0');
 			@set_time_limit(0);
 			ignore_user_abort(false);
-			$this->pty->serve($endpoint, $uid, $session, $cols, $rows, function (string $chunk): bool {
+			$this->pty->serve($endpoint, $uid, $session, $cols, $rows, function (string $chunk) use ($uid, $session): bool {
 				if ($chunk !== '') {
+					$this->termLog->said($uid, $session, $chunk);
 					echo $chunk;
 				} else {
 					// A byte the terminal throws away, so that a silent shell
@@ -747,6 +1033,9 @@ class ApiController extends Controller {
 				@flush();
 				return connection_aborted() === 0;
 			});
+			// Whatever was still being gathered when the window went — usually
+			// the command that was running — is kept rather than thrown away.
+			$this->termLog->finish($uid, $session);
 		});
 		// These belong on the response, not inside the callback: Nextcloud has
 		// already sent the headers by the time the callback runs, and nginx
@@ -761,7 +1050,11 @@ class ApiController extends Controller {
 	#[NoAdminRequired]
 	#[UserRateLimit(limit: 6000, period: 60)]
 	public function ptyType(string $session, string $data = ''): JSONResponse {
-		return $this->guard(fn () => ['ok' => $this->pty->type((string)$this->uid(), $session, $data)], 'sshexec');
+		return $this->guard(function () use ($session, $data) {
+			$uid = (string)$this->uid();
+			$this->termLog->typed($uid, $session, $data);
+			return ['ok' => $this->pty->type($uid, $session, $data)];
+		}, 'sshexec');
 	}
 
 	#[NoAdminRequired]
@@ -773,7 +1066,206 @@ class ApiController extends Controller {
 	#[NoAdminRequired]
 	#[UserRateLimit(limit: 300, period: 60)]
 	public function ptyClose(string $session): JSONResponse {
-		return $this->guard(fn () => ['ok' => $this->pty->hangUp((string)$this->uid(), $session)], 'sshexec');
+		return $this->guard(function () use ($session) {
+			$uid = (string)$this->uid();
+			$ok = $this->pty->hangUp($uid, $session);
+			$this->termLog->finish($uid, $session);
+			return ['ok' => $ok];
+		}, 'sshexec');
+	}
+
+	/**
+	 * The speed test, sent out as it runs.
+	 *
+	 * Built like the terminal: the request is the measurement, and each sample
+	 * is written the moment it is taken, one JSON object to a line. The browser
+	 * reads them as they arrive and draws the line; when it goes away, the
+	 * write fails and the transfer is abandoned rather than left running.
+	 */
+	#[NoAdminRequired]
+	#[UserRateLimit(limit: 20, period: 300)]
+	public function speedTestLive(int $megabytes = 25, bool $upload = true, string $via = 'auto'): Response {
+		if (!$this->permissions->can('bench')) {
+			return new JSONResponse(['error' => $this->l10n->t('Not allowed')], Http::STATUS_FORBIDDEN);
+		}
+		$response = new ProxyResponse(function (IOutput $output) use ($megabytes, $upload, $via): void {
+			// The session lock would be held for the whole measurement, which
+			// stops every other request from this browser until it finishes.
+			$this->session->close();
+			while (ob_get_level() > 0) {
+				@ob_end_flush();
+			}
+			@ini_set('zlib.output_compression', '0');
+			@set_time_limit(0);
+			ignore_user_abort(false);
+			$this->bench->speedTestStream($megabytes, $upload, function (array $sample): bool {
+				echo json_encode($sample, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) . "\n";
+				@flush();
+				return connection_aborted() === 0;
+			}, $via);
+		});
+		$response->addHeader('Content-Type', 'application/x-ndjson');
+		$response->addHeader('Cache-Control', 'no-store');
+		$response->addHeader('X-Accel-Buffering', 'no');
+		return $response;
+	}
+
+	/**
+	 * One of this server's own fonts, for a terminal to be drawn in.
+	 *
+	 * Loaded by a stylesheet rather than by a script, so it carries no token;
+	 * it gives out nothing but a font file that is already on the list, and
+	 * only to someone signed in. The browser keeps it, so this is paid once.
+	 */
+	#[NoAdminRequired]
+	#[NoCSRFRequired]
+	public function font(string $id): Response {
+		$font = $this->fonts->find($id);
+		if ($font === null) {
+			return new JSONResponse(['error' => $this->l10n->t('Unknown font')], Http::STATUS_NOT_FOUND);
+		}
+		$body = @file_get_contents($font['file']);
+		if ($body === false) {
+			return new JSONResponse(['error' => $this->l10n->t('The font could not be read')], Http::STATUS_NOT_FOUND);
+		}
+		$type = str_ends_with(strtolower($font['file']), '.otf') ? 'font/otf' : 'font/ttf';
+		$response = new DataDisplayResponse($body, Http::STATUS_OK, ['Content-Type' => $type]);
+		$response->addHeader('Cache-Control', 'private, max-age=604800');
+		return $response;
+	}
+
+	// ---------------------------------------------------------------- local shell
+
+	/**
+	 * Ask to open a shell on this server, and set the gate going.
+	 *
+	 * Administrators only. On a closed network the answer is "open"; online it
+	 * is "verify" (a code has just been emailed) or "no-email" (set an address
+	 * first). Nothing about the code is returned — only where it was sent.
+	 */
+	#[NoAdminRequired]
+	#[UserRateLimit(limit: 12, period: 300)]
+	public function shellBegin(): JSONResponse {
+		return $this->guardAdmin(fn () => $this->shellGate->begin());
+	}
+
+	/** Hand back a code that was emailed, to open the gate. */
+	#[NoAdminRequired]
+	#[UserRateLimit(limit: 20, period: 300)]
+	public function shellVerify(string $code = ''): JSONResponse {
+		return $this->guardAdmin(fn () => $this->shellGate->verify($code));
+	}
+
+	/**
+	 * A shell on this server, held open for as long as the browser listens.
+	 *
+	 * Like ptyOpen(), this request is the session. It opens only for an
+	 * administrator who has passed the gate (a closed network, or a verified
+	 * code); without that ticket it refuses before a single byte is streamed.
+	 */
+	#[NoAdminRequired]
+	#[UserRateLimit(limit: 30, period: 300)]
+	public function shellOpen(string $session, int $cols = 80, int $rows = 24): Response {
+		if (!$this->permissions->isAdmin()) {
+			return new JSONResponse(['error' => $this->l10n->t('Administrator rights are required')], Http::STATUS_FORBIDDEN);
+		}
+		if (!$this->shellGate->hasTicket()) {
+			return new JSONResponse(['error' => $this->l10n->t('Not verified')], Http::STATUS_FORBIDDEN);
+		}
+		$uid = (string)$this->uid();
+		// The most powerful thing this app does, so it leaves a record: who
+		// opened a shell, from where, and which gate let them through. Written
+		// before the session is closed, while the route is still readable.
+		$this->logger->info('NetBase: a shell was opened on this server', [
+			'app' => 'netbase',
+			'user' => $uid,
+			'remoteAddress' => $this->request->getRemoteAddress(),
+			'gate' => $this->shellGate->route(),
+		]);
+		// Read before the session is closed, and handed to the shell as it starts.
+		$env = $this->shellEnvironment($uid);
+		// Likewise settled here, for the same reason: once the stream begins
+		// there is no session left to ask.
+		$this->termLog->begin($uid, $session, 'shell', (string)$this->urls->getBaseUrl());
+		$response = new ProxyResponse(function (IOutput $output) use ($uid, $session, $cols, $rows, $env): void {
+			$this->session->close();
+			while (ob_get_level() > 0) {
+				@ob_end_flush();
+			}
+			@ini_set('zlib.output_compression', '0');
+			@set_time_limit(0);
+			ignore_user_abort(false);
+			$this->pty->serveLocal($uid, $session, $cols, $rows, function (string $chunk) use ($uid, $session): bool {
+				if ($chunk !== '') {
+					$this->termLog->said($uid, $session, $chunk);
+				}
+				echo $chunk !== '' ? $chunk : "\0";
+				@flush();
+				return connection_aborted() === 0;
+			}, $env);
+			$this->termLog->finish($uid, $session);
+		});
+		$response->addHeader('Content-Type', 'application/octet-stream');
+		$response->addHeader('Cache-Control', 'no-store');
+		$response->addHeader('X-Accel-Buffering', 'no');
+		return $response;
+	}
+
+	#[NoAdminRequired]
+	#[UserRateLimit(limit: 6000, period: 60)]
+	public function shellType(string $session, string $data = ''): JSONResponse {
+		return $this->guardAdmin(function () use ($session, $data) {
+			$uid = (string)$this->uid();
+			$this->termLog->typed($uid, $session, $data);
+			return ['ok' => $this->pty->type($uid, $session, $data)];
+		});
+	}
+
+	#[NoAdminRequired]
+	#[UserRateLimit(limit: 300, period: 60)]
+	public function shellSize(string $session, int $cols = 80, int $rows = 24): JSONResponse {
+		return $this->guardAdmin(fn () => ['ok' => $this->pty->resize((string)$this->uid(), $session, $cols, $rows)]);
+	}
+
+	#[NoAdminRequired]
+	#[UserRateLimit(limit: 300, period: 60)]
+	public function shellClose(string $session): JSONResponse {
+		return $this->guardAdmin(function () use ($session) {
+			$uid = (string)$this->uid();
+			$ok = $this->pty->hangUp($uid, $session);
+			$this->termLog->finish($uid, $session);
+			return ['ok' => $ok];
+		});
+	}
+
+	// ---------------------------------------------------------------- what was done
+
+	/**
+	 * The terminal sessions this account has kept.
+	 *
+	 * Only ever this account's own: a recorded session belongs to whoever sat
+	 * at it, and there is no endpoint that reads anybody else's. Guarded by
+	 * the right to use a terminal at all — which an administrator always has,
+	 * so the shell's own sessions are covered by the same door.
+	 */
+	#[NoAdminRequired]
+	#[UserRateLimit(limit: 120, period: 60)]
+	public function termLogSessions(): JSONResponse {
+		return $this->guard(fn () => ['sessions' => $this->termLog->sessions((string)$this->uid())], 'sshexec');
+	}
+
+	/** One recorded session, step by step. */
+	#[NoAdminRequired]
+	#[UserRateLimit(limit: 120, period: 60)]
+	public function termLogRead(string $session): JSONResponse {
+		return $this->guard(fn () => ['steps' => $this->termLog->read((string)$this->uid(), $session)], 'sshexec');
+	}
+
+	/** Throw one recorded session away, or every one this account has. */
+	#[NoAdminRequired]
+	#[UserRateLimit(limit: 60, period: 60)]
+	public function termLogForget(string $session = ''): JSONResponse {
+		return $this->guard(fn () => ['removed' => $this->termLog->forget((string)$this->uid(), $session)], 'sshexec');
 	}
 
 	/**
@@ -906,12 +1398,12 @@ class ApiController extends Controller {
 	#[NoAdminRequired]
 	public function getI18n(string $lang): JSONResponse {
 		if (!in_array($lang, $this->languageCodes(), true)) {
-			return new JSONResponse(['error' => 'Unknown language'], Http::STATUS_NOT_FOUND);
+			return new JSONResponse(['error' => $this->l10n->t('Unknown language')], Http::STATUS_NOT_FOUND);
 		}
 		$path = realpath(__DIR__ . '/../../l10n/' . $lang . '.json');
 		$base = realpath(__DIR__ . '/../../l10n');
 		if ($path === false || $base === false || !str_starts_with($path, $base)) {
-			return new JSONResponse(['error' => 'Unknown language'], Http::STATUS_NOT_FOUND);
+			return new JSONResponse(['error' => $this->l10n->t('Unknown language')], Http::STATUS_NOT_FOUND);
 		}
 		$data = json_decode((string)file_get_contents($path), true);
 		return new JSONResponse(['translations' => $data['translations'] ?? []]);
@@ -931,6 +1423,31 @@ class ApiController extends Controller {
 			// Keys tend to live in one folder, and hunting for it every time is
 			// a small annoyance repeated on every connection.
 			'keyFolder' => $uid ? $this->config->getUserValue($uid, 'netbase', 'key_folder', '') : '',
+			// How the terminal is drawn, for this person: one of the faces the
+			// browser can be relied on to have, and a size in points.
+			'termFont' => $uid ? $this->config->getUserValue($uid, 'netbase', 'term_font', 'system') : 'system',
+			'termFontSize' => (int)($uid ? $this->config->getUserValue($uid, 'netbase', 'term_font_size', '13') : 13),
+			// What a shell starts with: a language the server actually has, and
+			// whatever else this administrator wants set.
+			'shellLang' => $uid ? $this->config->getUserValue($uid, 'netbase', 'shell_lang', '') : '',
+			'shellEnv' => $uid ? $this->config->getUserValue($uid, 'netbase', 'shell_env', '') : '',
+			'shellLocales' => $this->permissions->isAdmin() ? $this->shellLocales() : [],
+			// What a terminal leaves behind afterwards. Nothing, until somebody
+			// says how many steps to keep; then that many per window, and each
+			// window dropped once it has been left alone for this many days.
+			'termLogOn' => $uid ? $this->config->getUserValue($uid, 'netbase', 'term_log_on', '0') === '1' : false,
+			// Reported whether or not it is switched on, so the field shows the
+			// figure it would use rather than a zero.
+			'termLogSteps' => (int)($uid ? $this->config->getUserValue($uid, 'netbase', 'term_log_steps', '5000') : 5000),
+			'termLogDays' => $uid ? $this->termLog->keepDays($uid) : 30,
+			// The fonts this server could lend the terminal. Only offered to
+			// someone who can open one.
+			'serverFonts' => ($this->permissions->isAdmin() || $this->permissions->can('sshexec')) ? $this->fonts->fonts() : [],
+			// How long acting as root survives with nobody touching anything.
+			// Minutes; 0 means it does not expire on its own. Ten to start with,
+			// because the cost of it lapsing is one password and the cost of it
+			// lasting is somebody else's root shell.
+			'rootIdleMinutes' => (int)($uid ? $this->config->getUserValue($uid, 'netbase', 'root_idle_minutes', '10') : 10),
 			// The order the tools are listed in, as this person arranged them.
 			'tabOrder' => $uid ? array_values(array_filter(explode(',', $this->config->getUserValue($uid, 'netbase', 'tab_order', '')))) : [],
 			// Devices whose own page this person has agreed to show in full.
@@ -941,6 +1458,7 @@ class ApiController extends Controller {
 				'groups' => $this->permissions->groups(),
 				'hideEmptyMenu' => $this->permissions->hidesEmptyMenu(),
 				'maxHosts' => (int)$this->config->getAppValue('netbase', 'max_hosts', '65536'),
+				'fontDir' => $this->config->getAppValue('netbase', 'font_dir', ''),
 			],
 		]);
 	}
@@ -949,15 +1467,52 @@ class ApiController extends Controller {
 	public function setSettings(array $settings = []): JSONResponse {
 		$uid = $this->permissions->uid();
 		if ($uid === null) {
-			return new JSONResponse(['error' => 'Not signed in'], Http::STATUS_UNAUTHORIZED);
+			return new JSONResponse(['error' => $this->l10n->t('Not signed in')], Http::STATUS_UNAUTHORIZED);
 		}
-		foreach (['language' => 'language', 'theme' => 'theme', 'lastTargets' => 'last_targets', 'keyFolder' => 'key_folder'] as $key => $stored) {
+		foreach ([
+			'language' => 'language', 'theme' => 'theme', 'lastTargets' => 'last_targets',
+			'keyFolder' => 'key_folder', 'termFont' => 'term_font', 'termFontSize' => 'term_font_size',
+			'shellLang' => 'shell_lang',
+			'termLogOn' => 'term_log_on', 'termLogSteps' => 'term_log_steps', 'termLogDays' => 'term_log_days',
+			'rootIdleMinutes' => 'root_idle_minutes',
+		] as $key => $stored) {
 			if (!isset($settings[$key])) {
 				continue;
 			}
 			$value = mb_substr((string)$settings[$key], 0, 512);
 			if ($key === 'language' && $value !== 'auto' && !in_array($value, $this->languageCodes(), true)) {
 				continue;
+			}
+			// Only a face the app offers, one of this server's own fonts, or a
+			// size that stays readable.
+			if ($key === 'termFont' && !in_array($value, self::TERM_FONTS, true)
+				&& !(str_starts_with($value, 'server:') && $this->fonts->find(substr($value, 7)) !== null)) {
+				continue;
+			}
+			if ($key === 'termFontSize') {
+				$value = (string)max(9, min(24, (int)$value));
+			}
+			// Only a locale this machine has, and only for an administrator:
+			// the shell is theirs alone.
+			if ($key === 'shellLang' && $value !== '' && (!$this->permissions->isAdmin() || !in_array($value, $this->shellLocales(), true))) {
+				continue;
+			}
+			// How much of a terminal is kept. No steps means keep none, which
+			// is where this starts and where it stays unless it is changed.
+			if ($key === 'termLogOn') {
+				$value = ($value === '1' || $value === 'true') ? '1' : '0';
+			}
+			if ($key === 'termLogSteps') {
+				$value = (string)max(1, min(10000, (int)$value));
+			}
+			if ($key === 'termLogDays') {
+				$value = (string)max(1, min(3650, (int)$value));
+			}
+			// 0 is "do not expire"; anything else is clamped to something a person
+			// could actually mean. A day of root is not a setting, it is a mistake.
+			if ($key === 'rootIdleMinutes') {
+				$n = (int)$value;
+				$value = (string)($n <= 0 ? 0 : max(1, min(120, $n)));
 			}
 			$this->config->setUserValue($uid, 'netbase', $stored, $value);
 		}
@@ -972,6 +1527,18 @@ class ApiController extends Controller {
 				}
 			}
 			$this->config->setUserValue($uid, 'netbase', 'tab_order', implode(',', $order));
+		}
+		// The shell's own environment, one NAME=value to a line. Kept as written
+		// so it can be edited back, and read line by line when a shell starts.
+		if (isset($settings['shellEnv']) && $this->permissions->isAdmin()) {
+			$lines = [];
+			foreach (preg_split('/\R/', (string)$settings['shellEnv']) ?: [] as $line) {
+				$line = trim(str_replace("\0", '', $line));
+				if ($line !== '') {
+					$lines[] = mb_substr($line, 0, 512);
+				}
+			}
+			$this->config->setUserValue($uid, 'netbase', 'shell_env', mb_substr(implode("\n", array_slice($lines, 0, 64)), 0, 8192));
 		}
 		if (isset($settings['trustedDevices']) && is_array($settings['trustedDevices'])) {
 			$trusted = [];
@@ -996,6 +1563,12 @@ class ApiController extends Controller {
 			}
 			if (isset($admin['maxHosts'])) {
 				$this->config->setAppValue('netbase', 'max_hosts', (string)max(256, min(1048576, (int)$admin['maxHosts'])));
+			}
+			// One more folder to look in for fonts, for a server that keeps
+			// them somewhere of its own.
+			if (isset($admin['fontDir'])) {
+				$dir = trim(str_replace(["\0", "\n", "\r"], '', (string)$admin['fontDir']));
+				$this->config->setAppValue('netbase', 'font_dir', mb_substr($dir, 0, 512));
 			}
 		}
 		return $this->getSettings();

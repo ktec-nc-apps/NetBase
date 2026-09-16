@@ -55,7 +55,7 @@ class ToolService {
 			}
 		}
 		if (!preg_match('/^(?=.{1,253}$)([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?\.)*[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$/i', $idn)) {
-			throw new \InvalidArgumentException('Not a valid host name: ' . $host);
+			throw new \InvalidArgumentException($this->l->t('Not a valid host name: %s', [$host]));
 		}
 		return $idn;
 	}
@@ -75,7 +75,7 @@ class ToolService {
 		}
 		foreach (explode('.', $name) as $label) {
 			if ($label === '' || strlen($label) > 63 || !preg_match('/^[*_a-z0-9]([-_a-z0-9]*[*_a-z0-9])?$/i', $label)) {
-				throw new \InvalidArgumentException('Not a valid DNS name: ' . $name);
+				throw new \InvalidArgumentException($this->l->t('Not a valid DNS name: %s', [$name]));
 			}
 		}
 		return $name;
@@ -186,14 +186,25 @@ class ToolService {
 		return null;
 	}
 
+	/**
+	 * The registration details, from whichever shape the registry answers in.
+	 *
+	 * Most registries write `Label: value`. JPRS, which answers for every .jp,
+	 * writes `[Label]` and then spaces — no colon — and for an organisational
+	 * domain it puts an index in front: `a. [ドメイン名]`. The Japanese labels
+	 * were in the patterns below from the start, but every one of them demanded
+	 * a colon that JPRS never sends, so they could not match and a .jp domain
+	 * came back with nothing at all. The bracket form is therefore read by its
+	 * own pass, after the colon form and only for what the colon form missed.
+	 */
 	private function parseDomainWhois(string $body): array {
 		$map = [
 			'registrar' => '/^[ \t]*Registrar:[ \t]*(.+)$/mi',
-			'created' => '/^[ \t]*(?:Creation Date|Created On|Registered on|Domain Registration Date|\[登録年月日\]):[ \t]*(.+)$/mi',
-			'updated' => '/^[ \t]*(?:Updated Date|Last Modified|\[最終更新\]):[ \t]*(.+)$/mi',
-			'expires' => '/^[ \t]*(?:Registry Expiry Date|Expiration Date|Expires on|\[有効期限\]):[ \t]*(.+)$/mi',
-			'status' => '/^[ \t]*(?:Domain Status|\[状態\]):[ \t]*(.+)$/mi',
-			'registrant' => '/^[ \t]*(?:Registrant Organization|Registrant Name|\[組織名\]|\[Registrant\]):[ \t]*(.+)$/mi',
+			'created' => '/^[ \t]*(?:Creation Date|Created On|Registered on|Domain Registration Date):[ \t]*(.+)$/mi',
+			'updated' => '/^[ \t]*(?:Updated Date|Last Modified):[ \t]*(.+)$/mi',
+			'expires' => '/^[ \t]*(?:Registry Expiry Date|Expiration Date|Expires on):[ \t]*(.+)$/mi',
+			'status' => '/^[ \t]*Domain Status:[ \t]*(.+)$/mi',
+			'registrant' => '/^[ \t]*(?:Registrant Organization|Registrant Name):[ \t]*(.+)$/mi',
 			'abuse' => '/^[ \t]*Registrar Abuse Contact Email:[ \t]*(.+)$/mi',
 		];
 		$fields = [];
@@ -202,7 +213,55 @@ class ToolService {
 				$fields[$key] = trim($m[1]);
 			}
 		}
-		if (preg_match_all('/^[ \t]*(?:Name Server|\[Name Server\]):[ \t]*(\S+)$/mi', $body, $m)) {
+		if (preg_match_all('/^[ \t]*Name Server:[ \t]*(\S+)[ \t\r]*$/mi', $body, $m)) {
+			$fields['nameservers'] = implode(', ', array_unique(array_map('strtolower', $m[1])));
+		}
+
+		$fields += $this->parseBracketWhois($body);
+		return $fields;
+	}
+
+	/**
+	 * JPRS's shape: `[Label]` and spaces, optionally behind an index letter.
+	 *
+	 * An organisational domain (co.jp, ad.jp and the rest) has no expiry line
+	 * of its own — the date is inside the status, as `Connected (2027/01/31)`
+	 * — so it is taken from there rather than reported as missing. A label
+	 * with nothing after it is left out: JPRS does send empty ones.
+	 *
+	 * The `\r` in the name-server line-end is not decoration. A whois server
+	 * answers over a socket and ends its lines with CRLF, so a pattern anchored
+	 * with `[ \t]*$` matches nothing at all — the carriage return sits between
+	 * the value and the end of the line. The other fields survive it only
+	 * because the caller trims what they capture.
+	 *
+	 * @return array<string, string>
+	 */
+	private function parseBracketWhois(string $body): array {
+		/** The label, or labels, each field may be written under. */
+		$labels = [
+			'registrant' => ['組織名', 'Organization', '登録者名', 'Registrant'],
+			'created' => ['登録年月日', 'Created on'],
+			'updated' => ['最終更新', 'Last Updated'],
+			'expires' => ['有効期限'],
+			'status' => ['状態', 'Status'],
+		];
+		$fields = [];
+		foreach ($labels as $key => $names) {
+			foreach ($names as $name) {
+				$pattern = '/^[ \t]*(?:[a-z]\.[ \t]*)?\[' . preg_quote($name, '/') . '\][ \t]+(\S.*)$/mu';
+				if (preg_match($pattern, $body, $m) && trim($m[1]) !== '') {
+					$fields[$key] = trim($m[1]);
+					break;
+				}
+			}
+		}
+		// An organisational domain keeps its expiry inside the status line.
+		if (!isset($fields['expires']) && isset($fields['status'])
+			&& preg_match('/\((\d{4}\/\d{2}\/\d{2})\)/', $fields['status'], $m)) {
+			$fields['expires'] = $m[1];
+		}
+		if (preg_match_all('/^[ \t]*(?:[a-z]\.[ \t]*)?\[(?:Name Server|ネームサーバ)\][ \t]+(\S+)[ \t\r]*$/mu', $body, $m)) {
 			$fields['nameservers'] = implode(', ', array_unique(array_map('strtolower', $m[1])));
 		}
 		return $fields;
@@ -554,7 +613,7 @@ class ToolService {
 			// returning an empty result that reads as a reachable server missing
 			// every security header.
 			if ($status === 0) {
-				throw new \RuntimeException('Could not connect to ' . (string)parse_url($current, PHP_URL_HOST) . ' — no response (refused, timed out, or TLS/DNS failed).');
+				throw new \RuntimeException($this->l->t('Could not connect to %s — no response (refused, timed out, or TLS/DNS failed).', [(string)parse_url($current, PHP_URL_HOST)]));
 			}
 			$chain[] = ['url' => $current, 'status' => $status, 'ms' => $ms, 'server' => $headers['server'] ?? ''];
 			if ($status >= 300 && $status < 400 && !empty($headers['location'])) {
@@ -859,11 +918,11 @@ class ToolService {
 		}
 		$oldPrefix = (int)$base['cidr'];
 		if ($newPrefix <= $oldPrefix || $newPrefix > 32) {
-			throw new \InvalidArgumentException('The new prefix must be longer than /' . $oldPrefix . ' and at most /32');
+			throw new \InvalidArgumentException($this->l->t('The new prefix must be longer than /%d and at most /32', [$oldPrefix]));
 		}
 		$count = 2 ** ($newPrefix - $oldPrefix);
 		if ($count > 1024) {
-			throw new \InvalidArgumentException('That would make ' . $count . ' networks; split into 1024 or fewer');
+			throw new \InvalidArgumentException($this->l->t('That would make %d networks; split into 1024 or fewer', [$count]));
 		}
 		$size = 2 ** (32 - $newPrefix);
 		$start = ip2long((string)$base['network']);
@@ -906,7 +965,7 @@ class ToolService {
 			if (str_contains($entry, '-')) {
 				[$from, $to] = array_map('trim', explode('-', $entry, 2));
 				if (filter_var($from, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) === false || filter_var($to, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) === false) {
-					throw new \InvalidArgumentException('Not an IPv4 range: ' . $entry);
+					throw new \InvalidArgumentException($this->l->t('Not an IPv4 range: %s', [$entry]));
 				}
 				$ranges[] = [min(ip2long($from), ip2long($to)), max(ip2long($from), ip2long($to))];
 				continue;

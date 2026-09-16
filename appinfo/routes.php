@@ -75,6 +75,14 @@ return [
 		['name' => 'api#updateConnection', 'url' => '/api/connections/{id}', 'verb' => 'PUT'],
 		['name' => 'api#deleteConnection', 'url' => '/api/connections/{id}', 'verb' => 'DELETE'],
 		['name' => 'api#testConnection', 'url' => '/api/connections/{id}/test', 'verb' => 'POST'],
+		// Connections live in RegiBase, in a collection the account owns. These
+		// say where that is, which field means what, and carry the master
+		// password that unseals them — for this browser session only.
+		['name' => 'api#connSetup', 'url' => '/api/connections/setup', 'verb' => 'GET'],
+		['name' => 'api#connUnlock', 'url' => '/api/connections/unlock', 'verb' => 'POST'],
+		['name' => 'api#connLock', 'url' => '/api/connections/lock', 'verb' => 'POST'],
+		['name' => 'api#connMapping', 'url' => '/api/connections/mapping', 'verb' => 'POST'],
+		['name' => 'api#connCollection', 'url' => '/api/connections/collection', 'verb' => 'POST'],
 
 		// the user's own Nextcloud files, for the picker
 		['name' => 'api#nextcloudFiles', 'url' => '/api/nc-files', 'verb' => 'GET'],
@@ -84,6 +92,11 @@ return [
 		['name' => 'api#filesDownload', 'url' => '/api/files/download', 'verb' => 'POST'],
 		['name' => 'api#filesUpload', 'url' => '/api/files/upload', 'verb' => 'POST'],
 		['name' => 'api#filesManage', 'url' => '/api/files/manage', 'verb' => 'POST'],
+		// A transfer, reported while it runs, so the browser can draw a bar
+		// rather than a spinner that says nothing.
+		['name' => 'api#filesTransfer', 'url' => '/api/files/transfer', 'verb' => 'POST'],
+		['name' => 'api#filesText', 'url' => '/api/files/text', 'verb' => 'GET'],
+		['name' => 'api#filesSaveText', 'url' => '/api/files/text', 'verb' => 'POST'],
 
 		// mail
 		['name' => 'api#mailAudit', 'url' => '/api/mail/audit', 'verb' => 'GET'],
@@ -112,6 +125,31 @@ return [
 		['name' => 'api#ptyType', 'url' => '/api/ssh/pty/type', 'verb' => 'POST'],
 		['name' => 'api#ptySize', 'url' => '/api/ssh/pty/size', 'verb' => 'POST'],
 		['name' => 'api#ptyClose', 'url' => '/api/ssh/pty/close', 'verb' => 'POST'],
+
+		// A shell on this server itself. Opening it is gated: administrators
+		// only, and on an online instance a six-digit code emailed to the
+		// administrator has to be typed back first. The terminal that follows
+		// is the same streaming design as the SSH one above.
+		// The speed test, reported while it runs so the browser can draw it.
+		['name' => 'api#speedTestLive', 'url' => '/api/bench/speedtest-live', 'verb' => 'POST'],
+
+		// A font this server has, handed to the browser so a terminal can be
+		// drawn in it. The id comes from the list; a path never does.
+		['name' => 'api#font', 'url' => '/api/font/{id}', 'verb' => 'GET'],
+
+		['name' => 'api#shellBegin', 'url' => '/api/shell/begin', 'verb' => 'POST'],
+		['name' => 'api#shellVerify', 'url' => '/api/shell/verify', 'verb' => 'POST'],
+		['name' => 'api#shellOpen', 'url' => '/api/shell/pty', 'verb' => 'POST'],
+		['name' => 'api#shellType', 'url' => '/api/shell/pty/type', 'verb' => 'POST'],
+		['name' => 'api#shellSize', 'url' => '/api/shell/pty/size', 'verb' => 'POST'],
+		['name' => 'api#shellClose', 'url' => '/api/shell/pty/close', 'verb' => 'POST'],
+
+		// What was done in a terminal, read back afterwards. Recording is off
+		// until somebody says how many steps to keep, and what is kept belongs
+		// to the account that did the work — there is no reading anyone else's.
+		['name' => 'api#termLogSessions', 'url' => '/api/termlog', 'verb' => 'GET'],
+		['name' => 'api#termLogRead', 'url' => '/api/termlog/read', 'verb' => 'GET'],
+		['name' => 'api#termLogForget', 'url' => '/api/termlog/forget', 'verb' => 'POST'],
 
 		// DNS in depth
 		['name' => 'api#dnsQuery', 'url' => '/api/dns/query', 'verb' => 'GET'],

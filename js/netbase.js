@@ -58,7 +58,13 @@
     if (res.status === 401) { if (rootProxy) rootProxy.authenticated = false; throw new Error('unauthorized'); }
     const ct = res.headers.get('content-type') || '';
     const body = ct.includes('json') ? await res.json() : await res.text();
-    if (!res.ok) throw new Error((body && body.error) || res.statusText);
+    if (!res.ok) {
+      const failure = new Error((body && body.error) || res.statusText);
+      // Carried on the error itself, so whoever catches it can tell a question
+      // (the master key) from a fault.
+      if (body && body.needsKey) failure.needsKey = true;
+      throw failure;
+    }
     return body;
   }
   const qs = (params) => Object.entries(params)
@@ -69,13 +75,65 @@
   /* ---------- presentation helpers ---------- */
   const TYPE_ICON = {
     router: '📶', printer: '🖨️', camera: '📷', nas: '💾', pc: '💻', phone: '📱',
-    iot: '💡', av: '📺', sbc: '🍓', server: '🖥️', host: '🌐', unknown: '❔',
+    iot: '💡', av: '📺', sbc: '🍓', server: '🖥️', container: '📦', host: '🌐', unknown: '❔',
   };
+  // Every template but "container" is one a scan can guess; "container" is
+  // only ever chosen by hand, so scans leave it alone (ScanService::AUTO_TYPES).
   const TYPE_LABEL = {
     router: 'Network gear', printer: 'Printer', camera: 'Camera', nas: 'NAS',
     pc: 'PC', phone: 'Phone', iot: 'IoT', av: 'AV device', sbc: 'Single-board',
-    server: 'Server', host: 'Host', unknown: 'Unknown',
+    server: 'Server', container: 'Container', host: 'Host', unknown: 'Unknown',
   };
+  /**
+   * The bytes behind the terminal's key buttons.
+   *
+   * They live here, in plain JavaScript, and never in the template: the
+   * template is compiled to a render function when the app is built, and a
+   * backslash escape written there does not survive that step — it reaches
+   * the shell as the literal text "\x1b" instead of an Escape.
+   */
+  const KEY_CODES = {
+    esc: '\x1b', tab: '\t', intr: '\x03', eof: '\x04',
+    susp: '\x1a', clear: '\x0c', search: '\x12',
+  };
+
+  /**
+   * The faces a terminal can be set to.
+   *
+   * Each is a stack, not one font: the first that the machine actually has is
+   * used, and every stack ends at a generic monospace so a terminal is never
+   * drawn in a proportional face.
+   */
+  const TERM_FONTS = [
+    { id: 'system', label: 'System default', css: 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace' },
+    { id: 'menlo', label: 'Menlo / Consolas', css: 'Menlo, Consolas, "Liberation Mono", monospace' },
+    { id: 'dejavu', label: 'DejaVu Sans Mono', css: '"DejaVu Sans Mono", monospace' },
+    { id: 'noto', label: 'Noto Sans Mono', css: '"Noto Sans Mono", "Noto Sans Mono CJK JP", monospace' },
+    { id: 'gothic', label: 'Japanese-friendly', css: '"MS Gothic", Osaka-Mono, "Noto Sans Mono CJK JP", monospace' },
+    { id: 'plain', label: 'Browser default', css: 'monospace' },
+  ];
+  /**
+   * A locale to suggest for each language NetBase speaks.
+   *
+   * Only a starting point for the instructions: the country half is a guess,
+   * and the recipe puts it on a line of its own so it can be changed.
+   */
+  const LOCALE_HINTS = {
+    ja: 'ja_JP', en: 'en_US', zh: 'zh_CN', ko: 'ko_KR', es: 'es_ES', de: 'de_DE',
+    it: 'it_IT', fr: 'fr_FR', pt: 'pt_PT', ru: 'ru_RU', ar: 'ar_SA', tr: 'tr_TR',
+    id: 'id_ID', vi: 'vi_VN', th: 'th_TH', fa: 'fa_IR', pl: 'pl_PL', uk: 'uk_UA',
+    hi: 'hi_IN', cs: 'cs_CZ',
+  };
+  /** Fonts fetched from the server are given a name of their own here. */
+  const SERVER_FONT_PREFIX = 'netbase-server-';
+  const SERVER_FONTS_ADDED = new Set();
+  const TERM_SIZE_MIN = 9;
+  const TERM_SIZE_MAX = 24;
+  const TERM_SIZE_DEFAULT = 13;
+
+  // The picker's "Other" entry; the type saved is the text typed beside it.
+  const CUSTOM_TYPE = '__custom__';
+  const CUSTOM_TYPE_ICON = '🏷️';
 
   function ipSortKey(ip) {
     if (!ip) return 0;
@@ -287,8 +345,20 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
     <aside class="sidebar" :class="{open: menu}">
       <div class="brand"><span class="logo"><svg viewBox="333 400 1335 1030"><path d="M1040.38,1352.06c-3.65-4.48-4.91-9.8-3.78-15.97l115.97-542.87c1.12-6.16,4.33-11.48,9.66-15.97,5.32-4.48,11.06-6.72,17.23-6.72h262.19c37.53,0,69.33,7.14,95.38,21.43,26.05,14.29,45.51,33.06,58.4,56.3,12.88,23.25,19.33,47.77,19.33,73.53,0,12.33-1.13,22.98-3.36,31.93-5.61,28.02-15.27,50.57-28.99,67.65-13.73,17.1-27.31,30.12-40.76,39.08,25.21,20.73,37.82,47.62,37.82,80.67,0,12.89-1.68,27.46-5.04,43.7-7.85,35.29-19.05,65.42-33.61,90.34-14.57,24.93-37.12,45.1-67.65,60.5-30.54,15.42-71.01,23.11-121.43,23.11h-296.64c-6.17,0-11.07-2.23-14.71-6.72ZM1353.41,1228.53c19.04,0,35.15-6.16,48.32-18.49,13.16-12.32,19.75-27.17,19.75-44.54,0-11.76-4.2-21.28-12.6-28.57-8.4-7.27-19.62-10.92-33.61-10.92h-138.66l-21.85,102.52h138.66ZM1284.5,900.79l-20.17,95.8h130.25c16.81,0,30.53-4.2,41.18-12.61,10.64-8.4,17.36-20.17,20.17-35.29,1.12-6.72,1.68-11.2,1.68-13.45,0-11.2-3.65-19.75-10.92-25.63-7.29-5.88-17.94-8.82-31.93-8.82h-130.25Z" fill="none" stroke="#fff" stroke-width="100" stroke-linejoin="round" stroke-linecap="round"/><path d="M1040.38,1352.06c-3.65-4.48-4.91-9.8-3.78-15.97l115.97-542.87c1.12-6.16,4.33-11.48,9.66-15.97,5.32-4.48,11.06-6.72,17.23-6.72h262.19c37.53,0,69.33,7.14,95.38,21.43,26.05,14.29,45.51,33.06,58.4,56.3,12.88,23.25,19.33,47.77,19.33,73.53,0,12.33-1.13,22.98-3.36,31.93-5.61,28.02-15.27,50.57-28.99,67.65-13.73,17.1-27.31,30.12-40.76,39.08,25.21,20.73,37.82,47.62,37.82,80.67,0,12.89-1.68,27.46-5.04,43.7-7.85,35.29-19.05,65.42-33.61,90.34-14.57,24.93-37.12,45.1-67.65,60.5-30.54,15.42-71.01,23.11-121.43,23.11h-296.64c-6.17,0-11.07-2.23-14.71-6.72ZM1353.41,1228.53c19.04,0,35.15-6.16,48.32-18.49,13.16-12.32,19.75-27.17,19.75-44.54,0-11.76-4.2-21.28-12.6-28.57-8.4-7.27-19.62-10.92-33.61-10.92h-138.66l-21.85,102.52h138.66ZM1284.5,900.79l-20.17,95.8h130.25c16.81,0,30.53-4.2,41.18-12.61,10.64-8.4,17.36-20.17,20.17-35.29,1.12-6.72,1.68-11.2,1.68-13.45,0-11.2-3.65-19.75-10.92-25.63-7.29-5.88-17.94-8.82-31.93-8.82h-130.25Z" fill="#2e3192"/><path d="M902.67,1351.87c-6.55-6.05-12.12-13.83-16.73-23.34l-201.98-440.64-83.09,438.06c-1.55,9.5-5.97,17.72-13.28,24.62s-15.19,10.36-23.66,10.36h-151.2c-8.47,0-15.19-3.45-20.19-10.36s-6.73-15.12-5.2-24.62l159.28-837.22c1.53-9.5,5.95-17.72,13.27-24.62s15.2-10.38,23.67-10.38h96.95c19.22,0,33.08,9.94,41.55,29.81l204.28,443.23,83.11-438.05c1.53-9.5,5.95-17.72,13.27-24.62s15.19-10.38,23.66-10.38h151.2c8.45,0,15.19,3.47,20.19,10.38s6.73,15.12,5.2,24.62l-159.28,837.22c-1.55,9.5-5.97,17.72-13.28,24.62s-15.19,10.36-23.66,10.36h-96.94c-11.55,0-20.59-3.02-27.12-9.06Z" fill="none" stroke="#fff" stroke-width="100" stroke-linejoin="round" stroke-linecap="round"/><path d="M902.67,1351.87c-6.55-6.05-12.12-13.83-16.73-23.34l-201.98-440.64-83.09,438.06c-1.55,9.5-5.97,17.72-13.28,24.62s-15.19,10.36-23.66,10.36h-151.2c-8.47,0-15.19-3.45-20.19-10.36s-6.73-15.12-5.2-24.62l159.28-837.22c1.53-9.5,5.95-17.72,13.27-24.62s15.2-10.38,23.67-10.38h96.95c19.22,0,33.08,9.94,41.55,29.81l204.28,443.23,83.11-438.05c1.53-9.5,5.95-17.72,13.27-24.62s15.19-10.38,23.66-10.38h151.2c8.45,0,15.19,3.47,20.19,10.38s6.73,15.12,5.2,24.62l-159.28,837.22c-1.55,9.5-5.97,17.72-13.28,24.62s-15.19,10.36-23.66,10.36h-96.94c-11.55,0-20.59-3.02-27.12-9.06Z" fill="#2970e2"/></svg></span><span>NetBase</span><span class="tag" v-if="version">v{{ version }}</span></div>
       <nav class="nav-list" @dragover.prevent @drop.prevent="dropTab(null)">
-        <button v-for="item in visibleTabs" :key="item.id" class="nav-item"
-                :class="{active: tab===item.id, dragged: dragTab===item.id, over: overTab===item.id}"
+        <!-- One element per item, keyed on the element itself.
+             This was a <template v-for> holding the button *and* a conditional
+             <hr>, with the key on the template. One turn of the loop then
+             produced two nodes or one, and reordering left Vue unable to match
+             them up: it threw "insertBefore: parameter 1 is not of type Node"
+             inside its own patch, abandoned the update, and from then on
+             nothing in the sidebar redrew — the buttons below the list stopped
+             responding because the screen had stopped being updated at all.
+             The error never reached window.onerror, so it passed my checks.
+             The rule is unchanged for the reader: it is drawn by the item it
+             belongs to, in its own border, not as a node of its own. -->
+        <button v-for="item in visibleTabs" :key="item.id"
+                class="nav-item"
+                :class="{active: tab===item.id, dragged: dragTab===item.id, over: overTab===item.id, 'ends-group': item.id==='devices'}"
                 draggable="true"
                 :title="t('Drag to put the tools in the order you want')"
                 @click="tab=item.id; menu=false"
@@ -298,7 +368,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
                 @dragover.prevent="overTab = item.id"
                 @dragleave="overTab === item.id && (overTab = '')"
                 @drop.prevent.stop="dropTab(item)">
-          <span class="ic">{{ item.icon }}</span><span class="nm">{{ t(item.label) }}</span>
+          <span class="ic" v-html="tabIcon(item.id)"></span><span class="nm">{{ t(item.label) }}</span>
           <span class="ct" v-if="item.id==='devices' && devices.length">{{ onlineCount }}</span>
           <span class="grip" aria-hidden="true">⠿</span>
         </button>
@@ -309,8 +379,9 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
              without being allowed to see the result, which would otherwise have
              no way to begin. -->
         <button class="btn primary block" v-if="status.canScan && !allowed('devices')" :disabled="scanning" @click="menu=false; startScan()">{{ scanning ? t('Scanning…') : t('🛰️ Scan the network') }}</button>
+        <button class="btn sm block" v-if="status.isAdmin" :disabled="shellBusy || (status.localShell && !status.localShell.available)" :class="{working: shellBusy}" :title="status.localShell && !status.localShell.available ? t('A local shell needs proc_open and python3 on this server, and they are not both available here.') : t('A terminal on this server, running with the same privileges as Nextcloud (the {user} account) — no more. For administrators only.', { user: 'www-data' })" @click="menu=false; beginShell()">🖳 {{ t('Open a shell') }}</button>
         <button class="btn sm block" v-if="status.isAdmin" @click="menu=false; openSysInfo()">{{ t('🖥 System information') }}</button>
-        <button class="btn sm block" @click="menu=false; themeBox = true">{{ t('⚙ Settings') }}</button>
+        <button class="btn sm block" @click="menu=false; settingTab = 'look'; themeBox = true">{{ t('⚙ Settings') }}</button>
       </div>
     </aside>
 
@@ -342,7 +413,10 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
             <span class="ic"><svg viewBox="0 0 24 24"><path d="M12 3.5v11.5"/><path d="M7.5 10.5L12 15l4.5-4.5"/><path d="M4 17.5V19a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-1.5"/></svg></span><span class="lb">{{ t('Download as a file') }}</span>
           </button>
           <button class="btn sm keep" :title="t('Save it to your Nextcloud files')" :disabled="!hasResult" @click="saveResultToFiles">
-            <span class="ic"><svg viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2.5h8a2 2 0 0 1 2 2V18a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M12 10.5v5"/><path d="M9.8 13.3l2.2 2.2 2.2-2.2"/></svg></span><span class="lb">{{ t('Save') }}</span>
+            <!-- "Save" on its own sat in the same screen as the Save inside a
+                 text window, and somebody pressed this one meaning that one and
+                 got a report written into their files. It says what it saves. -->
+            <span class="ic"><svg viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2.5h8a2 2 0 0 1 2 2V18a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M12 10.5v5"/><path d="M9.8 13.3l2.2 2.2 2.2-2.2"/></svg></span><span class="lb">{{ t('Save the result') }}</span>
           </button>
         </div>
       </div>
@@ -500,7 +574,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
                   <div class="pair-note" v-if="g.rep.notes" :title="g.rep.notes">📝 {{ g.rep.notes }}</div>
                 </td>
                 <td class="c-pair">
-                  <div class="pair-a">{{ t(typeLabel(g.rep.type)) }}</div>
+                  <div class="pair-a">{{ typeText(g.rep.type) }}</div>
                 </td>
                 <td class="dim c-extra">{{ ago(g.lastSeen) }}</td>
               </tr>
@@ -700,8 +774,8 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
               <div class="avail-legend dim tiny">○ {{ t('free') }} · × {{ t('taken') }} · △ {{ t('likely free (registry unreachable)') }} · ? {{ t('undetermined') }}</div>
               <div class="avail-rows">
                 <div v-for="r in availShown" :key="r.domain" class="avail-row" :class="'avail-'+r.cls">
-                  <span class="avail-mark" :class="'m-'+r.cls" :title="r.note">{{ r.mark }}</span>
-                  <span class="avail-domain mono" :title="r.note">{{ r.domain }}</span>
+                  <span class="avail-mark" :class="'m-'+r.cls" :title="availTitle(r)">{{ r.mark }}</span>
+                  <span class="avail-domain mono" :title="availTitle(r)">{{ r.domain }}</span>
                   <button v-if="r.mark==='×'" class="btn xs avail-taken" :title="t('Taken — show the Whois registration')" @click="showWhoisFor(r)"><span class="ic">📇</span> Whois</button>
                 </div>
               </div>
@@ -795,16 +869,40 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
                 <option :value="5">5 MB</option><option :value="25">25 MB</option>
                 <option :value="50">50 MB</option><option :value="100">100 MB</option>
               </select>
+              <select v-model="speedVia" class="narrow" :title="t('Where to measure against')">
+                <option value="auto">{{ t('Nearest (automatic)') }}</option>
+                <option value="mlab">M-Lab</option>
+                <option value="cloudflare">Cloudflare</option>
+              </select>
               <label class="inline-check"><input type="checkbox" v-model="speedUpload"> {{ t('Also test upload') }}</label>
               <span class="spacer"></span>
               <button class="btn primary" :disabled="busy.speed" :class="{working: busy.speed}" @click="runSpeed">{{ busy.speed ? t('Measuring…') : t('Run') }}</button>
             </div>
-            <p class="hint">{{ t('Traffic is exchanged with {host}. Nothing but the test payload is sent.', {host: speedEndpoint}) }}</p>
+            <p class="hint" v-if="speedEndpoint">
+              {{ t('Measured against {host}{where}. Nothing but the test payload is sent.', {host: speedEndpoint, where: speedWhere ? ' (' + speedWhere + ')' : ''}) }}
+              {{ t('Treat the figure as a guide: it moves with the server that was chosen and with the time of day.') }}
+            </p>
+            <p class="hint" v-else>
+              {{ speedVia === 'cloudflare' ? t('Cloudflare will be measured against. Nothing but the test payload is sent.') : speedVia === 'mlab' ? t('The nearest M-Lab server will be measured against. Nothing but the test payload is sent.') : t('The nearest measurement server is chosen when the test runs. Nothing but the test payload is sent.') }}
+              {{ t('Treat the figure as a guide: it moves with the server that was chosen and with the time of day.') }}
+            </p>
             <div class="bench-results" v-if="speedResult">
               <div class="big"><span class="lbl">↓ {{ t('Download') }}</span><span class="num">{{ speedResult.download ? speedResult.download.mbps : '—' }}</span><span class="unit">Mbps</span></div>
               <div class="big"><span class="lbl">↑ {{ t('Upload') }}</span><span class="num">{{ speedResult.upload ? speedResult.upload.mbps : '—' }}</span><span class="unit">Mbps</span></div>
               <div class="big"><span class="lbl">{{ t('Latency') }}</span><span class="num">{{ speedResult.latency ? speedResult.latency.avg : '—' }}</span><span class="unit">ms</span></div>
               <div class="big"><span class="lbl">{{ t('Jitter') }}</span><span class="num">{{ speedResult.latency && speedResult.latency.jitter != null ? speedResult.latency.jitter : '—' }}</span><span class="unit">ms</span></div>
+            </div>
+            <!-- The line as it is drawn: an average at the end hides the
+                 ramp-up, a stall, or a line that fades under load. -->
+            <div class="speed-graph" v-if="speedLive.running || speedLive.down.length || speedLive.up.length">
+              <div class="speed-graph-head">
+                <strong>{{ t('Speed over time') }}</strong>
+                <span class="dim tiny" v-if="speedLive.running && !speedLive.down.length && !speedLive.up.length">{{ t('Starting…') }}</span>
+                <span class="spacer"></span>
+                <span class="dim tiny mono" v-if="speedLive.down.length">↓ {{ speedLive.down[speedLive.down.length - 1].mbps }} Mbps</span>
+                <span class="dim tiny mono" v-if="speedLive.up.length">↑ {{ speedLive.up[speedLive.up.length - 1].mbps }} Mbps</span>
+              </div>
+              <canvas ref="speedCanvas" class="speed-canvas"></canvas>
             </div>
             <p class="hint danger" v-if="speedResult && (speedResult.downloadError || speedResult.uploadError)">⚠ {{ speedResult.downloadError || speedResult.uploadError }}</p>
           </div>
@@ -1100,7 +1198,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
                 <select v-model="mailMode" class="short">
                   <option value="auto">{{ t('Pick automatically') }}</option>
                   <option value="starttls">STARTTLS</option>
-                  <option value="tls">{{ t('TLS from the start') }}</option>
+                  <option value="tls">SSL/TLS</option>
                   <option value="none">{{ t('No encryption') }}</option>
                 </select>
                 <input v-model.number="mailPort" type="number" min="0" max="65535" class="tiny" :placeholder="t('Port')">
@@ -1158,68 +1256,80 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
           </template>
 
           <template v-if="mailView==='send'">
+            <!-- One address is one account: it is read with IMAP or POP3 and
+                 sent through SMTP, but it is the same person with the same
+                 password. So it is chosen once, on one card, and both halves
+                 are tested from there. -->
             <div class="card tool-card">
-              <h3>{{ t('Send a test message') }}</h3>
-              <p class="dim">{{ t('Sends a real message through one of your saved SMTP connections — the honest way to prove that sending works.') }}</p>
+              <h3>{{ t('Send and receive test') }}</h3>
+              <p class="dim">{{ t('One mail account, both directions: sign in to the mailbox, and send a real message through the same account.') }}</p>
               <div class="tool-row">
-                <select v-model.number="sendId" class="grow">
-                  <option :value="0">{{ t('Type the details below') }}</option>
-                  <option v-for="c in smtpConnections" :key="c.id" :value="c.id">{{ c.name }} ({{ c.host }})</option>
+                <div class="seg">
+                  <button class="seg-btn" :class="{active: acctMode === 'type'}" @click="setAcctMode('type')">{{ t('Enter it by hand') }}</button>
+                  <button class="seg-btn" :class="{active: acctMode === 'saved'}" @click="setAcctMode('saved')">{{ t('Pick from the list') }}</button>
+                </div>
+                <span class="spacer"></span>
+                <button class="btn sm" @click="openConn(null, mailAdhoc.kind)">{{ t('+ Add connection') }}</button>
+                <button class="btn sm" v-if="mailAccountSaved" @click="openConn(mailAccountSaved)">{{ t('Edit') }}</button>
+              </div>
+              <template v-if="acctMode === 'saved' && connLocked">
+                <p class="note-line">{{ t('Please enter the RegiBase master key.') }}</p>
+                <div class="fl-row">
+                  <input v-model="connMaster" type="password" class="grow mono" autocomplete="new-password" :placeholder="t('RegiBase master key')" @keyup.enter="unlockConns()">
+                  <button class="btn sm" :disabled="!connMaster || busy.connsetup" @click="unlockConns()">{{ t('Unlock') }}</button>
+                </div>
+                <p class="dim tiny">{{ t('This key lasts until you close the browser — this session only.') }}</p>
+              </template>
+              <div class="tool-row" v-else-if="acctMode === 'saved'">
+                <select v-model.number="mailAccountId" class="grow">
+                  <option :value="0">{{ t('Not chosen yet') }}</option>
+                  <optgroup v-if="mailAccounts.length" :label="t('Saved connections')">
+                    <option v-for="c in mailAccounts" :key="c.id" :value="c.id">{{ c.name }} — {{ c.kind.toUpperCase() }} {{ c.host }}</option>
+                  </optgroup>
                 </select>
-                <button class="btn sm" v-if="!sendId" @click="saveMailAdhoc('smtp')">{{ t('Save to the list') }}</button>
-                <button class="btn sm" v-else @click="openConn(connById(sendId))">{{ t('Edit') }}</button>
               </div>
-              <div class="tool-row" v-if="!sendId">
-                <input v-model="smtpAdhoc.host" class="grow" placeholder="smtp.example.com">
-                <input v-model.number="smtpAdhoc.port" type="number" class="tiny" min="1" max="65535">
-                <select v-model="smtpAdhoc.mode" class="tiny">
-                  <option value="starttls">STARTTLS</option>
-                  <option value="tls">{{ t('TLS from the start') }}</option>
-                  <option value="none">{{ t('No encryption') }}</option>
-                </select>
-                <input v-model="smtpAdhoc.username" class="short" :placeholder="t('User name')" autocomplete="off">
-                <input v-model="smtpAdhoc.secret" type="password" class="short" :placeholder="t('Password')" autocomplete="new-password">
-                <input v-model="smtpAdhoc.from" class="short" :placeholder="t('Sender address')">
-              </div>
-              <div class="tool-row">
-                <input v-model="sendTo" :placeholder="t('Recipient address')">
-                <input v-model="sendSubject" :placeholder="t('Subject (optional)')">
-              </div>
-              <textarea v-model="sendBody" rows="3" :placeholder="t('Message (optional)')"></textarea>
-              <div class="tool-row">
-                <button class="btn primary" :disabled="busy.send || !sendTo || (!sendId && !smtpAdhoc.host)" :class="{working: busy.send}" @click="runSend">{{ busy.send ? t('Sending…') : t('Send the test message') }}</button>
-              </div>
-              <div v-if="sendResult" class="kv">
-                <div><span>{{ t('Result') }}</span><code :class="sendResult.ok ? 'good' : 'bad'">{{ sendResult.ok ? t('Accepted by the server') : (sendResult.error || t('Failed')) }}</code></div>
-                <div v-if="sendResult.reply"><span>{{ t('Reply') }}</span><code class="wrap">{{ sendResult.reply }}</code></div>
-              </div>
-              <details v-if="sendResult && sendResult.transcript"><summary>{{ t('Conversation') }}</summary><pre class="raw">{{ sendResult.transcript.join('\n') }}</pre></details>
-            </div>
+              <p class="dim tiny" v-if="acctMode === 'saved' && !connLocked && !mailAccounts.length">{{ t('No saved connections yet — enter the address by hand instead.') }}</p>
 
-            <div class="card">
-              <h3>{{ t('Mailbox check') }}</h3>
-              <p class="dim">{{ t('Signs in to a saved IMAP or POP3 account and reports what is in the inbox.') }}</p>
+              <template v-if="acctMode === 'type'">
+                <p class="dim tiny">{{ t('Where this address is read') }}</p>
+                <div class="tool-row">
+                  <select v-model="mailAdhoc.kind" class="tiny" @change="mailKindChanged">
+                    <option value="imap">IMAP</option>
+                    <option value="pop3">POP3</option>
+                    <option value="smtp">{{ t('SMTP only (no mailbox)') }}</option>
+                  </select>
+                  <input v-model="mailAdhoc.host" class="grow" placeholder="imap.example.com">
+                  <input v-model.number="mailAdhoc.port" type="number" class="tiny" min="1" max="65535">
+                  <select v-model="mailAdhoc.mode" class="tiny">
+                    <option value="tls">SSL/TLS</option>
+                    <option value="starttls">STARTTLS</option>
+                    <option value="none">{{ t('No encryption') }}</option>
+                  </select>
+                  <input v-model="mailAdhoc.username" class="short" :placeholder="t('User name')" autocomplete="off">
+                  <input v-model="mailAdhoc.secret" type="password" class="short" :placeholder="t('Password')" autocomplete="new-password">
+                </div>
+                <p class="dim tiny" v-if="mailAdhoc.kind !== 'smtp'">{{ t('Where it sends from — the same user name and password') }}</p>
+                <div class="tool-row" v-if="mailAdhoc.kind !== 'smtp'">
+                  <input v-model="mailAdhoc.sendHost" class="grow" placeholder="smtp.example.com">
+                  <input v-model.number="mailAdhoc.sendPort" type="number" class="tiny" min="1" max="65535">
+                  <select v-model="mailAdhoc.sendMode" class="tiny">
+                    <option value="starttls">STARTTLS</option>
+                    <option value="tls">SSL/TLS</option>
+                    <option value="none">{{ t('No encryption') }}</option>
+                  </select>
+                  <input v-model="mailAdhoc.from" class="short" :placeholder="t('Sender address')">
+                  <button class="btn sm" @click="saveMailAdhoc()">{{ t('Save to the list') }}</button>
+                </div>
+                <div class="tool-row" v-else>
+                  <input v-model="mailAdhoc.from" class="short" :placeholder="t('Sender address')">
+                  <button class="btn sm" @click="saveMailAdhoc()">{{ t('Save to the list') }}</button>
+                </div>
+              </template>
+
+              <h3>{{ t('Receive') }}</h3>
               <div class="tool-row">
-                <select v-model.number="mailboxId" class="grow">
-                  <option :value="0">{{ t('Type the details below') }}</option>
-                  <option v-for="c in mailboxConnections" :key="c.id" :value="c.id">{{ c.name }} ({{ c.kind.toUpperCase() }})</option>
-                </select>
-                <button class="btn" :disabled="busy.mailbox || (!mailboxId && !boxAdhoc.host)" :class="{working: busy.mailbox}" @click="runMailbox">{{ t('Sign in') }}</button>
-                <button class="btn sm" v-if="!mailboxId" @click="saveMailAdhoc('box')">{{ t('Save to the list') }}</button>
-              </div>
-              <div class="tool-row" v-if="!mailboxId">
-                <select v-model="boxAdhoc.kind" class="tiny" @change="boxAdhoc.port = boxAdhoc.kind === 'imap' ? 993 : 995">
-                  <option value="imap">IMAP</option><option value="pop3">POP3</option>
-                </select>
-                <input v-model="boxAdhoc.host" class="grow" placeholder="imap.example.com">
-                <input v-model.number="boxAdhoc.port" type="number" class="tiny" min="1" max="65535">
-                <select v-model="boxAdhoc.mode" class="tiny">
-                  <option value="tls">{{ t('TLS from the start') }}</option>
-                  <option value="starttls">STARTTLS</option>
-                  <option value="none">{{ t('No encryption') }}</option>
-                </select>
-                <input v-model="boxAdhoc.username" class="short" :placeholder="t('User name')" autocomplete="off">
-                <input v-model="boxAdhoc.secret" type="password" class="short" :placeholder="t('Password')" autocomplete="new-password">
+                <button class="btn" :disabled="busy.mailbox || !mailCanReceive || (acctMode === 'saved' ? !mailAccountId : !mailAdhoc.host)" :class="{working: busy.mailbox}" @click="runMailbox">{{ t('Sign in to the mailbox') }}</button>
+                <span class="dim tiny" v-if="!mailCanReceive">{{ t('An SMTP-only connection has no mailbox to read.') }}</span>
               </div>
               <div v-if="mailboxResult" class="kv">
                 <div><span>{{ t('Result') }}</span><code :class="mailboxResult.ok ? 'good' : 'bad'">{{ mailboxResult.ok ? t('Signed in') : (mailboxResult.error || t('Failed')) }}</code></div>
@@ -1227,6 +1337,21 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
                 <div v-if="mailboxResult.details && mailboxResult.details.mailbox"><span>{{ t('Mailbox') }}</span><code>{{ t('{n} messages', {n: mailboxResult.details.mailbox.messages}) }}</code></div>
                 <div v-if="mailboxResult.details && mailboxResult.details.folders"><span>{{ t('Folders') }}</span><code class="wrap">{{ mailboxResult.details.folders.join(', ') }}</code></div>
               </div>
+
+              <h3>{{ t('Send') }}</h3>
+              <div class="tool-row">
+                <input v-model="sendTo" :placeholder="t('Recipient address')">
+                <input v-model="sendSubject" :placeholder="t('Subject (optional)')">
+              </div>
+              <textarea v-model="sendBody" rows="3" :placeholder="t('Message (optional)')"></textarea>
+              <div class="tool-row">
+                <button class="btn primary" :disabled="busy.send || !sendTo || (acctMode === 'saved' ? !mailAccountId : !mailAdhoc.host)" :class="{working: busy.send}" @click="runSend">{{ busy.send ? t('Sending…') : t('Send the test message') }}</button>
+              </div>
+              <div v-if="sendResult" class="kv">
+                <div><span>{{ t('Result') }}</span><code :class="sendResult.ok ? 'good' : 'bad'">{{ sendResult.ok ? t('Accepted by the server') : (sendResult.error || t('Failed')) }}</code></div>
+                <div v-if="sendResult.reply"><span>{{ t('Reply') }}</span><code class="wrap">{{ sendResult.reply }}</code></div>
+              </div>
+              <details v-if="sendResult && sendResult.transcript"><summary>{{ t('Conversation') }}</summary><pre class="raw">{{ sendResult.transcript.join('\n') }}</pre></details>
             </div>
           </template>
         </section>
@@ -1258,103 +1383,257 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
           </div>
         </section>
 
-        <!-- ============ FTP / SFTP ============ -->
+        <!-- ============ FTP / SFTP / SCP ============ -->
         <section v-if="tab==='files'">
+          <!-- The same shape as the SSH screen, in the same order: the choice
+               first, then the server, then what you do with it, all in one
+               card. Two screens doing the same job asked for it two different
+               ways, which is a thing to fix rather than to explain. -->
           <div class="card tool-card">
-            <h3>{{ t('Enter the connection details') }}</h3>
-            <p class="dim">{{ t('Nothing has to be saved first. Fill this in and connect; save it to the list only if you want it again.') }}</p>
             <div class="tool-row">
-              <select v-model="adhoc.kind" class="tiny" @change="adhocKindChanged">
+              <div class="seg">
+                <button class="seg-btn" :class="{active: filesMode === 'type'}" @click="setFilesMode('type')">{{ t('Enter it by hand') }}</button>
+                <button class="seg-btn" :class="{active: filesMode === 'saved'}" @click="setFilesMode('saved')">{{ t('Pick from the list') }}</button>
+              </div>
+              <span class="spacer"></span>
+              <button class="btn sm" @click="openConn(null, filesKind)">{{ t('+ Add connection') }}</button>
+              <button class="btn sm" v-if="filesSaved" @click="openConn(filesSaved)">{{ t('Edit') }}</button>
+              <button class="btn sm" v-if="filesSaved" :disabled="busy.conntest" :class="{working: busy.conntest}" @click="testConn(filesSaved)">{{ t('Test') }}</button>
+            </div>
+
+            <template v-if="filesMode === 'saved' && connLocked">
+              <p class="note-line">{{ t('Please enter the RegiBase master key.') }}</p>
+              <div class="fl-row">
+                <input v-model="connMaster" type="password" class="grow mono" autocomplete="new-password" :placeholder="t('RegiBase master key')" @keyup.enter="unlockConns()">
+                <button class="btn sm" :disabled="!connMaster || busy.connsetup" @click="unlockConns()">{{ t('Unlock') }}</button>
+              </div>
+              <p class="dim tiny">{{ t('This key lasts until you close the browser — this session only.') }}</p>
+            </template>
+            <div class="tool-row" v-else-if="filesMode === 'saved'">
+              <select v-model="filesKind" class="tiny" @change="filesKindPicked">
                 <option value="sftp">SFTP</option>
+                <option value="scp" v-if="connCaps.scp">SCP</option>
+                <option value="ftp">FTP</option>
+              </select>
+              <select v-model="filesPick" class="grow" @change="filesPicked">
+                <option value="">{{ t('Not chosen yet') }}</option>
+                <optgroup v-if="fileConnections.length" :label="t('Saved connections')">
+                  <option v-for="c in fileConnections" :key="'c' + c.id" :value="'c' + c.id">{{ c.name }} — {{ c.kind.toUpperCase() }} {{ c.host }}</option>
+                </optgroup>
+                <optgroup v-for="g in hostChoices" :key="g.label" :label="t(g.label)">
+                  <option v-for="o in g.items" :key="o.value" :value="o.value">{{ o.text }}</option>
+                </optgroup>
+              </select>
+            </div>
+            <p class="dim tiny" v-if="filesMode === 'saved' && !connLocked && !fileConnections.length && !hostChoices.length">{{ t('No saved connections yet — enter the address by hand instead.') }}</p>
+
+            <div class="tool-row" v-if="filesMode === 'type'">
+              <select v-model="filesKind" class="tiny" @change="filesKindPicked">
+                <option value="sftp">SFTP</option>
+                <option value="scp" v-if="connCaps.scp">SCP</option>
                 <option value="ftp">FTP</option>
               </select>
               <input v-model="adhoc.host" class="grow" placeholder="server.example.com" @keyup.enter="quickConnect">
               <input v-model.number="adhoc.port" type="number" class="tiny" min="1" max="65535">
               <input v-model="adhoc.username" class="short" :placeholder="t('User name')" autocomplete="off">
             </div>
-            <div class="tool-row">
-              <select v-model="adhoc.authType" class="tiny" v-if="adhoc.kind==='sftp'">
+            <div class="tool-row" v-else-if="filesSaved">
+              <strong class="mono">{{ filesSaved.kind.toUpperCase() }} {{ filesSaved.username || t('anonymous') }}@{{ filesSaved.host }}:{{ filesSaved.port }}</strong>
+              <span class="dim tiny">{{ t('Signs in with the password or key kept for it.') }}</span>
+            </div>
+
+            <div class="tool-row" v-if="filesMode === 'type'">
+              <select v-model="adhoc.authType" class="tiny" v-if="adhoc.kind!=='ftp'">
                 <option value="password">{{ t('Password') }}</option>
                 <option value="key">{{ t('Private key') }}</option>
               </select>
               <select v-model="adhoc.mode" class="tiny" v-if="adhoc.kind==='ftp'">
                 <option value="none">{{ t('No encryption') }}</option>
-                <option value="tls">{{ t('TLS from the start') }}</option>
+                <option value="tls">SSL/TLS</option>
               </select>
-              <template v-if="adhoc.authType==='key' && adhoc.kind==='sftp'">
+              <template v-if="adhoc.authType==='key' && adhoc.kind!=='ftp'">
                 <input v-model="adhoc.privateKeyPath" class="grow mono" :placeholder="t('Key file in your Nextcloud files')">
-                <button class="btn sm" @click="pickFile(t('Choose a key file'), (p) => { adhoc.privateKeyPath = p; }, false, settings.keyFolder)">📂</button>
+                <button class="btn sm" @click="pickFile(t('Choose a key file'), (p) => { adhoc.privateKeyPath = p; }, false, settings.keyFolder)">📂 {{ t('Browse…') }}</button>
               </template>
               <input v-else v-model="adhoc.secret" type="password" class="short" :placeholder="t('Password')" autocomplete="new-password">
               <input v-model="adhoc.path" class="short mono" :placeholder="t('Start folder (optional)')">
-              <button class="btn primary" :disabled="busy.browse || !adhoc.host" :class="{working: busy.browse}" @click="quickConnect">{{ t('Connect') }}</button>
-              <button class="btn" :disabled="!adhoc.host" @click="saveAdhoc">{{ t('Save to the list') }}</button>
+              <button class="btn sm" :disabled="!adhoc.host" @click="saveAdhoc">{{ t('Save to the list') }}</button>
             </div>
-            <p class="dim" v-if="adhoc.kind==='ftp' && !adhoc.username">{{ t('Leave the user name blank to sign in anonymously.') }}</p>
-          </div>
+            <p class="dim tiny" v-if="filesMode === 'type' && adhoc.kind==='ftp' && !adhoc.username">{{ t('Leave the user name blank to sign in anonymously.') }}</p>
 
-          <div class="card tool-card">
             <div class="tool-row">
-              <select v-model.number="filesConn" class="grow" @change="useSaved">
-                <option :value="0">{{ t('Choose a saved FTP or SFTP connection…') }}</option>
-                <option v-for="c in fileConnections" :key="c.id" :value="c.id">{{ c.name }} — {{ c.kind.toUpperCase() }} {{ c.host }}</option>
-              </select>
-              <button class="btn sm" @click="openConn(null,'sftp')">{{ t('+ Add connection') }}</button>
-              <button class="btn sm" v-if="filesConn" @click="openConn(connById(filesConn))">{{ t('Edit') }}</button>
-              <button class="btn sm" v-if="filesConn" :disabled="busy.conntest" :class="{working: busy.conntest}" @click="testConn(connById(filesConn))">{{ t('Test') }}</button>
+              <button class="btn primary" :disabled="busy.browse || !filesHostNow" :class="{working: busy.browse}" @click="filesConnect">{{ t('Connect') }}</button>
             </div>
-            <p class="dim" v-if="!connCaps.sftp && !connCaps.ftp">{{ t('Neither FTP nor SFTP is available in this PHP build.') }}</p>
+            <p class="dim" v-if="!connCaps.sftp && !connCaps.ftp && !connCaps.scp">{{ t('Neither FTP, SFTP nor SCP is available on this server.') }}</p>
           </div>
 
-          <div class="card" v-if="filesConn || adhocActive">
-            <div class="tool-row" v-if="adhocActive">
-              <strong class="mono">{{ adhoc.kind.toUpperCase() }} {{ adhoc.username || t('anonymous') }}@{{ adhoc.host }}</strong>
-              <span class="spacer"></span>
-              <button class="btn sm" @click="saveAdhoc">{{ t('Save this connection') }}</button>
-              <button class="btn sm" @click="disconnect">{{ t('Disconnect') }}</button>
+          <!-- Only once something was actually opened. Choosing a saved
+               connection no longer connects on its own, so "a connection is
+               chosen" and "a folder is open" are different things now. -->
+          <!-- Two panes: what you have on the left, what the server has on the
+               right, and the queue underneath. A file manager that shows only
+               the far end leaves you guessing what you are sending; showing
+               both is what every FTP client does, and it is what makes
+               dragging from one side to the other mean anything. -->
+          <div class="card panes" v-if="filesData">
+            <div class="pane">
+              <div class="pane-head">
+                <strong>{{ t('Your Nextcloud files') }}</strong>
+                <span class="spacer"></span>
+                <button class="btn xs" :disabled="!localData || localData.parent === null" @click="browseLocal(localData ? localData.parent : '')">↑ {{ t('Up') }}</button>
+                <button class="btn xs" @click="browseLocal(localPath)">⟳ {{ t('Refresh') }}</button>
+              </div>
+              <div class="path-bar">
+                <input v-model="localPath" class="mono" :placeholder="t('Your Nextcloud files')" @keyup.enter="browseLocal(localPath)">
+                <button class="btn xs" @click="browseLocal(localPath)">{{ t('Go') }}</button>
+              </div>
+              <div class="pane-body"
+                   @dragover.prevent="$event.dataTransfer.dropEffect = 'copy'"
+                   @drop.prevent="dropOnLocal">
+                <table class="grid compact files-grid">
+                  <thead>
+                    <tr>
+                      <th><span class="th-line head" @click="sortLocal('name')" :class="localSortClass('name')">{{ t('Name') }}</span></th>
+                      <th><span class="th-line head" @click="sortLocal('size')" :class="localSortClass('size')">{{ t('Size') }}</span></th>
+                      <th><span class="th-line head" @click="sortLocal('modified')" :class="localSortClass('modified')">{{ t('Changed') }}</span></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-if="localData && localData.parent !== null" class="dir up-row" @click="browseLocal(localData.parent)">
+                      <td colspan="3"><span class="nm">📁 ..</span></td>
+                    </tr>
+                    <tr v-for="e in sortedLocal" :key="e.name"
+                        :class="{dir: e.directory, picked: !!localPicked[e.name]}"
+                        draggable="true"
+                        @dragstart="startFileDrag('local', e, $event)"
+                        @click="pickRow('local', e, $event)"
+                        @dblclick="e.directory ? browseLocal(e.path) : null">
+                      <td><span class="nm">{{ e.directory ? '📁' : '📄' }} {{ e.name }}</span></td>
+                      <td class="mono dim">{{ e.directory ? '' : fmtBytes(e.size) }}</td>
+                      <td class="dim">{{ e.modified ? ago(e.modified) : '' }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+                <p v-if="localData && !sortedLocal.length" class="empty-hint">{{ t('This folder is empty.') }}</p>
+              </div>
+              <div class="pane-foot">
+                <button class="btn xs" @click="pickAll('local')">{{ t('Select all') }}</button>
+                <span class="dim tiny" v-if="localCount">{{ t('{n} chosen', {n: localCount}) }}</span>
+                <span class="spacer"></span>
+                <button class="btn sm primary" :disabled="!localCount" @click="enqueue('local')">⤒ {{ t('Send') }}</button>
+              </div>
             </div>
-            <div class="path-bar">
-              <button class="btn xs" :disabled="!filesData || !filesData.parent" @click="browse(filesData ? filesData.parent : '')">↑ {{ t('Up') }}</button>
-              <input v-model="filesPath" class="mono" @keyup.enter="browse(filesPath)">
-              <button class="btn xs" @click="browse(filesPath)">{{ t('Go') }}</button>
-              <span class="spacer"></span>
-              <button class="btn xs" @click="fileAction('mkdir')">{{ t('New folder') }}</button>
+
+            <div class="pane">
+              <div class="pane-head">
+                <strong class="mono">{{ filesSaved ? filesSaved.host : adhoc.host }}</strong>
+                <span class="dim tiny">{{ (filesSaved ? filesSaved.kind : adhoc.kind).toUpperCase() }}</span>
+                <span class="spacer"></span>
+                <label class="inline-check" v-if="canElevate" :title="t('Runs the listing and the file actions through sudo on the far end. The password is used for that one request and kept nowhere.')">
+                  <input type="checkbox" v-model="asRoot" @change="rootToggled()"> {{ t('Act as root') }}
+                </label>
+                <button class="btn xs" :disabled="!filesData || !filesData.parent" @click="browse(filesData ? filesData.parent : '')">↑ {{ t('Up') }}</button>
+                <button class="btn xs" @click="browse(filesData ? filesData.path : filesPath)">⟳ {{ t('Refresh') }}</button>
+                <button class="btn xs" @click="fileAction('mkdir')">{{ t('New folder') }}</button>
+                <button class="btn xs" v-if="adhocActive" @click="disconnect">{{ t('Disconnect') }}</button>
+              </div>
+              <div class="path-bar">
+                <input v-model="filesPath" class="mono" @keyup.enter="browse(filesPath)">
+                <button class="btn xs" @click="browse(filesPath)">{{ t('Go') }}</button>
+              </div>
+              <p class="note-line" v-if="asRoot && !sudoPassword">
+                {{ t('Enter the sudo password for this server. It is used for this one request and is never stored — you will be asked again next time.') }}
+              </p>
+              <div class="fl-row" v-if="asRoot && !sudoPassword">
+                <input v-model="sudoDraft" type="password" class="grow mono" autocomplete="new-password"
+                       :placeholder="t('sudo password')" @keyup.enter="useSudo()">
+                <button class="btn sm" :disabled="!sudoDraft" @click="useSudo()">{{ t('Use it') }}</button>
+                <button class="btn sm" @click="asRoot = false; sudoDraft = ''">{{ t('Cancel') }}</button>
+              </div>
+              <p class="hint root-on" v-if="asRoot && sudoPassword">
+                🔓 {{ t('Acting as root. The password is held only while this page stays open.') }}
+                <span class="dim tiny" v-if="rootLeft">{{ t('Given up in {n} min with nothing touched.', {n: rootLeft}) }}</span>
+                <button class="btn sm danger" @click="forgetSudo()">{{ t('Give up root now') }}</button>
+              </p>
+              <div class="pane-body"
+                   @dragover.prevent="$event.dataTransfer.dropEffect = 'copy'"
+                   @drop.prevent="dropOnRemote">
+                <table class="grid compact files-grid">
+                  <thead>
+                    <tr>
+                      <th><span class="th-line head" @click="sortFiles('name')" :class="fileSortClass('name')">{{ t('Name') }}</span></th>
+                      <th><span class="th-line head" @click="sortFiles('size')" :class="fileSortClass('size')">{{ t('Size') }}</span></th>
+                      <th><span class="th-line head" @click="sortFiles('modified')" :class="fileSortClass('modified')">{{ t('Changed') }}</span></th>
+                      <th>{{ t('Rights') }}</th>
+                      <th class="c-owner">{{ t('Owner') }}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-if="filesData.parent" class="dir up-row" @click="browse(filesData.parent)">
+                      <td colspan="5"><span class="nm">📁 ..</span></td>
+                    </tr>
+                    <tr v-for="e in sortedFiles" :key="e.name"
+                        :class="{dir: e.directory, picked: !!remotePicked[e.name]}"
+                        draggable="true"
+                        @dragstart="startFileDrag('remote', e, $event)"
+                        @click="pickRow('remote', e, $event)"
+                        @dblclick="openEntry(e)"
+                        @contextmenu.prevent="openFileMenu(e, $event)">
+                      <td><span class="nm">{{ e.directory ? '📁' : '📄' }} {{ e.name }}</span></td>
+                      <td class="mono dim">{{ e.directory ? '' : fmtBytes(e.size) }}</td>
+                      <td class="dim">{{ e.modified ? ago(e.modified) : '' }}</td>
+                      <td class="mono dim tiny">{{ e.permissions }}</td>
+                      <td class="dim tiny c-owner">{{ e.owner || '' }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+                <p v-if="filesData && !sortedFiles.length" class="empty-hint">{{ t('This folder is empty.') }}</p>
+              </div>
+              <div class="pane-foot">
+                <button class="btn xs" @click="pickAll('remote')">{{ t('Select all') }}</button>
+                <span class="dim tiny" v-if="remoteCount">{{ t('{n} chosen', {n: remoteCount}) }}</span>
+                <span class="spacer"></span>
+                <button class="btn sm primary" :disabled="!remoteCount" @click="enqueue('remote')">⤓ {{ t('Receive') }}</button>
+              </div>
             </div>
-            <table class="grid compact" v-if="filesData">
-              <thead><tr><th>{{ t('Name') }}</th><th>{{ t('Size') }}</th><th>{{ t('Changed') }}</th><th>{{ t('Rights') }}</th><th></th></tr></thead>
-              <tbody>
-                <tr v-for="e in filesData.entries" :key="e.name" :class="{dir: e.directory}">
-                  <td>
-                    <a v-if="e.directory" href="#" @click.prevent="browse(joinPath(filesData.path, e.name))">📁 {{ e.name }}</a>
-                    <span v-else>📄 {{ e.name }}</span>
-                  </td>
-                  <td class="mono dim">{{ e.directory ? '' : fmtBytes(e.size) }}</td>
-                  <td class="dim">{{ e.modified ? ago(e.modified) : '' }}</td>
-                  <td class="mono dim tiny">{{ e.permissions }}</td>
-                  <td class="row-actions">
-                    <button class="btn xs" v-if="!e.directory" :disabled="busy.dl" :class="{working: busy.dl}" @click="downloadFile(e)">⤓ {{ t('To my files') }}</button>
-                    <button class="btn xs" @click="fileAction('rename', e)">{{ t('Rename') }}</button>
-                    <button class="btn xs danger" @click="fileAction(e.directory ? 'rmdir' : 'delete', e)">{{ t('Delete') }}</button>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-            <p v-if="filesData && !filesData.entries.length" class="empty-hint">{{ t('This folder is empty.') }}</p>
           </div>
 
-          <div class="card tool-card" v-if="filesConn || adhocActive">
-            <h3>{{ t('Move files') }}</h3>
+          <div class="card" v-if="filesData">
             <div class="tool-row">
               <input v-model="filesTarget" class="short mono" :placeholder="t('Nextcloud folder for downloads')">
-              <button class="btn sm" @click="pickFile('Choose a folder for downloads', (p) => { filesTarget = p; }, true)">📂 {{ t('Browse…') }}</button>
-              <span class="dim">{{ t('Downloads land in this folder of your Nextcloud files.') }}</span>
+              <button class="btn sm" @click="pickFile('Choose a folder for downloads', (p) => { filesTarget = p; browseLocal(p); }, true)">📂 {{ t('Browse…') }}</button>
+              <label class="inline-check"><input type="checkbox" v-model="showHidden"> {{ t('Show hidden files') }}</label>
+              <span class="spacer"></span>
+              <span class="dim tiny">{{ t('Double-click a folder to open it. Right-click a row for what can be done with it. Drag between the panes to transfer.') }}</span>
             </div>
+          </div>
+
+          <!-- What is being moved, and what has been. A transfer that says
+               nothing for a minute is indistinguishable from one that has
+               hung, so this says how far along it is, how fast, and how much
+               longer — and can be stopped. -->
+          <div class="card queue-card" v-if="queue.length || queueDone.length">
             <div class="tool-row">
-              <input v-model="filesSource" class="mono" :placeholder="t('Path in your Nextcloud files, e.g. Documents/report.pdf')">
-              <button class="btn sm" @click="pickFile('Choose a file to upload', (p) => { filesSource = p; })">📂 {{ t('Browse…') }}</button>
-              <button class="btn" :disabled="busy.ul || !filesSource" :class="{working: busy.ul}" @click="uploadFile">⤒ {{ t('Upload to this folder') }}</button>
+              <strong>{{ t('Transfers') }}</strong>
+              <span class="dim tiny" v-if="queueSummary && queueSummary.waiting">{{ t('{n} waiting', {n: queueSummary.waiting}) }}</span>
+              <span class="spacer"></span>
+              <button class="btn sm danger" v-if="queue.length" @click="stopQueue">{{ t('Stop') }}</button>
+              <button class="btn sm" v-if="queueDone.length" @click="clearQueueDone">{{ t('Clear finished') }}</button>
             </div>
-            <p v-if="transferNote" class="note-line">{{ transferNote }}</p>
+            <div class="job" v-for="j in queue" :key="j.id">
+              <span class="ic">{{ j.direction === 'up' ? '⤒' : '⤓' }}</span>
+              <span class="nm mono">{{ j.name }}</span>
+              <span class="bar"><span class="fill" :style="{ width: jobPercent(j) + '%' }"></span></span>
+              <span class="pc mono">{{ jobPercent(j) }}%</span>
+              <span class="dim tiny">{{ j.state === 'running' ? jobRate(j) : t('Waiting') }}</span>
+            </div>
+            <div class="job done" v-for="j in queueDone" :key="'d' + j.id">
+              <span class="ic">{{ j.state === 'failed' ? '⚠' : (j.state === 'stopped' ? '⊘' : (j.direction === 'up' ? '⤒' : '⤓')) }}</span>
+              <span class="nm mono">{{ j.name }}</span>
+              <span class="dim tiny" v-if="j.state === 'failed'">{{ j.error }}</span>
+              <span class="dim tiny" v-else-if="j.state === 'stopped'">{{ t('Stopped') }}</span>
+              <span class="dim tiny" v-else>{{ fmtBytes(j.done) }}</span>
+            </div>
           </div>
         </section>
 
@@ -1365,21 +1644,121 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
                which needs an account. Each is now under its own heading, and
                the host typed above is carried down so the two are visibly the
                same machine. -->
-          <h2 class="section-head">{{ t('Look at a server') }} <span class="dim">{{ t('no account needed') }}</span></h2>
+          <!-- ============ one server, and what you want to do with it ============
+               This was three cards: a probe that needs no account, a box for
+               details typed on the spot, and a list of saved connections. Each
+               asked for the machine again. Now the machine is named once — from
+               the saved list, from the devices NetBase has found, or typed — and
+               everything that can be done to it sits underneath. What needs an
+               account is still gated on the account: a reader who may probe but
+               not sign in sees the top half and nothing more. -->
           <div class="card tool-card">
+
+            <!-- Which way the server is named is a choice, and it is shown as
+                 one. It used to be the first entry of the list of saved
+                 connections: choosing a saved one made the typing fields
+                 vanish, with nothing on screen to say they could come back, so
+                 they read as deleted — and Telnet, which is only ever typed in,
+                 looked unreachable. -->
             <div class="tool-row">
-              <select class="pick" :title="t('Pick one NetBase already knows')" @change="pickInto('sshHost', $event)">
-                <option value="">{{ t('Choose…') }}</option>
+              <div class="seg">
+                <button class="seg-btn" :class="{active: sshMode === 'type'}" @click="setSshMode('type')">{{ t('Enter it by hand') }}</button>
+                <button class="seg-btn" :class="{active: sshMode === 'saved'}" @click="setSshMode('saved')">{{ t('Pick from the list') }}</button>
+              </div>
+              <span class="spacer"></span>
+              <button class="btn sm" v-if="allowed('sshexec')" @click="openConn(null,'ssh')">{{ t('+ Add connection') }}</button>
+              <button class="btn sm" v-if="allowed('sshexec') && sshSaved" @click="openConn(sshSaved)">{{ t('Edit') }}</button>
+            </div>
+
+            <!-- One list, everything in it: the connections saved in RegiBase,
+                 the devices NetBase has found, and whatever was asked about
+                 last. Splitting it in two — saved here, devices there — was a
+                 step backwards; a reader looking for a machine should not have
+                 to know which half NetBase filed it under. -->
+            <!-- A list you can choose from but cannot connect with is worse
+                 than no list: the names are not secret, but the passwords and
+                 keys are, so the saved entries were selectable and then failed
+                 at the moment of use. The key is asked for here instead. -->
+            <template v-if="sshMode === 'saved' && connLocked">
+              <p class="note-line">{{ t('Please enter the RegiBase master key.') }}</p>
+              <div class="fl-row">
+                <input v-model="connMaster" type="password" class="grow mono" autocomplete="new-password" :placeholder="t('RegiBase master key')" @keyup.enter="unlockConns()">
+                <button class="btn sm" :disabled="!connMaster || busy.connsetup" @click="unlockConns()">{{ t('Unlock') }}</button>
+              </div>
+              <p class="dim tiny">{{ t('This key lasts until you close the browser — this session only.') }}</p>
+            </template>
+            <div class="tool-row" v-else-if="sshMode === 'saved'">
+              <select v-model="sshPick" class="grow" @change="sshPicked">
+                <option value="">{{ t('Not chosen yet') }}</option>
+                <optgroup v-if="sshConnections.length" :label="t('Saved connections')">
+                  <option v-for="c in sshConnections" :key="'c' + c.id" :value="'c' + c.id">{{ c.name }} — {{ c.username }}@{{ c.host }}</option>
+                </optgroup>
                 <optgroup v-for="g in hostChoices" :key="g.label" :label="t(g.label)">
                   <option v-for="o in g.items" :key="o.value" :value="o.value">{{ o.text }}</option>
                 </optgroup>
               </select>
-              <input v-model="sshHost" :placeholder="t('Host name or IP address')" @keyup.enter="runSsh">
-              <input v-model.number="sshPort" type="number" class="tiny" min="1" max="65535">
-              <button class="btn primary" :disabled="busy.ssh" :class="{working: busy.ssh}" @click="runSsh">{{ t('Inspect SSH') }}</button>
-              <button class="btn" :disabled="busy.telnet" :class="{working: busy.telnet}" @click="runTelnet">{{ t('Try Telnet') }}</button>
+            </div>
+            <p class="dim tiny" v-if="sshMode === 'saved' && !connLocked && !sshConnections.length && !hostChoices.length">{{ t('No saved connections yet — enter the address by hand instead.') }}</p>
+
+            <div class="tool-row" v-if="sshMode === 'type'">
+              <select v-model="sshAdhoc.kind" class="tiny" @change="sshKindChanged()">
+                <option value="ssh">SSH</option>
+                <option value="telnet">Telnet</option>
+              </select>
+              <input v-model="sshAdhoc.host" class="grow" :placeholder="t('Host name or IP address')" @keyup.enter="runSsh">
+              <input v-model.number="sshAdhoc.port" type="number" class="tiny" min="1" max="65535">
+              <template v-if="allowed('sshexec') && sshAdhoc.kind !== 'telnet'">
+                <input v-model="sshAdhoc.username" class="short" :placeholder="t('User name')" autocomplete="off">
+                <select v-model="sshAdhoc.authType" class="tiny">
+                  <option value="password">{{ t('Password') }}</option>
+                  <option value="key">{{ t('Private key') }}</option>
+                </select>
+              </template>
+            </div>
+            <div class="tool-row" v-else-if="sshSaved">
+              <strong class="mono">{{ sshSaved.kind.toUpperCase() }} {{ sshSaved.username }}@{{ sshSaved.host }}:{{ sshSaved.port || 22 }}</strong>
+              <span class="dim tiny">{{ t('Signs in with the password or key kept for it.') }}</span>
+            </div>
+
+            <div class="tool-row" v-if="sshMode === 'type' && allowed('sshexec') && sshAdhoc.kind !== 'telnet'">
+              <template v-if="sshAdhoc.authType === 'key'">
+                <input v-model="sshAdhoc.privateKeyPath" class="grow mono" :placeholder="t('Key file in your Nextcloud files')">
+                <button class="btn sm" @click="pickFile(t('Choose a key file'), (path) => { sshAdhoc.privateKeyPath = path; }, false, settings.keyFolder)">📂 {{ t('Browse…') }}</button>
+                <input v-model="sshAdhoc.passphrase" type="password" class="short" :placeholder="t('Key passphrase (if any)')" autocomplete="new-password">
+              </template>
+              <input v-else v-model="sshAdhoc.secret" type="password" class="short" :placeholder="t('Password')" autocomplete="new-password">
+              <button class="btn sm" :disabled="!sshAdhoc.host" @click="saveSshAdhoc">{{ t('Save to the list') }}</button>
+            </div>
+
+            <p class="dim tiny" v-if="sshMode === 'type' && sshAdhoc.kind === 'telnet'">{{ t('Telnet asks who you are inside the window, and carries everything in the clear.') }}</p>
+
+            <!-- Looking costs nothing and needs no account; signing in does. -->
+            <div class="tool-row">
+              <button class="btn primary" :disabled="busy.ssh || !sshHostNow" :class="{working: busy.ssh}" @click="runSsh">{{ t('Inspect SSH') }}</button>
+              <button class="btn" :disabled="busy.telnet || !sshHostNow" :class="{working: busy.telnet}" @click="runTelnet">{{ t('Try Telnet') }}</button>
+              <!-- SSH signs in before it shows anything, so it needs a user name.
+                   Leaving that out sent the request anyway and the server
+                   answered "could not sign in as " — a refusal with nobody
+                   named in it, eighty-two bytes of red text that is easy to
+                   miss in a terminal that has just opened. A saved connection
+                   carries its own user, and Telnet asks inside the window. -->
+              <button class="btn" v-if="allowed('sshexec')" :disabled="busy.term || !sshHostNow || !sshReadyToOpen" :class="{working: busy.term}" @click="openConsoleHere">🖳 {{ t('Open a console') }}</button>
             </div>
             <label class="opt"><input type="checkbox" v-model="sshAuthMethods"> {{ t('Also ask which sign-in methods are accepted (leaves one failed attempt in the server log)') }}</label>
+
+            <template v-if="allowed('sshexec') && sshCanRun">
+              <div class="tool-row">
+                <select v-model="sshPreset" class="grow">
+                  <option value="">{{ t('Or type a command below…') }}</option>
+                  <option v-for="(preset,id) in sshPresets" :key="id" :value="id">{{ t(preset.label) }}</option>
+                </select>
+                <button class="btn" :disabled="busy.sshrun || !sshPreset" :class="{working: busy.sshrun}" @click="runSshPreset">{{ t('Run') }}</button>
+              </div>
+              <div class="tool-row">
+                <input v-model="sshCommand" class="mono" :placeholder="t('uptime')" @keyup.enter="runSshCommand">
+                <button class="btn" :disabled="busy.sshrun || !sshCommand" :class="{working: busy.sshrun}" @click="runSshCommand">{{ t('Run command') }}</button>
+              </div>
+            </template>
           </div>
 
           <div class="card" v-if="sshResult">
@@ -1411,81 +1790,15 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
             <pre class="raw" v-if="telnetResult.banner">{{ telnetResult.banner }}</pre>
           </div>
 
-          <h2 class="section-head" v-if="allowed('sshexec')">{{ t('Work on a server') }} <span class="dim">{{ t('signs in, so it needs an account') }}</span></h2>
-          <div class="card tool-card" v-if="allowed('sshexec')">
-            <h3>{{ t('Sign in with details typed here') }}</h3>
-            <p class="dim">{{ t('Nothing has to be saved first. Fill this in and connect; save it to the list only if you want it again.') }}</p>
-            <p class="hint" v-if="sshHost && sshAdhoc.host !== sshHost">
-              {{ t('Looking at {host} above?', { host: sshHost }) }}
-              <button class="btn xs" @click="sshAdhoc.host = sshHost">{{ t('Use it here') }}</button>
-            </p>
-            <div class="tool-row">
-              <input v-model="sshAdhoc.host" class="grow" placeholder="server.example.com" @keyup.enter="quickConsole">
-              <input v-model.number="sshAdhoc.port" type="number" class="tiny" min="1" max="65535">
-              <input v-model="sshAdhoc.username" class="short" :placeholder="t('User name')" autocomplete="off">
-              <select v-model="sshAdhoc.authType" class="tiny">
-                <option value="password">{{ t('Password') }}</option>
-                <option value="key">{{ t('Private key') }}</option>
-              </select>
+          <div class="card" v-if="sshRunResult">
+            <div class="kv">
+              <div><span>{{ t('Command') }}</span><code class="wrap">{{ sshRunResult.command }}</code></div>
+              <div><span>{{ t('Exit status') }}</span><code :class="sshRunResult.exitStatus ? 'bad' : 'good'">{{ sshRunResult.exitStatus === null ? '—' : sshRunResult.exitStatus }}</code></div>
+              <div><span>{{ t('Time taken') }}</span><code>{{ sshRunResult.seconds }} s</code></div>
             </div>
-            <div class="tool-row">
-              <template v-if="sshAdhoc.authType === 'key'">
-                <input v-model="sshAdhoc.privateKeyPath" class="grow mono" :placeholder="t('Key file in your Nextcloud files')">
-                <button class="btn sm" @click="pickFile(t('Choose a key file'), (p) => { sshAdhoc.privateKeyPath = p; }, false, settings.keyFolder)">📂 {{ t('Browse…') }}</button>
-                <input v-model="sshAdhoc.passphrase" type="password" class="short" :placeholder="t('Key passphrase (if any)')" autocomplete="new-password">
-              </template>
-              <input v-else v-model="sshAdhoc.secret" type="password" class="short" :placeholder="t('Password')" autocomplete="new-password">
-              <button class="btn primary" :disabled="busy.term || !sshAdhoc.host || !sshAdhoc.username" :class="{working: busy.term}" @click="quickConsole">🖳 {{ t('Connect') }}</button>
-              <button class="btn" :disabled="!sshAdhoc.host" @click="saveSshAdhoc">{{ t('Save to the list') }}</button>
-            </div>
+            <pre class="raw">{{ sshRunResult.output || t('(no output)') }}</pre>
           </div>
 
-          <div class="card tool-card" v-if="allowed('sshexec')">
-            <h3>Telnet</h3>
-            <p class="dim">{{ t('Equipment too old for SSH is worked on the same way, in a window of its own. The user name and password are asked for inside the window.') }}</p>
-            <p class="hint" v-if="sshHost && telnetAdhoc.host !== sshHost">
-              {{ t('Looking at {host} above?', { host: sshHost }) }}
-              <button class="btn xs" @click="telnetAdhoc.host = sshHost">{{ t('Use it here') }}</button>
-            </p>
-            <div class="tool-row">
-              <input v-model="telnetAdhoc.host" class="grow" :placeholder="t('Host name or IP address')" @keyup.enter="openTelnetWindow">
-              <input v-model.number="telnetAdhoc.port" type="number" class="tiny" min="1" max="65535">
-              <button class="btn primary" :disabled="!telnetAdhoc.host" @click="openTelnetWindow">🖳 {{ t('Open a Telnet window') }}</button>
-            </div>
-          </div>
-
-          <div class="card tool-card" v-if="allowed('sshexec')">
-            <h3>{{ t('Use a connection already saved') }}</h3>
-            <p class="dim">{{ t('Signs in to a saved SSH connection with its password or private key. Run a single command, pick a preset, or open a console that keeps its working directory from one line to the next.') }}</p>
-            <div class="tool-row">
-              <select v-model.number="sshConn" class="grow">
-                <option :value="0">{{ t('Choose a saved SSH connection…') }}</option>
-                <option v-for="c in sshConnections" :key="c.id" :value="c.id">{{ c.name }} — {{ c.username }}@{{ c.host }}</option>
-              </select>
-              <button class="btn sm" @click="openConn(null,'ssh')">{{ t('+ Add connection') }}</button>
-              <button class="btn sm" v-if="sshConn" @click="openConn(connById(sshConn))">{{ t('Edit') }}</button>
-            </div>
-            <div class="tool-row">
-              <select v-model="sshPreset" class="grow">
-                <option value="">{{ t('Or type a command below…') }}</option>
-                <option v-for="(p,id) in sshPresets" :key="id" :value="id">{{ t(p.label) }}</option>
-              </select>
-              <button class="btn primary" :disabled="busy.sshrun || !sshConn || !sshPreset" :class="{working: busy.sshrun}" @click="runSshPreset">{{ t('Run') }}</button>
-            </div>
-            <div class="tool-row">
-              <input v-model="sshCommand" class="mono" :placeholder="t('uptime')" @keyup.enter="runSshCommand">
-              <button class="btn" :disabled="busy.sshrun || !sshConn || !sshCommand" :class="{working: busy.sshrun}" @click="runSshCommand">{{ t('Run command') }}</button>
-              <button class="btn" :disabled="!sshConn" @click="openConsole">🖳 {{ t('Open a console') }}</button>
-            </div>
-            <div v-if="sshRunResult">
-              <div class="kv">
-                <div><span>{{ t('Command') }}</span><code class="wrap">{{ sshRunResult.command }}</code></div>
-                <div><span>{{ t('Exit status') }}</span><code :class="sshRunResult.exitStatus ? 'bad' : 'good'">{{ sshRunResult.exitStatus === null ? '—' : sshRunResult.exitStatus }}</code></div>
-                <div><span>{{ t('Time taken') }}</span><code>{{ sshRunResult.seconds }} s</code></div>
-              </div>
-              <pre class="raw">{{ sshRunResult.output || t('(no output)') }}</pre>
-            </div>
-          </div>
 
         </section>
 
@@ -1493,6 +1806,41 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
     </main>
 
     <!-- ============ system information ============ -->
+    <!-- Opening a shell: shown only when a code has to be entered, or when
+         something is in the way. On a closed network the shell opens with no
+         dialog at all. -->
+    <div v-if="shellModal" class="drawer-backdrop centred" @click.self="closeShellModal">
+      <div class="drawer narrow-drawer shell-modal" @mousedown.stop>
+        <div class="drawer-head">
+          <div><strong>{{ t('Open a shell') }}</strong><div class="dim">{{ t('A terminal on this server, running with the same privileges as Nextcloud (the {user} account) — no more. For administrators only.', { user: 'www-data' }) }}</div></div>
+          <span class="spacer"></span>
+          <button class="btn xs ib" :title="t('Close')" :aria-label="t('Close')" @click="closeShellModal"><svg viewBox="0 0 24 24"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg></button>
+        </div>
+        <div class="drawer-body">
+          <div v-if="shellStage==='no-email'" class="shell-gate warn">
+            <p class="empty-hint">⚠ {{ t('No administrator email address is set.') }}</p>
+            <p class="dim tiny">{{ t('This server can reach the internet, so a verification code is required — but your account has no email address for it to be sent to. Set one in your personal settings, then try again.') }}</p>
+          </div>
+          <div v-else-if="shellStage==='mail-failed'" class="shell-gate warn">
+            <p class="empty-hint">⚠ {{ t('The verification code could not be sent. Check this server’s email settings and try again.') }}</p>
+          </div>
+          <div v-else-if="shellStage==='verify'" class="shell-gate">
+            <p>{{ t('A six-digit code was sent to {email}. Enter it to open the shell.', { email: shellEmail }) }}</p>
+            <div class="shell-code-row">
+              <input v-model="shellCode" inputmode="numeric" maxlength="6" autocomplete="one-time-code" class="shell-code mono" placeholder="––––––" ref="shellCode" @input="shellCode = onlyDigits(shellCode)" @keyup.enter="verifyShell">
+              <button class="btn primary" :disabled="shellBusy || shellCode.length !== 6" :class="{working: shellBusy}" @click="verifyShell">{{ t('Open the shell') }}</button>
+            </div>
+            <p v-if="shellError" class="empty-hint">⚠ {{ shellError }}</p>
+            <p class="dim tiny">{{ t('The code is valid for ten minutes.') }} · <a href="#" @click.prevent="beginShell">{{ t('Send a new code') }}</a></p>
+          </div>
+        </div>
+        <div class="drawer-foot">
+          <span class="spacer"></span>
+          <button class="btn" @click="closeShellModal">{{ shellStage==='verify' ? t('Cancel') : t('Close') }}</button>
+        </div>
+      </div>
+    </div>
+
     <div v-if="sysInfo" class="drawer-backdrop centred" @click.self="sysInfo=false">
       <div class="modal">
         <div class="drawer-head">
@@ -1597,7 +1945,13 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
             <tbody>
               <tr v-for="r in editRegRows" :key="r.id" :class="{'reg-del': r.remove}">
                 <td><input v-model="r.label" :placeholder="r.hostname || r.ip" :disabled="r.remove"></td>
-                <td><select v-model="r.type" :disabled="r.remove"><option v-for="(l,k) in typeLabels" :key="k" :value="k">{{ t(l) }}</option></select></td>
+                <td><div class="type-pick">
+                  <select v-if="r.type !== customType" v-model="r.type" :disabled="r.remove" :aria-label="t('Type')" @change="focusOwnType($event)"><option v-for="(l,k) in typeLabels" :key="k" :value="k">{{ t(l) }}</option><option :value="customType">{{ t('Other (enter your own)') }}</option></select>
+                  <span v-else class="type-own">
+                    <input v-model="r.typeText" :disabled="r.remove" maxlength="32" :placeholder="t('Enter a type')" :aria-label="t('Enter a type')" @keydown.esc.stop="r.type = typeBack(r.oldType)">
+                    <button type="button" class="btn xs ib type-back" :disabled="r.remove" :title="t('Choose from the list')" :aria-label="t('Choose from the list')" @click="r.type = typeBack(r.oldType)"><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></button>
+                  </span>
+                </div></td>
                 <td><input v-model="r.notes" :disabled="r.remove"></td>
                 <td class="reg-id mono dim">{{ r.ip }}<br>{{ r.mac || '—' }}</td>
                 <td><button class="btn xs ib" :title="r.remove ? t('Keep') : t('Remove')" :aria-label="r.remove ? t('Keep') : t('Remove')" @click="r.remove = !r.remove"><svg v-if="!r.remove" viewBox="0 0 24 24"><path d="M4 7h16"/><path d="M9 7V5h6v2"/><path d="M6 7l1 13h10l1-13"/></svg><svg v-else viewBox="0 0 24 24"><path d="M4 12a8 8 0 1 1 2.3 5.6"/><path d="M4 20v-5h5"/></svg></button></td>
@@ -1647,46 +2001,245 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
       </div>
     </div>
 
-    <!-- ============ appearance (per user, NetBase only) ============ -->
-    <div v-if="themeBox" class="drawer-backdrop centred">
+    <!-- How to give this server a language it does not yet have. The list of
+         locales is read from the machine, so this is the only way to add to
+         it — and it is done on the server, not from here. -->
+    <div v-if="termLog.open" class="drawer-backdrop centred over-dialog" @click.self="termLog.open=false">
+      <div class="modal">
+        <div class="drawer-head">
+          <span class="ic big">🗒️</span>
+          <div>
+            <strong>{{ termLog.session ? t('What was done') : t('Recorded sessions') }}</strong>
+            <div class="dim" v-if="termLog.session">{{ termLog.session.target }}</div>
+            <div class="dim" v-else>{{ t('Kept for your account only. Nobody else can read these.') }}</div>
+          </div>
+          <span class="spacer"></span>
+          <button class="btn xs ib" :title="t('Close')" :aria-label="t('Close')" @click="termLog.open=false"><svg viewBox="0 0 24 24"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg></button>
+        </div>
+        <div class="drawer-body">
+          <p class="dim" v-if="termLog.loading">{{ t('Reading…') }}</p>
+
+          <template v-else-if="!termLog.session">
+            <p class="dim" v-if="!termLog.sessions.length">{{ t('Nothing has been kept yet. Set a number of steps above, then open a terminal.') }}</p>
+            <table class="grid" v-else>
+              <thead><tr><th>{{ t('Where') }}</th><th>{{ t('Steps') }}</th><th>{{ t('Last used') }}</th><th></th></tr></thead>
+              <tbody>
+                <tr v-for="s in termLog.sessions" :key="s.session">
+                  <td><span class="pill">{{ s.kind === 'shell' ? t('Shell') : 'SSH' }}</span> <span class="mono">{{ s.target }}</span></td>
+                  <td>{{ s.steps }}</td>
+                  <td class="dim">{{ ago(s.last) }}</td>
+                  <td class="row-actions">
+                    <button class="btn xs" @click="readTermLog(s)">{{ t('Open') }}</button>
+                    <button class="btn xs danger" @click="forgetTermLog(s.session)">{{ t('Forget') }}</button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </template>
+
+          <template v-else>
+            <div class="log-step" v-for="st in termLog.steps" :key="st.id">
+              <div class="log-typed mono">{{ st.typed.trim() }}</div>
+              <pre class="log-said" v-if="st.said.trim()">{{ st.said.trim() }}</pre>
+              <div class="dim tiny">{{ stamp(st.created) }}</div>
+            </div>
+            <p class="dim" v-if="!termLog.steps.length">{{ t('This session has no steps left.') }}</p>
+          </template>
+        </div>
+        <div class="drawer-foot">
+          <button class="btn sm" v-if="termLog.session" @click="termLog.session = null; termLog.steps = []">{{ t('Back to the list') }}</button>
+          <button class="btn sm danger" v-else-if="termLog.sessions.length" @click="forgetTermLog('')">{{ t('Forget all of them') }}</button>
+          <span class="spacer"></span>
+          <button class="btn sm" @click="termLog.open=false">{{ t('Close') }}</button>
+        </div>
+      </div>
+    </div>
+
+    <div v-if="localeHelp" class="drawer-backdrop centred over-dialog" @click.self="localeHelp=false">
       <div class="modal narrow">
         <div class="drawer-head">
-          <span class="ic big">🎨</span>
+          <span class="ic big">🌐</span>
+          <div><strong>{{ t('Adding a language to this server') }}</strong><div class="dim">{{ t('The shell speaks the language of a locale the machine has installed.') }}</div></div>
+          <span class="spacer"></span>
+          <button class="btn xs ib" :title="t('Close')" :aria-label="t('Close')" @click="localeHelp=false"><svg viewBox="0 0 24 24"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg></button>
+        </div>
+        <div class="drawer-body">
+          <p class="dim">{{ t('NetBase offers only the locales this server already has, so a shell is never started in a language the machine cannot produce. Adding one is done on the server itself.') }}</p>
+
+          <h4>{{ t('On the server (bare metal or VM)') }}</h4>
+          <p class="dim tiny">{{ t('Run as an administrator. Change LOCALE on the first line to the language you want.') }}</p>
+          <div class="arp-code"><button class="btn xs ib arp-copy" :title="t('Copy')" @click="copyText(localeSteps())"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2.2"/><path d="M6 15.5H5.5A2.5 2.5 0 0 1 3 13V5.5A2.5 2.5 0 0 1 5.5 3H13a2.5 2.5 0 0 1 2.5 2.5V6"/></svg></button><pre>{{ localeSteps() }}</pre></div>
+
+          <h4>{{ t('Docker / Podman') }}</h4>
+          <p class="dim tiny">{{ t('The image is rebuilt as a whole, so make the locale from a start-up hook; it then survives every image update.') }}</p>
+          <div class="arp-code"><button class="btn xs ib arp-copy" :title="t('Copy')" @click="copyText(localeDockerHook())"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2.2"/><path d="M6 15.5H5.5A2.5 2.5 0 0 1 3 13V5.5A2.5 2.5 0 0 1 5.5 3H13a2.5 2.5 0 0 1 2.5 2.5V6"/></svg></button><pre>{{ localeDockerHook() }}</pre></div>
+
+          <p class="dim tiny">{{ t('Then open these settings again: the new locale is in the list. A shell that is already open keeps the language it started with.') }}</p>
+        </div>
+        <div class="drawer-foot">
+          <span class="spacer"></span>
+          <button class="btn sm" @click="localeHelp=false">{{ t('Close') }}</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ settings (per user, NetBase only) ============
+         Four subjects, not eleven. The dialog had grown by addition: the
+         terminal's font, the shell's language and the shell's log ended up in
+         three separate places with the connection list wedged between them,
+         and the word "language" appeared twice at the same size meaning two
+         different things. Grouping them costs nothing and the reader stops
+         having to hold the whole column in their head. -->
+    <div v-if="themeBox" class="drawer-backdrop centred">
+      <div class="modal">
+        <div class="drawer-head">
+          <span class="ic big">⚙</span>
           <div><strong>{{ t('Settings') }}</strong><div class="dim">{{ t('Applies to NetBase only, for your account.') }}</div></div>
           <span class="spacer"></span>
           <button class="btn xs ib" :title="t('Close')" :aria-label="t('Close')" @click="themeBox=false"><svg viewBox="0 0 24 24"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg></button>
         </div>
         <div class="drawer-body">
-          <div class="theme-picks">
-            <button v-for="opt in themeOptions" :key="opt.id" class="theme-pick" :class="{active: settings.theme===opt.id}" @click="setTheme(opt.id)">
-              <span class="swatch" :class="opt.id"><i class="bar"></i><i class="line"></i><i class="line short"></i></span>
-              <strong>{{ t(opt.label) }}</strong>
-              <span class="dim">{{ t(opt.hint) }}</span>
-              <span class="tick" v-if="settings.theme===opt.id">✓</span>
+
+          <!-- The same tabs as the connection list. Four groups stacked made a
+               dialog longer than the screen, and the one being changed was
+               never wholly in view. -->
+          <div class="set-tabs" role="tablist">
+            <button v-for="s in settingTabs" :key="s.id"
+                    class="set-tab" :class="{active: settingTab === s.id}"
+                    role="tab" :aria-selected="settingTab === s.id" :title="t(s.label)"
+                    @click="settingTab = s.id">
+              <span class="ic">{{ s.icon }}</span>{{ t(s.label) }}
             </button>
           </div>
-          <p class="dim">{{ t('Saved to your account, so it follows you to every browser you sign in from.') }}</p>
 
-          <h3>{{ t('Language') }}</h3>
-          <label class="fl">
-            <select :value="settings.language || 'auto'" @change="setLanguage($event.target.value)">
-              <option value="auto">{{ t('Follow Nextcloud') }}</option>
-              <option v-for="l in (settings.languages || [])" :key="l.code" :value="l.code">{{ l.name }}</option>
-            </select>
-          </label>
-          <p class="dim">{{ t('NetBase can speak a different language from the rest of Nextcloud — handy when the interface language and the language you think in are not the same.') }}</p>
+          <section class="set-group" v-show="settingTab === 'look'">
+            <h3><span class="ic">🎨</span>{{ t('Appearance and language') }}</h3>
+            <div class="theme-picks">
+              <button v-for="opt in themeOptions" :key="opt.id" class="theme-pick" :class="{active: settings.theme===opt.id}" @click="setTheme(opt.id)">
+                <span class="swatch" :class="opt.id"><i class="bar"></i><i class="line"></i><i class="line short"></i></span>
+                <strong>{{ t(opt.label) }}</strong>
+                <span class="dim">{{ t(opt.hint) }}</span>
+                <span class="tick" v-if="settings.theme===opt.id">✓</span>
+              </button>
+            </div>
+            <p class="dim tiny">{{ t('Saved to your account, so it follows you to every browser you sign in from.') }}</p>
 
-          <h3>{{ t('SSH key files') }}</h3>
-          <p class="dim">{{ t('Keys usually live in one folder. Name it here and the file chooser starts there every time, instead of at the top of your files.') }}</p>
-          <div class="fl-row">
-            <input v-model="settings.keyFolder" class="grow mono" :placeholder="t('Anywhere in your Nextcloud files')" @change="saveKeyFolder">
-            <button class="btn sm" @click="pickFile(t('Choose a folder'), (p) => { settings.keyFolder = p; saveKeyFolder(); }, true, settings.keyFolder)">📂 {{ t('Browse…') }}</button>
-            <button class="btn sm" :disabled="!settings.keyFolder" @click="settings.keyFolder = ''; saveKeyFolder()">{{ t('Clear') }}</button>
-          </div>
+            <h4>{{ t('Language') }}</h4>
+            <label class="fl">
+              <select :value="settings.language || 'auto'" @change="setLanguage($event.target.value)">
+                <option value="auto">{{ t('Follow Nextcloud') }}</option>
+                <option v-for="l in (settings.languages || [])" :key="l.code" :value="l.code">{{ l.name }}</option>
+              </select>
+            </label>
+            <p class="dim tiny">{{ t('NetBase can speak a different language from the rest of Nextcloud.') }}</p>
+          </section>
 
-          <h3>{{ t('The list of tools') }}</h3>
-          <p class="dim">{{ t('Drag the tools in the sidebar into the order you work in — or hold Alt and press the up and down arrows. The order is kept for your account.') }}</p>
-          <button class="btn sm" :disabled="!(settings.tabOrder || []).length" @click="resetTabOrder">{{ t('Put them back in the original order') }}</button>
+          <section class="set-group" v-show="settingTab === 'term'">
+            <h3><span class="ic">🖳</span>{{ t('Terminal (shell and SSH)') }}</h3>
+
+            <h4>{{ t('Terminal font') }}</h4>
+            <label class="fl">
+              <select v-model="settings.termFont" @change="applyTermFont()">
+                <option v-for="f in termFonts" :key="f.id" :value="f.id">{{ t(f.label) }}</option>
+                <optgroup v-if="(settings.serverFonts || []).length" :label="t('Fonts on this server')">
+                  <option v-for="f in settings.serverFonts" :key="f.id" :value="'server:' + f.id">{{ f.family }} ({{ fontSize(f.bytes) }})</option>
+                </optgroup>
+              </select>
+            </label>
+            <p class="dim tiny">{{ t('The face the shell and SSH terminals are drawn in. The size is set in the terminal window itself.') }}</p>
+            <p class="dim tiny" v-if="String(settings.termFont || '').startsWith('server:')">{{ t('A font from this server is sent to your browser the first time it is used, and kept afterwards.') }}</p>
+            <template v-if="status.isAdmin && settings.admin">
+              <label class="fl">
+                <span class="fl-label">{{ t('Extra font folder') }}<span class="admin-note">{{ t('For everyone on this server') }}</span></span>
+                <input v-model="settings.admin.fontDir" spellcheck="false" autocomplete="off" placeholder="/usr/local/share/fonts" @change="saveFontDir()">
+              </label>
+              <p class="dim tiny">{{ t('Another folder on this server to look in for fonts. What is found there is offered alongside the rest.') }}</p>
+            </template>
+
+            <template v-if="status.isAdmin">
+              <h4>{{ t('Shell') }}</h4>
+              <div class="fl">
+                <span class="fl-label">{{ t('Language') }}<span class="admin-note">{{ t('For everyone on this server') }}</span></span>
+                <span class="shell-lang-row">
+                  <select v-model="settings.shellLang" @change="saveShell()">
+                    <option value="">{{ t('Follow the server') }}</option>
+                    <option v-for="l in (settings.shellLocales || [])" :key="l" :value="l">{{ l }}</option>
+                  </select>
+                  <button class="btn xs ib shell-help-btn" :title="t('How to add a language to this server')" :aria-label="t('How to add a language to this server')" @click="localeHelp = true">?</button>
+                </span>
+              </div>
+              <p class="dim tiny" v-if="(settings.shellLocales || []).length < 2">{{ t('This server has only one locale installed, so the shell speaks that language. An administrator can install more on the server itself.') }}</p>
+              <label class="fl">
+                <span class="fl-label">{{ t('Environment variables') }}<span class="admin-note">{{ t('For everyone on this server') }}</span></span>
+                <textarea v-model="settings.shellEnv" rows="4" spellcheck="false" autocomplete="off" placeholder="EDITOR=vi" @change="saveShell()"></textarea>
+              </label>
+              <p class="dim tiny">{{ t('One NAME=value to a line. Both apply to shells opened from now on, not to a window that is already open.') }}</p>
+              <p class="dim tiny">{{ t('These two are for the shell on this server only. An SSH window takes its language and environment from the machine it reaches.') }}</p>
+            </template>
+
+            <h4>{{ t('Shell log') }}</h4>
+            <label class="opt">
+              <input type="checkbox" v-model="settings.termLogOn" @change="saveTermLog()">
+              {{ t('Keep a log of shell and SSH sessions') }}
+            </label>
+            <p class="dim tiny">{{ t('One step is a line you typed together with what came back.') }}</p>
+            <template v-if="settings.termLogOn">
+              <div class="fl-row">
+                <label class="fl short">
+                  <span class="fl-label">{{ t('Steps to keep') }}</span>
+                  <input v-model.number="settings.termLogSteps" type="number" min="1" max="10000" step="100" @change="saveTermLog()">
+                </label>
+                <label class="fl short">
+                  <span class="fl-label">{{ t('Days to keep') }}</span>
+                  <input v-model.number="settings.termLogDays" type="number" min="1" max="3650" @change="saveTermLog()">
+                </label>
+              </div>
+              <p class="dim tiny">{{ t('Per window, counting from the most recent.') }}</p>
+              <p class="dim tiny">{{ t('Counted from the last step of a window, so one still being used is never cut short. When the days run out, that whole session goes.') }}</p>
+            </template>
+            <div class="fl-row">
+              <button class="btn sm" @click="openTermLog()">{{ t('Show what was kept') }}</button>
+            </div>
+          </section>
+
+          <section class="set-group" v-show="settingTab === 'conn'">
+            <h3><span class="ic">🔑</span>{{ t('Connections and keys') }}</h3>
+
+            <h4>{{ t('Connection list for SSH, Telnet, FTP, SFTP and SCP') }}</h4>
+            <p class="dim tiny">{{ t('The servers you connect to are kept in RegiBase, so a password is sealed with your own master key and not with a secret held on this server.') }}</p>
+            <div class="fl-row">
+              <button class="btn sm" @click="openConnSetup()">{{ t('Set up the connection list') }}</button>
+            </div>
+
+            <h4>{{ t('Acting as root') }}</h4>
+            <p class="dim tiny">{{ t('Over SCP a command can be put through sudo. The password is asked for each time and kept nowhere, but it stays usable while the page is open — so it is let go after this long with nothing touched.') }}</p>
+            <label class="fl">
+              <span class="fl-label">{{ t('Give up root after') }}</span>
+              <select v-model.number="settings.rootIdleMinutes" @change="saveRootIdle">
+                <option :value="1">{{ t('1 minute') }}</option>
+                <option :value="3">{{ t('{n} minutes', {n: 3}) }}</option>
+                <option :value="5">{{ t('{n} minutes', {n: 5}) }}</option>
+                <option :value="10">{{ t('{n} minutes', {n: 10}) }}</option>
+                <option :value="30">{{ t('{n} minutes', {n: 30}) }}</option>
+                <option :value="0">{{ t('Do not give it up on its own') }}</option>
+              </select>
+            </label>
+
+            <h4>{{ t('Where your SSH keys are kept') }}</h4>
+            <p class="dim tiny">{{ t('Name the folder your keys live in, and the file chooser starts there every time.') }}</p>
+            <div class="fl-row">
+              <input v-model="settings.keyFolder" class="grow mono" :placeholder="t('Anywhere in your Nextcloud files')" @change="saveKeyFolder">
+              <button class="btn sm" @click="pickFile(t('Choose a folder'), (p) => { settings.keyFolder = p; saveKeyFolder(); }, true, settings.keyFolder)">📂 {{ t('Browse…') }}</button>
+              <button class="btn sm" :disabled="!settings.keyFolder" @click="settings.keyFolder = ''; saveKeyFolder()">{{ t('Clear the folder') }}</button>
+            </div>
+          </section>
+
+          <section class="set-group" v-show="settingTab === 'tools'">
+            <h3><span class="ic">☰</span>{{ t('The list of tools') }}</h3>
+            <p class="dim tiny">{{ t('Drag the tools in the sidebar into the order you work in, or hold Alt and press the up and down arrows.') }}</p>
+            <button class="btn sm" :disabled="!(settings.tabOrder || []).length" @click="resetTabOrder">{{ t('Put them back in the original order') }}</button>
+          </section>
+
         </div>
         <div class="drawer-foot">
           <span class="spacer"></span>
@@ -1835,6 +2388,57 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
     <!-- ============ what can be done to the device under the pointer ============ -->
     <!-- A right-click asks the obvious question — how do I get into this thing —
          and the answer is already known: whichever of its ports are open. -->
+    <!-- One line of text, or a yes, asked in the page rather than by the
+         browser: a native prompt() freezes an embedded window. -->
+    <div v-if="ask.open" class="drawer-backdrop centred topmost">
+      <div class="modal narrow">
+        <div class="drawer-head">
+          <span class="ic big">{{ ask.icon }}</span>
+          <div><strong>{{ ask.title }}</strong><div class="dim">{{ ask.subject }}</div></div>
+        </div>
+        <div class="drawer-body">
+          <p v-if="ask.body" class="dim">{{ ask.body }}</p>
+          <template v-if="ask.input">
+            <p v-if="ask.label" class="dim">{{ ask.label }}</p>
+            <input ref="askBox" v-model="ask.value" type="text" class="grow mono" autocomplete="off" @keyup.enter="askOk()">
+          </template>
+        </div>
+        <div class="drawer-foot">
+          <span class="spacer"></span>
+          <button class="btn sm" @click="askClose(null)">{{ t('Cancel') }}</button>
+          <button class="btn" :class="ask.danger ? 'danger' : 'primary'" :disabled="ask.input && !String(ask.value || '').trim()" @click="askOk()">{{ ask.confirm }}</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- What can be done with the file under the pointer. -->
+    <div v-if="fileMenu.open" class="row-menu-veil" @click="fileMenu.open = false" @contextmenu.prevent="fileMenu.open = false"></div>
+    <div v-if="fileMenu.open" class="row-menu" :style="{ left: fileMenu.x + 'px', top: fileMenu.y + 'px' }" @click.stop>
+      <div class="row-menu-head">{{ fileMenu.entry.directory ? '📁' : '📄' }} {{ fileMenu.entry.name }}</div>
+      <button class="row-menu-item" v-if="fileMenu.entry.directory" @click="runFileMenu('open')">{{ t('Open') }}</button>
+      <!-- A text file opens in a window of its own, beside the listing rather
+           than instead of it, so it can be read against what is on the other
+           side. Anything larger than a megabyte is refused by the server with
+           a reason rather than filling the window with rubbish. -->
+      <button class="row-menu-item" v-if="!fileMenu.entry.directory" @click="runFileMenu('view')">📄 {{ t('Open in a window') }}</button>
+      <button class="row-menu-item" @click="runFileMenu('download')">⤓ {{ fileMenu.entry.directory ? t('Download as ZIP') : t('Download file') }}</button>
+      <button class="row-menu-item" @click="runFileMenu('copyPath')">{{ t('Copy the path') }}</button>
+      <div class="row-menu-rule"></div>
+      <button class="row-menu-item" @click="runFileMenu('rename')">{{ t('Rename') }}</button>
+      <button class="row-menu-item" @click="runFileMenu('chmod')">{{ t('Change permissions') }}</button>
+      <!-- The timestamp is yours to set on your own files, so it is always
+           offered. The owner and the group are not: every server refuses those
+           to an ordinary account, and showing them would be offering something
+           that cannot work. -->
+      <button class="row-menu-item" @click="runFileMenu('touch')">{{ t('Set the time to now') }}</button>
+      <template v-if="asRoot && sudoPassword">
+        <button class="row-menu-item" @click="runFileMenu('chown')">{{ t('Change owner') }}</button>
+        <button class="row-menu-item" @click="runFileMenu('chgrp')">{{ t('Change group') }}</button>
+      </template>
+      <div class="row-menu-rule"></div>
+      <button class="row-menu-item" @click="runFileMenu('delete')">{{ t('Delete') }}</button>
+    </div>
+
     <div v-if="rowMenu.open" class="row-menu-veil" @click="rowMenu.open = false" @contextmenu.prevent="rowMenu.open = false">
       <ul class="row-menu" :style="{ left: rowMenu.x + 'px', top: rowMenu.y + 'px' }" @click.stop>
         <li class="row-menu-head">{{ rowMenu.device ? (rowMenu.device.name || rowMenu.device.ip) : '' }}</li>
@@ -1853,6 +2457,39 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
       </ul>
     </div>
 
+    <!-- ============ text windows (a file, open beside the list) ============ -->
+    <!-- The same frame as a device or terminal window: moved, resized, several
+         at once. A file you are checking against another file has to be
+         readable at the same time as the listing, not instead of it. -->
+    <div v-for="w in textWins" :key="w.id" class="devwin text-win" :class="{ dragging: !!drag }"
+         :style="{ left: w.x + 'px', top: w.y + 'px', width: w.w + 'px', height: w.h + 'px', zIndex: w.z }"
+         @mousedown="focusWindow(w)">
+      <div class="devwin-head" @mousedown.prevent="startDrag(w, $event)">
+        <span class="ic">📄</span>
+        <strong class="nm">{{ w.name }}<template v-if="textChanged(w)"> ●</template></strong>
+        <span class="dim mono tiny addr">{{ w.path }}</span>
+        <span class="spacer"></span>
+        <span class="dim tiny">{{ w.encoding }} · {{ w.newline === 'crlf' ? 'CRLF' : 'LF' }} · {{ fmtBytes(w.bytes) }}</span>
+        <button class="btn xs ib" :title="t('Reload')" :aria-label="t('Reload')" @click.stop="reloadText(w)">
+          <svg viewBox="0 0 24 24"><path d="M20.5 13.5A8.5 8.5 0 1 1 18 6.4L21.5 9.5"/><path d="M21.5 4v5.5H16"/></svg>
+        </button>
+        <button class="btn xs ib" v-if="!narrow" :title="t('Fill the screen')" :aria-label="t('Fill the screen')" @click.stop="toggleFull(w)">
+          <svg viewBox="0 0 24 24"><path d="M14.5 3.5H20.5V9.5"/><path d="M9.5 20.5H3.5V14.5"/><path d="M20.5 3.5L13.5 10.5"/><path d="M3.5 20.5L10.5 13.5"/></svg>
+        </button>
+        <button class="btn xs ib" :title="t('Close')" :aria-label="t('Close')" @click.stop="closeText(w)">
+          <svg viewBox="0 0 24 24"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <textarea v-model="w.text" class="text-body mono" spellcheck="false"></textarea>
+      <div class="devwin-foot">
+        <span class="dim tiny" v-if="w.note">{{ w.note }}</span>
+        <span class="dim tiny" v-else-if="textChanged(w)">{{ t('Changed — not saved yet') }}</span>
+        <span class="spacer"></span>
+        <button class="btn sm primary" :disabled="w.saving || !textChanged(w)" :class="{working: w.saving}" @click="saveText(w)">{{ t('Save') }}</button>
+      </div>
+      <div class="devwin-grip" @mousedown.prevent.stop="startResize(w, $event)"></div>
+    </div>
+
     <!-- ============ terminal windows (SSH and Telnet) ============ -->
     <!-- The same frame as a device window: moved, resized, several at once, and
          open beside the list rather than instead of it. -->
@@ -1861,8 +2498,8 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
          @mousedown="focusWindow(w)">
       <div class="devwin-head" @mousedown.prevent="startDrag(w, $event)">
         <span class="ic">🖳</span>
-        <strong class="nm">{{ w.kind === 'telnet' ? 'Telnet' : 'SSH' }} · {{ w.host }}</strong>
-        <span class="dim mono tiny addr">{{ w.prompt || (w.user ? w.user + '@' + w.host : w.host + ':' + w.port) }}</span>
+        <strong class="nm">{{ w.kind === 'shell' ? t('Shell') : (w.kind === 'telnet' ? 'Telnet' : 'SSH') }}<template v-if="w.kind !== 'shell'"> · {{ w.host }}</template></strong>
+        <span class="dim mono tiny addr">{{ w.kind === 'shell' ? t('This server') : (w.prompt || (w.user ? w.user + '@' + w.host : w.host + ':' + w.port)) }}</span>
         <span class="spacer"></span>
         <button class="btn xs ib" :title="t('Clear')" :aria-label="t('Clear')" @click.stop="clearTerm(w)">
           <svg viewBox="0 0 24 24"><path d="M4 7h16"/><path d="M9.5 7V4.5h5V7"/><path d="M6.5 7l1 13h9l1-13"/></svg>
@@ -1872,6 +2509,58 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         </button>
         <button class="btn xs ib" :title="t('Close')" :aria-label="t('Close')" @click.stop="closeTerm(w)">
           <svg viewBox="0 0 24 24"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <!-- A word about what just happened, inside this window. The app's own
+           banner sits across the top of everything, which is the wrong place
+           for something only this terminal did. -->
+      <div v-if="w.toast" class="devwin-toast" :class="w.toast.kind" @click="w.toast = null">{{ w.toast.text }}</div>
+      <!-- The same copy-and-paste row a device window has, for the screen
+           terminals (SSH and the local shell). The line-at-a-time Telnet
+           console has its own input, so it keeps out of this. -->
+      <div class="devwin-bar term-bar" v-if="w.kind === 'ssh' || w.kind === 'shell'" @mousedown.stop>
+        <button class="btn xs" :title="t('Copy whatever is selected, or the whole screen if nothing is')" @mousedown.prevent @click.stop="copyTerm(w)">
+          <span class="ic"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2.2"/><path d="M6 15.5H5.5A2.5 2.5 0 0 1 3 13V5.5A2.5 2.5 0 0 1 5.5 3H13a2.5 2.5 0 0 1 2.5 2.5V6"/></svg></span><span class="lb">{{ t('Copy') }}</span>
+        </button>
+        <button class="btn xs" :title="t('Paste the clipboard into the terminal')" @mousedown.prevent @click.stop="pasteTerm(w)">
+          <span class="ic"><svg viewBox="0 0 24 24"><path d="M9 4.5H7A1.5 1.5 0 0 0 5.5 6v13A1.5 1.5 0 0 0 7 20.5h10a1.5 1.5 0 0 0 1.5-1.5V6A1.5 1.5 0 0 0 17 4.5h-2"/><rect x="9" y="2.5" width="6" height="3.5" rx="1"/><path d="M8.5 12h7"/><path d="M8.5 15.5h4.5"/></svg></span><span class="lb">{{ t('Paste') }}</span>
+        </button>
+        <!-- Meta onward lives in this menu, so the row stays a single line.
+             An armed Meta or Ctrl still shows on the button itself, which is
+             the one thing that must be visible while the menu is shut. -->
+        <span class="term-menu-wrap">
+          <button class="btn xs" :class="{active: w.meta || w.ctrl || w.keyMenu}" :title="t('Keys, and the terminal font')" @mousedown.prevent @click.stop="toggleKeyMenu(w, $event)">
+            <span class="ic"><svg viewBox="0 0 24 24"><rect x="3.5" y="6.5" width="17" height="11" rx="2"/><path d="M7.5 10.5h2"/><path d="M11.5 10.5h5"/><path d="M7.5 14h9"/></svg></span><span class="lb">{{ t('Keys') }}</span>
+          </button>
+          <div v-if="w.keyMenu" class="term-menu-veil" @click.stop="w.keyMenu = false" @contextmenu.prevent="w.keyMenu = false"></div>
+          <div v-if="w.keyMenu" class="term-menu" :style="{ left: w.menuX + 'px', top: w.menuY + 'px' }" @mousedown.stop @click.stop>
+            <div class="term-menu-head">{{ t('Send a key') }}</div>
+            <div class="term-menu-keys">
+              <button class="btn xs key wide" :class="{active: w.meta}" :title="t('Send the next key with Meta (Alt) held down')" @mousedown.prevent @click="toggleMeta(w)">{{ t('Meta') }}</button>
+              <button class="btn xs key wide" :class="{active: w.ctrl}" :title="t('Send the next key with Ctrl held down')" @mousedown.prevent @click="toggleCtrl(w)">{{ t('Ctrl') }}</button>
+              <button class="btn xs key" :title="t('Send Escape')" @mousedown.prevent @click="sendKey(w, 'esc')">Esc</button>
+              <button class="btn xs key" :title="t('Send a Tab, to complete a name')" @mousedown.prevent @click="sendKey(w, 'tab')">Tab</button>
+              <button class="btn xs key" :title="t('Interrupt what is running (Ctrl+C)')" @mousedown.prevent @click="sendKey(w, 'intr')">^C</button>
+              <button class="btn xs key" :title="t('End of input (Ctrl+D)')" @mousedown.prevent @click="sendKey(w, 'eof')">^D</button>
+              <button class="btn xs key" :title="t('Suspend what is running (Ctrl+Z)')" @mousedown.prevent @click="sendKey(w, 'susp')">^Z</button>
+              <button class="btn xs key" :title="t('Clear the screen (Ctrl+L)')" @mousedown.prevent @click="sendKey(w, 'clear')">^L</button>
+              <button class="btn xs key" :title="t('Search the command history (Ctrl+R)')" @mousedown.prevent @click="sendKey(w, 'search')">^R</button>
+            </div>
+          </div>
+        </span>
+        <!-- The size is set here, while looking at the screen it changes. The
+             face itself is chosen once, and lives in Settings. -->
+        <span class="term-sizer">
+          <button class="btn xs ib" :title="t('Smaller')" :aria-label="t('Smaller')" :disabled="settings.termFontSize <= 9" @mousedown.prevent @click.stop="stepTermSize(-1)"><svg viewBox="0 0 24 24"><path d="M5 12h14"/></svg></button>
+          <span class="term-size mono">{{ settings.termFontSize }}px</span>
+          <button class="btn xs ib" :title="t('Larger')" :aria-label="t('Larger')" :disabled="settings.termFontSize >= 24" @mousedown.prevent @click.stop="stepTermSize(1)"><svg viewBox="0 0 24 24"><path d="M12 5v14"/><path d="M5 12h14"/></svg></button>
+        </span>
+        <span class="spacer"></span>
+        <button class="btn xs" :title="t('Save the screen as a picture')" @mousedown.prevent @click.stop="shootTerm(w)">
+          <span class="ic"><svg viewBox="0 0 24 24"><path d="M3.5 8.5A1.5 1.5 0 0 1 5 7h2l1.2-2h7.6L17 7h2a1.5 1.5 0 0 1 1.5 1.5v9A1.5 1.5 0 0 1 19 19H5a1.5 1.5 0 0 1-1.5-1.5z"/><circle cx="12" cy="12.7" r="3.4"/></svg></span><span class="lb">{{ t('Save screen') }}</span>
+        </button>
+        <button class="btn xs" :title="t('Copy the whole screen, including what has scrolled off')" @mousedown.prevent @click.stop="copyTerm(w, true)">
+          <span class="ic"><svg viewBox="0 0 24 24"><path d="M4 6.5h16"/><path d="M4 12h16"/><path d="M4 17.5h10"/></svg></span><span class="lb">{{ t('Copy all') }}</span>
         </button>
       </div>
       <!-- Telnet asks who you are before it will say anything useful, and PHP
@@ -1886,7 +2575,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
       <!-- SSH gets a screen, not a transcript: one connection stays open and
            the far end draws on it, so vi, top and a password prompt all work
            exactly as they do at the machine itself. -->
-      <div class="term-screen" v-if="w.kind === 'ssh'" :ref="'screen' + w.id"></div>
+      <div class="term-screen" v-if="w.kind === 'ssh' || w.kind === 'shell'" :ref="'screen' + w.id"></div>
       <div class="term-body" v-else :ref="'term' + w.id">
         <p class="dim tiny">{{ t('Each line is its own connection: it signs in, sends the line, reads the answer and hangs up. Telnet carries everything in the clear, this window included.') }}</p>
         <div v-for="(l,i) in w.lines" :key="i" :class="'term-line ' + l.kind"><span v-if="l.kind==='cmd'" class="term-prompt">{{ l.prompt }}</span>{{ l.text }}</div>
@@ -1965,6 +2654,115 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
     </div>
 
     <!-- ============ saved connection editor ============ -->
+    <div v-if="keyAsk" class="drawer-backdrop centred topmost">
+      <div class="modal narrow">
+        <div class="drawer-head">
+          <span class="ic big">🔑</span>
+          <div><strong>{{ t('RegiBase master key') }}</strong><div class="dim">{{ t('Held for this browser session only.') }}</div></div>
+        </div>
+        <div class="drawer-body">
+          <p class="dim">{{ t('Enter the RegiBase master key to use this connection. It is never stored: close the browser and it is gone.') }}</p>
+          <input v-model="keyAskValue" type="password" class="grow mono" autocomplete="off" :placeholder="t('RegiBase master key')" @keyup.enter="unlockFromAsk()">
+        </div>
+        <div class="drawer-foot">
+          <span class="spacer"></span>
+          <button class="btn sm" @click="keyAsk=false; keyAskValue=''">{{ t('Cancel') }}</button>
+          <button class="btn primary" :disabled="!keyAskValue || busy.connsetup" @click="unlockFromAsk()">{{ t('Unlock') }}</button>
+        </div>
+      </div>
+    </div>
+
+    <div v-if="connSetupModal" class="drawer-backdrop centred over-dialog" @click.self="connSetupModal=false">
+      <div class="modal">
+        <div class="drawer-head">
+          <span class="ic big">🗄️</span>
+          <div><strong>{{ t('Connection list for SSH, Telnet, FTP, SFTP and SCP') }}</strong><div class="dim">{{ t('Kept in RegiBase, in a collection of your own.') }}</div></div>
+          <span class="spacer"></span>
+          <button class="btn xs ib" :title="t('Close')" :aria-label="t('Close')" @click="connSetupModal=false"><svg viewBox="0 0 24 24"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg></button>
+        </div>
+        <div class="drawer-body">
+          <p class="note-line" v-if="connSetup && !connSetup.ready">
+            {{ t('Connections used to be kept by NetBase itself. They are kept in RegiBase now, and any that were saved before this version are gone — please enter them again. A password there is sealed with your own master key, which this server never holds.') }}
+          </p>
+          <p class="dim" v-if="!connSetup">{{ t('Reading…') }}</p>
+          <template v-else-if="!connSetup.available">
+            <p class="note-line">{{ t('RegiBase is not installed on this server, so there is nowhere to keep a connection. You can still reach a server by typing its details each time.') }}</p>
+          </template>
+          <template v-else-if="!connSetup.encrypted">
+            <p class="note-line">{{ t('Set a master key in RegiBase first. Without one, a password would be stored as plain text.') }}</p>
+          </template>
+          <template v-else>
+            <h3>{{ t('RegiBase master key') }}</h3>
+            <p class="dim">{{ t('Held for this browser session only and never stored — not in these settings, not anywhere on this server.') }}</p>
+            <template v-if="!connSetup.unlocked">
+              <p class="dim tiny">{{ t('Enter the master key to change these settings') }}</p>
+              <div class="fl-row">
+                <input v-model="connMaster" type="password" class="grow mono" autocomplete="new-password" :placeholder="t('RegiBase master key')" @keyup.enter="unlockConns()">
+                <button class="btn sm" :disabled="!connMaster || busy.connsetup" @click="unlockConns()">{{ t('Unlock') }}</button>
+              </div>
+            </template>
+            <button class="btn sm" v-else @click="lockConns()">{{ t('Forget it now') }}</button>
+
+            <p class="dim tiny">{{ t('Each kind is kept in its own collection. Choosing the same collection for several kinds is perfectly fine — SSH and SCP are usually the same list.') }}</p>
+            <p class="note-line" v-if="!connSetup.unlocked">{{ t('Changing where connections are kept needs the master key. You will be asked for it when you save.') }}</p>
+
+            <!-- Four kinds, four tabs, two to a row. Stacked one under another
+                 the dialog ran far past the bottom of the screen and the one
+                 being worked on was never wholly in view; behind a single
+                 selector, three of the four were invisible and there was no
+                 telling what was set up. The tabs say both at once: which one
+                 is open, and which of the others still need doing. -->
+            <div class="set-tabs" role="tablist">
+              <button v-for="(g, key) in (connSetup.groups || {})" :key="key"
+                      class="set-tab" :class="{active: connGroup === key}"
+                      role="tab" :aria-selected="connGroup === key" :title="t(g.label)"
+                      @click="connGroup = key">
+                {{ t(g.label) }}<span class="dot-todo" :class="{gone: g.gone}" v-if="!g.ready" :title="g.gone ? t('its collection is gone') : t('not set up yet')"></span>
+              </button>
+            </div>
+
+            <section class="set-group" v-for="(g, key) in (connSetup.groups || {})" :key="key" v-show="connGroup === key">
+              <h3>{{ t(g.label) }} <span class="dim tiny" v-if="!g.ready">— {{ g.gone ? t('its collection is gone') : t('not set up yet') }}</span></h3>
+              <p class="note-line" v-if="g.gone">{{ t('The RegiBase collection this was kept in has been deleted. Choose another one below, or make a new one — the connections that were in it are gone with it.') }}</p>
+              <label class="fl">
+                <span class="fl-label">{{ t('RegiBase collection') }}</span>
+                <select :value="g.collection || 0" @change="setConnCollection(key, $event.target.value)">
+                  <option :value="0">{{ t('Not chosen yet') }}</option>
+                  <option v-for="c in (connSetup.collections || [])" :key="c.id" :value="c.id">{{ c.name }} — {{ c.records }}</option>
+                </select>
+              </label>
+              <div class="fl-row">
+                <input v-model="connNewName[key]" class="grow" :placeholder="t('Name for a new collection')">
+                <button class="btn sm" @click="makeConnCollection(key)">{{ t('Create new') }}</button>
+              </div>
+              <template v-if="g.collection">
+                <h4>{{ t('Field assignment') }}</h4>
+                <p class="dim tiny">{{ t('Tell NetBase which field to use for each part of a connection. Only the host is required; anything left unset is not stored.') }}</p>
+                <div class="map-grid">
+                  <label class="fl" v-for="(meta, slot) in connSetup.slots" :key="slot">
+                    <span class="fl-label">{{ t(meta.label) }}<span v-if="meta.secret"> 🔒</span></span>
+                    <select :value="connMapValue(key, slot)" @change="setConnMap(key, slot, $event.target.value)">
+                      <option value="">{{ t('Not stored') }}</option>
+                      <option v-for="f in connFieldsFor(key, meta.secret)" :key="f.key" :value="f.key">{{ f.label || f.key }}</option>
+                    </select>
+                  </label>
+                </div>
+                <div class="fl-row">
+                  <span class="spacer"></span>
+                  <button class="btn primary" :disabled="busy.connsetup" @click="saveConnMapping(key)">{{ t('Save') }}</button>
+                </div>
+              </template>
+            </section>
+            <p class="dim tiny">{{ t('The marked ones can only be matched to a field RegiBase treats as secret, so a password is never written in the clear.') }}</p>
+          </template>
+        </div>
+        <div class="drawer-foot">
+          <span class="spacer"></span>
+          <button class="btn sm" @click="connSetupModal=false">{{ t('Close') }}</button>
+        </div>
+      </div>
+    </div>
+
     <div v-if="connModal" class="drawer-backdrop centred">
       <div class="modal narrow">
         <div class="drawer-head">
@@ -1974,9 +2772,17 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
           <button class="btn xs ib" :title="t('Close')" :aria-label="t('Close')" @click="connModal=false"><svg viewBox="0 0 24 24"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg></button>
         </div>
         <div class="drawer-body">
+          <p class="note-line" v-if="connSetup && !connSetup.ready">
+            {{ t('There is nowhere to keep this yet.') }}
+            <button class="btn xs" @click="openConnSetup()">{{ t('Choose where') }}</button>
+          </p>
+          <p class="note-line" v-else-if="connSetup && !connSetup.unlocked">
+            {{ t('The RegiBase master key is needed before a password can be saved.') }}
+            <button class="btn xs" @click="keyAsk = true">{{ t('Enter it') }}</button>
+          </p>
           <label class="fl"><span class="fl-label">{{ t('Type') }}</span>
             <select v-model="connForm.kind" @change="connKindChanged">
-              <option v-for="(k,id) in connKinds" :key="id" :value="id">{{ t(k.label) }}</option>
+              <option v-for="(k,id) in offeredKinds" :key="id" :value="id">{{ t(k.label) }}</option>
             </select>
           </label>
           <label class="fl"><span class="fl-label">{{ t('Name') }}</span><input v-model="connForm.name" :placeholder="t('Office file server')"></label>
@@ -1984,7 +2790,9 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
             <label class="fl grow"><span class="fl-label">{{ t('Host') }}</span><input v-model="connForm.host" placeholder="server.example.com"></label>
             <label class="fl short"><span class="fl-label">{{ t('Port') }}</span><input v-model.number="connForm.port" type="number" min="1" max="65535"></label>
           </div>
-          <label class="fl" v-if="connModes.length > 1"><span class="fl-label">{{ t('Encryption') }}</span>
+          <!-- A mail account has two of these, one for each direction. Naming
+               them both "Encryption" left the reader to guess which was which. -->
+          <label class="fl" v-if="connModes.length > 1"><span class="fl-label">{{ connForm.kind==='imap' || connForm.kind==='pop3' ? t('Incoming encryption') : t('Encryption') }}</span>
             <select v-model="connForm.mode">
               <option v-for="m in connModes" :key="m" :value="m">{{ t(modeLabel(m)) }}</option>
             </select>
@@ -2012,7 +2820,24 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
               <textarea v-model="connForm.privateKey" rows="4" class="mono tiny" placeholder="-----BEGIN OPENSSH PRIVATE KEY-----"></textarea>
             </label>
           </template>
-          <label class="fl" v-if="connForm.kind==='smtp'"><span class="fl-label">{{ t('Sender address') }}</span><input v-model="connForm.from" placeholder="notify@example.com"></label>
+          <!-- The sending half of a mail account. One address is one record, so
+               the fields above are where it is read and these are where it is
+               sent from; the user name and password above serve both. -->
+          <template v-if="connForm.kind==='imap' || connForm.kind==='pop3'">
+            <p class="dim">{{ t('The fields above are where this address is read. Below is where it sends from — the same user name and password.') }}</p>
+            <div class="fl-row">
+              <label class="fl grow"><span class="fl-label">{{ t('Outgoing server (blank if the same)') }}</span><input v-model="connForm.sendHost" placeholder="smtp.example.com"></label>
+              <label class="fl short"><span class="fl-label">{{ t('Outgoing port') }}</span><input v-model.number="connForm.sendPort" type="number" min="1" max="65535"></label>
+            </div>
+            <label class="fl"><span class="fl-label">{{ t('Outgoing encryption') }}</span>
+              <select v-model="connForm.sendMode">
+                <option value="starttls">STARTTLS</option>
+                <option value="tls">SSL/TLS</option>
+                <option value="none">{{ t('No encryption') }}</option>
+              </select>
+            </label>
+          </template>
+          <label class="fl" v-if="connForm.kind==='smtp' || connForm.kind==='imap' || connForm.kind==='pop3'"><span class="fl-label">{{ t('Sender address') }}</span><input v-model="connForm.from" placeholder="notify@example.com"></label>
           <label class="fl" v-if="connForm.kind==='ftp' || connForm.kind==='sftp'"><span class="fl-label">{{ t('Start folder') }}</span><input v-model="connForm.path" class="mono" placeholder="/"></label>
           <label class="opt" v-if="connForm.kind==='ftp'"><input type="checkbox" v-model="connForm.passive"> {{ t('Passive mode (usually right)') }}</label>
           <label class="fl"><span class="fl-label">{{ t('Notes') }}</span><textarea v-model="connForm.notes" rows="2"></textarea></label>
@@ -2072,9 +2897,15 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
             <div v-if="selected.extra && selected.extra.ssdp"><span>SSDP</span><code class="wrap">{{ selected.extra.ssdp }}</code><button class="btn xs ib copy-one" :title="t('Copy this')" :aria-label="t('Copy this')" @click="copyField('SSDP', selected.extra.ssdp)"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2.2"/><path d="M6 15.5H5.5A2.5 2.5 0 0 1 3 13V5.5A2.5 2.5 0 0 1 5.5 3H13a2.5 2.5 0 0 1 2.5 2.5V6"/></svg></button></div>
           </div>
           <template v-if="allowed('scan')">
-            <label class="fl"><span class="fl-label">{{ t('Type') }}</span>
-              <select v-model="editType"><option v-for="(l,k) in typeLabels" :key="k" :value="k">{{ t(l) }}</option></select>
-            </label>
+            <div class="fl"><span class="fl-label">{{ t('Type') }}</span>
+              <div class="type-pick">
+                <select v-if="editType !== customType" v-model="editType" :aria-label="t('Type')" @change="focusOwnType($event)"><option v-for="(l,k) in typeLabels" :key="k" :value="k">{{ t(l) }}</option><option :value="customType">{{ t('Other (enter your own)') }}</option></select>
+                <span v-else class="type-own">
+                  <input v-model="editTypeText" maxlength="32" :placeholder="t('Enter a type')" :aria-label="t('Enter a type')" @keydown.esc.stop="editType = typeBack(selected.type)">
+                  <button type="button" class="btn xs ib type-back" :title="t('Choose from the list')" :aria-label="t('Choose from the list')" @click="editType = typeBack(selected.type)"><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></button>
+                </span>
+              </div>
+            </div>
             <label class="fl"><span class="fl-label">{{ t('Notes') }}</span><textarea v-model="editNotes" rows="2"></textarea></label>
           </template>
           <div class="kv" v-else-if="selected.notes">
@@ -2157,7 +2988,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
     { id: 'subnet', icon: '🧮', label: 'Subnet & MAC', hint: 'Address maths and vendor lookup' },
     { id: 'bench', icon: '⏱️', label: 'Benchmarks', hint: 'Throughput, latency and where the time goes' },
     { id: 'mail', icon: '📧', label: 'Mail', hint: 'Domain policy, server tests and a real test message' },
-    { id: 'files', icon: '📁', label: 'FTP & SFTP', hint: 'Browse a remote server and move files' },
+    { id: 'files', icon: '📁', label: 'File transfer', hint: 'Browse a remote server and move files' },
     { id: 'ssh', icon: '🔐', label: 'SSH & Telnet', hint: 'What a service offers, and commands on the servers you keep' },
     { id: 'ntp', icon: '🕒', label: 'Clock check', hint: 'How far the clock has drifted from a time server' },
     // NETBASE-STORE-REMOVED: the nmap tab
@@ -2172,7 +3003,12 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
     { id: 'axfr', label: 'Zone transfer' },
   ];
   const DNS_ALL_TYPES = ['A', 'AAAA', 'CNAME', 'MX', 'NS', 'TXT', 'SOA', 'SRV', 'CAA', 'PTR', 'TLSA', 'DS', 'DNSKEY', 'SSHFP', 'NAPTR', 'HTTPS', 'SVCB', 'ANY'];
-  const SPLIT_PREFIXES = [22, 23, 24, 25, 26, 27, 28, 29, 30];
+  /**
+   * Every prefix a network can be cut into, not just the handful around a /24.
+   * The server refuses a split that would make more than a thousand networks,
+   * and says so plainly, so there is nothing to be gained by hiding the rest.
+   */
+  const SPLIT_PREFIXES = Array.from({ length: 25 }, (unused, i) => i + 8);
   // NETBASE-STORE-REMOVED: the port-check presets
 //   const PORT_PRESETS = [
 //     { label: 'Common', ports: '21,22,23,25,53,80,110,139,143,443,445,587,993,995,3389,8080' },
@@ -2292,7 +3128,8 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         // and a device's page fills the screen instead of floating over it.
         menu: false, narrow: window.innerWidth <= 900,
         status: { canScan: false, canLookup: false, isAdmin: false, binaries: {}, nmap: { available: false }, ouiEntries: 0, targets: [] },
-        settings: { language: 'auto', theme: 'auto', languages: [], tabOrder: [], keyFolder: '' },
+        settings: { language: 'auto', theme: 'auto', languages: [], tabOrder: [], keyFolder: '', rootIdleMinutes: 10, termFont: 'system', termFontSize: TERM_SIZE_DEFAULT, shellLang: '', shellEnv: '', shellLocales: [], termLogOn: false, termLogSteps: 5000, termLogDays: 30 },
+        termFonts: TERM_FONTS,
         dragTab: '', overTab: '',
         devices: [], scan: null, scanning: false, advice: null,
         scanTargets: '', pace: '1500',
@@ -2308,7 +3145,8 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         // has got, and what it came back with.
         deep: { busy: '', percent: 0, note: '', pages: [] },
         filter: '', onlyOnline: true, sortKey: 'ip', sortDir: 1,
-        selected: null, editLabel: '', editNotes: '', editType: 'unknown',
+        selected: null, editLabel: '', editNotes: '', editType: 'unknown', editTypeText: '', customType: CUSTOM_TYPE,
+        shellModal: false, shellStage: 'idle', shellCode: '', shellEmail: '', shellError: '', shellBusy: false,
         busy: {},
         dnsHost: '', dnsWanted: ['A', 'AAAA', 'MX', 'NS', 'TXT'], dnsResult: null,
         dnsView: 'records', dnsViews: DNS_VIEWS, dnsAllTypes: DNS_ALL_TYPES,
@@ -2320,13 +3158,12 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         splitCidr: '', splitPrefix: 26, splitPrefixes: SPLIT_PREFIXES, splitResult: null,
         aggregateInput: '', aggregateResult: null,
         // NETBASE-STORE-REMOVED: portPresets: PORT_PRESETS,
-        sshConn: 0, sshPreset: '', sshCommand: '', sshRunResult: null,
+        sshPreset: '', sshCommand: '', sshRunResult: null,
         sshAdhoc: { kind: 'ssh', host: '', port: 22, username: '', secret: '', authType: 'password', privateKeyPath: '', passphrase: '', mode: 'ssh' },
         // A sign-in asked for on the spot, from wherever a console is needed —
         // the notice about a device on another network, for one, where the
         // command has to be run on this server and nowhere else.
         sshAsk: { open: false, host: '', port: 22, username: '', authType: 'password', secret: '', privateKeyPath: '', passphrase: '' },
-        telnetAdhoc: { host: '', port: 23 },
         dnsTypes: ['A', 'AAAA', 'CNAME', 'MX', 'NS', 'TXT', 'SOA', 'SRV', 'CAA'],
         whoisQuery: '', whoisResult: null,
         availDomains: '', availResults: [],
@@ -2350,35 +3187,122 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         prefixes: Array.from({ length: 33 }, (unused, i) => i),
         recentHosts: (() => { try { return JSON.parse(localStorage.getItem('netbase-recent-hosts') || '[]'); } catch (e) { return []; } })(),
         // saved connections (FTP / SFTP / mail accounts)
-        connections: [], connKinds: {}, connCaps: {}, connModal: false, connNote: '',
-        connForm: { id: 0, kind: 'sftp', name: '', host: '', port: 22, mode: 'ssh', username: '', secret: '', authType: 'password', privateKey: '', privateKeyPath: '', passphrase: '', from: '', path: '', passive: true, notes: '', hasSecret: false },
+        connections: [], connKinds: {}, connGroups: {}, connCaps: {}, connModal: false, connNote: '',
+        // Which type the file transfer screen is set to. It picks the list as
+        // well as the protocol, because the two are stored apart.
+        filesKind: 'sftp',
+        // Where connections are kept: the RegiBase collection, the mapping of
+        // its fields, and the master key — held for this session, never stored.
+        // Which of the four kinds the dialog is showing. The tabs make the
+        // other three reachable in one press, so nothing is hidden by it.
+        connGroup: 'ssh',
+        connSetup: null, connSetupModal: false, connMaster: '', connMapDraft: {}, connNewName: {},
+        // Asked for at the moment a connection needs it, never kept.
+        keyAsk: false, keyAskValue: '',
+        // What to do once the key has been given. Asking for it and then doing
+        // nothing looked, from the outside, exactly like the key being refused.
+        keyAskRetry: null,
+        // sendHost / sendPort / sendMode are the outgoing half of a mail
+        // account. They are here rather than only on mail forms because a
+        // v-model with nothing behind it writes to an object nobody reads.
+        connForm: { id: 0, kind: 'ftp', name: '', host: '', port: 22, mode: 'ssh', username: '', secret: '', authType: 'password', privateKey: '', privateKeyPath: '', passphrase: '', from: '', path: '', passive: true, sendHost: '', sendPort: 0, sendMode: 'starttls', notes: '', hasSecret: false },
         // mail
         mailView: 'domain', mailViews: MAIL_VIEWS, mailPresets: MAIL_PRESETS,
         mailDomain: '', mailSelectors: '', mailBlocklists: true, mailAudit: null,
         mailHost: '', mailPort: 0, mailProtocol: 'smtp', mailMode: 'auto', mailProbeResult: null,
         relayHost: '', relayPort: 25, relayResult: null, blIp: '', blResult: null,
-        sendId: 0, sendTo: '', sendSubject: '', sendBody: '', sendResult: null,
-        smtpAdhoc: { kind: 'smtp', host: '', port: 587, mode: 'starttls', username: '', secret: '', from: '' },
-        boxAdhoc: { kind: 'imap', host: '', port: 993, mode: 'tls', username: '', secret: '' },
-        mailboxId: 0, mailboxResult: null,
+        // One address, one choice. Sending and receiving are two halves of the
+        // same account, so they are chosen once — typed in or picked from the
+        // list, the same way the SSH and file transfer screens ask it.
+        acctMode: 'type',
+        mailAccountId: 0,
+        // The receiving side first, because that is the account; the sending
+        // side after it, sharing the user name and the password.
+        mailAdhoc: {
+          kind: 'imap', host: '', port: 993, mode: 'tls',
+          username: '', secret: '',
+          sendHost: '', sendPort: 587, sendMode: 'starttls', from: '',
+        },
+        sendTo: '', sendSubject: '', sendBody: '', sendResult: null,
+        mailboxResult: null,
         // file transfer
-        filesConn: 0, filesPath: '', filesData: null, filesTarget: 'NetBase', filesSource: '', transferNote: '',
+        // Typed in, or chosen from the list — the same choice the SSH screen
+        // offers, in the same order and with the same default.
+        filesMode: 'type', filesPick: '',
+        // The row under the pointer, and what the list is sorted by.
+        filePicked: '', fileSort: { by: 'name', desc: false },
+        fileMenu: { open: false, x: 0, y: 0, entry: {} },
+        // Asking for a name, a number or a plain yes. The browser's own
+        // prompt() and confirm() stop the page dead in an embedded window and
+        // cannot be driven by a test, so the question is asked in the page.
+        ask: { open: false, icon: '', title: '', subject: '', body: '', label: '', value: '', confirm: '', danger: false, input: true },
+        askSettle: null,
+        filesConn: 0, filesPath: '', filesData: null, filesTarget: 'NetBase', transferNote: '',
+        // ---- the two panes ----
+        // The left one is the reader's own Nextcloud files, the right one the
+        // server. A file manager that shows only the far end makes you guess
+        // what you have; showing both is what every FTP client does, and what
+        // makes dragging from one to the other mean anything.
+        localPath: '', localData: null, localSort: { by: 'name', desc: false },
+        // What is selected on each side. A Set would be tidier, but Vue 3 tracks
+        // a plain object's keys without a deep watcher, and this is read on
+        // every row of every redraw.
+        localPicked: {}, remotePicked: {},
+        // The row a Shift-click measures from, per pane.
+        localAnchor: '', remoteAnchor: '',
+        // Files whose names begin with a dot. Off by default, as in every file
+        // manager; on, because sometimes those are exactly the ones you want.
+        showHidden: false,
+        // Which pane a drag started from. Dropping on the side it came from
+        // does nothing, so this is what tells the two apart.
+        dragFrom: '',
+        // What is waiting to be transferred, what is going now, and what has
+        // been. One at a time: several at once over one SSH connection is
+        // slower than one after another, and far harder to report honestly.
+        queue: [], queueBusy: false, queueStop: null, queueDone: [],
+        // Text files open in their own windows — the same frame as the device
+        // and terminal windows, so several can stand open beside the list.
+        textWins: [],
+        // Acting as root on the far end. The password lives in this object for
+        // as long as the page is open and goes nowhere else: not to
+        // localStorage, not to the settings, not to RegiBase. Reloading the
+        // page asks again, which is the whole point of it.
+        asRoot: false, sudoDraft: '', sudoPassword: '',
+        // When the page was last touched while acting as root, and how many
+        // minutes are left before it is given up.
+        rootTouched: 0, rootLeft: 0, rootTimer: null,
         adhocActive: false,
         adhoc: { kind: 'sftp', host: '', port: 22, username: '', secret: '', authType: 'password', privateKeyPath: '', passphrase: '', mode: 'ssh', passive: true, path: '' },
         // service probes
-        sshHost: '', sshPort: 22, sshAuthMethods: false, sshResult: null, telnetResult: null,
+        // Typed in, or chosen from the saved list. Shown on screen as a
+        // choice rather than hidden in the list itself.
+        sshMode: 'type',
+        sshPick: '', sshAuthMethods: false, sshResult: null, telnetResult: null,
         ntpHost: 'pool.ntp.org', ntpResult: null, ntpServers: NTP_SERVERS, knownResolvers: KNOWN_RESOLVERS,
         locale: 0,
         picker: { open: false, title: '', path: '', parent: null, entries: [], foldersOnly: false, onPick: null },
         windows: [], terms: [], windowSeq: 0, windowTop: 3000, drag: null,
         rowMenu: { open: false, x: 0, y: 0, device: null },
         preview: { open: false, url: '', src: '', loading: false, error: null, full: false },
-        serverResult: null, requirements: null, sysInfo: false, themeBox: false,
+        serverResult: null, requirements: null, sysInfo: false, themeBox: false, localeHelp: false,
+        // Which part of the settings is on screen. Named rather than numbered,
+        // so adding a group later cannot silently shift the others.
+        settingTab: 'look',
+        settingTabs: [
+          { id: 'look', icon: '🎨', label: 'Appearance and language' },
+          { id: 'term', icon: '🖳', label: 'Terminal (shell and SSH)' },
+          { id: 'conn', icon: '🔑', label: 'Connections and keys' },
+          { id: 'tools', icon: '☰', label: 'The list of tools' },
+        ],
+        // What was kept of past terminals: the list of them, and the one being read.
+        termLog: { open: false, loading: false, sessions: [], session: null, steps: [] },
         themeOptions: THEME_OPTIONS,
         adminUrl: (window.OC && OC.generateUrl) ? OC.generateUrl('/settings/admin/netbase') : '/settings/admin/netbase',
         liveOn: false, liveIface: '', liveIfaces: [], liveNow: { rx: 0, tx: 0 }, liveRx: [], liveTx: [],
         liveErrors: 0, lastCounters: null, liveTimer: null,
-        speedSize: 25, speedUpload: true, speedResult: null,
+        speedSize: 25, speedUpload: true, speedVia: 'auto', speedResult: null,
+        // What the measurement has said so far, as it says it.
+        speedLive: { running: false, phase: '', down: [], up: [] },
         iperfHost: '', iperfPort: 5201, iperfSeconds: 10, iperfReverse: false, iperfResult: null,
         dnsBench: null, timingUrl: '', timingResult: null,
         // NETBASE-STORE-REMOVED: pathResult: null,
@@ -2488,13 +3412,187 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         const order = ['core', 'gtld', 'cctld', 'all'];
         return order.filter((k) => this.availTiers[k]).map((k) => ({ key: k, label: labels[k] || k, count: this.availTiers[k] }));
       },
-      speedEndpoint() { return (this.speedResult && this.speedResult.endpoint) || 'speed.cloudflare.com'; },
-      fileConnections() { return this.connections.filter((c) => c.kind === 'ftp' || c.kind === 'sftp'); },
-      sshConnections() { return this.connections.filter((c) => c.kind === 'ssh' || c.kind === 'sftp'); },
+      // Which server the figure came from. It is not known until a test has
+      // run: the nearest one is chosen at the time, so naming a fixed host
+      // before that would be a guess dressed up as a fact.
+      speedEndpoint() { return (this.speedResult && this.speedResult.endpoint) || ''; },
+      speedWhere() { return (this.speedResult && this.speedResult.where) || ''; },
+      /**
+       * A saved SSH connection is the same machine, account and key an SFTP one
+       * would use, so it belongs in this list too: somebody with sixteen
+       * servers saved should not have to type all sixteen again to look at a
+       * file. The server opens it over SFTP, or SCP where there is no SFTP.
+       */
+      /**
+       * Which types belong together.
+       *
+       * The same grouping the server keeps them under: SCP reuses the SSH
+       * credentials, FTP is a different account on a different machine, and
+       * SFTP travels with FTP. Mixing them in one list was wrong twice over —
+       * it offered a server that cannot answer the protocol being asked for,
+       * and it hid the fact that the two are stored in different places.
+       */
+      connGroupKinds() {
+        const groups = this.connGroups || {};
+        const out = {};
+        for (const [key, g] of Object.entries(groups)) out[key] = g.kinds || [];
+        return out;
+      },
+      /** The group a type belongs to, as the server defines it. */
+      groupOfKind() {
+        const map = {};
+        for (const [key, kinds] of Object.entries(this.connGroupKinds)) {
+          for (const k of kinds) map[k] = key;
+        }
+        return map;
+      },
+      /**
+       * The saved connections of the type file transfer is set to right now.
+       *
+       * SCP is the one that reaches past its own group: it signs in over SSH
+       * with the same account and the same key, so a connection saved as SSH
+       * is a connection SCP can open. Where it is *stored* is not widened by
+       * this — that stays one collection per type — only what is offered.
+       */
+      fileConnections() {
+        const group = this.groupOfKind[this.filesKind] || this.filesKind;
+        const kinds = (this.connGroupKinds[group] || [this.filesKind]).slice();
+        if (this.filesKind === 'scp' && !kinds.includes('ssh')) kinds.push('ssh');
+        return this.connections.filter((c) => kinds.includes(c.kind));
+      },
+      /** SSH's own list. SFTP belongs with FTP, not here. */
+      sshConnections() { return this.connections.filter((c) => c.kind === 'ssh'); },
+      /**
+       * Whether the saved list is there but unusable.
+       *
+       * The names and addresses in RegiBase are not secret and read back
+       * without the key; the passwords and the private keys are, and do not.
+       * So a locked list looks complete and fails on use — which is why the
+       * screens ask for the key instead of offering it.
+       */
+      connLocked() {
+        const s = this.connSetup;
+        return !!(s && s.available && s.encrypted && !s.unlocked);
+      },
+      /**
+       * The listing in the order the reader asked for.
+       *
+       * Folders stay above files whichever column is sorted: a file manager
+       * that scatters the folders through the names is harder to walk, and
+       * every one of them keeps this rule.
+       */
+      /** The reader's own files, sorted and filtered the same way as the server's. */
+      sortedLocal() {
+        const rows = ((this.localData && this.localData.entries) || [])
+          .filter((e) => this.showHidden || !String(e.name).startsWith('.'));
+        return this.sortRows(rows.slice(), this.localSort);
+      },
+      /** How many rows are picked on each side, for the buttons to read. */
+      localCount() { return Object.keys(this.localPicked).length; },
+      remoteCount() { return Object.keys(this.remotePicked).length; },
+      /** What the queue is doing, in one line. */
+      queueSummary() {
+        const now = this.queue.find((j) => j.state === 'running');
+        const waiting = this.queue.filter((j) => j.state === 'waiting').length;
+        if (!now && !waiting) return null;
+        return { now, waiting, done: this.queueDone.length };
+      },
+      sortedFiles() {
+        const rows = ((this.filesData && this.filesData.entries) || [])
+          .filter((e) => this.showHidden || !String(e.name).startsWith('.'));
+        const by = this.fileSort.by;
+        const dir = this.fileSort.desc ? -1 : 1;
+        rows.sort((a, b) => {
+          if (!!a.directory !== !!b.directory) return a.directory ? -1 : 1;
+          let v = 0;
+          if (by === 'size') v = (a.size || 0) - (b.size || 0);
+          else if (by === 'modified') v = (a.modified || 0) - (b.modified || 0);
+          else v = String(a.name).localeCompare(String(b.name), undefined, { numeric: true, sensitivity: 'base' });
+          return v * dir;
+        });
+        return rows;
+      },
+      /** The saved connection chosen for file transfer, if the choice was one. */
+      filesSaved() { return this.filesConn ? this.connById(this.filesConn) : null; },
+      /** The server file transfer is pointed at, saved or typed. */
+      filesHostNow() { return this.filesSaved ? this.filesSaved.host : this.adhoc.host; },
+      /** The saved connection chosen, if the choice was a saved one. */
+      sshSaved() {
+        if (this.sshMode !== 'saved') return null;
+        if (!String(this.sshPick).startsWith('c')) return null;
+        return this.connById(Number(String(this.sshPick).slice(1)));
+      },
+      /** The machine, whichever way it was named. */
+      sshHostNow() { return this.sshSaved ? this.sshSaved.host : this.sshAdhoc.host; },
+      sshPortNow() {
+        if (this.sshSaved) return this.sshSaved.port || 22;
+        return this.sshAdhoc.port || (this.sshAdhoc.kind === 'telnet' ? 23 : 22);
+      },
+      /** Telnet has no command channel of its own, so there is nothing to run. */
+      /**
+       * Whether the console can be opened at all.
+       *
+       * A saved connection carries its own user name; Telnet asks for one
+       * inside the window. Only SSH typed in here has to be told who to be,
+       * and without that the server refuses with nobody named in the message.
+       */
+      sshReadyToOpen() {
+        if (this.sshSaved) return true;
+        if (this.sshAdhoc.kind === 'telnet') return !!this.sshAdhoc.host;
+        return !!this.sshAdhoc.host && !!this.sshAdhoc.username;
+      },
+      sshCanRun() { return !!this.sshSaved || (!!this.sshAdhoc.host && this.sshAdhoc.kind !== 'telnet'); },
       sshPresets() { return this.status.sshPresets || {}; },
+      /**
+       * One address, one entry. A mailbox account carries the server it sends
+       * through, so the same choice serves both halves of the test; an
+       * SMTP-only relay has no mailbox and can only be sent through.
+       */
+      mailAccounts() { return this.connections.filter((c) => ['imap', 'pop3', 'smtp'].includes(c.kind)); },
       smtpConnections() { return this.connections.filter((c) => c.kind === 'smtp'); },
       mailboxConnections() { return this.connections.filter((c) => c.kind === 'imap' || c.kind === 'pop3'); },
+      /** The saved mail account chosen, if the choice was one. */
+      mailAccountSaved() { return this.acctMode === 'saved' && this.mailAccountId ? this.connById(this.mailAccountId) : null; },
+      /**
+       * Whether the account on screen can be read as well as sent through.
+       *
+       * mailAccountSaved is a computed, not a method: calling it threw, and the
+       * whole mail screen stopped drawing.
+       */
+      mailCanReceive() {
+        const chosen = this.mailAccountSaved;
+        return this.acctMode === 'saved' ? !!chosen && chosen.kind !== 'smtp' : this.mailAdhoc.kind !== 'smtp';
+      },
       connModes() { return (this.connKinds[this.connForm.kind] || {}).modes || []; },
+      /**
+       * Whether "act as root" can be offered at all.
+       *
+       * Only over SCP: it works by putting the command through sudo, and FTP
+       * has no commands while SFTP is a subsystem with no shell behind it.
+       */
+      canElevate() {
+        if (!this.connCaps.elevate) return false;
+        const kind = this.filesConn ? (this.connById(this.filesConn) || {}).kind : this.adhoc.kind;
+        return kind === 'scp' || kind === 'ssh';
+      },
+      /**
+       * The types offered when making a connection.
+       *
+       * SFTP is not among them. It is not a kind of FTP but a subsystem of
+       * SSH, and since an SSH connection is opened for files over SFTP
+       * already, offering it separately only asked people to decide something
+       * that makes no difference. FTP keeps its encryption choice, which is
+       * the question they were really being asked. A connection saved as SFTP
+       * before this still works, and still shows its own type here.
+       */
+      offeredKinds() {
+        const out = {};
+        for (const [id, meta] of Object.entries(this.connKinds || {})) {
+          if (id === 'sftp' && this.connForm.kind !== 'sftp') continue;
+          out[id] = meta;
+        }
+        return out;
+      },
       activeComponents() { return this.requirements ? this.requirements.components.filter((c) => c.present) : []; },
       dormantComponents() { return this.requirements ? this.requirements.components.filter((c) => !c.present) : []; },
       suggestedPlaceholder() { return (this.status.targets || []).map((t2) => t2.cidr).join(', ') || '192.168.1.0/24'; },
@@ -2586,8 +3684,32 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
       phaseWaiting(scan) {
         return !!(scan && scan.progress && scan.progress.key === 'mcastListen');
       },
-      icon(d) { return TYPE_ICON[d.type] || TYPE_ICON.unknown; },
-      typeLabel(type) { return TYPE_LABEL[type] || TYPE_LABEL.unknown; },
+      icon(d) { return TYPE_ICON[d.type] || (d.type ? CUSTOM_TYPE_ICON : TYPE_ICON.unknown); },
+      // A template's translated label, or the user's own words as they typed them.
+      typeText(type) {
+        if (!type) return this.t(TYPE_LABEL.unknown);
+        return TYPE_LABEL[type] ? this.t(TYPE_LABEL[type]) : String(type);
+      },
+      // What the picker holds, for a stored type: a template key, or "Other"
+      // with the text beside it.
+      typePick(type) {
+        if (!type || TYPE_LABEL[type]) return { type: type || 'unknown', text: '' };
+        return { type: CUSTOM_TYPE, text: String(type) };
+      },
+      // Choosing "Other" turns the list into a text field in the same place;
+      // put the cursor straight into it.
+      focusOwnType(ev) {
+        const box = ev.target.parentElement;
+        this.$nextTick(() => { const input = box && box.querySelector('.type-own input'); if (input) input.focus(); });
+      },
+      // Back from the text field to the list: the device's own template if it
+      // had one, otherwise "Unknown". The typed text is kept for a return trip.
+      typeBack(previous) { return TYPE_LABEL[previous] ? previous : 'unknown'; },
+      // The type to save. "Other" left blank keeps whatever the device had.
+      typeToSave(type, text, previous) {
+        if (type !== CUSTOM_TYPE) return type;
+        return String(text || '').trim() || previous || 'unknown';
+      },
       vendorText(d) {
         if (!d.vendor) return d.mac ? T('Not registered') : '—';
         return d.vendor === '__randomized__' ? T('Randomised (privacy) address') : d.vendor;
@@ -2608,7 +3730,13 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         try { localStorage.setItem('netbase.sort', JSON.stringify({ key: this.sortKey, dir: this.sortDir })); } catch (e) { /* private window */ }
       },
       sortClass(key) { return this.sortKey === key ? (this.sortDir > 0 ? 'sorted asc' : 'sorted desc') : ''; },
-      fail(e) { clearTimeout(this.noteTimer); this.banner = { kind: 'error', text: String((e && e.message) || e) }; },
+      fail(e) {
+        clearTimeout(this.noteTimer);
+        // A refusal that only wants the master key is not an error to read and
+        // dismiss — it is a question. So it is asked instead of announced.
+        if (e && e.needsKey) { this.keyAsk = true; return; }
+        this.banner = { kind: 'error', text: String((e && e.message) || e) };
+      },
       note(text) {
         this.banner = { kind: 'info', text };
         // An informational notice (a finished scan, a saved file) fades on its
@@ -3154,13 +4282,16 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         this.selected = d;
         this.editLabel = d.label || '';
         this.editNotes = d.notes || '';
-        this.editType = d.type || 'unknown';
+        const pick = this.typePick(d.type);
+        this.editType = pick.type;
+        this.editTypeText = pick.text;
       },
       async saveDevice() {
         try {
+          const dtype = this.typeToSave(this.editType, this.editTypeText, this.selected.type);
           const r = await api('devices/' + this.selected.id, {
             method: 'PATCH',
-            body: JSON.stringify({ label: this.editLabel, notes: this.editNotes, dtype: this.editType, known: true }),
+            body: JSON.stringify({ label: this.editLabel, notes: this.editNotes, dtype, known: true }),
           });
           const i = this.devices.findIndex((d) => d.id === r.device.id);
           if (i >= 0) this.devices.splice(i, 1, r.device);
@@ -3175,7 +4306,10 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
           .filter((d) => d.known || d.label)
           .slice()
           .sort((a, b) => String(a.label || a.hostname || a.ip).localeCompare(String(b.label || b.hostname || b.ip)))
-          .map((d) => ({ id: d.id, ip: d.ip, mac: d.mac, hostname: d.hostname, label: d.label || '', type: d.type || 'unknown', notes: d.notes || '', remove: false }));
+          .map((d) => {
+            const pick = this.typePick(d.type);
+            return { id: d.id, ip: d.ip, mac: d.mac, hostname: d.hostname, label: d.label || '', type: pick.type, typeText: pick.text, oldType: d.type, notes: d.notes || '', remove: false };
+          });
         this.editReg = true;
       },
       async saveRegEditor() {
@@ -3188,7 +4322,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
             }
             await api('devices/' + r.id, {
               method: 'PATCH',
-              body: JSON.stringify({ label: r.label, notes: r.notes, dtype: r.type, known: true }),
+              body: JSON.stringify({ label: r.label, notes: r.notes, dtype: this.typeToSave(r.type, r.typeText, r.oldType), known: true }),
             }).catch(() => {});
           }
           await this.loadDevices();
@@ -3403,10 +4537,11 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
        * banner would be hidden behind the very window it is about; this puts it
        * in the window instead.
        */
-      windowToast(w, text, kind = 'ok') {
+      windowToast(w, text, kind = 'ok', ms = 0) {
         w.toast = { text, kind };
         const shown = text;
-        setTimeout(() => { if (w.toast && w.toast.text === shown) { w.toast = null; } }, kind === 'error' ? 8000 : 4000);
+        const wait = ms || (kind === 'error' ? 8000 : 4000);
+        setTimeout(() => { if (w.toast && w.toast.text === shown) { w.toast = null; } }, wait);
       },
       /**
        * The zoom, put on the device's own document.
@@ -3569,12 +4704,102 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
        * of it. Ports 22 and 23 used to change tab, which closed the device and
        * left no way back to where the person was.
        */
+      // ---- the local shell: a terminal on this very server ----
+      /**
+       * Ask the server to open a shell, and do whatever it says has to happen
+       * first. A closed network opens straight away; an online one sends a
+       * code to the administrator's mailbox and waits for it to be typed back.
+       */
+      async beginShell() {
+        if (this.shellBusy) return;
+        this.shellBusy = true;
+        this.shellError = '';
+        try {
+          const r = await api('shell/begin', { method: 'POST', body: '{}' });
+          if (r.mode === 'open') {
+            // A closed network: no dialog, straight to the terminal.
+            this.shellStage = 'idle';
+            this.shellModal = false;
+            this.openShellWindow();
+          } else if (r.mode === 'verify') {
+            this.shellEmail = r.email || '';
+            this.shellCode = '';
+            this.shellError = '';
+            this.shellStage = 'verify';
+            this.shellModal = true;
+            this.$nextTick(() => { const b = this.$refs.shellCode; const el = Array.isArray(b) ? b[0] : b; if (el) el.focus(); });
+          } else if (r.mode === 'no-email') {
+            this.shellStage = 'no-email';
+            this.shellModal = true;
+          } else {
+            this.shellStage = 'mail-failed';
+            this.shellModal = true;
+          }
+        } catch (e) {
+          this.note(String((e && e.message) || e));
+        } finally {
+          this.shellBusy = false;
+        }
+      },
+      async verifyShell() {
+        if (this.shellBusy || this.shellCode.length !== 6) return;
+        this.shellBusy = true;
+        this.shellError = '';
+        try {
+          const r = await api('shell/verify', { method: 'POST', body: JSON.stringify({ code: this.shellCode }) });
+          if (r.ok) {
+            this.shellStage = 'idle';
+            this.shellCode = '';
+            this.shellModal = false;
+            this.openShellWindow();
+          } else if (r.error === 'too-many') {
+            this.shellError = T('Too many wrong codes. Send a new one.');
+            this.shellCode = '';
+          } else if (r.error === 'expired') {
+            this.shellError = T('That code has expired. Send a new one.');
+            this.shellCode = '';
+          } else {
+            this.shellError = r.remaining != null
+              ? T('That code is not right. {n} tries left.', { n: r.remaining })
+              : T('That code is not right.');
+            this.shellCode = '';
+          }
+        } catch (e) {
+          this.shellError = String((e && e.message) || e);
+        } finally {
+          this.shellBusy = false;
+        }
+      },
+      openShellWindow() {
+        const w = this.openTerminal('shell');
+        return w;
+      },
+      /**
+       * Keep a typed code to six digits.
+       *
+       * The regex belongs here rather than in the template: a backslash
+       * written there does not survive the build, and "\D" quietly became a
+       * plain "D" — which stripped the letter D and let anything else stay.
+       */
+      onlyDigits(value) {
+        return String(value == null ? '' : value).replace(/\D/g, '').slice(0, 6);
+      },
+      closeShellModal() {
+        this.shellModal = false;
+        this.shellStage = 'idle';
+        this.shellCode = '';
+        this.shellError = '';
+      },
+
       openTerminal(kind, host, port, auth = null) {
         const offset = this.narrow ? 0 : (this.terms.length % 6) * 26;
         const w = {
           id: ++this.windowSeq, kind, host, port: port || (kind === 'telnet' ? 23 : 22),
           user: '', password: '', signedIn: kind !== 'telnet', prompt: '',
           lines: [], command: '', history: [], at: -1, busy: false, cwd: '', full: false,
+          // What this window has to say for itself, and whether the next key
+          // carries Meta or Ctrl.
+          toast: null, meta: false, ctrl: false, keyMenu: false, menuX: 0, menuY: 0,
           // How this window signs in, kept with the window: two consoles open
           // on two servers must not share one set of credentials.
           auth: auth ? { ...auth } : null,
@@ -3587,7 +4812,9 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         this.terms.push(w);
         const live = this.terms[this.terms.length - 1];
         this.selected = null;
-        if (kind === 'ssh') {
+        // Both the SSH terminal and the local shell are real screens driven by
+        // a held-open stream; Telnet alone is the line-at-a-time console.
+        if (kind === 'ssh' || kind === 'shell') {
           live.sid = [...crypto.getRandomValues(new Uint8Array(16))].map((b) => b.toString(16).padStart(2, '0')).join('');
           this.$nextTick(() => this.startPty(live));
         }
@@ -3612,8 +4839,8 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
           || document.body.classList.contains('theme--dark')
           || window.matchMedia('(prefers-color-scheme: dark)').matches;
         const term = new window.Terminal({
-          fontSize: 13,
-          fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace',
+          fontSize: this.termSize(),
+          fontFamily: this.termFontCss(this.settings.termFont),
           cursorBlink: true,
           scrollback: 5000,
           theme: dark
@@ -3625,7 +4852,20 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         term.open(el);
         if (fit) { try { fit.fit(); } catch (e) { /* the window may not be laid out yet */ } }
         SCREENS.set(w.id, { term, fit, abort: null });
-        term.onData((data) => this.ptyType(w, data));
+        term.onData((data) => {
+          // Ctrl and Meta were armed by their buttons, and each holds for one
+          // keystroke: Ctrl folds the key down to its control code, Meta puts
+          // an ESC in front of whatever comes out.
+          if (w.ctrl) {
+            w.ctrl = false;
+            if (data.length === 1) {
+              const code = data.toUpperCase().charCodeAt(0);
+              if (code >= 64 && code <= 95) data = String.fromCharCode(code - 64);
+            }
+          }
+          if (w.meta) { w.meta = false; data = '\x1b' + data; }
+          this.ptyType(w, data);
+        });
         term.onResize(({ cols, rows }) => this.ptySize(w, cols, rows));
         term.focus();
         this.streamPty(w);
@@ -3640,6 +4880,32 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
           cols: live.term.cols || 80,
           rows: live.term.rows || 24,
         };
+        if (w.kind === 'shell') {
+          // A shell on this server needs no connection details: it opens only
+          // for an administrator who has already passed the gate.
+          try {
+            const r = await fetch(BASE + 'api/shell/pty', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', requesttoken: TOKEN },
+              credentials: 'same-origin',
+              body: JSON.stringify(body),
+              signal: controller.signal,
+            });
+            if (!r.ok || !r.body) { this.termNote(w, T('Could not open a shell.')); return; }
+            const reader = r.body.getReader();
+            for (;;) {
+              const { done, value } = await reader.read();
+              if (done) break;
+              if (!value || !value.length) continue;
+              const said = value.some((b) => b === 0) ? value.filter((b) => b !== 0) : value;
+              if (said.length) live.term.write(said);
+            }
+          } catch (e) {
+            if (!controller.signal.aborted) this.termNote(w, String((e && e.message) || e));
+          }
+          this.termNote(w, T('The shell has closed.'));
+          return;
+        }
         if (w.conn) {
           body.id = w.conn;
         } else {
@@ -3694,11 +4960,12 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         if (live.sending) return;
         live.sending = true;
         (async () => {
+          const path = w.kind === 'shell' ? 'shell/pty/type' : 'ssh/pty/type';
           while (live.outbox) {
             const chunk = live.outbox;
             live.outbox = '';
             try {
-              await api('ssh/pty/type', { method: 'POST', body: JSON.stringify({ session: w.sid, data: chunk }) });
+              await api(path, { method: 'POST', body: JSON.stringify({ session: w.sid, data: chunk }) });
             } catch (e) { /* the stream reports a lost session; a lost key need not */ }
           }
           live.sending = false;
@@ -3707,13 +4974,357 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
       async ptySize(w, cols, rows) {
         if (!w.sid) return;
         try {
-          await api('ssh/pty/size', { method: 'POST', body: JSON.stringify({ session: w.sid, cols, rows }) });
+          await api(w.kind === 'shell' ? 'shell/pty/size' : 'ssh/pty/size', { method: 'POST', body: JSON.stringify({ session: w.sid, cols, rows }) });
         } catch (e) { /* the next redraw will sort itself out */ }
       },
       clearTerm(w) {
         const live = SCREENS.get(w.id);
         if (live) { live.term.clear(); return; }
         w.lines = [];
+      },
+      /**
+       * Copy from the screen: whatever is selected, or — with `all`, or when
+       * nothing is selected — the entire buffer, scrollback included.
+       *
+       * What it says, it says inside this window. A banner across the whole
+       * app for something one terminal did is too loud, and it covers the app
+       * rather than the screen the text came from.
+       */
+      async copyTerm(w, all = false) {
+        const live = SCREENS.get(w.id);
+        if (!live || !live.term) return;
+        let text = all ? '' : live.term.getSelection();
+        if (!text) {
+          const buf = live.term.buffer.active;
+          const lines = [];
+          for (let i = 0; i < buf.length; i++) {
+            const line = buf.getLine(i);
+            lines.push(line ? line.translateToString(true) : '');
+          }
+          text = lines.join('\n').replace(/\s+$/, '') + '\n';
+        }
+        if (!text.trim()) { this.windowToast(w, T('There is nothing on the screen yet.'), 'error', 2500); return; }
+        await this.toClipboard(text);
+        this.windowToast(w, all ? T('The whole screen is on the clipboard') : T('Copied'), 'ok', 1200);
+        live.term.focus();
+      },
+      /** Paste the clipboard into the terminal, as if it had been typed. */
+      async pasteTerm(w) {
+        const live = SCREENS.get(w.id);
+        if (!live) return;
+        let text = '';
+        try {
+          text = await navigator.clipboard.readText();
+        } catch (e) {
+          this.windowToast(w, T('The browser did not allow the clipboard to be read'), 'error');
+          return;
+        }
+        if (!text) { this.windowToast(w, T('The clipboard is empty'), 'error', 2500); return; }
+        this.ptyType(w, text);
+        live.term.focus();
+      },
+      /**
+       * Meta for the next keystroke only.
+       *
+       * A terminal receives Meta as an ESC in front of the key. Not every
+       * keyboard sends Alt that way — and a browser keeps some Alt
+       * combinations for itself — so it can be armed here instead, and the
+       * next key carries it.
+       */
+      toggleMeta(w) {
+        w.meta = !w.meta;
+        // Armed for the next keystroke, which is typed at the screen — so the
+        // menu gets out of the way.
+        w.keyMenu = false;
+        const live = SCREENS.get(w.id);
+        if (live) live.term.focus();
+      },
+      /**
+       * Open the key-and-font menu under its button.
+       *
+       * Its place is worked out in viewport coordinates, because the toolbar
+       * scrolls sideways on a narrow window and anything drawn inside it
+       * would be cut off at the bar's edge.
+       */
+      toggleKeyMenu(w, ev) {
+        if (w.keyMenu) { w.keyMenu = false; return; }
+        const box = ev && ev.currentTarget ? ev.currentTarget.getBoundingClientRect() : null;
+        const width = 260;
+        w.menuX = box ? Math.max(8, Math.min(box.left, window.innerWidth - width - 8)) : 8;
+        w.menuY = box ? box.bottom + 4 : 8;
+        w.keyMenu = true;
+      },
+      /** A locale worth suggesting, from the language NetBase is being used in. */
+      suggestedLocale() {
+        const chosen = this.settings.language && this.settings.language !== 'auto'
+          ? this.settings.language
+          : (document.documentElement.lang || 'en');
+        const lang = String(chosen).slice(0, 2).toLowerCase();
+        return (LOCALE_HINTS[lang] || (lang + '_' + lang.toUpperCase())) + '.UTF-8';
+      },
+      /**
+       * Reloading PHP is what makes a new locale visible to the shell.
+       *
+       * Only Debian and Ubuntu name the unit after the PHP version; elsewhere
+       * it is plain php-fpm, and a server running PHP inside Apache has no
+       * such unit at all — so the line says to use whatever runs PHP here.
+       */
+      phpFpmReload() {
+        const version = String((this.requirements && this.requirements.phpVersion) || '').split('.').slice(0, 2).join('.');
+        const manager = (this.requirements && this.requirements.packageManager) || '';
+        const unit = (manager === 'apt-get' && version) ? ('php' + version + '-fpm') : 'php-fpm';
+        return 'sudo systemctl reload ' + unit + '   # whatever runs PHP here, or restart the web server';
+      },
+      /**
+       * How to give this server another language.
+       *
+       * Written for the package manager the machine actually uses, with the
+       * locale itself on the first line so any language can be had without
+       * rewriting the rest.
+       */
+      localeSteps() {
+        const want = this.suggestedLocale();
+        const manager = (this.requirements && this.requirements.packageManager) || '';
+        if (manager === 'dnf' || manager === 'yum') {
+          return [
+            'LOCALE=' + want,
+            '',
+            '# Fedora / RHEL: the language pack carries the locale',
+            'sudo ' + manager + ' install -y glibc-langpack-' + want.split('_')[0],
+            '',
+            '# let PHP see it',
+            this.phpFpmReload(),
+          ].join('\n');
+        }
+        return [
+          'LOCALE=' + want,
+          '',
+          '# Debian / Ubuntu',
+          'sudo apt-get update',
+          'sudo apt-get install -y locales',
+          'sudo sed -i "s/^# *${LOCALE}/${LOCALE}/" /etc/locale.gen',
+          'sudo locale-gen',
+          '',
+          '# let PHP see it',
+          this.phpFpmReload(),
+        ].join('\n');
+      },
+      localeDockerHook() {
+        return [
+          '#!/bin/sh',
+          '# /docker-entrypoint-hooks.d/before-starting/locale.sh',
+          '# Runs on every start, so it outlives an image update.',
+          'LOCALE=' + this.suggestedLocale(),
+          'apt-get update >/dev/null 2>&1 || true',
+          'apt-get install -y locales >/dev/null 2>&1 || true',
+          'sed -i "s/^# *${LOCALE}/${LOCALE}/" /etc/locale.gen 2>/dev/null || true',
+          'locale-gen >/dev/null 2>&1 || true',
+        ].join('\n');
+      },
+      /** The extra folder to look in for fonts, and the list it changes. */
+      async saveFontDir() {
+        try {
+          await api('settings', { method: 'POST', body: JSON.stringify({ settings: { admin: { fontDir: this.settings.admin.fontDir || '' } } }) });
+          const fresh = await api('settings');
+          this.settings = { ...this.settings, ...fresh };
+        } catch (e) { this.fail(e); }
+      },
+      /** The shell's language and environment, kept for the next one opened. */
+      saveShell() {
+        api('settings', {
+          method: 'POST',
+          body: JSON.stringify({ settings: { shellLang: this.settings.shellLang || '', shellEnv: this.settings.shellEnv || '' } }),
+        }).catch((e) => this.fail(e));
+      },
+      /** How much of a terminal to keep, and for how long. */
+      saveTermLog() {
+        const steps = Math.max(1, Math.min(10000, Number(this.settings.termLogSteps) || 5000));
+        const days = Math.max(1, Math.min(3650, Number(this.settings.termLogDays) || 30));
+        this.settings.termLogSteps = steps;
+        this.settings.termLogDays = days;
+        api('settings', {
+          method: 'POST',
+          body: JSON.stringify({ settings: { termLogOn: this.settings.termLogOn ? '1' : '0', termLogSteps: String(steps), termLogDays: String(days) } }),
+        }).catch((e) => this.fail(e));
+      },
+      async openTermLog() {
+        this.termLog.open = true;
+        this.termLog.session = null;
+        this.termLog.steps = [];
+        this.termLog.loading = true;
+        try {
+          const r = await api('termlog');
+          this.termLog.sessions = r.sessions || [];
+        } catch (e) { this.fail(e); } finally { this.termLog.loading = false; }
+      },
+      async readTermLog(session) {
+        this.termLog.loading = true;
+        try {
+          const r = await api('termlog/read?' + qs({ session: session.session }));
+          this.termLog.session = session;
+          this.termLog.steps = r.steps || [];
+        } catch (e) { this.fail(e); } finally { this.termLog.loading = false; }
+      },
+      /** Drop one recorded session, or every one of them. */
+      async forgetTermLog(session) {
+        try {
+          await api('termlog/forget', { method: 'POST', body: JSON.stringify({ session: session || '' }) });
+          this.termLog.session = null;
+          this.termLog.steps = [];
+          this.termLog.sessions = session
+            ? this.termLog.sessions.filter((s) => s.session !== session)
+            : [];
+        } catch (e) { this.fail(e); }
+      },
+      /** The stack behind a chosen face, falling back to the default one. */
+      termFontCss(id) {
+        if (String(id || '').startsWith('server:')) {
+          this.ensureServerFont(id);
+          return '"' + SERVER_FONT_PREFIX + String(id).slice(7) + '", monospace';
+        }
+        return (TERM_FONTS.find((f) => f.id === id) || TERM_FONTS[0]).css;
+      },
+      /**
+       * Make one of the server's own fonts available to the browser.
+       *
+       * The file lives on the server, so it has to be fetched before anything
+       * can be drawn in it. The rule is added once per font and the browser
+       * keeps the file, so this is paid the first time only.
+       */
+      ensureServerFont(id) {
+        const hash = String(id || '').slice(7);
+        if (!hash || SERVER_FONTS_ADDED.has(hash)) return;
+        SERVER_FONTS_ADDED.add(hash);
+        const style = document.createElement('style');
+        style.textContent = '@font-face{font-family:"' + SERVER_FONT_PREFIX + hash + '";'
+          + 'src:url("' + BASE + 'api/font/' + encodeURIComponent(hash) + '");font-display:swap;}';
+        document.head.appendChild(style);
+      },
+      /** A file size a person can judge at a glance. */
+      fontSize(bytes) {
+        const mb = (Number(bytes) || 0) / 1048576;
+        return mb >= 1 ? mb.toFixed(1) + ' MB' : Math.max(1, Math.round((Number(bytes) || 0) / 1024)) + ' KB';
+      },
+      termSize() {
+        const n = Number(this.settings.termFontSize) || TERM_SIZE_DEFAULT;
+        return Math.max(TERM_SIZE_MIN, Math.min(TERM_SIZE_MAX, Math.round(n)));
+      },
+      /**
+       * Put the chosen face and size on every terminal that is open, and keep
+       * the choice for next time.
+       *
+       * Changing the size changes how many rows and columns fit, so each
+       * screen is measured again and the far end is told the new shape —
+       * otherwise the shell would keep wrapping to the old width.
+       */
+      applyTermFont() {
+        const family = this.termFontCss(this.settings.termFont);
+        const size = this.termSize();
+        this.settings.termFontSize = size;
+        for (const w of this.terms) {
+          const live = SCREENS.get(w.id);
+          if (!live || !live.term) continue;
+          live.term.options.fontFamily = family;
+          live.term.options.fontSize = size;
+          if (live.fit) { try { live.fit.fit(); } catch (e) { /* mid-drag */ } }
+          this.ptySize(w, live.term.cols, live.term.rows);
+        }
+        api('settings', {
+          method: 'POST',
+          body: JSON.stringify({ settings: { termFont: this.settings.termFont, termFontSize: String(size) } }),
+        }).catch(() => { /* the look is applied either way */ });
+      },
+      stepTermSize(by) {
+        this.settings.termFontSize = Math.max(TERM_SIZE_MIN, Math.min(TERM_SIZE_MAX, this.termSize() + by));
+        this.applyTermFont();
+      },
+      /** Ctrl for the next keystroke only, the same way Meta works. */
+      toggleCtrl(w) {
+        w.ctrl = !w.ctrl;
+        w.keyMenu = false;
+        const live = SCREENS.get(w.id);
+        if (live) live.term.focus();
+      },
+      /**
+       * One key, straight to the shell.
+       *
+       * These are the keys a browser is most likely to keep for itself —
+       * Ctrl+C while something is selected is its copy, Ctrl+R its reload — so
+       * a button sends the code the terminal expects and the browser never
+       * sees it.
+       */
+      sendKey(w, name) {
+        const live = SCREENS.get(w.id);
+        const code = KEY_CODES[name];
+        if (!live || !code) return;
+        this.ptyType(w, code);
+        // The menu has had its use: shut it, or it stands over the screen the
+        // key was just sent to.
+        w.keyMenu = false;
+        live.term.focus();
+      },
+      /**
+       * A picture of the screen, saved as a PNG.
+       *
+       * The rows are drawn from the elements xterm has already laid out, so
+       * the colours in the file are the colours on the screen. A wide
+       * character takes two cells, as it does in the terminal itself.
+       */
+      shootTerm(w) {
+        const live = SCREENS.get(w.id);
+        if (!live || !live.term) return;
+        const rowBox = live.term.element && live.term.element.querySelector('.xterm-rows');
+        const rows = rowBox ? [...rowBox.children] : [];
+        if (!rows.length) { this.windowToast(w, T('The screen could not be read.'), 'error'); return; }
+
+        const wide = (ch) => /[ᄀ-ᅟ⺀-꓏가-힣豈-﫿︐-︙︰-﹯＀-｠￠-￦]/.test(ch);
+        const face = getComputedStyle(rowBox);
+        const size = parseFloat(face.fontSize) || 13;
+        const cols = live.term.cols || 80;
+        const cell = rowBox.getBoundingClientRect().width / cols;
+        const rowH = rows[0].getBoundingClientRect().height || Math.round(size * 1.2);
+        const pad = 8;
+        const ratio = Math.min(2, window.devicePixelRatio || 1);
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.ceil((cols * cell + pad * 2) * ratio);
+        canvas.height = Math.ceil((rows.length * rowH + pad * 2) * ratio);
+        const ctx = canvas.getContext('2d');
+        ctx.scale(ratio, ratio);
+        ctx.fillStyle = (live.term.options && live.term.options.theme && live.term.options.theme.background) || '#1b1d21';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.font = size + 'px ' + face.fontFamily;
+        ctx.textBaseline = 'top';
+        const lift = Math.max(0, (rowH - size) / 2);
+
+        rows.forEach((row, r) => {
+          const y = pad + r * rowH;
+          let col = 0;
+          for (const node of row.childNodes) {
+            const text = node.textContent || '';
+            if (!text) continue;
+            const style = getComputedStyle(node.nodeType === 1 ? node : row);
+            const paint = style.backgroundColor;
+            const inked = paint && !/^rgba\(0, 0, 0, 0\)$|^transparent$/.test(paint);
+            for (const ch of text) {
+              const span = wide(ch) ? 2 : 1;
+              const x = pad + col * cell;
+              if (inked) { ctx.fillStyle = paint; ctx.fillRect(x, y, cell * span, rowH); }
+              if (ch.trim()) { ctx.fillStyle = style.color; ctx.fillText(ch, x, y + lift); }
+              col += span;
+            }
+          }
+        });
+
+        const name = 'netbase-' + (w.kind === 'shell' ? 'shell' : 'ssh') + '-' + stampFile() + '.png';
+        canvas.toBlob((blob) => {
+          if (!blob) { this.windowToast(w, T('The screen could not be read.'), 'error'); return; }
+          const link = document.createElement('a');
+          link.href = URL.createObjectURL(blob);
+          link.download = name;
+          link.click();
+          setTimeout(() => URL.revokeObjectURL(link.href), 4000);
+          this.windowToast(w, T('Saved as {name}', { name }), 'ok', 2500);
+        }, 'image/png');
       },
       /** Make the screen match the window it sits in. */
       refitTerm(w) {
@@ -3728,7 +5339,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
           try { live.term.dispose(); } catch (e) { /* already gone */ }
           SCREENS.delete(w.id);
         }
-        if (w.sid) api('ssh/pty/close', { method: 'POST', body: JSON.stringify({ session: w.sid }) }).catch(() => {});
+        if (w.sid) api(w.kind === 'shell' ? 'shell/pty/close' : 'ssh/pty/close', { method: 'POST', body: JSON.stringify({ session: w.sid }) }).catch(() => {});
         this.terms = this.terms.filter((x) => x.id !== w.id);
       },
       termPrompt(w) {
@@ -3783,9 +5394,59 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         };
       },
       /** Telnet, in a window of its own; it asks who you are once it is open. */
-      openTelnetWindow() {
-        if (!this.telnetAdhoc.host) return;
-        this.openTerminal('telnet', this.telnetAdhoc.host, this.telnetAdhoc.port || 23);
+      /** The port follows the kind, unless somebody has set one deliberately. */
+      /**
+       * SSH or Telnet: move the port to the usual one for the kind chosen.
+       *
+       * This was called adhocKindChanged — the same name the file transfer
+       * panel uses for its own version. Two methods of one name in one
+       * object is not an error in JavaScript: the second simply replaces
+       * the first. So choosing Telnet ran the file-transfer version, which
+       * set a port on a different form, and the port here never left 22.
+       */
+      /**
+       * A device or a recent address is not a connection — it is a name for the
+       * box below. Only a saved one stays in the picker.
+       */
+      /**
+       * Switching between typing and picking.
+       *
+       * Leaving the list means the saved connection is no longer the target,
+       * so it is let go; the typed details are left exactly as they were, so
+       * going back and forth does not cost the reader their work.
+       */
+      setSshMode(mode) {
+        if (this.sshMode === mode) return;
+        this.sshMode = mode;
+        this.sshPick = '';
+        this.sshRunResult = null;
+      },
+      /**
+       * One list, three kinds of entry — and the same rule on both screens.
+       *
+       * A saved connection is chosen, and nothing more: connecting is a button
+       * of its own, so choosing one cannot start a session nobody asked for.
+       * A device or a recent address only names a machine, with no account
+       * behind it, so it fills the typed form and the choice moves there — if
+       * it did not, the toggle would say "pick from the list" while the reader
+       * was plainly typing.
+       */
+      sshPicked() {
+        const value = String(this.sshPick || '');
+        if (value && !value.startsWith('c')) {
+          this.sshMode = 'type';
+          this.sshPick = '';
+          this.sshAdhoc.host = value;
+          this.rememberHost(value);
+        }
+        this.sshRunResult = null;
+      },
+      sshKindChanged() {
+        const usual = { ssh: 22, telnet: 23 };
+        const other = this.sshAdhoc.kind === 'telnet' ? usual.ssh : usual.telnet;
+        if (!this.sshAdhoc.port || this.sshAdhoc.port === other) {
+          this.sshAdhoc.port = usual[this.sshAdhoc.kind] || 22;
+        }
       },
       /** Ask who to sign in as, before opening a console. */
       askSsh(host, port = 22) {
@@ -3798,7 +5459,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         const ask = this.sshAsk;
         if (!ask.host || !ask.username) return;
         this.sshAsk = { ...ask, open: false };
-        this.sshConn = 0;
+        this.sshPick = '';
         const w = this.openTerminal('ssh', ask.host, ask.port || 22, {
           username: ask.username, authType: ask.authType,
           secret: ask.secret, privateKeyPath: ask.privateKeyPath, passphrase: ask.passphrase,
@@ -3948,9 +5609,16 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         this.selected = null;
         this.tab = tool.tab;
         if (tool.tab === 'files') {
+          // The type drives the saved list as well as the protocol, so both
+          // move together; setting only one of them would leave the list
+          // showing a different kind of server than the form is set to.
+          this.filesKind = tool.kind;
           this.adhoc = { ...this.adhoc, kind: tool.kind, host: device.ip, port: port === 22 ? 22 : 21, mode: tool.kind === 'ftp' ? 'none' : 'ssh' };
+          this.filesMode = 'type';
+          this.filesPick = '';
+          this.filesConn = 0;
         } else if (tool.tab === 'ssh') {
-          this.sshHost = device.ip;
+          this.sshMode = 'type'; this.sshPick = ''; this.sshAdhoc.host = device.ip;
           if (port === 23) { this.runTelnet(); } else { this.runSsh(); }
         } else if (tool.tab === 'mail') {
           this.mailView = 'server';
@@ -4027,7 +5695,11 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
       levelLabel(level) { return { bad: 'fix', warn: 'check', info: 'note', ok: 'ok' }[level] || level; },
       algoLabel(name) { return ALGO_LABELS[name] || ''; },
       modeLabel(mode) {
-        return { none: 'None (plain text)', starttls: 'STARTTLS', tls: 'TLS from the start', ssh: 'SSH (always encrypted)' }[mode] || mode;
+        // SSL/TLS and STARTTLS are what every mail client calls these, and what
+        // the people setting them up have read in their provider's instructions.
+        // Translating them into something more explanatory only made them
+        // unrecognisable.
+        return { none: 'None (plain text)', starttls: 'STARTTLS', tls: 'SSL/TLS', ssh: 'SSH (always encrypted)' }[mode] || mode;
       },
       capabilityText(caps) {
         if (!caps) return '';
@@ -4050,7 +5722,11 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         if (!r) return;
         this.connections = r.connections || [];
         this.connKinds = r.kinds || {};
+        this.connGroups = r.groups || {};
         this.connCaps = r.capabilities || {};
+        // An empty list means "none saved" or "nowhere to save them", and the
+        // two need telling apart before anything is said to the reader.
+        this.connSetup = r.setup || this.connSetup;
       },
       openConn(existing, kind) {
         this.connNote = '';
@@ -4061,14 +5737,50 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
             port: existing.port, mode: o.mode || 'none', username: existing.username || '', secret: '',
             authType: o.authType || 'password', privateKey: '', passphrase: '',
             from: o.from || '', path: o.path || '', passive: o.passive !== false,
+            sendHost: o.sendHost || '', sendPort: o.sendPort || 0, sendMode: o.sendMode || 'starttls',
             notes: existing.notes || '', hasSecret: !!existing.hasSecret,
           };
         } else {
-          const use = kind || 'sftp';
+          const use = kind || 'ftp';
           const def = this.connKinds[use] || { port: 22, modes: ['none'] };
-          this.connForm = { id: 0, kind: use, name: '', host: '', port: def.port, mode: def.modes[0], username: '', secret: '', authType: 'password', privateKey: '', privateKeyPath: '', passphrase: '', from: '', path: '', passive: true, notes: '', hasSecret: false };
+          this.connForm = { id: 0, kind: use, name: '', host: '', port: def.port, mode: def.modes[0], username: '', secret: '', authType: 'password', privateKey: '', privateKeyPath: '', passphrase: '', from: '', path: '', passive: true, sendHost: '', sendPort: 0, sendMode: 'starttls', notes: '', hasSecret: false };
         }
         this.connModal = true;
+      },
+      /**
+       * The picture for one tool, drawn rather than spelled with an emoji.
+       *
+       * An emoji is whatever the reader's system decides it is, and several of
+       * the ones this used said nothing about the tool: a satellite dish for
+       * the machines on the LAN, a card index for domain registration, an
+       * abacus for address maths. These are one set at one weight, and they
+       * take the colour of the row they sit in.
+       */
+      tabIcon(id) {
+        const icons = {
+          // A rack of machines, because that is what answers on the network.
+          devices: '<rect x="3" y="4" width="18" height="6" rx="1.5"/><rect x="3" y="14" width="18" height="6" rx="1.5"/><circle class="solid" cx="6.6" cy="7" r="1"/><circle class="solid" cx="6.6" cy="17" r="1"/><path d="M10 7h7M10 17h7"/>',
+          // A signpost: a name pointing at an address, which is what DNS does.
+          dns: '<path d="M4 4v16"/><path d="M4 5.5h11l3 3-3 3H4"/><path d="M4 14h8l3 3-3 3H4"/>',
+          // A magnifier over a document: looking up who a name is registered to.
+          whois: '<path d="M6 3h8l4 4v6"/><path d="M14 3v4h4"/><path d="M6 3v18h5"/><circle cx="16.5" cy="17.5" r="3.5"/><path d="M19.2 20.2 22 23"/>',
+          // A padlock on a page: the certificate and the headers behind a site.
+          tls: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18"/><path d="M9.5 16.5v-2a2.5 2.5 0 0 1 5 0v2"/><rect x="8.5" y="16.5" width="7" height="4" rx="1"/>',
+          // One network cut into parts: what a subnet calculation produces.
+          subnet: '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M12 3v18"/><path d="M12 12H3"/><path d="M21 7.5h-9"/><path d="M21 16.5h-9"/>',
+          // A stopwatch: how fast, and how long it took.
+          bench: '<circle cx="12" cy="13.5" r="7.5"/><path d="M12 13.5V9"/><path d="M9.5 2.5h5"/><path d="M12 2.5v3"/><path d="M18.5 7 20 5.5"/>',
+          // An envelope. The owner asked for a mail icon, and a mail icon it is.
+          mail: '<rect x="2.5" y="5" width="19" height="14" rx="2"/><path d="m3 7 8.3 6a1.2 1.2 0 0 0 1.4 0L21 7"/>',
+          // A folder with an arrow leaving it, pointing right: files on the move.
+          files: '<path d="M3 8.5V6a1.5 1.5 0 0 1 1.5-1.5h4L11 7h8.5A1.5 1.5 0 0 1 21 8.5V18a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 18z"/><path d="M9.5 13.5h7"/><path d="m13.8 10.8 2.7 2.7-2.7 2.7"/>',
+          // A dark screen with a key on it: a shell you have to unlock.
+          ssh: '<rect x="2.5" y="4" width="19" height="16" rx="2" class="solid"/><rect x="2.5" y="4" width="19" height="16" rx="2"/><circle cx="9.5" cy="12" r="2.4" fill="none" stroke="var(--surface, #fff)"/><path d="M11.9 12h5.6M15.4 12v2.2M17.5 12v1.6" stroke="var(--surface, #fff)"/>',
+          // A clock with its hands off true: drift from a time server.
+          ntp: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5.4l3.4 2"/>',
+        };
+        const path = icons[id] || '<circle cx="12" cy="12" r="8"/>';
+        return '<svg viewBox="0 0 24 24" aria-hidden="true">' + path + '</svg>';
       },
       connKindChanged() {
         const def = this.connKinds[this.connForm.kind] || { port: 0, modes: ['none'] };
@@ -4097,17 +5809,31 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
           this.filesConn = saved.connection.id;
           this.browse(this.filesPath || '');
         }
-        if (!this.filesConn && (saved.connection.kind === 'ftp' || saved.connection.kind === 'sftp')) this.filesConn = saved.connection.id;
-        if (!this.sendId && saved.connection.kind === 'smtp') this.sendId = saved.connection.id;
-        if (!this.mailboxId && (saved.connection.kind === 'imap' || saved.connection.kind === 'pop3')) this.mailboxId = saved.connection.id;
+        if (!this.filesConn && ['ftp', 'sftp', 'scp'].includes(saved.connection.kind)) {
+          // Saved into the list its own type is kept in, and the screen moves
+          // there — otherwise it would be filed somewhere the reader is not
+          // looking and appear to have vanished.
+          this.filesKind = saved.connection.kind;
+          this.adhoc.kind = saved.connection.kind;
+          this.filesMode = 'saved';
+          this.filesConn = saved.connection.id;
+        }
+        // The same rule as file transfer above: what was just saved is filed in
+        // its own list and the screen moves there, so it cannot appear to have
+        // vanished. Moving the screen matters twice over here — leaving the
+        // toggle on "enter it by hand" while an id was set would test the saved
+        // account while the typed one was on screen.
+        if (!this.mailAccountId && ['imap', 'pop3', 'smtp'].includes(saved.connection.kind)) {
+          this.acctMode = 'saved';
+          this.mailAccountId = saved.connection.id;
+        }
       },
       async deleteConn(conn) {
         if (!conn || !conn.id) return;
         const r = await this.guarded('conn', () => api('connections/' + conn.id, { method: 'DELETE' }));
         if (!r) return;
         if (this.filesConn === conn.id) { this.filesConn = 0; this.filesData = null; }
-        if (this.sendId === conn.id) this.sendId = 0;
-        if (this.mailboxId === conn.id) this.mailboxId = 0;
+        if (this.mailAccountId === conn.id) this.mailAccountId = 0;
         this.connModal = false;
         await this.loadConnections();
       },
@@ -4116,6 +5842,120 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         const r = await this.guarded('conntest', () => api('connections/' + conn.id + '/test', { method: 'POST', body: '{}' }));
         if (!r) return;
         this.note(r.ok ? T('{name}: connected', { name: conn.name }) : T('{name}: {error}', { name: conn.name, error: r.error || 'failed' }));
+        await this.loadConnections();
+      },
+
+      // ---- where connections are kept ----
+      /** The settings of one kind, as the server last reported them. */
+      connGroupOf(group) {
+        const groups = (this.connSetup && this.connSetup.groups) || {};
+        return groups[group] || {};
+      },
+      /** The field chosen for one part of a connection: the draft, else what is stored. */
+      connMapValue(group, slot) {
+        const draft = this.connMapDraft[group] || {};
+        if (draft[slot] !== undefined) return draft[slot];
+        const stored = this.connGroupOf(group).mapping || {};
+        return stored[slot] || '';
+      },
+      setConnMap(group, slot, key) {
+        this.connMapDraft = { ...this.connMapDraft, [group]: { ...(this.connMapDraft[group] || {}), [slot]: key } };
+      },
+      /** A password may only be offered a field RegiBase itself marks secret. */
+      connFieldsFor(group, secretOnly) {
+        // The fields of the collection chosen right now, not of the one that
+        // happens to be stored: picking a different collection used to leave
+        // the assignment offering the previous collection's fields.
+        const chosen = Number(this.connGroupOf(group).collection) || 0;
+        const all = (this.connSetup && this.connSetup.collections) || [];
+        const found = all.find((c) => c.id === chosen);
+        const fields = (found && found.fields) || [];
+        return secretOnly ? fields.filter((f) => f.secret) : fields;
+      },
+      /** Point one kind at a different collection. */
+      setConnCollection(group, value) {
+        const g = this.connGroupOf(group);
+        if (g) g.collection = Number(value) || 0;
+        // Only this kind's draft is cleared; the others are untouched, because
+        // every kind is on screen at once now.
+        this.connMapDraft = { ...this.connMapDraft, [group]: {} };
+      },
+      async loadConnSetup() {
+        const r = await this.guarded('connsetup', () => api('connections/setup'));
+        if (r) this.connSetup = r.setup;
+      },
+      openConnSetup() {
+        this.connSetupModal = true;
+        this.connMapDraft = {};
+        this.connNewName = {};
+        this.connMaster = '';
+        this.connGroup = 'ssh';
+        this.loadConnSetup();
+      },
+      /** The key, given at the moment it is needed. */
+      async unlockFromAsk() {
+        const password = this.keyAskValue;
+        const r = await this.guarded('connsetup', () => api('connections/unlock', { method: 'POST', body: JSON.stringify({ password }) }));
+        this.keyAskValue = '';
+        if (!r) return;
+        if (!r.ok) { this.note(T('That master key was not right')); return; }
+        this.keyAsk = false;
+        this.connSetup = r.setup;
+        await this.loadConnections();
+        // The key was wanted for something. Do that thing, rather than leaving
+        // the reader to work out that they must now press Save again.
+        const again = this.keyAskRetry;
+        this.keyAskRetry = null;
+        if (again) await again();
+      },
+      async unlockConns() {
+        const password = this.connMaster;
+        const r = await this.guarded('connsetup', () => api('connections/unlock', { method: 'POST', body: JSON.stringify({ password }) }));
+        this.connMaster = '';
+        if (!r) return;
+        if (!r.ok) { this.note(T('That master key was not right')); return; }
+        this.connSetup = r.setup;
+        await this.loadConnections();
+        const again = this.keyAskRetry;
+        this.keyAskRetry = null;
+        if (again) await again();
+      },
+      async lockConns() {
+        const r = await this.guarded('connsetup', () => api('connections/lock', { method: 'POST', body: '{}' }));
+        if (!r) return;
+        this.connSetup = r.setup;
+        await this.loadConnections();
+      },
+      async makeConnCollection(group) {
+        this.keyAskRetry = () => this.makeConnCollection(group);
+        const name = (this.connNewName[group] || '').trim();
+        const r = await this.guarded('connsetup', () => api('connections/collection', {
+          method: 'POST', body: JSON.stringify({ group, name }),
+        }));
+        if (!r) return;
+        this.connSetup = r.setup;
+        this.keyAskRetry = null;
+        this.connMapDraft = { ...this.connMapDraft, [group]: {} };
+        this.connNewName = { ...this.connNewName, [group]: '' };
+        this.note(T('Collection created'));
+        await this.loadConnections();
+      },
+      async saveConnMapping(group) {
+        this.keyAskRetry = () => this.saveConnMapping(group);
+        const mapping = {};
+        for (const slot of Object.keys((this.connSetup && this.connSetup.slots) || {})) {
+          const chosen = this.connMapValue(group, slot);
+          if (chosen) mapping[slot] = chosen;
+        }
+        const collection = Number(this.connGroupOf(group).collection) || 0;
+        const r = await this.guarded('connsetup', () => api('connections/mapping', {
+          method: 'POST', body: JSON.stringify({ group, collection, mapping }),
+        }));
+        if (!r) return;
+        this.keyAskRetry = null;
+        this.connSetup = r.setup;
+        this.connMapDraft = { ...this.connMapDraft, [group]: {} };
+        this.note(T('Saved'));
         await this.loadConnections();
       },
 
@@ -4135,77 +5975,776 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
       async runBlocklist() {
         this.blResult = await this.guarded('bl', () => api('mail/blocklist?' + qs({ ip: this.blIp })));
       },
+      /**
+       * What to test against: one account, whichever way it was named.
+       *
+       * The id comes from the toggle rather than from whatever was chosen
+       * before it, so an account picked earlier cannot quietly take over a
+       * test whose details are plainly being typed.
+       */
+      mailTarget(extra) {
+        const id = this.acctMode === 'saved' ? this.mailAccountId : 0;
+        return { id, connection: id ? {} : { ...this.mailAdhoc }, ...extra };
+      },
       async runSend() {
-        const body = { id: this.sendId, to: this.sendTo, subject: this.sendSubject, body: this.sendBody, connection: this.sendId ? {} : { ...this.smtpAdhoc } };
+        const body = this.mailTarget({ to: this.sendTo, subject: this.sendSubject, body: this.sendBody });
         this.sendResult = await this.guarded('send', () => api('mail/send', { method: 'POST', body: JSON.stringify(body) }));
         if (this.sendResult) this.note(this.sendResult.ok ? T('The server accepted the message') : T('Sending failed: {error}', { error: this.sendResult.error }));
       },
       async runMailbox() {
-        const body = { id: this.mailboxId, connection: this.mailboxId ? {} : { ...this.boxAdhoc } };
+        const body = this.mailTarget({});
         this.mailboxResult = await this.guarded('mailbox', () => api('mail/login', { method: 'POST', body: JSON.stringify(body) }));
       },
-      /** Hand the typed mail details to the editor so they can be kept. */
-      saveMailAdhoc(which) {
-        const from = which === 'smtp' ? this.smtpAdhoc : this.boxAdhoc;
-        this.openConn(null, from.kind);
-        this.connForm = { ...this.connForm, ...from, id: 0, name: from.host };
+      /**
+       * Typing or the list — the same rule the SSH and file transfer screens
+       * follow. Leaving the list also drops what was chosen there, so nothing
+       * is tested against a server the screen is no longer showing.
+       */
+      setAcctMode(mode) {
+        if (this.acctMode === mode) return;
+        this.acctMode = mode;
+        this.mailAccountId = 0;
+        this.sendResult = null;
+        this.mailboxResult = null;
+      },
+      /** The default ports follow the protocol, both halves at once. */
+      mailKindChanged() {
+        this.mailAdhoc.port = this.mailAdhoc.kind === 'pop3' ? 995 : 993;
+        if (this.mailAdhoc.kind === 'smtp') {
+          this.mailAdhoc.port = 587;
+        }
+      },
+      /** Hand the typed account to the editor so it can be kept as one record. */
+      saveMailAdhoc() {
+        this.openConn(null, this.mailAdhoc.kind);
+        this.connForm = { ...this.connForm, ...this.mailAdhoc, id: 0, name: this.mailAdhoc.host };
       },
 
       // ---- FTP / SFTP ----
       // Every call carries either the id of a saved connection or the details
       // of the one-off one, so both work through the same endpoints.
-      fileTarget(extra) { return { id: this.filesConn, connection: this.filesConn ? {} : { ...this.adhoc }, ...extra }; },
-      adhocKindChanged() {
-        const ftp = this.adhoc.kind === 'ftp';
-        this.adhoc.port = ftp ? 21 : 22;
-        this.adhoc.mode = ftp ? 'none' : 'ssh';
-        this.adhoc.authType = 'password';
+      /**
+       * Hand the far end what it needs for one file action.
+       *
+       * The sudo password rides along only when the reader asked to act as
+       * root, and only on this request; nothing here keeps a copy.
+       */
+      fileTarget(extra) {
+        this.touchRoot();
+        const out = { id: this.filesConn, connection: this.filesConn ? {} : { ...this.adhoc }, ...extra };
+        if (this.asRoot && this.sudoPassword) out.sudoPassword = this.sudoPassword;
+        // Which protocol the screen is set to. A connection saved as SSH can be
+        // opened over SFTP or over SCP, and only SCP can act as root — without
+        // this the server chose SFTP and "act as root" did nothing at all.
+        out.prefer = this.filesKind;
+        return out;
       },
-      useSaved() { this.adhocActive = false; this.browse(''); },
+      /** Open what was double-clicked: a folder walks into it. */
+      openEntry(entry) {
+        if (entry && entry.directory) this.browse(this.joinPath(this.filesData.path, entry.name));
+      },
+      sortFiles(by) {
+        if (this.fileSort.by === by) { this.fileSort = { by, desc: !this.fileSort.desc }; return; }
+        this.fileSort = { by, desc: false };
+      },
+      fileSortClass(by) {
+        return this.fileSort.by === by ? (this.fileSort.desc ? 'sorted desc' : 'sorted asc') : '';
+      },
+      /** The menu for one row, placed where the pointer is. */
+      openFileMenu(entry, event) {
+        this.filePicked = entry.name;
+        const width = 230, height = 260;
+        this.fileMenu = {
+          open: true, entry,
+          x: Math.max(8, Math.min(event.clientX, window.innerWidth - width - 8)),
+          y: Math.max(8, Math.min(event.clientY, window.innerHeight - height - 8)),
+        };
+      },
+      async runFileMenu(what) {
+        const e = this.fileMenu.entry;
+        this.fileMenu = { open: false, x: 0, y: 0, entry: {} };
+        if (!e || !e.name) return;
+        const full = this.joinPath(this.filesData.path, e.name);
+        if (what === 'open') return this.browse(full);
+        if (what === 'view') return this.openText(e);
+        if (what === 'download') return this.downloadFile(e);
+        if (what === 'rename') return this.fileAction('rename', e);
+        if (what === 'delete') return this.fileAction(e.directory ? 'rmdir' : 'delete', e);
+        if (what === 'chmod') return this.fileAction('chmod', e);
+        if (what === 'chown' || what === 'chgrp' || what === 'touch') return this.fileAction(what, e);
+        if (what === 'copyPath') {
+          try { await navigator.clipboard.writeText(full); this.note(T('Copied')); }
+          catch (err) { this.note(full); }
+        }
+      },
+      /** Take the password for this page, then show the folder again as root. */
+      useSudo() {
+        this.sudoPassword = this.sudoDraft;
+        this.sudoDraft = '';
+        this.startRootWatch();
+        this.browse(this.filesPath || '');
+      },
+      async saveRootIdle() {
+        const n = Math.max(0, Math.min(120, Number(this.settings.rootIdleMinutes) || 0));
+        this.settings = { ...this.settings, rootIdleMinutes: n };
+        this.startRootWatch();
+        try {
+          await api('settings', { method: 'POST', body: JSON.stringify({ settings: { rootIdleMinutes: n } }) });
+        } catch (e) { this.fail(e); }
+      },
+      /**
+       * Let root lapse when nobody is there.
+       *
+       * The password is never on disk, but it stays usable for as long as the
+       * page is open — and a page left open on an unlocked screen is somebody
+       * else's root. The clock is reset by working in NetBase, not by the
+       * browser merely being in front: a tab left on this screen while its
+       * owner is elsewhere is exactly the case this is for.
+       */
+      startRootWatch() {
+        this.stopRootWatch();
+        const mins = Number(this.settings.rootIdleMinutes) || 0;
+        if (!this.sudoPassword || mins <= 0) { this.rootLeft = 0; return; }
+        this.rootTouched = Date.now();
+        this.rootLeft = mins;
+        this.rootTimer = setInterval(() => {
+          const left = mins - (Date.now() - this.rootTouched) / 60000;
+          this.rootLeft = Math.max(0, Math.ceil(left));
+          if (left <= 0) {
+            this.stopRootWatch();
+            this.sudoPassword = '';
+            this.asRoot = false;
+            this.note(T('Root was given up after {n} minutes with nothing touched. Enter the password again to act as root.', { n: mins }));
+            this.browse(this.filesPath || '');
+          }
+        }, 5000);
+      },
+      stopRootWatch() {
+        if (this.rootTimer) { clearInterval(this.rootTimer); this.rootTimer = null; }
+        this.rootLeft = 0;
+      },
+      /** Anything done in NetBase counts as being there. */
+      touchRoot() {
+        if (this.sudoPassword) this.rootTouched = Date.now();
+      },
+      /** Give it up now rather than when the page closes. */
+      forgetSudo() {
+        this.stopRootWatch();
+        this.sudoPassword = '';
+        this.asRoot = false;
+        this.browse(this.filesPath || '');
+      },
+      /** Turning it off drops the password with it. */
+      rootToggled() {
+        if (!this.asRoot) { this.stopRootWatch(); this.sudoPassword = ''; this.sudoDraft = ''; this.browse(this.filesPath || ''); }
+      },
+      /**
+       * A new protocol, without throwing away what was typed.
+       *
+       * Filling in the usual port and sign-in for the protocol is a kindness to
+       * somebody who has not touched those fields — FTP answers on 21 with its
+       * own encryption, SSH and its two file protocols on 22. It is the
+       * opposite for somebody who has: a server reached over SCP on 10022 with
+       * a key is the same machine over SFTP, and putting the port back to 22
+       * and the sign-in back to a password sent them to the start again for no
+       * reason. So a field is moved only while it still holds the default that
+       * was put there for the protocol being left; anything typed in is left
+       * where it is.
+       *
+       * Two things are not preferences and have to follow the protocol. FTP's
+       * encryption choices and SSH's are different things under one name, so
+       * crossing that line resets it. And FTP has no notion of a key at all —
+       * the connection is made from the host and the port alone — so moving to
+       * it returns the sign-in to a password rather than sending a key path to
+       * a protocol with nowhere to put it.
+       *
+       * Called with nothing (the screen setting itself up) it fills all three
+       * in, which is what it always did.
+       */
+      adhocKindChanged(previous = '') {
+        const ftp = this.adhoc.kind === 'ftp';
+        const wasFtp = previous === 'ftp';
+        const fresh = previous === '';
+        if (fresh || Number(this.adhoc.port) === (wasFtp ? 21 : 22)) {
+          this.adhoc.port = ftp ? 21 : 22;
+        }
+        if (fresh || wasFtp !== ftp) {
+          this.adhoc.mode = ftp ? 'none' : 'ssh';
+        }
+        if (fresh || ftp) {
+          this.adhoc.authType = 'password';
+        }
+      },
+      /**
+       * Switch between typing the server in and choosing a saved one.
+       *
+       * Whichever is left behind stops being the target, so the open folder
+       * goes with it; what was typed is kept, so coming back costs nothing.
+       */
+      setFilesMode(mode) {
+        if (this.filesMode === mode) return;
+        this.filesMode = mode;
+        this.filesPick = '';
+        this.adhocActive = false;
+        this.filesConn = 0;
+        this.filesData = null;
+        this.transferNote = '';
+      },
+      /**
+       * One list, three kinds of entry.
+       *
+       * A saved connection is the target outright. A device or a recent
+       * address only names the machine — there are no credentials behind it —
+       * so it fills the typed form and the screen moves there, which is where
+       * the rest of the details have to be given anyway.
+       */
+      /**
+       * The type decides the protocol and the list at once.
+       *
+       * Changing it lets go of whatever was chosen: a connection saved for FTP
+       * is not a thing SCP can open, so carrying the choice across would offer
+       * a server that cannot answer.
+       */
+      filesKindPicked() {
+        // Which protocol is being left, so the defaults it put in can be told
+        // apart from anything typed over them.
+        const previous = this.adhoc.kind;
+        this.adhoc.kind = this.filesKind;
+        this.filesPick = '';
+        this.filesConn = 0;
+        this.adhocActive = false;
+        this.filesData = null;
+        this.adhocKindChanged(previous);
+      },
+      filesPicked() {
+        const value = String(this.filesPick || '');
+        if (value.startsWith('c')) {
+          // Chosen, not opened. The SSH screen does not sign in the moment a
+          // name is picked either, and a listing is a connection: it should
+          // wait for the button that says so.
+          this.filesConn = Number(value.slice(1)) || 0;
+          this.adhocActive = false;
+          this.filesData = null;
+          return;
+        }
+        if (value) {
+          this.filesMode = 'type';
+          this.filesPick = '';
+          this.filesConn = 0;
+          this.adhoc.host = value;
+          this.rememberHost(value);
+        }
+      },
+      /** Connect to whichever of the two the reader chose. */
+      /**
+       * Open whichever of the two was chosen.
+       *
+       * The one entry point for connecting, so the screen cannot end up
+       * showing a folder for a server nobody asked it to open.
+       */
+      /**
+       * Open both sides at once.
+       *
+       * The left pane is the reader's own files and needs no connection, but
+       * it was starting empty and staying that way until somebody thought to
+       * press Refresh — which made the two-pane layout look broken on arrival.
+       * It opens at the folder downloads land in, so what has just been
+       * received is on screen where it went.
+       */
+      filesConnect() {
+        this.browseLocal(this.filesTarget || '', true);
+        if (this.filesSaved) {
+          this.adhocActive = false;
+          return this.browse(this.adhoc.path || '');
+        }
+        return this.quickConnect();
+      },
       async quickConnect() {
         this.filesConn = 0;
         this.adhocActive = true;
         await this.browse(this.adhoc.path || '');
         if (!this.filesData) this.adhocActive = false;
       },
-      disconnect() { this.adhocActive = false; this.filesData = null; this.transferNote = ''; },
+      disconnect() { this.adhocActive = false; this.filesConn = 0; this.filesPick = ''; this.filesData = null; this.transferNote = ''; },
       /** Hand the one-off details to the editor so they can be named and kept. */
       saveAdhoc() {
         this.openConn(null, this.adhoc.kind);
         this.connForm = { ...this.connForm, ...this.adhoc, id: 0, name: this.adhoc.host, privateKey: '' };
       },
+
+      // ---------------------------------------------------------------- panes
+      /**
+       * One ordering, used by both panes.
+       *
+       * They are the same kind of list and have to feel the same: folders
+       * above files whichever column is sorted, and names compared the way a
+       * person reads them rather than by character code.
+       */
+      sortRows(rows, how) {
+        const dir = how.desc ? -1 : 1;
+        rows.sort((a, b) => {
+          if (!!a.directory !== !!b.directory) return a.directory ? -1 : 1;
+          let v = 0;
+          if (how.by === 'size') v = (a.size || 0) - (b.size || 0);
+          else if (how.by === 'modified') v = (a.modified || 0) - (b.modified || 0);
+          else v = String(a.name).localeCompare(String(b.name), undefined, { numeric: true, sensitivity: 'base' });
+          return v * dir;
+        });
+        return rows;
+      },
+      sortLocal(by) {
+        if (this.localSort.by === by) { this.localSort = { by, desc: !this.localSort.desc }; return; }
+        this.localSort = { by, desc: false };
+      },
+      localSortClass(by) {
+        return this.localSort.by === by ? (this.localSort.desc ? 'sorted desc' : 'sorted asc') : '';
+      },
+      /**
+       * The reader's own files, one folder of them.
+       *
+       * $create is set only when the screen opens at the folder downloads land
+       * in. That folder is made by the first download in any case, so refusing
+       * to show it beforehand put a red banner on every connection until
+       * something had been received. Walking the tree never creates anything.
+       */
+      async browseLocal(path, create = false) {
+        const r = await this.guarded('local', () => api('nc-files?' + qs({ path: path || '', create: create ? 1 : 0 })));
+        if (!r) return;
+        this.localData = r;
+        this.localPath = r.path;
+        this.localPicked = {};
+        this.localAnchor = '';
+      },
+      /**
+       * Clicking a row, the way a file manager means it.
+       *
+       * Plain click picks one. Ctrl adds or removes. Shift takes everything
+       * between here and the last row touched — which is how a run of files is
+       * chosen without clicking every one of them.
+       */
+      pickRow(side, entry, event) {
+        const picked = side === 'local' ? this.localPicked : this.remotePicked;
+        const rows = side === 'local' ? this.sortedLocal : this.sortedFiles;
+        const anchor = side === 'local' ? this.localAnchor : this.remoteAnchor;
+        const next = {};
+        if (event && event.shiftKey && anchor) {
+          const names = rows.map((r) => r.name);
+          const from = names.indexOf(anchor);
+          const to = names.indexOf(entry.name);
+          if (from >= 0 && to >= 0) {
+            const [a, b] = from < to ? [from, to] : [to, from];
+            for (let i = a; i <= b; i++) next[names[i]] = true;
+          } else {
+            next[entry.name] = true;
+          }
+        } else if (event && (event.ctrlKey || event.metaKey)) {
+          Object.assign(next, picked);
+          if (next[entry.name]) delete next[entry.name]; else next[entry.name] = true;
+        } else {
+          next[entry.name] = true;
+        }
+        if (side === 'local') {
+          this.localPicked = next;
+          if (!event || !event.shiftKey) this.localAnchor = entry.name;
+        } else {
+          this.remotePicked = next;
+          this.filePicked = entry.name;
+          if (!event || !event.shiftKey) this.remoteAnchor = entry.name;
+        }
+      },
+      /** Everything, or nothing, on one side. */
+      pickAll(side) {
+        const rows = side === 'local' ? this.sortedLocal : this.sortedFiles;
+        const picked = side === 'local' ? this.localPicked : this.remotePicked;
+        const all = {};
+        if (Object.keys(picked).length !== rows.length) {
+          rows.forEach((r) => { all[r.name] = true; });
+        }
+        if (side === 'local') this.localPicked = all; else this.remotePicked = all;
+      },
+      pickedRows(side) {
+        const rows = side === 'local' ? this.sortedLocal : this.sortedFiles;
+        const picked = side === 'local' ? this.localPicked : this.remotePicked;
+        return rows.filter((r) => picked[r.name]);
+      },
+
+      /**
+       * Dragging a row, and dropping it on the other side.
+       *
+       * The row being dragged joins whatever is already picked on that side —
+       * dragging one of five chosen files sends all five, which is what every
+       * file manager does and what anyone dragging expects. Dropping on the
+       * side a thing came from does nothing, quietly: a file cannot be sent to
+       * where it already is, and saying so would be noise.
+       */
+      startFileDrag(side, entry, event) {
+        const picked = side === 'local' ? this.localPicked : this.remotePicked;
+        if (!picked[entry.name]) {
+          this.pickRow(side, entry, null);
+        }
+        if (event && event.dataTransfer) {
+          event.dataTransfer.effectAllowed = 'copy';
+          // The payload is only for other applications; inside this page the
+          // side is what matters, and that is remembered here.
+          event.dataTransfer.setData('text/plain', entry.name);
+        }
+        this.dragFrom = side;
+      },
+      dropOnLocal() {
+        if (this.dragFrom !== 'remote') { this.dragFrom = ''; return; }
+        this.dragFrom = '';
+        this.enqueue('remote');
+      },
+      dropOnRemote() {
+        if (this.dragFrom !== 'local') { this.dragFrom = ''; return; }
+        this.dragFrom = '';
+        this.enqueue('local');
+      },
+
+      // ------------------------------------------------------------ the queue
+      /**
+       * Put the chosen rows in the queue, and start it if it is not running.
+       *
+       * A folder going up is one job that walks; a folder coming down is one
+       * job that arrives as a ZIP, which is what the far end can actually be
+       * asked for. Files are one job each, so one failure does not take the
+       * rest of them with it.
+       */
+      enqueue(side) {
+        if (!this.filesData) return;
+        const rows = this.pickedRows(side);
+        if (!rows.length) return;
+        for (const row of rows) {
+          this.queue.push({
+            id: ++this.windowSeq,
+            direction: side === 'local' ? 'up' : 'down',
+            folder: !!row.directory,
+            name: row.name,
+            local: side === 'local' ? row.path : this.filesTarget,
+            remote: side === 'local' ? (this.filesData.path || '/') : this.joinPath(this.filesData.path, row.name),
+            state: 'waiting', done: 0, total: row.size || 0, rate: 0, left: null, error: '',
+          });
+        }
+        if (side === 'local') this.localPicked = {}; else this.remotePicked = {};
+        this.runQueue();
+      },
+      /** One job after another, until there are none left. */
+      async runQueue() {
+        if (this.queueBusy) return;
+        this.queueBusy = true;
+        try {
+          for (;;) {
+            const job = this.queue.find((j) => j.state === 'waiting');
+            if (!job) break;
+            job.state = 'running';
+            try {
+              await this.runJob(job);
+              job.state = 'done';
+            } catch (e) {
+              // Pressing Stop is not a failure, and the browser's own wording
+              // for an aborted stream ("BodyStreamBuffer was aborted") is not
+              // something to show anybody. A transfer the reader stopped says
+              // so, plainly, and without a warning sign.
+              const aborted = (e && (e.name === 'AbortError' || /abort/i.test(String(e.message || ''))));
+              job.state = aborted ? 'stopped' : 'failed';
+              job.error = aborted ? '' : String((e && e.message) || e);
+            }
+            this.queueDone.unshift(job);
+            this.queue = this.queue.filter((j) => j !== job);
+            if (this.queueDone.length > 40) this.queueDone.length = 40;
+          }
+        } finally {
+          this.queueBusy = false;
+          this.queueStop = null;
+          if (this.filesData) this.browse(this.filesData.path);
+          if (this.localData) this.browseLocal(this.localData.path);
+        }
+      },
+      /**
+       * One transfer, drawn while it runs.
+       *
+       * The server reports in NDJSON — one JSON object to a line — for the same
+       * reason the speed test does: it is the simplest thing that survives a
+       * proxy, and a half-written last line is simply not parsed.
+       */
+      async runJob(job) {
+        // A folder coming down is the ZIP path, which is not a stream.
+        if (job.direction === 'down' && job.folder) {
+          const r = await api('files/download', {
+            method: 'POST',
+            body: JSON.stringify(this.fileTarget({ path: job.remote, target: this.filesTarget, folder: true })),
+          });
+          job.done = r.bytes || 0;
+          job.total = r.bytes || 0;
+          return;
+        }
+        const controller = new AbortController();
+        this.queueStop = () => controller.abort();
+        const body = this.fileTarget({
+          direction: job.direction,
+          remote: job.remote,
+          local: job.local,
+          target: this.filesTarget,
+          folder: job.folder,
+        });
+        const res = await fetch(BASE + 'api/files/transfer', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', requesttoken: TOKEN },
+          credentials: 'same-origin',
+          body: JSON.stringify(body),
+          signal: controller.signal,
+        });
+        if (!res.ok || !res.body) throw new Error(T('The transfer could not be started'));
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let rest = '';
+        let failure = '';
+        for (;;) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          rest += decoder.decode(value, { stream: true });
+          const lines = rest.split('\n');
+          rest = lines.pop() || '';
+          for (const line of lines) {
+            if (!line.trim()) continue;
+            let said = null;
+            try { said = JSON.parse(line); } catch (err) { continue; }
+            if (said.stage === 'error') { failure = said.message || T('Failed'); continue; }
+            if (said.stage === 'start') { job.total = said.total || 0; job.name = said.name || job.name; }
+            if (said.stage === 'progress') {
+              job.done = said.done || 0;
+              if (said.total) job.total = said.total;
+              job.rate = said.bytesPerSecond || 0;
+              job.left = said.secondsLeft;
+            }
+            if (said.stage === 'done') { job.done = said.bytes || job.done; job.total = job.total || job.done; }
+          }
+        }
+        if (failure) throw new Error(failure);
+      },
+      stopQueue() {
+        if (this.queueStop) this.queueStop();
+        this.queue = this.queue.filter((j) => j.state === 'running');
+      },
+      clearQueueDone() { this.queueDone = []; },
+      /** How far along, as a percentage, for the bar. */
+      jobPercent(job) {
+        if (!job.total) return job.state === 'done' ? 100 : 0;
+        return Math.max(0, Math.min(100, Math.round((job.done / job.total) * 100)));
+      },
+      /** "3.4 MB/s · 8 s left", or as much of it as is known. */
+      jobRate(job) {
+        const parts = [];
+        if (job.rate) parts.push(this.fmtBytes(job.rate) + '/s');
+        if (job.left !== null && job.left !== undefined) parts.push(T('{n} s left', { n: job.left }));
+        return parts.join(' · ');
+      },
+
+      // ------------------------------------------------------- text in a window
+      /**
+       * Open a file for reading, and for editing if that is what is wanted.
+       *
+       * It arrives as text in whatever encoding it was written in — Shift_JIS
+       * and EUC-JP are still everywhere on Japanese servers — and is handed
+       * back the same way, so saving does not quietly rewrite the file into
+       * something the far end can no longer read.
+       */
+      async openText(entry) {
+        const path = this.joinPath(this.filesData.path, entry.name);
+        const r = await this.guarded('text', () => api('files/text?' + qs(this.textQuery(path))));
+        if (!r) return;
+        const offset = (this.textWins.length % 6) * 26;
+        this.textWins.push({
+          id: ++this.windowSeq, path: r.path, name: r.name, text: r.text, original: r.text,
+          encoding: r.encoding, newline: r.newline, bytes: r.bytes, saving: false, note: '',
+          z: ++this.windowTop,
+          x: this.narrow ? 0 : Math.max(20, Math.round(window.innerWidth / 2 - 420) + offset),
+          y: this.narrow ? 0 : 80 + offset,
+          w: this.narrow ? window.innerWidth : Math.min(840, window.innerWidth - 60),
+          h: this.narrow ? window.innerHeight : Math.min(620, window.innerHeight - 140),
+        });
+      },
+      /** The connection details a text request needs, without the file target. */
+      textQuery(path) {
+        const out = { path, id: this.filesConn, prefer: this.filesKind };
+        if (!this.filesConn) {
+          Object.entries(this.adhoc).forEach(([k, v]) => {
+            out['connection[' + k + ']'] = typeof v === 'boolean' ? (v ? 1 : 0) : v;
+          });
+        }
+        if (this.asRoot && this.sudoPassword) out.sudoPassword = this.sudoPassword;
+        return out;
+      },
+      textChanged(w) { return w.text !== w.original; },
+      async saveText(w) {
+        w.saving = true;
+        w.note = '';
+        try {
+          const body = this.fileTarget({ path: w.path, text: w.text, encoding: w.encoding, newline: w.newline });
+          delete body.folder;
+          const r = await api('files/text', { method: 'POST', body: JSON.stringify(body) });
+          w.original = w.text;
+          w.bytes = r.bytes;
+          w.note = T('Saved · {size}', { size: this.fmtBytes(r.bytes) });
+          if (this.filesData) this.browse(this.filesData.path);
+        } catch (e) {
+          w.note = String((e && e.message) || e);
+        } finally {
+          w.saving = false;
+        }
+      },
+      async reloadText(w) {
+        const r = await this.guarded('text', () => api('files/text?' + qs(this.textQuery(w.path))));
+        if (!r) return;
+        w.text = r.text;
+        w.original = r.text;
+        w.encoding = r.encoding;
+        w.newline = r.newline;
+        w.bytes = r.bytes;
+        w.note = '';
+      },
+      closeText(w) { this.textWins = this.textWins.filter((x) => x !== w); },
+      /**
+       * What to ask the far end for one folder, whichever way it was reached.
+       *
+       * Kept apart from browse() because the delete question needs the same
+       * listing to count what is inside, and must not disturb the view while
+       * it asks.
+       */
+      listQuery(path) {
+        const sudo = this.asRoot && this.sudoPassword ? { sudoPassword: this.sudoPassword } : {};
+        const prefer = { prefer: this.filesKind };
+        return this.filesConn
+          ? qs({ id: this.filesConn, path: path || '', ...sudo, ...prefer })
+          // Booleans have to travel as 1/0: PHP reads the string "false" as true.
+          : qs({ id: 0, path: path || '', ...sudo, ...prefer, ...Object.fromEntries(Object.entries(this.adhoc).map(([k, v]) => ['connection[' + k + ']', typeof v === 'boolean' ? (v ? 1 : 0) : v])) });
+      },
       async browse(path) {
         if (!this.filesConn && !this.adhocActive) { this.filesData = null; return; }
-        const query = this.filesConn
-          ? qs({ id: this.filesConn, path: path || '' })
-          // Booleans have to travel as 1/0: PHP reads the string "false" as true.
-          : qs({ id: 0, path: path || '', ...Object.fromEntries(Object.entries(this.adhoc).map(([k, v]) => ['connection[' + k + ']', typeof v === 'boolean' ? (v ? 1 : 0) : v])) });
+        this.touchRoot();
+        const query = this.listQuery(path);
         const r = await this.guarded('browse', () => api('files/list?' + query));
         if (!r) return;
         this.filesData = r;
         this.filesPath = r.path;
       },
+      /**
+       * Bring one row back into the reader's own Nextcloud files.
+       *
+       * A folder comes back as a single ZIP, built on this server: see the note
+       * on downloadFolder. The far end is not asked to have zip or tar.
+       */
       async downloadFile(entry) {
+        if (entry && entry.directory) return this.downloadFolder(entry);
         const r = await this.guarded('dl', () => api('files/download', { method: 'POST', body: JSON.stringify(this.fileTarget({ path: this.joinPath(this.filesData.path, entry.name), target: this.filesTarget })) }));
         if (r) this.transferNote = T('{name} saved to {folder} ({size})', { name: r.name, folder: this.filesTarget || '/', size: this.fmtBytes(r.bytes) });
       },
-      async uploadFile() {
-        const r = await this.guarded('ul', () => api('files/upload', { method: 'POST', body: JSON.stringify(this.fileTarget({ source: this.filesSource, remoteDir: this.filesData ? this.filesData.path : '' })) }));
-        if (r) { this.transferNote = T('Uploaded to {path} ({size})', { path: r.remote, size: this.fmtBytes(r.bytes) }); this.browse(this.filesPath); }
+      async downloadFolder(entry) {
+        const path = this.joinPath(this.filesData.path, entry.name);
+        const r = await this.guarded('dl', () => api('files/download', {
+          method: 'POST',
+          body: JSON.stringify(this.fileTarget({ path, target: this.filesTarget, folder: true })),
+        }));
+        if (!r) return;
+        this.transferNote = T('{name} saved to {folder} ({size}, {n} files)', {
+          name: r.name, folder: this.filesTarget || '/', size: this.fmtBytes(r.bytes), n: r.files,
+        });
+        if (r.truncated) {
+          this.note(T('The folder was larger than one download allows, so only part of it was taken.'));
+        }
+      },
+      /**
+       * Ask for one line of text, or for a plain yes, and wait for the answer.
+       * The browser's own prompt() and confirm() are not used anywhere: they
+       * stop the page dead in an embedded window, and no test can answer them.
+       * Hands back what was typed, true for a bare yes, or null if cancelled.
+       */
+      askFor(options) {
+        this.ask = {
+          open: true, icon: '', title: '', subject: '', body: '', label: '',
+          value: '', confirm: T('Save'), danger: false, input: true, ...options,
+        };
+        this.$nextTick(() => {
+          const box = this.$refs.askBox;
+          if (box) { box.focus(); box.select(); }
+        });
+        return new Promise((settle) => { this.askSettle = settle; });
+      },
+      /** Close the box and hand the answer to whoever is waiting for it. */
+      askClose(answer) {
+        const settle = this.askSettle;
+        this.askSettle = null;
+        this.ask.open = false;
+        if (settle) settle(answer);
+      },
+      askOk() {
+        if (!this.ask.input) { this.askClose(true); return; }
+        const value = String(this.ask.value || '').trim();
+        if (value) this.askClose(value);
       },
       async fileAction(action, entry) {
         let path = entry ? this.joinPath(this.filesData.path, entry.name) : '';
         let extra = '';
         if (action === 'mkdir') {
-          const name = window.prompt(T('Name for the new folder'));
+          const name = await this.askFor({
+            icon: '📁', title: T('New folder'),
+            label: T('Name for the new folder'), confirm: T('Create'),
+          });
           if (!name) return;
           path = this.joinPath(this.filesData.path, name);
         } else if (action === 'rename') {
-          const name = window.prompt(T('New name'), entry.name);
+          const name = await this.askFor({
+            icon: entry.directory ? '📁' : '📄', title: T('Rename'), subject: entry.name,
+            label: T('New name'), value: entry.name,
+          });
           if (!name || name === entry.name) return;
           extra = this.joinPath(this.filesData.path, name);
-        } else if (!window.confirm(T('Delete {name} from the server?', { name: entry.name }))) {
-          return;
+        } else if (action === 'chmod') {
+          // The far end reads this as octal, so it is asked for as octal, and
+          // the box starts at what the file has now rather than at a guess.
+          const now = String(entry.permissions || '').replace(/^0+/, '') || '644';
+          const mode = await this.askFor({
+            icon: '🔒', title: T('Change permissions'), subject: entry.name,
+            label: T('New permissions, in the usual numbers (for example 0755)'), value: now,
+          });
+          if (!mode) return;
+          if (!/^[0-7]{3,4}$/.test(mode.trim())) { this.note(T('That is not a permission number.')); return; }
+          extra = mode.trim();
+        } else if (action === 'chown' || action === 'chgrp') {
+          // A name, not a number: chown takes either, and a name is what the
+          // person doing this actually knows. The far end refuses anything it
+          // does not recognise, which is the right place for that judgement.
+          const owner = action === 'chown';
+          const who = await this.askFor({
+            icon: '👤', title: owner ? T('Change owner') : T('Change group'), subject: entry.name,
+            label: owner ? T('New owner') : T('New group'),
+            value: owner ? (entry.owner || '') : '',
+          });
+          if (!who) return;
+          extra = who.trim();
+        } else if (action === 'touch') {
+          // Nothing to ask: setting the time to now is the whole of it.
+          extra = '';
+        } else {
+          // A folder takes everything under it. The question says so, and says
+          // how much, so that pressing Delete on a name is never a surprise.
+          // The count is read first: if the folder cannot be read, nothing is
+          // deleted rather than deleted blind.
+          let inside = 0;
+          if (action === 'rmdir') {
+            const held = await this.guarded('fileact', () => api('files/list?' + this.listQuery(path)));
+            if (!held) return;
+            inside = (held.entries || []).length;
+          }
+          const says = [T('Delete {name} from the server?', { name: entry.name })];
+          if (inside > 0) says.push(T('Everything inside it goes too: {n} items.', { n: inside }));
+          says.push(T('This cannot be undone.'));
+          if (!await this.askFor({
+            icon: '🗑️', title: T('Delete'), subject: entry.name, input: false, danger: true,
+            body: says.join(' '), confirm: T('Delete'),
+          })) {
+            return;
+          }
         }
         const r = await this.guarded('fileact', () => api('files/manage', { method: 'POST', body: JSON.stringify(this.fileTarget({ action, path, extra })) }));
         if (r) this.browse(this.filesData.path);
@@ -4213,8 +6752,10 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
 
       // ---- SSH / Telnet / NTP ----
       async runSsh() {
-        this.rememberHost(this.sshHost); this.sshResult = await this.guarded('ssh', () => api('probe/ssh?' + qs({ host: this.sshHost, port: this.sshPort || 22, authMethods: this.sshAuthMethods ? 1 : 0 }))); },
-      async runTelnet() { this.telnetResult = await this.guarded('telnet', () => api('probe/telnet?' + qs({ host: this.sshHost, port: 23 }))); },
+        this.rememberHost(this.sshHostNow);
+        this.sshResult = await this.guarded('ssh', () => api('probe/ssh?' + qs({ host: this.sshHostNow, port: this.sshPortNow || 22, authMethods: this.sshAuthMethods ? 1 : 0 }))); },
+      // Telnet answers on 23 unless the reader has named a Telnet port here.
+      async runTelnet() { this.telnetResult = await this.guarded('telnet', () => api('probe/telnet?' + qs({ host: this.sshHostNow, port: this.sshAdhoc.kind === 'telnet' ? (this.sshPortNow || 23) : 23 }))); },
       async runNtp() { this.ntpResult = await this.guarded('ntp', () => api('probe/ntp?' + qs({ host: this.ntpHost }))); },
 
       dnsFlags(answer) {
@@ -4271,18 +6812,67 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
        * at anything else. A window can be pushed aside, and several can stand
        * open at once — one per device, which is how this work actually goes.
        */
-      openConsole() {
-        const conn = this.connById(this.sshConn);
-        if (!conn) { this.quickConsole(); return; }
-        const w = this.openTerminal('ssh', conn.host, conn.port || 22);
-        w.user = conn.username || '';
-        w.cwd = (conn.options && conn.options.path) || '';
-        w.conn = conn.id;
+      /**
+       * Run one line on a saved connection and show what came back.
+       *
+       * This and runSshPreset were bound to the buttons beside the command box
+       * but never existed. Vue does nothing at all for a click bound to a method
+       * it has not got — no error, no warning — so the button looked dead while
+       * the console beside it worked perfectly.
+       *
+       * The two have separate endpoints: a typed line goes to ssh/run, a chosen
+       * question to ssh/preset. They are not interchangeable — ssh/run takes no
+       * preset, and sending one there would have been a second dead button.
+       */
+      /**
+       * Whichever machine is named above, in the shape the server wants.
+       *
+       * A saved connection travels as its id and nothing else — its password
+       * stays on the server. One typed in here travels as its details, which is
+       * the same road the file transfer panel has always used.
+       */
+      sshWhere(extra) {
+        return this.sshSaved
+          ? { id: this.sshSaved.id, connection: {}, ...extra }
+          : { id: 0, connection: { ...this.sshAdhoc }, ...extra };
       },
-      /** A console for details typed here and now, without saving them first. */
-      async quickConsole() {
-        this.sshConn = 0;
+      async runSshCommand() {
+        if (!this.sshCanRun || !this.sshCommand) return;
+        this.sshRunResult = await this.guarded('sshrun', () => api('ssh/run', {
+          method: 'POST',
+          body: JSON.stringify(this.sshWhere({ command: this.sshCommand })),
+        }));
+      },
+      /** The same, for one of the ready-made questions in the list above. */
+      async runSshPreset() {
+        if (!this.sshCanRun || !this.sshPreset) return;
+        this.sshRunResult = await this.guarded('sshrun', () => api('ssh/preset', {
+          method: 'POST',
+          body: JSON.stringify(this.sshWhere({ preset: this.sshPreset })),
+        }));
+      },
+      /**
+       * A console on the machine named above.
+       *
+       * Telnet asks who you are inside the window, so it needs nothing from
+       * here; SSH signs in first, with what was saved or what was typed. The
+       * three cards became one, so there is one way to open a console now.
+       */
+      openConsoleHere() {
+        if (!this.sshHostNow) return;
+        if (this.sshSaved) {
+          const conn = this.sshSaved;
+          const w = this.openTerminal('ssh', conn.host, conn.port || 22);
+          w.user = conn.username || '';
+          w.cwd = (conn.options && conn.options.path) || '';
+          w.conn = conn.id;
+          return;
+        }
         const a = this.sshAdhoc;
+        if (a.kind === 'telnet') {
+          this.openTerminal('telnet', a.host, a.port || 23);
+          return;
+        }
         const w = this.openTerminal('ssh', a.host, a.port || 22, {
           username: a.username, authType: a.authType,
           secret: a.secret, privateKeyPath: a.privateKeyPath, passphrase: a.passphrase,
@@ -4335,7 +6925,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
               catch (e2) { this.note(T('Stopped early — {done} of {total} checked', { done: this.availProgress.done, total: this.availProgress.total })); break; }
             }
             if (r.total) this.availProgress.total = r.total;
-            const rows = (r.results || []).map((x) => ({ domain: x.fqdn, tld: x.tld, mark: x.mark, cls: cls(x.mark), note: x.note || '', whois: null }));
+            const rows = (r.results || []).map((x) => ({ domain: x.fqdn, tld: x.tld, mark: x.mark, cls: cls(x.mark), note: x.note || '', why: x.why || '', via: x.via || '', whois: null }));
             this.availResults = this.availResults.concat(rows);
             // Advance by the server's authoritative next index when it gives one,
             // so paging stays aligned even if a window returns fewer rows than its
@@ -4345,6 +6935,56 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
             if (r.done || rows.length === 0) break;
           }
         } catch (e) { this.fail(e); } finally { this.busy.avail = false; }
+      },
+      /**
+       * What the mark beside a domain actually means, in words.
+       *
+       * The check itself answers in the vocabulary of the protocol it used —
+       * "HTTP 404", "WHOIS undecided" — which says nothing to somebody looking
+       * for a domain to buy. This turns the answer into what it means for them,
+       * and says where it came from, with the technical reason kept on a second
+       * line for anyone who wants it.
+       */
+      availTitle(r) {
+        if (!r) return '';
+        const via = r.via || '';
+        const by = via === 'DNS'
+          ? T('the name servers published for it')
+          : (via ? T('the registry at {host}', { host: via }) : '');
+        const where = by ? T(' Checked against {by}.', { by }) : '';
+        let head;
+        switch (r.why) {
+          case 'free-rdap':
+          case 'free-whois':
+            head = T('Free to register: the registry has no record of this name.') + where;
+            break;
+          case 'taken-rdap':
+          case 'taken-whois':
+            head = T('Already registered.') + where + ' ' + T('Use the Whois button to see who holds it.');
+            break;
+          case 'taken-dns':
+            head = T('Already registered: the name has name servers, which only a registered domain has.');
+            break;
+          case 'maybe-free':
+            head = T('Probably free: the registry could not be reached, but the name has no name servers — a registered domain almost always has them.');
+            break;
+          case 'limited':
+            head = T('Not determined: the registry limited or refused the query. That says nothing about whether the name is free — try again in a few minutes.');
+            break;
+          case 'timeout':
+          case 'unreachable':
+            head = T('Not determined: the registry did not answer in time.') + where;
+            break;
+          case 'no-service':
+            head = T('Not determined: this ending publishes no lookup service, so it cannot be checked from here. Ask a registrar that sells it.');
+            break;
+          case 'not-checked':
+            head = T('Not checked: the search ran out of time before it reached this ending. Narrow the endings and run it again.');
+            break;
+          default:
+            head = T('Not determined.') + where;
+        }
+        return r.note ? head + '\n(' + r.note + ')' : head;
       },
       // Show a taken domain's registration in the Whois panel below (fetched on
       // demand — the availability pass does not carry the full record).
@@ -4537,10 +7177,140 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         this.liveRx.push(rx); this.liveTx.push(tx);
         if (this.liveRx.length > 60) { this.liveRx.shift(); this.liveTx.shift(); }
       },
+      /**
+       * Measure the line, and show it happening.
+       *
+       * The server reports a sample many times a second while it transfers,
+       * one JSON object to a line, so the reading is drawn as it is taken
+       * rather than appearing all at once at the end.
+       */
       async runSpeed() {
-        this.speedResult = await this.guarded('speed', () => api('bench/speedtest', {
-          method: 'POST', body: JSON.stringify({ megabytes: this.speedSize, upload: this.speedUpload }),
-        }));
+        if (this.busy.speed) return;
+        this.busy.speed = true;
+        this.speedResult = null;
+        this.speedLive = { running: true, phase: 'start', down: [], up: [] };
+        this.$nextTick(() => this.drawSpeed());
+        try {
+          const response = await fetch(BASE + 'api/bench/speedtest-live', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', requesttoken: TOKEN },
+            credentials: 'same-origin',
+            body: JSON.stringify({ megabytes: this.speedSize, upload: this.speedUpload, via: this.speedVia }),
+          });
+          if (!response.ok || !response.body) throw new Error(T('Could not connect'));
+          const reader = response.body.getReader();
+          const decoder = new TextDecoder();
+          let rest = '';
+          for (;;) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            rest += decoder.decode(value, { stream: true });
+            const lines = rest.split('\n');
+            rest = lines.pop();
+            for (const line of lines) {
+              if (!line.trim()) continue;
+              let sample = null;
+              try { sample = JSON.parse(line); } catch (e) { continue; }
+              this.takeSpeedSample(sample);
+            }
+          }
+        } catch (e) {
+          this.fail(e);
+        } finally {
+          this.speedLive.running = false;
+          this.busy.speed = false;
+        }
+      },
+      /** One reading from the measurement, as it arrives. */
+      takeSpeedSample(sample) {
+        const phase = sample && sample.phase;
+        if (phase === 'start') {
+          this.speedLive.down = [];
+          this.speedLive.up = [];
+        } else if (phase === 'down' || phase === 'up') {
+          this.speedLive[phase].push({ seconds: sample.seconds, mbps: sample.mbps });
+          this.drawSpeed();
+        } else if (phase === 'done') {
+          this.speedResult = sample;
+          this.drawSpeed();
+        } else if (phase === 'error') {
+          this.note(sample.error || T('Could not connect'));
+        }
+        // Anything else is a phase this version does not know about; ignoring
+        // it keeps an older browser working against a newer server.
+        this.speedLive.phase = phase || '';
+      },
+      /**
+       * Draw what has been measured so far.
+       *
+       * Down and up happen one after the other, so they share a single run of
+       * time with a dividing line between them: that way a slow start, a
+       * stall, or a line that fades under load is visible, which an average
+       * at the end can never show.
+       */
+      drawSpeed() {
+        const box = this.$refs.speedCanvas;
+        const canvas = Array.isArray(box) ? box[0] : box;
+        if (!canvas) return;
+        const down = this.speedLive.down;
+        const up = this.speedLive.up;
+        const width = canvas.clientWidth || 600;
+        const height = 160;
+        const ratio = Math.min(2, window.devicePixelRatio || 1);
+        canvas.width = Math.ceil(width * ratio);
+        canvas.height = Math.ceil(height * ratio);
+        canvas.style.height = height + 'px';
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+        ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+        ctx.clearRect(0, 0, width, height);
+
+        const shift = down.length ? down[down.length - 1].seconds : 0;
+        const every = [...down.map((s) => ({ x: s.seconds, y: s.mbps })), ...up.map((s) => ({ x: shift + s.seconds, y: s.mbps }))];
+        if (!every.length) return;
+        const maxX = Math.max(1, ...every.map((p) => p.x));
+        const maxY = Math.max(1, ...every.map((p) => p.y));
+        const left = 46;
+        const foot = 16;
+        const px = (x) => left + (width - left - 8) * (x / maxX);
+        const py = (y) => (height - foot) - (height - foot - 12) * (y / maxY);
+
+        ctx.strokeStyle = 'rgba(127,127,127,.3)';
+        ctx.lineWidth = 1;
+        for (const y of [0, maxY]) {
+          ctx.beginPath();
+          ctx.moveTo(left, py(y));
+          ctx.lineTo(width - 8, py(y));
+          ctx.stroke();
+        }
+        if (down.length && up.length) {
+          ctx.setLineDash([3, 3]);
+          ctx.beginPath();
+          ctx.moveTo(px(shift), 8);
+          ctx.lineTo(px(shift), height - foot);
+          ctx.stroke();
+          ctx.setLineDash([]);
+        }
+        const trace = (list, colour, offset) => {
+          if (!list.length) return;
+          ctx.strokeStyle = colour;
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          list.forEach((s, i) => {
+            const x = px(offset + s.seconds);
+            const y = py(s.mbps);
+            if (i) { ctx.lineTo(x, y); } else { ctx.moveTo(x, y); }
+          });
+          ctx.stroke();
+        };
+        trace(down, '#2970e2', 0);
+        trace(up, '#2e9e4f', shift);
+
+        ctx.fillStyle = 'rgba(127,127,127,.95)';
+        ctx.font = '11px ui-monospace, SFMono-Regular, Menlo, monospace';
+        ctx.fillText(Math.round(maxY) + ' Mbps', 2, py(maxY) + 4);
+        ctx.fillText('0', 2, py(0) + 4);
+        ctx.fillText(maxX.toFixed(1) + ' s', width - 42, height - 3);
       },
       async runIperf() {
         this.iperfResult = await this.guarded('iperf', () => api('bench/iperf', {
@@ -4641,7 +7411,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
       devicesAsText() {
         const rows = this.shownDevices.map((d) => [
           d.online ? '●' : '○', d.ip, d.name || '', d.mac || '', this.vendorText(d) || '',
-          this.t(TYPE_LABEL[d.type] || d.type || ''), (d.ports || []).join(' '),
+          d.type ? this.typeText(d.type) : '', (d.ports || []).join(' '),
         ].join('\t'));
         return ['status\tip\tname\tmac\tvendor\ttype\tports', ...rows].join('\n');
       },
@@ -4657,6 +7427,11 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
       /** Text onto the clipboard, whichever way this browser allows. */
       async copyText(text, said) {
         if (!text) return;
+        await this.toClipboard(text);
+        this.note(said || T('Copied'));
+      },
+      /** The clipboard alone, with nothing said about it anywhere. */
+      async toClipboard(text) {
         try {
           await navigator.clipboard.writeText(text);
         } catch (e) {
@@ -4668,7 +7443,6 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
           document.execCommand('copy');
           box.remove();
         }
-        this.note(said || T('Copied'));
       },
       async copyResult() {
         const bundle = this.resultBundle();
@@ -4689,7 +7463,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
           [T('Vendor'), this.vendorText(device)],
           [T('Reported name'), device.hostname || ''],
           [T('Workgroup'), device.workgroup || ''],
-          [T('Type'), T(this.typeLabels[device.type] || device.type || '')],
+          [T('Type'), device.type ? this.typeText(device.type) : ''],
           [T('Open ports'), (device.ports || []).join(', ')],
           [T('Found by'), (device.sources || []).join(', ')],
           [T('First seen'), stamp(device.firstSeen)],

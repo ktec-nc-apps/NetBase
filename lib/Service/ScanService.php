@@ -53,6 +53,16 @@ class ScanService {
 	 */
 	public const HEARD_FOR = 1200;
 
+	/**
+	 * The types classify() can guess. Anything else in dtype was chosen by
+	 * hand — a template no scan can guess (MANUAL_TYPES) or the user's own
+	 * words — and scans leave it alone.
+	 */
+	public const AUTO_TYPES = ['router', 'printer', 'camera', 'nas', 'pc', 'phone', 'iot', 'av', 'sbc', 'server', 'host', 'unknown'];
+
+	/** Templates the picker offers that only a person can tell apart. */
+	public const MANUAL_TYPES = ['container'];
+
 	public function __construct(
 		private DiscoveryService $discovery,
 		private OuiService $oui,
@@ -1004,7 +1014,14 @@ class ScanService {
 	 * Ports beat vendor: a Buffalo NAS and a Buffalo router share a prefix.
 	 */
 	public function classify(DeviceEntity $device): string {
-		$ports = $device->getPorts() ? array_map('intval', explode(',', (string)$device->getPorts())) : [];
+		// A type the user wrote in their own words is theirs to keep: no scan
+		// may replace it with a guess, or "Container" would turn back into
+		// "Server" the next time the device's port 22 was seen.
+		$current = (string)$device->getDtype();
+		if ($current !== '' && !in_array($current, self::AUTO_TYPES, true)) {
+			return $current;
+		}
+		$ports =$device->getPorts() ? array_map('intval', explode(',', (string)$device->getPorts())) : [];
 		$vendor = strtolower((string)$device->getVendor());
 		$name = strtolower((string)$device->getHostname() . ' ' . (string)$device->getExtra());
 		$has = static fn (int ...$p) => (bool)array_intersect($p, $ports);

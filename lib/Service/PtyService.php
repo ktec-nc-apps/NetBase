@@ -25,11 +25,17 @@ use Psr\Log\LoggerInterface;
  * and stay in its memory.
  */
 class PtyService {
-	/** Longest a single terminal may stay open, in seconds. */
-	private const LIFETIME = 7200;
+	/**
+	 * Longest a single terminal may stay open, in seconds.
+	 *
+	 * A shell left open is a shell someone else can walk up to, so these are
+	 * kept short for a tool that runs commands on the server: an hour at the
+	 * outside, and a quarter of an hour with nobody typing.
+	 */
+	private const LIFETIME = 3600;
 
 	/** Closed after this long with nothing typed and nothing said. */
-	private const IDLE = 1800;
+	private const IDLE = 900;
 
 	/** How long each read waits before going back to look for keystrokes. */
 	private const SLICE = 0.04;
@@ -48,6 +54,9 @@ class PtyService {
 
 	public function __construct(
 		private EndpointService $endpoints,
+		// What a terminal says for itself is written here, on the server, so it
+		// has to be translated here too.
+		private L10nService $l,
 		private LoggerInterface $logger,
 	) {
 	}
@@ -60,7 +69,7 @@ class PtyService {
 	public function serve(EndpointEntity $endpoint, string $userId, string $session, int $cols, int $rows, callable $emit): void {
 		$class = ProbeService::ssh2Class();
 		if ($class === null) {
-			$emit("\r\n\033[31mNo SSH library is available on this server.\033[0m\r\n");
+			$emit("\r\n\033[31m" . $this->l->t('No SSH library is available on this server.') . "\033[0m\r\n");
 			return;
 		}
 		$dir = $this->sessionDir($userId, $session, true);
@@ -81,7 +90,7 @@ class PtyService {
 
 		try {
 			if (!@$ssh->login($user, $secret)) {
-				$emit("\r\n\033[31mCould not sign in to " . $host . " as " . $user . ".\033[0m\r\n");
+				$emit("\r\n\033[31m" . $this->l->t('Could not sign in to %1$s as %2$s.', [$host, $user]) . "\033[0m\r\n");
 				return;
 			}
 		} catch (\Throwable $e) {
@@ -143,7 +152,7 @@ class PtyService {
 					return;
 				}
 				if (time() - $quiet > self::IDLE) {
-					$emit("\r\n\033[33mClosed after " . (int)(self::IDLE / 60) . " idle minutes.\033[0m\r\n");
+					$emit("\r\n\033[33m" . $this->l->t('Closed after %d idle minutes.', [(int)(self::IDLE / 60)]) . "\033[0m\r\n");
 					break;
 				}
 			}
@@ -156,6 +165,164 @@ class PtyService {
 			}
 			$this->forget($userId, $session);
 		}
+	}
+
+	/**
+	 * A terminal on THIS server, not a remote one.
+	 *
+	 * The same illusion as the SSH terminal, but there is no connection to
+	 * make: a small Python helper opens a real pseudo-terminal, runs a login
+	 * shell inside it with exactly the privileges Nextcloud already has, and
+	 * bridges it to ordinary pipes. Keystrokes go in on the helper's stdin,
+	 * what the shell draws comes back on its stdout, and the window size is
+	 * left in the session's `size` file for the helper to pick up — the same
+	 * file the SSH terminal already uses, so resize needs nothing new.
+	 *
+	 * @param callable(string): bool $emit returns false once the browser is gone
+	 */
+	public function serveLocal(string $userId, string $session, int $cols, int $rows, callable $emit, array $extraEnv = []): void {
+		if (!function_exists('proc_open')) {
+			$emit("\r\n\033[31m" . $this->l->t('proc_open() is disabled on this server, so a local shell cannot be opened.') . "\033[0m\r\n");
+			return;
+		}
+		$python = self::findPython();
+		if ($python === null) {
+			$emit("\r\n\033[31m" . $this->l->t('python3 is required for the local shell and was not found on this server.') . "\033[0m\r\n");
+			return;
+		}
+		$bridge = self::bridgePath();
+		if ($bridge === null) {
+			$emit("\r\n\033[31m" . $this->l->t('The shell helper (pty-bridge.py) is missing from the app.') . "\033[0m\r\n");
+			return;
+		}
+		$dir = $this->sessionDir($userId, $session, true);
+		if ($dir === '') {
+			$emit("\r\n\033[31m" . $this->l->t('Bad session.') . "\033[0m\r\n");
+			return;
+		}
+
+		$cols = max(20, min(500, $cols));
+		$rows = max(5, min(200, $rows));
+		@file_put_contents($dir . '/size', $cols . ' ' . $rows, LOCK_EX);
+
+		$home = (string)(getenv('HOME') ?: '/var/www');
+		$env = [
+			'TERM' => 'xterm-256color',
+			'LANG' => (string)(getenv('LANG') ?: 'C.UTF-8'),
+			'PATH' => (string)(getenv('PATH') ?: '/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'),
+			'HOME' => $home,
+			'PWD' => $home,
+		];
+		// What the account asked for — a language, and whatever else it set —
+		// wins over these defaults.
+		foreach ($extraEnv as $name => $value) {
+			if (is_string($name) && $name !== '') {
+				$env[$name] = (string)$value;
+			}
+		}
+		$descriptors = [0 => ['pipe', 'r'], 1 => ['pipe', 'w'], 2 => ['pipe', 'w']];
+		$command = [$python, $bridge, $dir . '/size', (string)$cols, (string)$rows];
+		$proc = @proc_open($command, $descriptors, $pipes, $home, $env);
+		if (!is_resource($proc)) {
+			$emit("\r\n\033[31m" . $this->l->t('Could not start a shell on this server.') . "\033[0m\r\n");
+			$this->forget($userId, $session);
+			return;
+		}
+		stream_set_blocking($pipes[1], false);
+		stream_set_blocking($pipes[2], false);
+
+		$deadline = time() + self::LIFETIME;
+		$quiet = time();
+		try {
+			while (time() < $deadline) {
+				if (file_exists($dir . '/close')) {
+					break;
+				}
+				$state = proc_get_status($proc);
+				if (!$state['running']) {
+					break;
+				}
+				$typed = $this->take($dir . '/in');
+				if ($typed !== '') {
+					@fwrite($pipes[0], $typed);
+					@fflush($pipes[0]);
+					$quiet = time();
+				}
+				$read = [$pipes[1], $pipes[2]];
+				$write = null;
+				$except = null;
+				$ready = @stream_select($read, $write, $except, 0, (int)(self::SLICE * 1000000));
+				$said = '';
+				if ($ready) {
+					foreach ($read as $stream) {
+						$chunk = fread($stream, 65536);
+						if ($chunk !== false && $chunk !== '') {
+							$said .= $chunk;
+						}
+					}
+				}
+				if ($said !== '') {
+					$quiet = time();
+					if (!$emit($said)) {
+						return;
+					}
+				} elseif (!$emit('')) {
+					return;
+				}
+				if (time() - $quiet > self::IDLE) {
+					$emit("\r\n\033[33m" . $this->l->t('Closed after %d idle minutes.', [(int)(self::IDLE / 60)]) . "\033[0m\r\n");
+					break;
+				}
+			}
+		} catch (\Throwable $e) {
+			$this->logger->debug('NetBase local terminal ended', ['exception' => $e]);
+		} finally {
+			foreach ($pipes as $pipe) {
+				if (is_resource($pipe)) {
+					@fclose($pipe);
+				}
+			}
+			// Close the keystroke pipe first (done above), then stop the helper
+			// — which sends the shell a hang-up on its way out.
+			try {
+				proc_terminate($proc, 9);
+			} catch (\Throwable) {
+			}
+			@proc_close($proc);
+			$this->forget($userId, $session);
+		}
+	}
+
+	/** Whether this server can open a local shell at all. */
+	public function localShellAvailable(): bool {
+		return function_exists('proc_open') && self::findPython() !== null && self::bridgePath() !== null;
+	}
+
+	/** The shell helper that ships with the app. */
+	private static function bridgePath(): ?string {
+		$path = realpath(__DIR__ . '/../../resources/pty-bridge.py');
+		return ($path !== false && is_file($path)) ? $path : null;
+	}
+
+	/** The python3 interpreter, found on PATH, or null if there is none. */
+	private static function findPython(): ?string {
+		foreach (['/usr/bin/python3', '/usr/local/bin/python3', '/bin/python3'] as $fixed) {
+			if (is_executable($fixed)) {
+				return $fixed;
+			}
+		}
+		$path = (string)(getenv('PATH') ?: '/usr/bin:/bin:/usr/local/bin');
+		foreach (explode(PATH_SEPARATOR, $path) as $dir) {
+			$dir = rtrim($dir, '/');
+			if ($dir === '') {
+				continue;
+			}
+			$candidate = $dir . '/python3';
+			if (is_executable($candidate)) {
+				return $candidate;
+			}
+		}
+		return null;
 	}
 
 	/** Keystrokes, on their way to a terminal already open. */

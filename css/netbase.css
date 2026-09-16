@@ -48,6 +48,27 @@
   border: 1px solid var(--border); border-radius: 10px; padding: 9px 12px; min-height: 40px; width: 100%;
 }
 #netbase-root select { height: auto; }
+/* A box for a number holds three or four digits, and a box the width of the
+   panel says it expects a sentence. Keep it the size of what goes in it. */
+#netbase-root input[type='number'] { max-width: 9em; }
+/* The mapping of a collection's fields is a list of short choices, not a form
+   to fill in: two to a row where there is room, so eleven of them do not turn
+   the dialog into a scroll. */
+#netbase-root .map-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 0 14px; }
+#netbase-root .map-grid .fl { margin-bottom: 8px; }
+
+/* The settings drawer is a column of unrelated subjects — the language, the
+   font, the connection list — and without a break between them they read as
+   one long grey wall. A rule and a little air is all it takes to make them
+   separate things again. */
+#netbase-root .drawer-body > h3 {
+  margin: 26px 0 10px;
+  padding-top: 18px;
+  border-top: 1px solid var(--border);
+  font-size: 14.5px;
+}
+#netbase-root .drawer-body > h3:first-of-type { margin-top: 6px; padding-top: 0; border-top: 0; }
+#netbase-root .drawer-body > template + h3 { margin-top: 26px; }
 #netbase-root input:focus, #netbase-root select:focus, #netbase-root textarea:focus { outline: 2px solid var(--primary); outline-offset: -1px; }
 /* A radio had no style of its own, so it fell through to the rule for a text
    box and was drawn as one: a rounded rectangle with 12px of padding around a
@@ -95,8 +116,27 @@
 #netbase-root .nav-item.active { background: color-mix(in srgb, var(--primary) 14%, transparent); color: var(--primary); font-weight: 600; }
 /* A tool's name is how it is found: it wraps rather than being cut short,
    because what fits in English does not fit in every language. */
+/* The tools are drawn, not spelled with emoji. An emoji is a different picture
+   on every system — and on several of them a satellite dish, a card index and
+   an abacus say nothing about what the tool does. These are one set, one
+   weight, and they take the colour of the row so the chosen one turns with it. */
+#netbase-root .nav-item .ic { display: inline-flex; width: 22px; height: 22px; flex: 0 0 22px; }
+#netbase-root .nav-item .ic svg {
+  width: 22px; height: 22px;
+  fill: none; stroke: currentColor; stroke-width: 1.7;
+  stroke-linecap: round; stroke-linejoin: round;
+}
+/* A part that reads as a solid shape — the key's bow, a drive light — is filled
+   with the line colour rather than outlined at this size, where a 2px ring
+   closes up into a dot anyway. */
+#netbase-root .nav-item .ic svg .solid { fill: currentColor; stroke: none; }
 #netbase-root .nav-item .nm { flex: 1 1 auto; min-width: 0; white-space: normal; overflow-wrap: anywhere; line-height: 1.25; }
 #netbase-root .nav-item .ct { font-size: 12px; color: var(--muted); background: var(--surface-2); border-radius: 999px; padding: 1px 8px; }
+/* The rule between the network side and the lookups. It used to be an <hr>
+   inside the loop that draws the list, which cost far more than it was worth:
+   see the note in the template. It belongs to the item above it. */
+#netbase-root .nav-item.ends-group { margin-bottom: 7px; padding-bottom: 7px; border-bottom: 1px solid var(--border); border-radius: 10px 10px 0 0; }
+
 #netbase-root .sidebar-foot { padding: 9px 12px; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 6px; }
 
 #netbase-root .main { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; }
@@ -170,6 +210,14 @@
 #netbase-root .fl { display: flex; flex-direction: column; gap: 5px; margin-bottom: 12px; flex: 1 1 auto; min-width: 0; }
 #netbase-root .fl-label { font-size: 12.5px; color: var(--muted); font-weight: 600; }
 #netbase-root .fl.narrow { max-width: 200px; }
+/* Device type: a template, or "Other" with the user's own words beside it. */
+#netbase-root .type-pick { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; min-width: 0; }
+#netbase-root .type-pick select { flex: 1 1 auto; margin: 0; }
+/* "Other" turns the list into a text field in the same place, with a small
+   button inside it to go back to the list. */
+#netbase-root .type-own { position: relative; display: flex; flex: 1 1 auto; min-width: 0; }
+#netbase-root .type-own input { flex: 1 1 auto; width: 100%; min-width: 0; margin: 0; padding-right: 34px; }
+#netbase-root .type-own .type-back { position: absolute; right: 4px; top: 50%; transform: translateY(-50%); border: 0; background: transparent; min-height: 0; }
 #netbase-root .fl.narrow.pace { max-width: 260px; }
 #netbase-root .check { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; font-size: 14px; }
 
@@ -233,6 +281,11 @@
 #netbase-root .arp-code { position: relative; margin: 6px 0 12px; }
 #netbase-root .arp-code pre { background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; overflow-x: auto; font-size: 12px; white-space: pre; margin: 0; }
 #netbase-root .arp-code .arp-copy { position: absolute; top: 6px; right: 6px; background: var(--surface); }
+
+/* A recorded terminal, read back: the line that was typed, then what it said. */
+#netbase-root .log-step { border-left: 2px solid var(--border); padding-left: 10px; margin: 0 0 14px; }
+#netbase-root .log-typed { font-weight: 600; word-break: break-all; }
+#netbase-root .log-said { background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; margin: 6px 0 4px; font-size: 12px; white-space: pre-wrap; word-break: break-word; max-height: 320px; overflow: auto; }
 #netbase-root .progress-text { display: flex; font-size: 12.5px; color: var(--muted); margin-top: 6px; }
 #netbase-root .hint code { background: var(--surface-2); padding: 2px 6px; border-radius: 6px; display: inline-block; margin-top: 4px; }
 
@@ -399,6 +452,10 @@
 #netbase-root .bench-results .lbl { font-size: 12px; color: var(--muted); }
 #netbase-root .bench-results .num { font-size: 30px; font-weight: 800; line-height: 1.1; font-variant-numeric: tabular-nums; }
 #netbase-root .bench-results .unit { font-size: 12px; color: var(--muted); }
+/* The measurement as it happens, beneath the figures it ends up as. */
+#netbase-root .speed-graph { margin: 12px 0 4px; }
+#netbase-root .speed-graph-head { display: flex; align-items: center; gap: 12px; margin-bottom: 4px; }
+#netbase-root .speed-canvas { display: block; width: 100%; height: 160px; }
 #netbase-root .missing { color: var(--muted); font-size: 14px; }
 #netbase-root table.grid tbody tr.winner { background: color-mix(in srgb, var(--ok) 12%, transparent); }
 #netbase-root .waterfall { margin-top: 12px; display: flex; flex-direction: column; gap: 6px; }
@@ -421,8 +478,129 @@
 #netbase-root .sys-row .pill { flex: 0 0 auto; margin-top: 2px; }
 #netbase-root .sys-row pre.raw { margin-top: 6px; max-height: none; }
 
+/* ---------- settings dialog: four groups ----------
+   Eleven headings of equal weight in one 1,600px column read as a wall: the
+   reader cannot tell where one subject ends and the next begins, and the same
+   word — "language" — appeared twice at the same size meaning two different
+   things. The subjects are four groups now, each with a title of its own, and
+   the settings inside a group sit a level below it. The rule between groups is
+   what does the separating; the h4s inside are deliberately quiet. */
+/* Tabs, in the plain sense: a strip of them sitting on a line, the open one
+   joined to the panel below. Two rows because four names at this width do not
+   fit in one, and because a row that wraps unevenly reads worse than two even
+   ones — so the columns are fixed at two rather than left to flex.
+
+   The open tab in the upper row cannot literally touch the panel, so the join
+   is drawn where it can be seen: the tab takes the panel's own background and
+   carries the accent along its bottom edge. Nothing is left to guess. */
+#netbase-root .set-tabs {
+  display: flex; flex-wrap: wrap; gap: 0;
+  border-bottom: 2px solid var(--primary); margin: 0 0 18px;
+}
+/* One row where they fit, two where they do not: they share the width and
+   wrap only when the names cannot be read any narrower. */
+#netbase-root .set-tab {
+  flex: 1 1 auto; min-width: 0;
+  position: relative;
+  display: flex; align-items: center; justify-content: center; gap: 7px;
+  /* Darker than the panel it sits against, so a closed tab reads as closed
+     rather than as part of the page. The muted grey it had against a
+     near-white ground was too faint to tell apart at a glance. The figure is
+     measured, not guessed: at 85% the text sits at 12.1 against its own ground
+     and the two tab states differ by 1.21, where 55% gave only 1.18 and going
+     all the way to 100% buys 0.02 more. */
+  background: color-mix(in srgb, var(--border) 85%, var(--surface-2));
+  color: var(--text);
+  border: 1px solid var(--border); border-bottom: 0;
+  border-radius: 8px 8px 0 0;
+  margin: 0 -1px -1px 0;
+  padding: 10px 14px; font-size: 13.5px; font-weight: 600;
+  text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+#netbase-root .set-tab:hover {
+  background: color-mix(in srgb, var(--primary) 12%, var(--surface));
+  color: var(--primary);
+}
+/* The open one is the panel: same ground, its own colour, and the accent
+   along the join. Three differences rather than one. */
+#netbase-root .set-tab.active {
+  background: var(--surface); color: var(--primary);
+  border-color: var(--border);
+  z-index: 1;
+}
+/* The accent along the bottom edge is what says "this one is open", and it is
+   what the panel below continues from. */
+#netbase-root .set-tab.active::after {
+  content: ""; position: absolute; left: -1px; right: -1px; bottom: -2px;
+  height: 2px; background: var(--primary);
+}
+/* A kind with nowhere to keep its connections yet. A dot, because the tab has
+   to stay readable at half the dialog's width in twenty languages. */
+/* The icon sits beside the name, not above it. A span inside a flex column
+   would stack, and four stacked tabs took two rows where one would do. */
+#netbase-root .set-tab .ic { flex: 0 0 auto; font-size: 15px; line-height: 1; }
+#netbase-root .set-tab .dot-todo {
+  width: 8px; height: 8px; border-radius: 50%; background: var(--muted); flex: 0 0 auto;
+  box-shadow: 0 0 0 2px var(--surface);
+}
+#netbase-root .set-tab.active .dot-todo { background: var(--primary); }
+/* Never set up, and set up but since deleted, are different problems and
+   are worth telling apart at a glance. */
+#netbase-root .set-tab .dot-todo.gone { background: var(--danger, #dc2626); }
+/* Narrow enough that a tab would be a sliver: one to a line instead. */
+@media (max-width: 560px) {
+  #netbase-root .set-tab { flex: 1 1 100%; border-radius: 0; margin-right: 0; }
+}
+
+/* Under the tabs only one group is on screen at a time, so the rule that
+   separates one group from the next has nothing to separate. The settings
+   dialog keeps its rules, where the groups really are stacked. */
+#netbase-root .set-tabs + .set-group,
+#netbase-root .set-tabs ~ .set-group {
+  padding-top: 0; margin-top: 0; border-top: 0;
+}
+
+#netbase-root .set-group { padding-top: 22px; margin-top: 22px; border-top: 2px solid var(--border); }
+#netbase-root .set-group:first-child { padding-top: 0; margin-top: 0; border-top: 0; }
+#netbase-root .modal .drawer-body .set-group > h3 {
+  display: flex; align-items: center; gap: 8px;
+  margin: 0 0 14px; font-size: 15.5px; font-weight: 700; color: var(--text);
+}
+#netbase-root .modal .drawer-body .set-group > h3 .ic { font-size: 16px; line-height: 1; }
+/* A sub-heading needs air above it or it reads as a caption belonging to the
+   paragraph it is sitting under — which is the opposite of what it means. The
+   margin has to win against the paragraph's own bottom margin, so it is set on
+   both sides rather than left to collapse. */
+#netbase-root .modal .drawer-body .set-group h4 {
+  margin: 0 0 8px; padding-top: 22px; font-size: 12.5px; font-weight: 700;
+  color: var(--muted); letter-spacing: .02em;
+}
+/* Only the sub-heading that follows the group's own title may sit close to
+   it — everything else in the group has a paragraph above it and needs the
+   air. Keying this on "first" was wrong: the first sub-heading of a group
+   is usually the one under the title, but not always, and "Language" ended
+   up glued to the sentence above it. */
+#netbase-root .modal .drawer-body .set-group > h3 + h4 { padding-top: 4px; }
+#netbase-root .set-group .fl { margin-bottom: 4px; }
+/* An explanation is meant to be read, not squinted at. It sits under the thing
+   it explains, so it is quiet — but 12px of grey packed tight was too quiet. */
+#netbase-root .set-group p.dim { margin: 6px 0 0; font-size: 12.5px; line-height: 1.65; }
+#netbase-root .set-group p.dim + p.dim { margin-top: 4px; }
+#netbase-root .set-group .fl-row { margin-top: 12px; align-items: flex-end; }
+#netbase-root .set-group .opt { margin-top: 2px; }
+/* A setting the administrator changes for the whole server, standing among
+   settings that are only the reader's own. Saying which is which costs one
+   small label and saves a surprise. */
+#netbase-root .admin-note {
+  margin-left: 6px; padding: 1px 7px; border: 1px solid var(--border); border-radius: 999px;
+  font-size: 10.5px; font-weight: 600; color: var(--muted); white-space: nowrap;
+}
+
 /* ---------- appearance dialog ---------- */
-#netbase-root .modal.narrow { width: min(460px, 94vw); }
+/* Settings holds a good deal now — theme, language, the terminal font, the
+   shell's language and its environment — so it is given more room. The 94vw
+   keeps it inside a phone, and the rule at 720px takes over from there. */
+#netbase-root .modal.narrow { width: min(560px, 94vw); }
 #netbase-root .theme-picks { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; }
 #netbase-root .theme-pick {
   position: relative; display: flex; flex-direction: column; align-items: flex-start; gap: 4px;
@@ -537,15 +715,6 @@
 }
 #netbase-root .term-signin input { width: auto; flex: 0 1 12em; min-height: 34px; padding: 6px 10px; font-size: 13px; margin: 0; }
 
-/* A heading over a group of cards, so it is clear which of them belong
-   together and what the group is for. */
-#netbase-root .section-head {
-  font-size: 15px; font-weight: 700; margin: 22px 0 10px; display: flex;
-  align-items: baseline; gap: 10px;
-}
-#netbase-root .section-head:first-child { margin-top: 4px; }
-#netbase-root .section-head .dim { font-size: 12.5px; font-weight: 500; }
-
 /* What can be done to the device under the pointer. */
 /* The machine this is all running on, marked so it is not mistaken for a
    device somebody has to go and look at. */
@@ -559,8 +728,61 @@
 #netbase-root .badge.away { background: #f6ad3c; color: #3a2a00; border-color: #e08e10; }
 #netbase-root .badge.secondary { background: #5aa0e6; color: #06233f; border-color: #2f7dc9; }
 
+/* ---- the two panes, and the queue under them ---- */
+/* Side by side where there is room, one above the other where there is not.
+   A file manager squeezed into two 200px columns is worse than one list. */
+#netbase-root .panes { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; align-items: start; }
+@media (max-width: 1100px) {
+  #netbase-root .panes { grid-template-columns: 1fr; }
+}
+#netbase-root .pane { display: flex; flex-direction: column; min-width: 0; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+#netbase-root .pane-head {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  padding: 8px 10px; background: var(--surface-2); border-bottom: 1px solid var(--border); font-size: 13px;
+}
+#netbase-root .pane .path-bar { padding: 8px 10px; border-bottom: 1px solid var(--border); }
+/* The listing scrolls inside the pane so the two sides stay level and the
+   queue below them stays in view however long either listing is. */
+#netbase-root .pane-body { min-height: 220px; max-height: 46vh; overflow: auto; }
+#netbase-root .pane-body.over { background: color-mix(in srgb, var(--primary) 8%, transparent); }
+#netbase-root .pane-foot {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 10px; border-top: 1px solid var(--border); background: var(--surface-2);
+}
+#netbase-root .files-grid tr.picked { background: color-mix(in srgb, var(--primary) 16%, transparent); }
+
+#netbase-root .queue-card .job {
+  display: flex; align-items: center; gap: 10px; padding: 5px 0;
+  border-top: 1px solid var(--border);
+}
+#netbase-root .queue-card .job .nm { flex: 0 1 240px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; }
+#netbase-root .queue-card .job .bar {
+  flex: 1 1 auto; height: 8px; min-width: 60px; border-radius: 999px;
+  background: var(--surface-2); overflow: hidden;
+}
+#netbase-root .queue-card .job .bar .fill { display: block; height: 100%; background: var(--primary); transition: width .2s linear; }
+#netbase-root .queue-card .job .pc { flex: 0 0 auto; font-size: 12px; color: var(--muted); }
+#netbase-root .queue-card .job.done { opacity: .75; }
+
+/* A file open in its own window: the text fills it, and the only chrome is
+   what saving needs. */
+#netbase-root .text-win .text-body {
+  flex: 1 1 auto; width: 100%; min-height: 0; resize: none;
+  border: 0; border-radius: 0; padding: 10px 12px;
+  background: var(--surface); color: var(--text); font-size: 13px; line-height: 1.5;
+}
+#netbase-root .text-win .text-body:focus { outline: 2px solid var(--primary); outline-offset: -2px; }
+#netbase-root .devwin-foot {
+  display: flex; align-items: center; gap: 8px;
+  padding: 7px 10px; border-top: 1px solid var(--border); background: var(--surface-2);
+}
+
 #netbase-root .row-menu-veil { position: fixed; inset: 0; z-index: 4000; }
 #netbase-root .row-menu {
+  /* Above the veil, not under it. The veil covers the whole window to catch
+     the click that dismisses the menu, so a menu left at z-index auto sits
+     beneath it and none of its items can be pressed at all. */
+  z-index: 4001;
   position: fixed; min-width: 240px; margin: 0; padding: 6px 0; list-style: none;
   background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
   box-shadow: 0 12px 32px rgba(0,0,0,.22);
@@ -578,6 +800,27 @@
 #netbase-root .row-menu-item:hover { background: var(--surface-2); color: var(--primary); }
 #netbase-root .row-menu-rule { height: 1px; background: var(--border); margin: 5px 0; }
 #netbase-root .row-menu-none { padding: 7px 14px; font-size: 13px; color: var(--muted); }
+
+/* The remote file list. A row is a thing you act on: clicking picks it,
+   double-clicking opens a folder, and the right button offers the rest. The
+   pointer says so, and the picked row stays visible while a dialog is up. */
+#netbase-root table.grid.files-grid tbody tr { cursor: default; }
+#netbase-root table.grid.files-grid tbody tr.dir { cursor: pointer; }
+#netbase-root table.grid.files-grid tbody tr:hover { background: var(--surface-2); }
+#netbase-root table.grid.files-grid tbody tr.picked,
+#netbase-root table.grid.files-grid tbody tr.picked:hover {
+  background: color-mix(in srgb, var(--primary) 14%, var(--surface));
+}
+#netbase-root table.grid.files-grid tbody tr.picked .nm { color: var(--primary); font-weight: 600; }
+#netbase-root table.grid.files-grid tbody tr.up-row .nm { color: var(--muted); }
+#netbase-root table.grid.files-grid .nm { user-select: none; }
+#netbase-root table.grid.files-grid .c-owner { white-space: nowrap; }
+/* The sortable headings. The rule that existed was written for the device
+   list's paired column and reached nothing here. */
+#netbase-root table.grid.files-grid th .th-line { cursor: pointer; user-select: none; }
+#netbase-root table.grid.files-grid th .th-line.sorted { color: var(--primary); }
+#netbase-root table.grid.files-grid th .th-line.sorted.asc::after { content: ' ▲'; font-size: 9px; }
+#netbase-root table.grid.files-grid th .th-line.sorted.desc::after { content: ' ▼'; font-size: 9px; }
 
 #netbase-root .with-button { display: flex; gap: 8px; align-items: center; }
 #netbase-root .with-button input { flex: 1 1 auto; }
@@ -657,6 +900,56 @@
   border-bottom: 1px solid var(--border);
   background: var(--surface-2);
   overflow: hidden;
+}
+/* Everything on one row. When a window is too narrow for it, the row scrolls
+   rather than hiding a key — and the labels collapse to icons first (the
+   narrow rule on .devwin-bar .lb below). */
+#netbase-root .term-bar { flex: 0 0 auto; overflow-x: auto; overflow-y: hidden; }
+/* Meta and Ctrl stay lit while armed, so it is clear the next key carries it. */
+#netbase-root .term-bar .btn.active { background: var(--primary); border-color: var(--primary); color: #fff; }
+#netbase-root .term-bar .btn.active svg { stroke: #fff; }
+/* Meta onward, and the font, in a menu hung under its button. */
+#netbase-root .term-menu-wrap { position: relative; display: inline-flex; flex: 0 0 auto; }
+#netbase-root .term-menu-veil { position: fixed; inset: 0; z-index: 5; }
+/* Placed in the viewport, not inside the bar: the bar scrolls sideways when a
+   window is narrow, and a menu drawn inside it is clipped at the bar's edge. */
+#netbase-root .term-menu {
+	position: fixed; z-index: 6;
+	min-width: 240px; max-width: 260px; padding: 8px;
+	border: 1px solid var(--border); border-radius: 8px;
+	background: var(--surface); box-shadow: var(--shadow);
+}
+#netbase-root .term-menu-head { font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: 2px 2px 6px; }
+#netbase-root .term-menu-rule { height: 1px; background: var(--border); margin: 8px 0; }
+#netbase-root .term-menu-keys { display: flex; flex-wrap: wrap; gap: 4px; }
+#netbase-root .term-menu .btn.key.wide { min-width: 4.2em; }
+#netbase-root .term-menu .btn.active { background: var(--primary); border-color: var(--primary); color: #fff; }
+/* The shell language, with the "?" that explains how to add one. */
+#netbase-root .shell-lang-row { display: flex; align-items: center; gap: 6px; }
+#netbase-root .shell-lang-row select { flex: 1 1 auto; min-width: 0; margin: 0; }
+/* Beside a full-width field a plain icon button disappears, so this one is
+   drawn in the accent colour and given room to read as a button. */
+#netbase-root .shell-help-btn {
+	flex: 0 0 auto; width: 2.3em; min-height: 34px;
+	font-weight: 700; font-size: 15px; line-height: 1;
+	color: var(--primary); border-color: var(--primary);
+}
+#netbase-root .shell-help-btn:hover:not(:disabled) { background: var(--primary); color: #fff; }
+/* Opened from the settings dialog, so it must sit above it: every backdrop
+   otherwise shares one stacking level and the later one in the page wins. */
+#netbase-root .drawer-backdrop.over-dialog { z-index: 2100; }
+/* The prompt for the master key is asked *by* another dialog, so it has to be
+   drawn over it. It shared over-dialog's 2100 with the settings dialog, and
+   where two things share a layer the one written later in the page wins — so
+   the prompt appeared behind the very dialog that asked for it. */
+#netbase-root .drawer-backdrop.topmost { z-index: 2300; }
+/* The size sits as one control, like the zoom on a device window. */
+#netbase-root .term-sizer { display: inline-flex; align-items: center; gap: 2px; flex: 0 0 auto; }
+#netbase-root .term-size { min-width: 3.6em; text-align: center; font-size: 12.5px; font-variant-numeric: tabular-nums; }
+/* The single keys: short, fixed-width labels that stay at every window size. */
+#netbase-root .term-bar .btn.key {
+	min-width: 2.6em; justify-content: center; flex: 0 0 auto;
+	font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 }
 .devwin-bar .btn.xs { display: inline-flex; align-items: center; gap: 5px; }
 .devwin-bar .btn.xs svg { width: 13px; height: 13px; }
@@ -1012,6 +1305,16 @@
 }
 #netbase-root .term-screen .xterm { height: 100%; }
 #netbase-root .term-screen .xterm-viewport { overflow-y: auto; }
+
+/* ---------- open a shell (dialog) ---------- */
+#netbase-root .drawer.shell-modal { width: min(440px, 100%); }
+#netbase-root .shell-gate { display: flex; flex-direction: column; gap: 10px; align-items: flex-start; }
+#netbase-root .shell-gate p { margin: 0; }
+#netbase-root .shell-code-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+#netbase-root .shell-code {
+	width: 8.5em; font-size: 22px; letter-spacing: .4em; text-align: center;
+	padding: 8px 10px; margin: 0; font-variant-numeric: tabular-nums;
+}
 
 /* Free-domain search results. */
 #netbase-root .avail-list { margin-top: 10px; }

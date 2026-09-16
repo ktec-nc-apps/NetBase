@@ -48,7 +48,7 @@ class PermissionService {
 		'tls' => ['default' => self::ALL, 'label' => 'TLS and HTTP — certificates and headers', 'probes' => false],
 		'subnet' => ['default' => self::ALL, 'label' => 'Subnet calculator and MAC vendor lookup', 'probes' => false],
 		'mail' => ['default' => self::ADMIN, 'label' => 'Mail — domain policy audit, server tests and test messages', 'probes' => true],
-		'files' => ['default' => self::ADMIN, 'label' => 'FTP and SFTP — browse remote servers and move files', 'probes' => true],
+		'files' => ['default' => self::ADMIN, 'label' => 'File transfer — FTP, SFTP and SCP: browse remote servers and move files', 'probes' => true],
 		'ssh' => ['default' => self::ALL, 'label' => 'SSH and Telnet — service probes without signing in', 'probes' => true],
 		'ntp' => ['default' => self::ALL, 'label' => 'Clock check — compare this server\'s clock with a time server', 'probes' => true],
 		'sshexec' => ['default' => self::ADMIN, 'label' => 'SSH commands — run commands on a saved connection', 'probes' => true],

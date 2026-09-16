@@ -56,9 +56,9 @@ NetBase turns your Nextcloud into a network console. It finds every device on yo
 
 **What it is for.** Working out why mail is not arriving. Checking a migration before and after. Proving the anti-spoofing records are right, and that the server is not an open relay.
 
-### FTP and SFTP
+### FTP, SFTP and SCP
 
-**How it works.** SFTP uses the phpseclib copy Nextcloud already ships for its external storages; FTP uses PHP's own extension, with or without TLS. Transfers stream through a file handle in both directions, so a large file never lands in PHP's memory. Connection details are encrypted with Nextcloud's `ICrypto`, and a connection can also be typed in on the spot.
+**How it works.** SFTP and SCP use the phpseclib 3 copy NetBase carries with it — Nextcloud ships only phpseclib 2, which cannot read a modern private key; FTP uses PHP's own extension, with or without TLS. Transfers stream through a file handle in both directions, so a large file never lands in PHP's memory. A saved SSH connection can be browsed here as it stands: it is the same machine, account and key, so NetBase opens it over SFTP, or over SCP for a server that offers a shell but no SFTP subsystem. Over SCP, **Act as root** puts the listing and the file actions through `sudo` on the far end; the password is asked for on the spot, used for that one request, and kept nowhere — not in the settings, not in RegiBase, not on disk — so reloading the page asks again. Downloading and uploading are not covered by it: SCP carries the file over the same input the password would go into, so those two stay unelevated rather than appearing to work and returning nothing. Connection details live in RegiBase, sealed with your own master key, and a connection can also be typed in on the spot.
 
 **What it is for.** Pushing a configuration file to a device or a server. Collecting logs. Moving files between a remote server and your own Nextcloud folders without a laptop in the middle.
 
@@ -106,7 +106,7 @@ Two of these deserve a note.
 
 **Live throughput** is read from the kernel's own counters in `/proc/net/dev`, so it costs nothing, needs no capture privileges and cannot miss traffic. It is differentiated in the browser, which is why a timestamp travels with each sample.
 
-**The internet speed test is not a LAN test.** It measures the path to a public endpoint — by default Cloudflare's, and the interface names the host before anything is transferred. To measure the local link, use the iperf3 test: it is the only honest way to tell a slow switch port from a slow internet connection. The endpoint can be changed with `occ config:app:set netbase speedtest_down --value=...` (and `speedtest_up`).
+**The internet speed test is not a LAN test.** It measures the path to a public endpoint, and you choose which one: [M-Lab](https://www.measurementlab.net/) (the measurement behind Google's own speed test) or [Cloudflare](https://speed.cloudflare.com/). Left on *Nearest (automatic)* it uses M-Lab and falls back to Cloudflare only where M-Lab cannot be reached at all. The two are both offered because a network that reaches one may not reach the other — M-Lab needs an outbound WebSocket — and because two independent readings of the same line are worth more than one. An M-Lab measurement picks its server by asking the nearest few directly and keeping the one that answers quickest, which is not always the one M-Lab's own list puts first; latency is then timed against that same machine, so the round trip belongs to the server the throughput came from. The interface names the host and its city before anything is transferred. To measure the local link, use the iperf3 test: it is the only honest way to tell a slow switch port from a slow internet connection. **A reading is an indication, not a verdict** — it moves with the time of day and with which server answered.
 
 ## Mail
 
@@ -132,13 +132,13 @@ Two halves, deliberately separate.
 
 **Signing in** asks for the host, the port, the account, and either a password or a private key from your own Nextcloud files. A default folder for keys can be set in Settings, so the picker opens where they are kept.
 
-## Files: FTP and SFTP
+## Files: FTP, SFTP and SCP
 
 Choose a saved connection and browse it: directories, sizes, timestamps and permissions, with a path bar you can type into. Files move both ways — **to my files** copies a remote file into a folder of your Nextcloud files, and the upload field sends one of your Nextcloud files to the folder you are looking at. Folders can be created, renamed and deleted.
 
 Transfers stream through a file handle in both directions, so a large file never lands in PHP's memory, and a download never overwrites: `report.csv` becomes `report (2).csv`.
 
-FTP uses PHP's own `ext-ftp`, with or without TLS. SFTP uses the phpseclib copy Nextcloud already ships for its external-storage backends, so nothing extra is installed, and it signs in with either a password or a private key — see **Saved connections** for where the key goes.
+FTP uses PHP's own `ext-ftp`, with or without TLS. SFTP and SCP use the phpseclib 3 copy NetBase carries with it, so nothing extra is installed, and both sign in with either a password or a private key — see **Saved connections** for where the key goes. SCP is there for the server that offers SSH without the SFTP subsystem: it has no directory listing of its own, so NetBase reads one over the shell and presents it exactly as SFTP's.
 
 ## Telnet and the clock
 
@@ -146,13 +146,21 @@ FTP uses PHP's own `ext-ftp`, with or without TLS. SFTP uses the phpseclib copy 
 
 **Clock check** asks an NTP server for the time and reports the offset. A drifted clock is behind more certificate and sign-in failures than anything else, and this is the fastest way to rule it in or out.
 
+## The shell log
+
+Every line typed into a shell or an SSH window, together with what came back, can be kept — **off by default**, because a terminal log is a record of somebody working, and that is theirs to choose. Switch it on under **Settings → Terminal (shell and SSH)**.
+
+A *step* is one line you typed and the answer to that line. The answer arrives after the Return that asked for it, so a step is closed by the *next* Return, not by its own — a subtlety that is easy to get wrong and easy to test wrongly. Two limits decide what is kept: how many steps per window (5,000 by default) and how many days (counted from a window's **last** step, so a session still in use is never cut short; when the days run out, that whole session goes). Colours, cursor moves and window titles are taken out; the words are kept. A very long step is shortened from the middle, keeping both ends.
+
 ## Saved connections
 
 The mail and file tools work from saved connections: type, host, port, encryption mode, user name and credential. They belong to the account that created them — there is no shared pool, because a stored password is one person's credential, not the instance's.
 
 **Where the private key goes.** Choose *Private key* under **Sign in with** — it is offered for SSH and SFTP connections. Then either give the path of the key inside your own Nextcloud files (`Keys/id_ed25519`, the file without `.pub`), in which case the server reads it when you save and the key never passes through the browser at all, or paste the key into the box below that field. A passphrase, if the key has one, goes in the field next to the user name. OpenSSH and PEM formats are both accepted.
 
-The password (or private key, with its passphrase) is encrypted with Nextcloud's own `ICrypto` before it reaches the database, decrypted only for the length of one connection, and **never sent back to the browser**: the interface is told only that a credential exists. Saving a connection again without retyping the password keeps the stored one. Protocol conversations shown in the interface have their credential lines masked.
+Each kind of connection names its own collection and its own field assignment: SSH, SCP, FTP-and-SFTP, and mail. The screens follow that division: choosing SCP shows the SCP list, FTP and SFTP share theirs, and SSH keeps its own, so a server saved for one protocol is never offered to another that cannot speak it. SCP reuses the SSH credentials, but FTP is usually a different account on a different machine, so they are not read out of one list. Naming the same collection for several kinds is expressly allowed — SSH and SCP usually are the same list — and a kind that has not been given a collection of its own falls back to the one chosen for everything, so nothing moves until you separate it deliberately.
+
+The password (or private key, with its passphrase) is kept in RegiBase and sealed with **your own master key** — not with a secret this server holds, so nobody reading the database can open it, this server included. The key is asked for when a connection is first used, held for that browser session only, and stored nowhere: not in these settings, not on disk. A credential is **never sent back to the browser**; the interface is told only that one exists. Saving a connection again without retyping the password keeps the stored one. Protocol conversations shown in the interface have their credential lines masked.
 
 ## Requirements
 
@@ -166,7 +174,7 @@ You do not have to read this table to find out where you stand. **System informa
 |---|---|---|
 | `ext-sockets` (PHP) | Multicast discovery (WS-Discovery, SSDP) and Wake-on-LAN | Devices are still found and named over NetBIOS, mDNS and reverse DNS |
 | `ext-curl` (PHP) | Internet speed test, HTTP timing breakdown | Those two features are unavailable; nothing else changes |
-| `ext-ftp` (PHP) | Browsing FTP servers and moving files | SFTP still works — it uses the library Nextcloud already ships |
+| `ext-ftp` (PHP) | Browsing FTP servers and moving files | SFTP and SCP still work — they use the library NetBase carries with it |
 | `chromium` | **Show the page**: a device's web page rendered on the server as a picture | The web ports are still offered as links |
 | `iperf3` | LAN throughput measurement | Local link speed cannot be measured |
 | `ss` (iproute2) | The listening-sockets list | Falls back to `netstat` |
@@ -254,9 +262,9 @@ Nextcloud 用のネットワーク総合ツールです。LAN上の機器を検�
 
 **用途** ― メールが届かない原因の切り分け。サーバー移行の前後確認。なりすまし対策レコードの妥当性と、第三者中継になっていないことの確認。
 
-### FTP・SFTP
+### FTP・SFTP・SCP
 
-**仕組み** ― SFTP は Nextcloud が外部ストレージ用に同梱している phpseclib、FTP は PHP 標準の拡張（TLS の有無どちらも）。転送は双方向ともファイルハンドルで流すため、大きなファイルが PHP のメモリに載ることはありません。接続情報は Nextcloud の `ICrypto` で暗号化して保存し、その場入力での接続もできます。
+**仕組み** ― SFTP と SCP は NetBase 自身が同梱する phpseclib 3（Nextcloud 本体は phpseclib 2 のみで、今の秘密鍵を読めません）、FTP は PHP 標準の拡張（TLS の有無どちらも）。転送は双方向ともファイルハンドルで流すため、大きなファイルが PHP のメモリに載ることはありません。**保存済みの SSH 接続先は、そのままここで開けます**。同じ機器・同じアカウント・同じ鍵なので、NetBase は SFTP で開き、SFTP の副系統を持たない相手には SCP で開きます。SCP では「**root として操作する**」により、一覧とファイル操作を接続先の `sudo` を通して実行できます。パスワードはその場で尋ね、その1回のリクエストにだけ使い、**どこにも保存しません**（設定にも RegiBase にもディスクにも残しません）。画面を再読み込みすれば再び尋ねます。**ダウンロードとアップロードは対象外**です。SCP はファイル本体を、パスワードを打ち込むべき入力そのものに流すためで、この2つは昇格せず、動いたように見せて何も返さないことはしません。接続情報は RegiBase に、ご自身のマスターキーで封印して保存します。その場入力での接続もできます。
 
 **用途** ― 機器やサーバーへの設定ファイル配布。ログの回収。手元の PC を経由せずに、リモートサーバーと Nextcloud のフォルダー間でファイルを受け渡す。
 
@@ -304,7 +312,7 @@ Nextcloud 用のネットワーク総合ツールです。LAN上の機器を検�
 
 **実効スループット**は、カーネル自身のカウンター（`/proc/net/dev`）を読むだけです。負荷はなく、キャプチャ権限も不要で、取りこぼしも起きません。差分はブラウザ側で計算するため、各サンプルにはタイムスタンプが付いています。
 
-**インターネット速度テストは LAN のテストではありません。** 計測しているのは外部エンドポイント（既定は Cloudflare）までの経路であり、通信を開始する前に接続先ホスト名を画面に明示します。LAN内の実力を測るには iperf3 のテストを使ってください。遅いのがスイッチのポートなのか回線なのかを見分ける、唯一の誠実な方法です。エンドポイントは `occ config:app:set netbase speedtest_down --value=...`（および `speedtest_up`）で変更できます。
+**インターネット速度テストは LAN のテストではありません。** 計測しているのは公開サーバーまでの経路で、**どこと測るかは利用者が選べます**。[M-Lab](https://www.measurementlab.net/)（Google の速度テストが使っている計測網）と [Cloudflare](https://speed.cloudflare.com/) の2つです。「最も近いところ（自動）」のままなら M-Lab を使い、M-Lab へまったく届かないときだけ Cloudflare に切り替えます。2つとも用意しているのは、**片方に届く回線がもう片方に届くとは限らない**ため（M-Lab は外向きの WebSocket を必要とします）と、同じ回線を独立した2つの物差しで測れるほうが確かなためです。M-Lab で測る場合は候補の上位数件へ実際に接続して、**最も速く応答したものを選び**（M-Lab 自身の並び順の1位とは限りません）、遅延もその同じ機器に対して計ります。速度と遅延が別々の相手のものになることはありません。通信を開始する前に、接続先ホスト名と都市を画面に明示します。LAN内の実力を測るには iperf3 のテストを使ってください。遅いのがスイッチのポートなのか回線なのかを見分けられるのは、そちらだけです。**計測値は目安です** ― 時間帯と、どのサーバーが応答したかで動きます。
 
 ## メール
 
@@ -330,13 +338,13 @@ Nextcloud 用のネットワーク総合ツールです。LAN上の機器を検�
 
 **サインイン**では、ホスト・ポート・アカウントと、パスワードまたは Nextcloud 上の秘密鍵ファイルを指定します。鍵の既定フォルダを設定画面で決めておけば、選択画面はそこから開きます。
 
-## ファイル: FTP・SFTP
+## ファイル: FTP・SFTP・SCP
 
 保存済みの接続先を選ぶと、そのサーバーを閲覧できます。ディレクトリ・サイズ・更新日時・権限を表示し、パス欄には直接入力もできます。ファイルは双方向に移動できます。**「自分のファイルへ」** はリモートのファイルをNextcloud内のフォルダーへ取り込み、アップロード欄はNextcloud内のファイルを、いま開いているフォルダーへ送ります。フォルダーの作成・名前変更・削除にも対応します。
 
 転送は双方向ともファイルハンドル経由のストリーム処理です。大きなファイルでもPHPのメモリに載りません。またダウンロードが既存ファイルを上書きすることはなく、`report.csv` は `report (2).csv` になります。
 
-FTPはPHP標準の `ext-ftp` を使い、TLSの有無どちらにも対応します。SFTPは、Nextcloudが外部ストレージ用に同梱している phpseclib を利用するため追加導入は不要で、パスワードと秘密鍵のどちらでもサインインできます（鍵の指定方法は「接続先の保存」をご覧ください）。
+FTPはPHP標準の `ext-ftp` を使い、TLSの有無どちらにも対応します。SFTPとSCPは、NetBase自身が同梱する phpseclib 3 を利用するため追加導入は不要で、パスワードと秘密鍵のどちらでもサインインできます（鍵の置き場所は**接続先の保存**を参照）。SCPは、SSHは使えるがSFTPの副系統を持たないサーバーのためのものです。SCPには一覧の機能が無いため、NetBaseはシェル越しに一覧を読み、SFTPとまったく同じ形で表示します。**保存済みのSSH接続先も、そのままここから開けます。**
 
 ## Telnet と時刻
 
@@ -344,13 +352,21 @@ FTPはPHP標準の `ext-ftp` を使い、TLSの有無どちらにも対応しま
 
 **時刻確認** はNTPサーバーに時刻を尋ね、ずれを報告します。証明書エラーやサインイン失敗の原因として時刻ずれは最も多く、これはその可能性を最短で切り分ける手段です。
 
+## シェルのログ記録
+
+シェルやSSHのウィンドウで入力した各行と、それに返ってきた内容を残せます。**初期値は「記録しない」**です。端末の記録は人の作業の記録であり、残すかどうかはご本人が決めることだからです。**設定 → 端末（シェルとSSH）**で切り替えます。
+
+**1ステップ**は、入力した1行と、その行に対する応答です。応答は、それを求めたReturnの**後**に返ってくるため、ステップを閉じるのは**次の**Returnであって、そのステップ自身のReturnではありません。ここは取り違えやすく、検査の書き方まで誤りやすい箇所です。残す量は2つの上限で決まります。ウィンドウごとのステップ数（初期値5,000）と、日数（そのウィンドウの**最後の**記録からの日数。使用中のものが途中で消えることはなく、日数を過ぎるとそのセッションごと削除します）。色・カーソル移動・ウィンドウタイトルは取り除き、文字だけを残します。長すぎるステップは中ほどを省いて両端を残します。
+
 ## 接続先の保存
 
 メールとファイルの各ツールは、保存した接続先（種別・ホスト・ポート・暗号化方式・ユーザー名・資格情報）から動作します。接続先は作成したアカウントに属し、共有プールはありません。保存されたパスワードは組織のものではなく、その人個人の資格情報だからです。
 
 **秘密鍵の指定方法**：接続先の編集画面で「認証方式」を**秘密鍵**にしてください（SSH・SFTPの接続先で選べます）。指定方法は2通りです。ひとつは、ご自身のNextcloud内にある鍵ファイルのパスを入力する方法（例 `Keys/id_ed25519`。`.pub` が付かない方のファイル）。この場合、保存時にサーバーがファイルを読むため、鍵がブラウザーを通ることはありません。もうひとつは、その下の欄に鍵の本文を貼り付ける方法です。パスフレーズ付きの鍵は、ユーザー名の隣の欄に入力してください。OpenSSH形式・PEM形式のどちらも利用できます。
 
-パスワード（および秘密鍵とそのパスフレーズ）は、データベースへ届く前にNextcloud標準の `ICrypto` で暗号化され、復号されるのは1回の接続の間だけです。そして**ブラウザーへ返されることはありません**。画面に伝えられるのは「資格情報が保存されている」という事実だけです。パスワードを入力し直さずに接続先を保存し直した場合、保存済みのものがそのまま維持されます。画面に表示されるプロトコルのやり取りでも、資格情報の行は伏せ字になります。
+**保存先は接続先の種別ごとに分けられます** ― SSH・SCP・FTP/SFTP・メールが、それぞれ自分のコレクションと項目の割り当てを持ちます。画面のリストもこの区分に従います。SCP を選べば SCP の一覧、FTP と SFTP は共通の一覧、SSH は SSH の一覧が出るため、**ある手順のために保存した相手が、その手順を話せない別の候補として出ることはありません**。SCP は SSH の情報をそのまま使いますが、FTP はたいてい別の機器の別アカウントであり、1つの一覧から読むべきものではないためです。**複数の種別に同じコレクションを指定して構いません**（SSH と SCP はたいてい同じ一覧です）。自分のコレクションをまだ持たない種別は、全体に設定したものをそのまま読むため、意図して分けるまで何も動きません。
+
+パスワード（および秘密鍵とそのパスフレーズ）は RegiBase に保存され、**ご自身のマスターキー**で封印されます。このサーバーが持つ秘密鍵ではないため、データベースを読める者にも開けません（このサーバー自身を含みます）。マスターキーは接続を使う時点で尋ね、**そのブラウザーのセッションの間だけ**保持し、設定にもディスクにも残しません。資格情報が**ブラウザーへ返されることはありません**。画面に伝えられるのは「保存されている」という事実だけです。パスワードを入れ直さずに保存し直した場合は、保存済みのものが保たれます。画面に表示されるプロトコルのやりとりでは、資格情報の行は伏せられます。
 
 ## 動作要件
 
@@ -364,7 +380,7 @@ Nextcloud 30〜34、PHP 8.1 以降。**それ以外は不要です。** 機器�
 |---|---|---|
 | `ext-sockets`（PHP） | マルチキャスト探索（WS-Discovery・SSDP）と Wake-on-LAN | NetBIOS・mDNS・逆引きによる検出と名前解決は引き続き行えます |
 | `ext-curl`（PHP） | インターネット速度テスト、HTTPの時間内訳 | この2機能のみ利用不可。他に影響はありません |
-| `ext-ftp`（PHP） | FTPサーバーの閲覧とファイル受け渡し | SFTPはNextcloud同梱のライブラリで動作します |
+| `ext-ftp`（PHP） | FTPサーバーの閲覧とファイル受け渡し | SFTPとSCPはNetBase同梱のライブラリで動作します |
 | `chromium` | **ページを表示** ― 機器のWeb画面をサーバーで描画して画像表示 | Webポートはリンクとしては利用できます |
 | `iperf3` | LANスループット計測 | LAN内の実効速度を測れません |
 | `ss`（iproute2） | 待受ソケット一覧 | `netstat` があればそちらを使用 |

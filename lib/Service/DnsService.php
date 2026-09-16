@@ -64,7 +64,7 @@ class DnsService {
 		$name = $this->tools->validateDnsName($name);
 		$type = strtoupper($type);
 		if (!isset(self::TYPES[$type])) {
-			throw new \InvalidArgumentException('Unknown record type: ' . $type);
+			throw new \InvalidArgumentException($this->l->t('Unknown record type: %s', [$type]));
 		}
 		$server = $server !== null && $server !== '' ? $this->resolverAddress($server) : $this->systemResolver();
 		$started = microtime(true);
@@ -87,7 +87,7 @@ class DnsService {
 		$name = $this->tools->validateDnsName($name);
 		$type = strtoupper($type);
 		if (!isset(self::TYPES[$type])) {
-			throw new \InvalidArgumentException('Unknown record type: ' . $type);
+			throw new \InvalidArgumentException($this->l->t('Unknown record type: %s', [$type]));
 		}
 		$targets = [];
 		$system = $this->systemResolver();
@@ -214,7 +214,7 @@ class DnsService {
 			}
 		}
 		if ($servers === []) {
-			throw new \InvalidArgumentException('No name server found for ' . $zone);
+			throw new \InvalidArgumentException($this->l->t('No name server found for %s', [$zone]));
 		}
 
 		$results = [];

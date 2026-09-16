@@ -829,7 +829,11 @@ class MailService {
 	 * @return array<string, mixed>
 	 */
 	public function send(EndpointEntity $endpoint, string $to, string $subject, string $body, float $timeout = 20.0): array {
-		if ((string)$endpoint->getKind() !== 'smtp') {
+		// One address is one record: a mailbox account carries the server it
+		// sends through alongside the one it is read from. An SMTP-only
+		// connection is a relay with no mailbox, and sends from its own fields.
+		$kind = (string)$endpoint->getKind();
+		if (!in_array($kind, ['smtp', 'imap', 'pop3'], true)) {
 			throw new \InvalidArgumentException('Not an SMTP connection');
 		}
 		if (filter_var($to, FILTER_VALIDATE_EMAIL) === false) {
@@ -846,6 +850,19 @@ class MailService {
 		$host = (string)$endpoint->getHost();
 		$port = (int)$endpoint->getPort() ?: 587;
 		$mode = (string)$this->endpoints->option($endpoint, 'mode', 'starttls');
+		if ($kind !== 'smtp') {
+			// A mailbox account: its own host and port are where mail is read,
+			// so sending uses the outgoing server kept beside them. Left blank,
+			// one machine answers for both — a common arrangement, and the only
+			// sensible guess.
+			$mode = (string)$this->endpoints->option($endpoint, 'sendMode', 'starttls');
+			$sendHost = trim((string)$this->endpoints->option($endpoint, 'sendHost', ''));
+			if ($sendHost !== '') {
+				$host = $sendHost;
+			}
+			$sendPort = (int)$this->endpoints->option($endpoint, 'sendPort', 0);
+			$port = $sendPort > 0 ? $sendPort : $this->defaultPort('smtp', $mode);
+		}
 		$transcript = [];
 		try {
 			$stream = $this->connect($host, $port, $mode === 'tls', $timeout, $tlsInfo);
