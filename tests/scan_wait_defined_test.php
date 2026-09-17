@@ -5,7 +5,7 @@
  * sat several lines below, so every port-scan step logged
  *   "Undefined variable $wait at .../ScanService.php"
  * and computed the port budget from a null wait (0.1 → a 9× over-budget).
- * Seen in production on kida and yamafuji during the port-80 investigation.
+ * Seen in production on two customer sites during the port-80 investigation.
  *
  * Token-based so it needs nothing but PHP: it walks the tokens of stepPorts()
  * and fails if $wait is used before it is assigned in that function body.
