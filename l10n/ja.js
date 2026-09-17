@@ -1340,7 +1340,12 @@ OC.L10N.register(
         "New group": "新しいグループ",
         "Set the time to now": "更新日時を今にする",
         "Save the result": "結果を保存",
-        "Stopped": "中止しました"
+        "Stopped": "中止しました",
+        "Ping this device": "この機器に ping を送る",
+        "Again": "もう一度",
+        "Waiting for a reply…": "応答を待っています…",
+        "%s is not on a network this server is connected to, so it cannot be pinged from here.": "%s は、このサーバーが接続されていないネットワーク上にあるため、ここからは ping を送れません。",
+        "The ping command is not installed on this server, so reachability cannot be tested this way.": "このサーバーに ping コマンドが入っていないため、この方法では到達性を確かめられません。"
     },
     "nplurals=1; plural=0;"
 );

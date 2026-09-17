@@ -1340,7 +1340,12 @@ OC.L10N.register(
         "New group": "새 그룹",
         "Set the time to now": "시간을 지금으로",
         "Save the result": "결과 저장",
-        "Stopped": "중지함"
+        "Stopped": "중지함",
+        "Ping this device": "이 장치에 ping 보내기",
+        "Again": "다시",
+        "Waiting for a reply…": "응답을 기다리는 중…",
+        "%s is not on a network this server is connected to, so it cannot be pinged from here.": "%s 은(는) 이 서버가 연결되어 있지 않은 네트워크에 있으므로 여기에서 ping 을 보낼 수 없습니다.",
+        "The ping command is not installed on this server, so reachability cannot be tested this way.": "이 서버에 ping 명령이 설치되어 있지 않아 이 방법으로는 도달 여부를 확인할 수 없습니다."
     },
     "nplurals=1; plural=0;"
 );

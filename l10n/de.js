@@ -1340,7 +1340,12 @@ OC.L10N.register(
         "New group": "Neue Gruppe",
         "Set the time to now": "Zeit auf jetzt setzen",
         "Save the result": "Ergebnis speichern",
-        "Stopped": "Abgebrochen"
+        "Stopped": "Abgebrochen",
+        "Ping this device": "Dieses Gerät anpingen",
+        "Again": "Nochmal",
+        "Waiting for a reply…": "Warte auf Antwort…",
+        "%s is not on a network this server is connected to, so it cannot be pinged from here.": "%s liegt in einem Netz, mit dem dieser Server nicht verbunden ist, und kann von hier aus nicht angepingt werden.",
+        "The ping command is not installed on this server, so reachability cannot be tested this way.": "Der Befehl ping ist auf diesem Server nicht installiert, daher lässt sich die Erreichbarkeit so nicht prüfen."
     },
     "nplurals=2; plural=(n != 1);"
 );

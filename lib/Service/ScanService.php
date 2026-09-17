@@ -947,6 +947,33 @@ class ScanService {
 					$keep->setFirstSeen($other->getFirstSeen());
 					$changed = true;
 				}
+			} else {
+				// Two different MACs on one address. That is either a container
+				// which came back with a new MAC — they are handed out afresh on
+				// every start — or an address passed to another machine. Nothing
+				// on the wire tells the two apart, so the compromise is to drop
+				// everything the old machine said about itself (its ports, its
+				// names, its vendor, its history) with its row, and to carry
+				// across only what a person typed: the name they gave it, their
+				// notes and tags, and a type they chose by hand.
+				//
+				// A guessed type is deliberately left behind. "Printer" was the
+				// scan's opinion of the departed machine and says nothing about
+				// whatever holds the address now; the new row is classified on
+				// its own evidence. A hand-picked type is different: it is the
+				// one thing a scan can never work out for itself, and losing it
+				// on every container restart made the setting worthless.
+				if (!$keep->getLabel() && $other->getLabel()) { $keep->setLabel($other->getLabel()); $changed = true; }
+				if (!$keep->getTags() && $other->getTags()) { $keep->setTags($other->getTags()); $changed = true; }
+				if (!$keep->getNotes() && $other->getNotes()) { $keep->setNotes($other->getNotes()); $changed = true; }
+				$chosen = (string)$other->getDtype();
+				$hasOwn = (string)$keep->getDtype();
+				if ($chosen !== ''
+					&& !in_array($chosen, self::AUTO_TYPES, true)
+					&& ($hasOwn === '' || in_array($hasOwn, self::AUTO_TYPES, true))) {
+					$keep->setDtype($chosen);
+					$changed = true;
+				}
 			}
 			$this->devices->delete($other);
 		}

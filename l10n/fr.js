@@ -1340,7 +1340,12 @@ OC.L10N.register(
         "New group": "Nouveau groupe",
         "Set the time to now": "Mettre l'heure à maintenant",
         "Save the result": "Enregistrer le résultat",
-        "Stopped": "Interrompu"
+        "Stopped": "Interrompu",
+        "Ping this device": "Envoyer un ping à cet appareil",
+        "Again": "À nouveau",
+        "Waiting for a reply…": "En attente d’une réponse…",
+        "%s is not on a network this server is connected to, so it cannot be pinged from here.": "%s se trouve sur un réseau auquel ce serveur n’est pas raccordé ; impossible de lui envoyer un ping d’ici.",
+        "The ping command is not installed on this server, so reachability cannot be tested this way.": "La commande ping n’est pas installée sur ce serveur : impossible de tester l’accessibilité de cette manière."
     },
     "nplurals=2; plural=(n > 1);"
 );

@@ -1339,7 +1339,12 @@
         "New group": "กลุ่มใหม่",
         "Set the time to now": "ตั้งเวลาเป็นตอนนี้",
         "Save the result": "บันทึกผลลัพธ์",
-        "Stopped": "หยุดแล้ว"
+        "Stopped": "หยุดแล้ว",
+        "Ping this device": "ส่ง ping ไปยังอุปกรณ์นี้",
+        "Again": "อีกครั้ง",
+        "Waiting for a reply…": "กำลังรอการตอบกลับ…",
+        "%s is not on a network this server is connected to, so it cannot be pinged from here.": "%s อยู่บนเครือข่ายที่เซิร์ฟเวอร์นี้ไม่ได้เชื่อมต่ออยู่ จึงไม่สามารถส่ง ping จากที่นี่ได้",
+        "The ping command is not installed on this server, so reachability cannot be tested this way.": "เซิร์ฟเวอร์นี้ไม่ได้ติดตั้งคำสั่ง ping จึงไม่สามารถตรวจสอบการเข้าถึงด้วยวิธีนี้ได้"
     },
     "pluralForm": "nplurals=1; plural=0;"
 }

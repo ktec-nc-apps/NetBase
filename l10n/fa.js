@@ -1340,7 +1340,12 @@ OC.L10N.register(
         "New group": "گروه تازه",
         "Set the time to now": "زمان را اکنون کن",
         "Save the result": "ذخیرهٔ نتیجه",
-        "Stopped": "متوقف شد"
+        "Stopped": "متوقف شد",
+        "Ping this device": "ارسال ping به این دستگاه",
+        "Again": "دوباره",
+        "Waiting for a reply…": "در انتظار پاسخ…",
+        "%s is not on a network this server is connected to, so it cannot be pinged from here.": "‏%s روی شبکه‌ای است که این کارساز به آن متصل نیست، بنابراین از اینجا نمی‌توان به آن ping فرستاد.",
+        "The ping command is not installed on this server, so reachability cannot be tested this way.": "فرمان ping روی این کارساز نصب نیست، بنابراین دسترس‌پذیری را از این راه نمی‌توان آزمود."
     },
     "nplurals=2; plural=(n > 1);"
 );

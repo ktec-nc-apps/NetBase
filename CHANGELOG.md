@@ -2,6 +2,104 @@
 
 All notable changes to NetBase are documented here.
 
+## 0.6.1 — 2026-09-17
+
+### Added
+
+- **A device in the list can be pinged: right-click a row and ask it.** The
+  answer is the packet count, the loss and the round-trip times, kept on screen
+  until it is closed rather than fading like a notice — the numbers and their
+  caveat are worth reading twice. A result of "nothing came back" says so
+  plainly and adds that plenty of devices and firewalls ignore ping while
+  answering perfectly well on a port, because a bare 100% reads as "the device
+  is off" and often it is not. It reaches the local network and nothing beyond
+  it, in two ways at once: the request names a device by its row rather than by
+  an address, so there is no field in which to aim it at the internet, and the
+  server checks the address against its own subnets before a single packet
+  leaves. An address on no subnet of this server is refused rather than tried.
+  （**一覧の機器に ping を送れるようにした。行を右クリックするだけ。** 送信数・受信数・
+  損失率・往復時間を、消えてしまう通知ではなく**閉じるまで残る小窓**に出す。数字とその
+  読み方は二度読む価値があるため。応答がない場合は「**多くの機器やファイアウォールは
+  ping を無視しつつポートには応答する**」と添える。損失 100% だけを見せると「電源が
+  落ちている」と読めてしまうが、実際はそうでないことが多いからである。**外部には届かない**。
+  仕掛けは二重で、①要求はアドレスではなく**機器の行を指定**するため、外部を狙う入力欄が
+  そもそも無い、②サーバー側が送信前にアドレスを**自分の持つネットワークと照合**する。
+  どこにも属さないアドレスは、試さずに拒否する。）
+
+- **A machine with a foot in several networks is pinged at the address that
+  means something.** Such a machine is one row per address, shown as one
+  device, and the row menu hands over whichever row carries the name — which is
+  not chosen for being reachable. On the development server that picked the
+  container bridge over the address anyone would mean, and it could as easily
+  have picked a stale address on a network the machine no longer has, which the
+  server then refuses. The address is now chosen on its own merits: the routed
+  networks first, primary before secondary, then an address this server merely
+  has an interface on, and never one it has no interface on at all. Ties fall
+  to the lowest address, so the choice does not wander between scans.
+  （**複数のネットワークに足を持つ機器では、意味のあるアドレスに送るようにした。**
+  この種の機器はアドレスごとに別の行になり、一覧では1台として表示される。右クリックが
+  渡すのは「名前を持っている行」で、**届くかどうかで選ばれていない**。開発機では、誰もが
+  思い浮かべるアドレスではなく**コンテナ橋の側**が選ばれていた。条件次第では、その機械が
+  すでに持たないネットワークの古いアドレスが選ばれ、サーバーに拒否されて終わることも
+  あり得た。**アドレス自体の素性で選ぶ**ようにした。経路のあるネットワークを優先し
+  （主たるものを副次より先に）、次にこのサーバーが足だけ持つネットワーク、足を持たない
+  ものは**選ばない**。同順位なら小さいアドレスを採り、探索のたびに揺れないようにした。）
+
+### Fixed
+
+- **A device type you chose by hand no longer disappears when a container
+  restarts.** Reported from an all-container estate: a type changed to
+  "Container" was back to "Unknown" after the container was restarted and the
+  devices refreshed. The guard that stops a scan replacing a hand-picked type
+  with a guess was working; something else was undoing it. NetBase identifies a
+  device by its MAC address, and a container is handed a new one every time it
+  starts — podman gives it a new address as well. The machine that came back
+  was, as far as NetBase could tell, a different machine. Reproduced both ways
+  it plays out: where the address changed too, the old row survives offline
+  with its type and a new "Unknown" appears beside it; where the address stayed,
+  the old row was deleted outright and the type went with it. That deletion is
+  deliberate — when a DHCP lease passes from an old PC to a new device, the old
+  machine's name and type must not follow the address to its new occupant — and
+  a restarted container is indistinguishable from a reassigned lease from the
+  outside. So the line is drawn differently: everything the machine reported
+  about itself (its ports, its names, its vendor, its history) is still dropped
+  with its row, and what a person typed is carried across — the name they gave
+  it, their notes and tags, and a type they picked by hand. A *guessed* type is
+  still left behind, because "Printer" was the scan's opinion of the machine
+  that left and says nothing about whatever holds the address now.
+  （**手で決めた機器の種別が、コンテナの再起動で消えてしまう不具合を修正。** すべてを
+  コンテナで運用されている方からの報告で、「コンテナ」に変えた種別が、再起動して機器を
+  更新すると「不明」に戻っていた。**推測による上書きを防ぐ仕組みは正しく働いており**、
+  別のものが打ち消していた。NetBase は機器を **MAC アドレス**で見分けるが、コンテナは
+  起動のたびに新しい MAC を受け取る。podman ではアドレスまで変わる。戻ってきた機械は、
+  NetBase から見れば**別の機械**だった。起こり方は2通りあり、両方を再現した。アドレスも
+  変わる場合は、古い行が種別を保ったままオフラインで残り、隣に新しい「不明」が現れる。
+  アドレスが同じ場合は、**古い行が削除され、種別ごと消える**。この削除は意図的なもので、
+  DHCP で古い PC からアドレスが別の機器へ渡ったとき、前の機器の名前や種別を新しい
+  持ち主に引き継いではならないためである。そして**再起動したコンテナと、渡されたアドレスは
+  外から見分けがつかない**。そこで線を引き直した。機械が自分について報告したもの
+  （ポート、名前、製造元、履歴）は従来どおり古い行とともに捨て、**人が入力したものだけを
+  引き継ぐ** — 付けた名前、メモ、付箋、そして**自分で選んだ種別**。**推測された種別は
+  引き継がない**。「プリンター」は去った機械についての意見であって、いまそのアドレスを
+  持つものについては何も語らないからである。）
+
+- **The settings screen no longer answers 500 on a confined install.** Listing
+  the fonts a terminal can borrow walks the font folders, and on a confined
+  install — a snap, for one — `/usr/share/fonts` is refused outright. A folder
+  that cannot be opened *throws* rather than warns, and the `@` in front of it
+  does nothing about a thrown error, so the exception travelled out of the font
+  list, through the settings handler, and turned the whole screen into a 500.
+  The walk is now guarded, and the same refusal arriving from a folder deeper
+  in is caught too rather than only the opening of the top one. A font nobody
+  can read is not worth a broken screen: the folder is skipped instead.
+  （**限定された環境で設定画面が 500 になる不具合を修正。** 端末に貸せるフォントを
+  数えるためにフォント用のフォルダーを辿るが、限定された環境 — snap などがそうである —
+  では `/usr/share/fonts` が丸ごと拒否される。開けないフォルダーは**警告ではなく例外を
+  投げる**ため、前に付けた `@` では抑えられない。例外はフォント一覧から設定の処理まで
+  抜けていき、**画面全体が 500** になっていた。辿る処理そのものを保護し、先頭のフォルダーを
+  開くときだけでなく、**途中のフォルダーから同じ拒否が来た場合も受け止める**ようにした。
+  読めないフォント1つのために画面を壊す価値はない。そのフォルダーは飛ばす。）
+
 ## 0.6.0 — 2026-09-14
 
 **A bigger step than 0.4.3 → 0.5.0 was. Please read the first entry before you

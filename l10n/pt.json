@@ -1339,7 +1339,12 @@
         "New group": "Novo grupo",
         "Set the time to now": "Definir a hora para agora",
         "Save the result": "Guardar o resultado",
-        "Stopped": "Interrompido"
+        "Stopped": "Interrompido",
+        "Ping this device": "Fazer ping neste dispositivo",
+        "Again": "De novo",
+        "Waiting for a reply…": "À espera de resposta…",
+        "%s is not on a network this server is connected to, so it cannot be pinged from here.": "%s está numa rede à qual este servidor não está ligado, por isso não é possível fazer-lhe ping a partir daqui.",
+        "The ping command is not installed on this server, so reachability cannot be tested this way.": "O comando ping não está instalado neste servidor, por isso não é possível testar a acessibilidade desta forma."
     },
     "pluralForm": "nplurals=2; plural=(n > 1);"
 }

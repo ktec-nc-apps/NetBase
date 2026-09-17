@@ -1339,7 +1339,12 @@
         "New group": "Yeni grup",
         "Set the time to now": "Saati şimdi yap",
         "Save the result": "Sonucu kaydet",
-        "Stopped": "Durduruldu"
+        "Stopped": "Durduruldu",
+        "Ping this device": "Bu aygıta ping gönder",
+        "Again": "Yeniden",
+        "Waiting for a reply…": "Yanıt bekleniyor…",
+        "%s is not on a network this server is connected to, so it cannot be pinged from here.": "%s, bu sunucunun bağlı olmadığı bir ağda bulunuyor; buradan ping gönderilemez.",
+        "The ping command is not installed on this server, so reachability cannot be tested this way.": "Bu sunucuda ping komutu kurulu değil, bu nedenle erişilebilirlik bu yolla sınanamaz."
     },
     "pluralForm": "nplurals=2; plural=(n > 1);"
 }

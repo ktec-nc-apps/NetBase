@@ -349,6 +349,99 @@ class ToolService {
 		return ['ip' => $ip, 'name' => ($name !== false && $name !== $ip) ? $name : null];
 	}
 
+	// ---------------------------------------------------------------- reachability
+
+	/**
+	 * Ping one device on the local network and report what came back.
+	 *
+	 * This is deliberately not the general ping tool. That one takes a host —
+	 * any host, a name or an address anywhere — and it is not offered here. The
+	 * question this answers is the narrow one the device list raises: "that row
+	 * says the device is not answering; is it really gone?" So the caller
+	 * passes an address that is already in the list, and it is checked against
+	 * this server's own subnets before a single packet is sent. An address
+	 * beyond them is refused rather than pinged: NetBase does not send ICMP out
+	 * to the internet.
+	 *
+	 * NetBase is unprivileged, so this is the `ping` binary, which normally
+	 * carries cap_net_raw for exactly this purpose. Where it is missing — a
+	 * confined install may not ship it — that is reported as a plain fact
+	 * rather than as a device that failed to answer, because the two mean very
+	 * different things.
+	 *
+	 * @return array{ip: string, stats: array, findings: list<array{level: string, area: string, text: string}>, output: string, available: bool}
+	 */
+	public function pingDevice(string $ip, int $count = 4): array {
+		if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) === false) {
+			throw new \InvalidArgumentException('Not an IP address');
+		}
+		if ($this->discovery->onLinkOnly([$ip]) === []) {
+			throw new \InvalidArgumentException($this->l->t('%s is not on a network this server is connected to, so it cannot be pinged from here.', [$ip]));
+		}
+		if (!$this->exec->available('ping')) {
+			return [
+				'ip' => $ip,
+				'stats' => [],
+				'findings' => [['level' => 'warn', 'area' => 'Ping', 'text' => $this->l->t('The ping command is not installed on this server, so reachability cannot be tested this way.')]],
+				'output' => '',
+				'available' => false,
+			];
+		}
+
+		$count = max(1, min(10, $count));
+		// -n keeps a reverse lookup out of the timing, and -W is how long a
+		// single reply is waited for.
+		//
+		// There is deliberately no -w. With a deadline set, ping reads -c as
+		// "wait for this many replies until the deadline expires" rather than
+		// "send this many packets", so against a silent device it keeps sending
+		// past the count: asking for two sent four. The count on its own bounds
+		// the run — a packet a second, then one last wait — and the timeout
+		// below is the backstop if the process misbehaves.
+		$result = $this->exec->run(
+			'ping',
+			['-n', '-c', (string)$count, '-W', '1', $ip],
+			(float)($count + 5),
+		);
+
+		$stats = [];
+		if (preg_match('/(\d+) packets transmitted, (\d+) (?:packets )?received.*?([\d.]+)% packet loss/s', $result['stdout'], $m)) {
+			$stats = ['sent' => (int)$m[1], 'received' => (int)$m[2], 'loss' => (float)$m[3]];
+		}
+		if (preg_match('#min/avg/max/[a-z]+ = ([\d.]+)/([\d.]+)/([\d.]+)/([\d.]+)#', $result['stdout'], $m)) {
+			$stats += ['min' => (float)$m[1], 'avg' => (float)$m[2], 'max' => (float)$m[3], 'mdev' => (float)$m[4]];
+		}
+
+		// A bare "100% packet loss" reads as "the device is down", and often it
+		// is not: plenty of devices and firewalls ignore ping while answering
+		// perfectly well on a port. Say what the number means.
+		$findings = [];
+		$loss = $stats['loss'] ?? null;
+		if ($loss === null) {
+			$findings[] = ['level' => 'warn', 'area' => 'Ping', 'text' => $this->l->t('No answer at all — the name may not resolve, or nothing on the way let the request through.')];
+		} elseif ($loss >= 100.0) {
+			$findings[] = ['level' => 'warn', 'area' => 'Ping', 'text' => $this->l->t('Nothing came back. Many devices and firewalls ignore ping while still answering on a port, so try the TCP check before calling it offline.')];
+		} elseif ($loss > 0.0) {
+			$findings[] = ['level' => 'warn', 'area' => 'Ping', 'text' => $this->l->t('%s%% of the packets went missing. On a wired network that points at a cable or a port; on Wi-Fi, at range or interference.', [(string)$loss])];
+		} else {
+			$findings[] = ['level' => 'ok', 'area' => 'Ping', 'text' => $this->l->t('Every packet came back.')];
+		}
+		if (isset($stats['mdev']) && $stats['mdev'] > 30.0) {
+			$findings[] = ['level' => 'warn', 'area' => 'Ping', 'text' => $this->l->t('Round-trip times vary by %s ms. That much jitter is felt in calls and remote sessions.', [(string)$stats['mdev']])];
+		}
+		if (isset($stats['avg']) && $stats['avg'] > 200.0) {
+			$findings[] = ['level' => 'warn', 'area' => 'Ping', 'text' => $this->l->t('An average of %s ms is high enough to be noticeable in anything interactive.', [(string)$stats['avg']])];
+		}
+
+		return [
+			'ip' => $ip,
+			'stats' => $stats,
+			'findings' => $findings,
+			'output' => $result['stdout'] ?: $result['stderr'],
+			'available' => true,
+		];
+	}
+
 	// NETBASE-STORE-REMOVED: ping and traceroute
 // 	// ---------------------------------------------------------------- reachability
 //

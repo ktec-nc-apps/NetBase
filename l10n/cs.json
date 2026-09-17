@@ -1339,7 +1339,12 @@
         "New group": "Nová skupina",
         "Set the time to now": "Nastavit čas na teď",
         "Save the result": "Uložit výsledek",
-        "Stopped": "Zastaveno"
+        "Stopped": "Zastaveno",
+        "Ping this device": "Odeslat ping tomuto zařízení",
+        "Again": "Znovu",
+        "Waiting for a reply…": "Čekání na odpověď…",
+        "%s is not on a network this server is connected to, so it cannot be pinged from here.": "%s je v síti, ke které tento server není připojen, takže odsud na něj nelze odeslat ping.",
+        "The ping command is not installed on this server, so reachability cannot be tested this way.": "Příkaz ping není na tomto serveru nainstalován, takže dostupnost takto ověřit nelze."
     },
     "pluralForm": "nplurals=4; plural=(n == 1 && n % 1 == 0) ? 0 : (n >= 2 && n <= 4 && n % 1 == 0) ? 1: (n % 1 != 0 ) ? 2 : 3;"
 }

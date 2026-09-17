@@ -31,6 +31,10 @@ return [
 		['name' => 'api#devices', 'url' => '/api/devices', 'verb' => 'GET'],
 		['name' => 'api#updateDevice', 'url' => '/api/devices/{id}', 'verb' => 'PATCH'],
 		['name' => 'api#deleteDevice', 'url' => '/api/devices/{id}', 'verb' => 'DELETE'],
+		// Ping one device from the list. The device is named by its id, not by
+		// an address, so there is no way to aim this anywhere but at a row the
+		// list already holds — and the service refuses anything off-link.
+		['name' => 'api#pingDevice', 'url' => '/api/devices/{id}/ping', 'verb' => 'POST'],
 
 		// scanning
 		['name' => 'api#scanAdvice', 'url' => '/api/scan/advice', 'verb' => 'GET'],

@@ -64,6 +64,48 @@ sort($auto);
 $check('TYPE_LABEL templates in netbase.js match AUTO_TYPES + MANUAL_TYPES', $jsKeys === $auto, implode(',', $jsKeys));
 $check('no template is both guessed and hand-picked', array_intersect(ScanService::AUTO_TYPES, ScanService::MANUAL_TYPES) === []);
 
+// ---------------------------------------------------------------------------
+// A container that restarts comes back with a new MAC, and often a new address
+// too. Where the address is the same, the row is rebuilt under the new MAC and
+// the old one is dropped — and until this was fixed, the type went with it, so
+// "Container" reverted to "Unknown" on every restart. Reproduced with podman:
+// same address, new MAC, and the hand-picked type was gone.
+//
+// What a person typed now follows the address; what the scan guessed does not,
+// because a guess describes the machine that left, not the address.
+$source = (string)file_get_contents(__DIR__ . '/../lib/Service/ScanService.php');
+$at = strpos($source, 'private function mergeDuplicateIps');
+// The function's real end, not a guessed character count: a window measured in
+// characters silently stopped short of the branch once the comment above it
+// grew, and every check below passed on an empty string instead of failing.
+$ends = array_filter([
+	strpos($source, "\n\tprivate function ", (int)$at + 10),
+	strpos($source, "\n\tpublic function ", (int)$at + 10),
+], static fn ($p) => $p !== false);
+$merge = $at === false ? '' : substr($source, $at, ($ends === [] ? strlen($source) : min($ends)) - $at);
+$split = strpos($merge, '} else {');
+$other = $split === false ? '' : substr($merge, $split);
+$check('the branch was actually located (not an empty window)', $other !== '' && strlen($other) > 200, strlen($other) . ' chars');
+
+$check('mergeDuplicateIps has a branch for a different MAC on the same address', $split !== false);
+$check('the name a person gave it is carried across', str_contains($other, '$keep->setLabel($other->getLabel())'));
+$check('their notes are carried across', str_contains($other, '$keep->setNotes($other->getNotes())'));
+$check('their tags are carried across', str_contains($other, '$keep->setTags($other->getTags())'));
+$check('a hand-picked type is carried across', str_contains($other, '$keep->setDtype($chosen)'));
+$check(
+	'but only when it is hand-picked, never a guessed one',
+	str_contains($other, '!in_array($chosen, self::AUTO_TYPES, true)'),
+	'no AUTO_TYPES guard on the carried type'
+);
+$check(
+	'and only when the new row has no type of its own',
+	str_contains($other, 'in_array($hasOwn, self::AUTO_TYPES, true)')
+);
+// What the departed machine reported about itself must not follow the address.
+foreach (['setPorts', 'setHostname', 'setWorkgroup', 'setVendor', 'setKnown'] as $keepsOut) {
+	$check("the old machine's $keepsOut() is not carried across", !str_contains($other, '$keep->' . $keepsOut . '($other->'));
+}
+
 foreach (['lib/Service/ScanService.php', 'lib/Controller/ApiController.php'] as $file) {
 	$lint = shell_exec('php -l ' . escapeshellarg(__DIR__ . '/../' . $file) . ' 2>&1');
 	$check("$file lints clean", strpos((string)$lint, 'No syntax errors') !== false);

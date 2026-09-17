@@ -157,26 +157,40 @@ class FontService {
 			if ($root === false || !is_dir($root)) {
 				continue;
 			}
-			$walk = @new \RecursiveIteratorIterator(
-				new \RecursiveDirectoryIterator($root, \FilesystemIterator::SKIP_DOTS),
-				\RecursiveIteratorIterator::LEAVES_ONLY,
-			);
-			foreach ($walk as $item) {
-				if (count($out) >= self::LIMIT * 4) {
-					break 2;
+			// A folder that cannot be opened throws rather than warns, and `@`
+			// does nothing about a thrown error. On a confined install — a snap,
+			// for one — /usr/share/fonts is refused outright, and the exception
+			// travelled all the way out of fonts(), through getSettings(), and
+			// turned the whole settings screen into a 500. A font nobody can
+			// read is not worth a broken screen: the folder is skipped instead.
+			try {
+				$walk = new \RecursiveIteratorIterator(
+					new \RecursiveDirectoryIterator($root, \FilesystemIterator::SKIP_DOTS),
+					\RecursiveIteratorIterator::LEAVES_ONLY,
+				);
+				// The same refusal can come from a folder deeper in, one item at
+				// a time, so the walk itself is guarded too rather than only its
+				// opening.
+				$walk->setFlags(\RecursiveIteratorIterator::CATCH_GET_CHILD);
+				foreach ($walk as $item) {
+					if (count($out) >= self::LIMIT * 4) {
+						break 2;
+					}
+					if (!$item->isFile()) {
+						continue;
+					}
+					$name = $item->getFilename();
+					// Only what reads as fixed-width, since nothing here can tell.
+					if (preg_match('/mono|gothic|courier|consol|code|term/i', $name) !== 1) {
+						continue;
+					}
+					$entry = $this->entry($item->getPathname(), $this->familyFromName($name), false);
+					if ($entry !== null) {
+						$out[$entry['file']] = $entry;
+					}
 				}
-				if (!$item->isFile()) {
-					continue;
-				}
-				$name = $item->getFilename();
-				// Only what reads as fixed-width, since nothing here can tell.
-				if (preg_match('/mono|gothic|courier|consol|code|term/i', $name) !== 1) {
-					continue;
-				}
-				$entry = $this->entry($item->getPathname(), $this->familyFromName($name), false);
-				if ($entry !== null) {
-					$out[$entry['file']] = $entry;
-				}
+			} catch (\Throwable) {
+				continue;
 			}
 		}
 		return array_values($out);

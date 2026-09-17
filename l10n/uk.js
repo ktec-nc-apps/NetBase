@@ -1340,7 +1340,12 @@ OC.L10N.register(
         "New group": "Нова група",
         "Set the time to now": "Встановити поточний час",
         "Save the result": "Зберегти результат",
-        "Stopped": "Зупинено"
+        "Stopped": "Зупинено",
+        "Ping this device": "Надіслати ping цьому пристрою",
+        "Again": "Ще раз",
+        "Waiting for a reply…": "Очікування відповіді…",
+        "%s is not on a network this server is connected to, so it cannot be pinged from here.": "%s перебуває в мережі, до якої цей сервер не під’єднано, тому надіслати ping звідси неможливо.",
+        "The ping command is not installed on this server, so reachability cannot be tested this way.": "Команду ping не встановлено на цьому сервері, тому перевірити доступність у цей спосіб не вдасться."
     },
     "nplurals=4; plural=(n % 1 == 0 && n % 10 == 1 && n % 100 != 11 ? 0 : n % 1 == 0 && n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14) ? 1 : n % 1 == 0 && (n % 10 ==0 || (n % 10 >=5 && n % 10 <=9) || (n % 100 >=11 && n % 100 <=14 )) ? 2: 3);"
 );

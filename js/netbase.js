@@ -2439,6 +2439,40 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
       <button class="row-menu-item" @click="runFileMenu('delete')">{{ t('Delete') }}</button>
     </div>
 
+    <!-- ============ ping one device from the list ============ -->
+    <div v-if="pingBox.open" class="drawer-backdrop centred topmost" @click.self="pingBox.open = false">
+      <div class="modal narrow">
+        <div class="drawer-head">
+          <span class="ic big">📡</span>
+          <div>
+            <strong>{{ pingBox.device ? (pingBox.device.name || pingBox.device.ip) : '' }}</strong>
+            <div class="dim mono">{{ pingBox.device ? pingBox.device.ip : '' }}</div>
+          </div>
+        </div>
+        <div class="drawer-body">
+          <p v-if="pingBox.busy" class="dim">{{ t('Waiting for a reply…') }}</p>
+          <p v-else-if="pingBox.error" class="finding warn"><span>{{ pingBox.error }}</span></p>
+          <template v-else-if="pingBox.result">
+            <div v-for="(f,i) in (pingBox.result.findings || [])" :key="i" class="finding" :class="f.level">
+              <span class="area">{{ f.area }}</span><span>{{ f.text }}</span>
+            </div>
+            <div class="kv" v-if="pingBox.result.stats && pingBox.result.stats.sent">
+              <div><span>{{ t('Sent') }}</span><code>{{ pingBox.result.stats.sent }}</code></div>
+              <div><span>{{ t('Received') }}</span><code>{{ pingBox.result.stats.received }}</code></div>
+              <div><span>{{ t('Loss') }}</span><code>{{ pingBox.result.stats.loss }}%</code></div>
+              <div v-if="pingBox.result.stats.avg"><span>{{ t('Average') }}</span><code>{{ pingBox.result.stats.avg }} ms</code></div>
+            </div>
+            <pre class="raw" v-if="pingBox.result.output">{{ pingBox.result.output }}</pre>
+          </template>
+        </div>
+        <div class="drawer-foot">
+          <span class="spacer"></span>
+          <button class="btn sm" :disabled="pingBox.busy" @click="pingDevice(pingBox.device)">{{ t('Again') }}</button>
+          <button class="btn primary" @click="pingBox.open = false">{{ t('Close') }}</button>
+        </div>
+      </div>
+    </div>
+
     <div v-if="rowMenu.open" class="row-menu-veil" @click="rowMenu.open = false" @contextmenu.prevent="rowMenu.open = false">
       <ul class="row-menu" :style="{ left: rowMenu.x + 'px', top: rowMenu.y + 'px' }" @click.stop>
         <li class="row-menu-head">{{ rowMenu.device ? (rowMenu.device.name || rowMenu.device.ip) : '' }}</li>
@@ -2449,6 +2483,14 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         </li>
         <li v-if="!rowActions(rowMenu.device).length" class="row-menu-none">{{ t('No way in on the ports it has open') }}</li>
         <li class="row-menu-rule"></li>
+        <!-- Unlike the entries above, this does not depend on a port being
+             open: a device that answers nothing at all is exactly the one
+             worth pinging. -->
+        <li v-if="rowMenu.device && rowMenu.device.ip">
+          <button class="row-menu-item" @click="rowMenu.open = false; pingDevice(rowMenu.device)">
+            <span class="ic">📡</span>{{ t('Ping this device') }}
+          </button>
+        </li>
         <li>
           <button class="row-menu-item" @click="rowMenu.open = false; openDevice(rowMenu.device)">
             <span class="ic">📋</span>{{ t('Properties') }}
@@ -3283,6 +3325,10 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         picker: { open: false, title: '', path: '', parent: null, entries: [], foldersOnly: false, onPick: null },
         windows: [], terms: [], windowSeq: 0, windowTop: 3000, drag: null,
         rowMenu: { open: false, x: 0, y: 0, device: null },
+        // The answer to "is that row really gone?", kept on screen until it is
+        // closed: the numbers and the caveat are worth reading twice, which a
+        // notice that fades after six seconds does not allow.
+        pingBox: { open: false, device: null, busy: false, result: null, error: '' },
         preview: { open: false, url: '', src: '', loading: false, error: null, full: false },
         serverResult: null, requirements: null, sysInfo: false, themeBox: false, localeHelp: false,
         // Which part of the settings is on screen. Named rather than numbered,
@@ -4338,6 +4384,77 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
       },
       async wake(d) {
         try { await api('tools/wol', { method: 'POST', body: JSON.stringify({ mac: d.mac }) }); this.note(T('Magic packet sent to {mac}', { mac: d.mac })); } catch (e) { this.fail(e); }
+      },
+      /**
+       * Ping one device from the list.
+       *
+       * The device is named by its row id, never by an address typed here, so
+       * this can only ever reach something the list already holds — and the
+       * server refuses an address that is not on one of its own subnets.
+       */
+      /**
+       * Which of a device's addresses to ping.
+       *
+       * A machine with a foot in several networks is one row per address, shown
+       * as one device — and the row menu hands over the group's representative,
+       * which is chosen for having a name, not for being reachable. On this
+       * server that picked the container bridge (10.88.0.1) over the address
+       * anyone means (10.0.0.1), and could just as easily have picked a stale
+       * address on a network this machine no longer has, which the server then
+       * refuses.
+       *
+       * So the address is chosen on its own merits: the routed networks first,
+       * primary before secondary, then an address this server merely has an
+       * interface on (a container bridge), and never one it has no interface on
+       * at all. Ties go to the lowest address, so the answer does not wander
+       * between scans.
+       */
+      pingTarget(device) {
+        if (!device || !device.ip) return device;
+        const group = this.deviceGroups.find((g) => g.members.some((m) => m.id === device.id));
+        const members = (group ? group.members : [device]).filter((m) => m && m.ip);
+        if (members.length < 2) return device;
+
+        const value = (ip) => String(ip).split('.').reduce((n, o) => (n * 256) + Number(o), 0);
+        const onThisMachine = (ip) => {
+          const here = value(ip);
+          if (!Number.isFinite(here)) return false;
+          return this.localSubnets().some(([net, bits]) => {
+            if (!net || !Number.isFinite(bits)) return false;
+            const mask = bits === 0 ? 0 : (-1 << (32 - bits)) >>> 0;
+            return (value(net) & mask) === (here & mask);
+          });
+        };
+        // Lower is better. 0..n are the routed networks in their own order;
+        // 900 is reachable but unrouted; 999 is out of reach and never chosen.
+        const rank = (m) => {
+          const r = this.netRank(m);
+          if (r >= 0) return r;
+          return onThisMachine(m.ip) ? 900 : 999;
+        };
+        const best = members
+          .filter((m) => rank(m) < 999)
+          .sort((a, b) => (rank(a) - rank(b)) || (value(a.ip) - value(b.ip)))[0];
+        return best || device;
+      },
+      async pingDevice(device) {
+        const d = this.pingTarget(device);
+        if (!d || !d.id) return;
+        this.pingBox = { open: true, device: d, busy: true, result: null, error: '' };
+        try {
+          const r = await api('devices/' + d.id + '/ping', { method: 'POST', body: JSON.stringify({ count: 4 }) });
+          // A second click while one is in flight can land after the box was
+          // closed or pointed at another device; only the current one is shown.
+          if (this.pingBox.open && this.pingBox.device && this.pingBox.device.id === d.id) {
+            this.pingBox.result = r;
+            this.pingBox.busy = false;
+          }
+        } catch (e) {
+          if (this.pingBox.open && this.pingBox.device && this.pingBox.device.id === d.id) {
+            this.pingBox.error = String((e && e.message) || e);
+            this.pingBox.busy = false;
+          }
+        }
       },
       toolFor(tool) {
         const target = this.selected.ip;

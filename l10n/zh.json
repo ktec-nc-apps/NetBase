@@ -1339,7 +1339,12 @@
         "New group": "新的群组",
         "Set the time to now": "把时间设为现在",
         "Save the result": "保存结果",
-        "Stopped": "已中止"
+        "Stopped": "已中止",
+        "Ping this device": "向此设备发送 ping",
+        "Again": "再试一次",
+        "Waiting for a reply…": "正在等待回应…",
+        "%s is not on a network this server is connected to, so it cannot be pinged from here.": "%s 位于本服务器未连接的网络上，因此无法从这里发送 ping。",
+        "The ping command is not installed on this server, so reachability cannot be tested this way.": "本服务器上没有安装 ping 命令，因此无法用这种方式检查可达性。"
     },
     "pluralForm": "nplurals=1; plural=0;"
 }

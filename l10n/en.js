@@ -1340,7 +1340,12 @@ OC.L10N.register(
         "New group": "New group",
         "Set the time to now": "Set the time to now",
         "Save the result": "Save the result",
-        "Stopped": "Stopped"
+        "Stopped": "Stopped",
+        "Ping this device": "Ping this device",
+        "Again": "Again",
+        "Waiting for a reply…": "Waiting for a reply…",
+        "%s is not on a network this server is connected to, so it cannot be pinged from here.": "%s is not on a network this server is connected to, so it cannot be pinged from here.",
+        "The ping command is not installed on this server, so reachability cannot be tested this way.": "The ping command is not installed on this server, so reachability cannot be tested this way."
     },
     "nplurals=2; plural=(n != 1);"
 );

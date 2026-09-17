@@ -1339,7 +1339,12 @@
         "New group": "Grup baru",
         "Set the time to now": "Setel waktu ke sekarang",
         "Save the result": "Simpan hasilnya",
-        "Stopped": "Dihentikan"
+        "Stopped": "Dihentikan",
+        "Ping this device": "Ping perangkat ini",
+        "Again": "Sekali lagi",
+        "Waiting for a reply…": "Menunggu balasan…",
+        "%s is not on a network this server is connected to, so it cannot be pinged from here.": "%s berada di jaringan yang tidak terhubung dengan server ini, jadi ping tidak dapat dikirim dari sini.",
+        "The ping command is not installed on this server, so reachability cannot be tested this way.": "Perintah ping tidak terpasang di server ini, sehingga keterjangkauan tidak dapat diuji dengan cara ini."
     },
     "pluralForm": "nplurals=1; plural=0;"
 }

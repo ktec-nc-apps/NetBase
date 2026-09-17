@@ -1340,7 +1340,12 @@ OC.L10N.register(
         "New group": "Nhóm mới",
         "Set the time to now": "Đặt thời gian là bây giờ",
         "Save the result": "Lưu kết quả",
-        "Stopped": "Đã dừng"
+        "Stopped": "Đã dừng",
+        "Ping this device": "Ping thiết bị này",
+        "Again": "Lần nữa",
+        "Waiting for a reply…": "Đang chờ phản hồi…",
+        "%s is not on a network this server is connected to, so it cannot be pinged from here.": "%s nằm trên một mạng mà máy chủ này không kết nối tới, nên không thể ping từ đây.",
+        "The ping command is not installed on this server, so reachability cannot be tested this way.": "Lệnh ping chưa được cài trên máy chủ này, nên không thể kiểm tra khả năng kết nối theo cách này."
     },
     "nplurals=1; plural=0;"
 );

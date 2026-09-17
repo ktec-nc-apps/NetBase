@@ -380,6 +380,33 @@ class ApiController extends Controller {
 		}, 'scan');
 	}
 
+	/**
+	 * Ping one device in the list.
+	 *
+	 * A device is named by its row, never by an address the caller supplies, so
+	 * this cannot be aimed at anything the list does not already hold — and the
+	 * service refuses an address that is not on one of this server's own
+	 * subnets. Reading the list is the permission it takes, because this only
+	 * ever asks a question about a row already on it.
+	 */
+	#[NoAdminRequired]
+	#[UserRateLimit(limit: 60, period: 60)]
+	public function pingDevice(int $id, int $count = 4): JSONResponse {
+		return $this->guard(function () use ($id, $count) {
+			$device = $this->devices->find($id);
+			if ($device === null) {
+				throw new \InvalidArgumentException('No such device');
+			}
+			$ip = (string)$device->getIp();
+			if ($ip === '') {
+				// The menu entry is not offered for a row without an address, so
+				// this is only reached by a request made by hand.
+				throw new \InvalidArgumentException('That device has no address');
+			}
+			return $this->tools->pingDevice($ip, $count);
+		}, 'devices');
+	}
+
 	// ---------------------------------------------------------------- scanning
 
 	#[NoAdminRequired]

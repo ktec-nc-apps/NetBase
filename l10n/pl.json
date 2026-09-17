@@ -1339,7 +1339,12 @@
         "New group": "Nowa grupa",
         "Set the time to now": "Ustaw czas na teraz",
         "Save the result": "Zapisz wynik",
-        "Stopped": "Zatrzymano"
+        "Stopped": "Zatrzymano",
+        "Ping this device": "Wyślij ping do tego urządzenia",
+        "Again": "Jeszcze raz",
+        "Waiting for a reply…": "Czekanie na odpowiedź…",
+        "%s is not on a network this server is connected to, so it cannot be pinged from here.": "%s znajduje się w sieci, z którą ten serwer nie jest połączony, więc nie można stąd wysłać do niego pingu.",
+        "The ping command is not installed on this server, so reachability cannot be tested this way.": "Polecenie ping nie jest zainstalowane na tym serwerze, więc nie da się w ten sposób sprawdzić osiągalności."
     },
     "pluralForm": "nplurals=4; plural=(n==1 ? 0 : (n%10>=2 && n%10<=4) && (n%100<12 || n%100>14) ? 1 : n!=1 && (n%10>=0 && n%10<=1) || (n%10>=5 && n%10<=9) || (n%100>=12 && n%100<=14) ? 2 : 3);"
 }

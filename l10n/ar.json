@@ -1339,7 +1339,12 @@
         "New group": "المجموعة الجديدة",
         "Set the time to now": "ضبط الوقت على الآن",
         "Save the result": "حفظ النتيجة",
-        "Stopped": "أُوقف"
+        "Stopped": "أُوقف",
+        "Ping this device": "إرسال ping إلى هذا الجهاز",
+        "Again": "مرة أخرى",
+        "Waiting for a reply…": "في انتظار الرد…",
+        "%s is not on a network this server is connected to, so it cannot be pinged from here.": "‏%s موجود على شبكة غير متصل بها هذا الخادوم، لذا لا يمكن إرسال ping إليه من هنا.",
+        "The ping command is not installed on this server, so reachability cannot be tested this way.": "أمر ping غير مثبَّت على هذا الخادوم، لذا لا يمكن اختبار إمكانية الوصول بهذه الطريقة."
     },
     "pluralForm": "nplurals=6; plural=(n==0 ? 0 : n==1 ? 1 : n==2 ? 2 : n%100>=3 && n%100<=10 ? 3 : n%100>=11 && n%100<=99 ? 4 : 5);"
 }

@@ -1340,7 +1340,12 @@ OC.L10N.register(
         "New group": "नया समूह",
         "Set the time to now": "समय अभी का करें",
         "Save the result": "परिणाम सहेजें",
-        "Stopped": "रोक दिया"
+        "Stopped": "रोक दिया",
+        "Ping this device": "इस डिवाइस को ping भेजें",
+        "Again": "फिर से",
+        "Waiting for a reply…": "उत्तर की प्रतीक्षा…",
+        "%s is not on a network this server is connected to, so it cannot be pinged from here.": "%s ऐसे नेटवर्क पर है जिससे यह सर्वर जुड़ा नहीं है, इसलिए यहाँ से उसे ping नहीं भेजा जा सकता।",
+        "The ping command is not installed on this server, so reachability cannot be tested this way.": "इस सर्वर पर ping कमांड स्थापित नहीं है, इसलिए इस तरह पहुँच की जाँच नहीं की जा सकती।"
     },
     "nplurals=2; plural=(n != 1);"
 );
