@@ -515,7 +515,7 @@ class EndpointService {
 		if (!$this->ready($userId, $group)) {
 			throw new \RuntimeException('Choose a RegiBase collection for ' . self::GROUPS[$group]['label'] . ' connections first.');
 		}
-		$host = $this->tools->validateHost((string)($data['host'] ?? ''));
+		$host = $this->tools->reach((string)($data['host'] ?? ''));
 		$port = (int)($data['port'] ?? 0);
 		if ($port < 1 || $port > 65535) {
 			$port = self::KINDS[$kind]['port'];
@@ -638,7 +638,7 @@ class EndpointService {
 		$entity = new EndpointEntity();
 		$entity->setUserId($userId);
 		$entity->setKind($kind);
-		$entity->setHost($this->tools->validateHost((string)($data['host'] ?? '')));
+		$entity->setHost($this->tools->reach((string)($data['host'] ?? '')));
 		$port = (int)($data['port'] ?? 0);
 		$entity->setPort($port > 0 && $port < 65536 ? $port : self::KINDS[$kind]['port']);
 		$entity->setUsername(mb_substr(trim((string)($data['username'] ?? '')), 0, 255));

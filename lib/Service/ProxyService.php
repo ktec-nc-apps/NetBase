@@ -43,6 +43,20 @@ class ProxyService {
 		'public-key-pins', 'upgrade', 'alt-svc',
 	];
 
+	/**
+	 * The only headers of a device's answer that reach the browser. Everything else is
+	 * dropped: a header such as Service-Worker-Allowed, Clear-Site-Data or Link would act on
+	 * Nextcloud's own site, not on the device (review X2). Location is rewritten on the way.
+	 */
+	private const PASS_HEADERS = [
+		'content-type', 'content-disposition', 'content-language', 'content-range', 'accept-ranges',
+		'cache-control', 'expires', 'pragma', 'etag', 'last-modified', 'date', 'vary', 'location',
+	];
+
+	private static function passes(string $name): bool {
+		return in_array($name, self::PASS_HEADERS, true) && !in_array($name, self::DROP_HEADERS, true);
+	}
+
 	public function __construct(
 		private DiscoveryService $discovery,
 		private DeviceMapper $devices,
@@ -178,6 +192,7 @@ class ProxyService {
 
 		$curl = curl_init($url);
 		curl_setopt_array($curl, [
+			CURLOPT_RESOLVE => $this->pin($base),
 			CURLOPT_TIMEOUT => $files !== [] ? self::UPLOAD_TIMEOUT : self::TIMEOUT,
 			CURLOPT_CONNECTTIMEOUT => 8,
 			// Device interfaces almost always have a self-signed certificate,
@@ -323,9 +338,33 @@ class ProxyService {
 			curl_setopt($curl, CURLOPT_CUSTOMREQUEST, $method);
 		}
 
-		$ok = curl_exec($curl);
-		$status = $status ?: (int)curl_getinfo($curl, CURLINFO_RESPONSE_CODE);
-		$error = curl_error($curl);
+		// A fragile embedded web server (some ASUS Command Center nodes) serves a few
+		// files and then answers 500 to the rest of a page's resources, so the page
+		// comes up blank. Two eased limits, both set in the admin settings: at most N
+		// requests to one device at once, and a GET/HEAD that comes back 5xx is tried
+		// again a few times with a short wait. A 5xx is always buffered (never streamed),
+		// so nothing has reached the browser yet when it is retried.
+		$idempotent = ($method === 'GET' || $method === 'HEAD');
+		$retries = $idempotent ? $this->retryCount() : 0;
+		$slot = $this->takeDeviceSlot($base);
+		try {
+			for ($try = 0; ; $try++) {
+				$headers = [];
+				$status = 0;
+				$buffer = '';
+				$sendHeaders = null;
+				$streaming = false;
+				$ok = curl_exec($curl);
+				$status = $status ?: (int)curl_getinfo($curl, CURLINFO_RESPONSE_CODE);
+				$error = curl_error($curl);
+				if ($streaming || $status < 500 || $try >= $retries) {
+					break;
+				}
+				usleep($this->retryDelayMs() * 1000);
+			}
+		} finally {
+			$this->releaseDeviceSlot($slot);
+		}
 		$this->saveCookies($userId, $base, (array)curl_getinfo($curl, CURLINFO_COOKIELIST));
 		curl_close($curl);
 
@@ -378,9 +417,9 @@ class ProxyService {
 
 		$out = [];
 		foreach ($headers as $name => $value) {
-			if (in_array($name, self::DROP_HEADERS, true) || $name === 'set-cookie') {
-				// The jar already holds the cookie; passing it on would set one
-				// on Nextcloud's own domain.
+			if (!self::passes($name)) {
+				// set-cookie among them: the jar already holds the cookie; passing it on
+				// would set one on Nextcloud's own domain.
 				continue;
 			}
 			if ($name === 'location') {
@@ -457,7 +496,7 @@ class ProxyService {
 		$output->setHeader('HTTP/1.1 ' . $status . ' ' . (self::REASONS[$status] ?? 'Status'));
 		$output->setHttpResponseCode($status);
 		foreach ($headers as $name => $value) {
-			if (in_array($name, self::DROP_HEADERS, true) || $name === 'set-cookie') {
+			if (!self::passes($name)) {
 				continue;
 			}
 			$output->setHeader($name . ': ' . $value);
@@ -467,25 +506,110 @@ class ProxyService {
 	// ------------------------------------------------------------------ safety
 
 	/** Only this server's own networks, or a device a scan has actually seen. */
+	/** Admin setting: how many requests to one device may be in flight at once (0 = no limit). */
+	private function maxDeviceConnections(): int {
+		return max(0, min(64, (int)$this->config->getAppValue('netbase', 'proxy_max_conn', '4')));
+	}
+
+	/** Admin setting: how many times a GET/HEAD that returns 5xx is retried (0 = never). */
+	private function retryCount(): int {
+		return max(0, min(10, (int)$this->config->getAppValue('netbase', 'proxy_retries', '2')));
+	}
+
+	/** Admin setting: the wait between those retries, in milliseconds. */
+	private function retryDelayMs(): int {
+		return max(0, min(5000, (int)$this->config->getAppValue('netbase', 'proxy_retry_ms', '400')));
+	}
+
+	/**
+	 * Hold one of a device's limited connection slots before fetching, so a burst of a
+	 * page's resources does not all hit a small device server at once. Needs a shared
+	 * cache that counts; without one, nothing is limited. Returns the key to release, or
+	 * null when there is nothing to release.
+	 */
+	private function takeDeviceSlot(string $base): ?string {
+		$max = $this->maxDeviceConnections();
+		if ($max === 0) {
+			return null;
+		}
+		$cache = \OCP\Server::get(\OCP\ICacheFactory::class)->createDistributed('netbase-proxy');
+		if (!$cache instanceof \OCP\IMemcache) {
+			return null;
+		}
+		$key = 'conn_' . md5($base);
+		$until = microtime(true) + 8.0;
+		while (true) {
+			$n = $cache->inc($key);
+			if ($n === 1) {
+				$cache->set($key, 1, 60);
+			}
+			if ($n !== false && $n <= $max) {
+				return $key;
+			}
+			// over the limit: give the slot back and wait for one to free up
+			if ($n !== false) {
+				$cache->dec($key);
+			}
+			if (microtime(true) > $until) {
+				// waited long enough; take a slot and proceed rather than fail the page
+				$cache->inc($key);
+				return $key;
+			}
+			usleep(60000);
+		}
+	}
+
+	private function releaseDeviceSlot(?string $key): void {
+		if ($key === null) {
+			return;
+		}
+		$cache = \OCP\Server::get(\OCP\ICacheFactory::class)->createDistributed('netbase-proxy');
+		if ($cache instanceof \OCP\IMemcache && $cache->dec($key) === false) {
+			$cache->remove($key);
+		}
+	}
+
 	public function validateBase(string $base): string {
 		if (!preg_match('#^(https?)://([^/:]+|\[[0-9a-fA-F:]+\])(?::(\d+))?$#', rtrim($base, '/'), $m)) {
 			throw new \InvalidArgumentException('Not a valid address');
 		}
 		[$all, $scheme, $host, $port] = array_pad($m, 4, '');
 		$host = trim($host, '[]');
-		$this->tools->validateHost($host);
+		// the server itself and link-local addresses (cloud metadata) only when an administrator allowed them (review X3)
+		$this->tools->reach($host);
 		if ($port !== '' && ((int)$port < 1 || (int)$port > 65535)) {
 			throw new \InvalidArgumentException('Not a valid port');
 		}
 
-		$address = filter_var($host, FILTER_VALIDATE_IP) !== false ? $host : (string)@gethostbyname($host);
+		$address = filter_var($host, FILTER_VALIDATE_IP) !== false ? $host : (string)($this->tools->addressesOf($host)[0] ?? '');
 		if ($address === '' || filter_var($address, FILTER_VALIDATE_IP) === false) {
 			throw new \InvalidArgumentException('That name does not resolve');
 		}
 		if (!$this->isLocal($address) && $this->devices->findByIp($address) === null) {
 			throw new \RuntimeException('NetBase only opens devices on this server\'s own networks. That address is neither local nor in the device list.');
 		}
-		return $scheme . '://' . $host . ($port !== '' ? ':' . $port : '');
+		// An IPv6 literal keeps its brackets, or the address and the port run together (review X9).
+		$shown = filter_var($host, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6) !== false ? '[' . $host . ']' : $host;
+		return $scheme . '://' . $shown . ($port !== '' ? ':' . $port : '');
+	}
+
+	/**
+	 * curl is held to the address that was checked, so a name that answers differently a
+	 * moment later cannot lead the connection somewhere the check refused (review X4).
+	 * @return list<string> CURLOPT_RESOLVE entries (none for an IP literal)
+	 */
+	private function pin(string $base): array {
+		if (!preg_match('#^https?://([^/:\[\]]+)(?::(\d+))?$#', $base, $m)) {
+			return [];
+		}
+		$host = $m[1];
+		if (filter_var($host, FILTER_VALIDATE_IP) !== false) {
+			return [];
+		}
+		$port = ($m[2] ?? '') !== '' ? $m[2] : (str_starts_with($base, 'https') ? '443' : '80');
+		$ips = $this->tools->addressesOf($host);
+		$ip = $ips[0] ?? '';
+		return $ip === '' ? [] : [$host . ':' . $port . ':' . (str_contains($ip, ':') ? '[' . $ip . ']' : $ip)];
 	}
 
 	private function isLocal(string $address): bool {
@@ -713,6 +837,18 @@ class ProxyService {
 
 		$body = $this->rewriteCss($body, $prefix);
 
+		// So do the scripts written straight into a button or a link: onclick="…" and
+		// href="javascript:…" (the RICOH header's menu is made of these).
+		$body = preg_replace_callback(
+			'#(\son[a-z]+\s*=\s*)(["\'])(.*?)\2#is',
+			fn (array $m) => $m[1] . $m[2] . $this->rewriteJs($m[3]) . $m[2],
+			$body,
+		) ?? $body;
+		$body = preg_replace_callback(
+			'#(\bhref\s*=\s*)(["\'])(javascript:)(.*?)\2#is',
+			fn (array $m) => $m[1] . $m[2] . $m[3] . $this->rewriteJs($m[4]) . $m[2],
+			$body,
+		) ?? $body;
 		// Inline scripts hold the same assumptions as the files beside them.
 		$body = preg_replace_callback(
 			'#(<script\b(?![^>]*\bsrc\s*=)[^>]*>)(.*?)(</script\s*>)#is',
@@ -824,11 +960,21 @@ class ProxyService {
 		// An ASUS router's front page is a single line of exactly this:
 		// window.top.location.href = '/Main_Login.asp', which without the swap
 		// leaves the window and lands on Nextcloud's own root.
-		return preg_replace(
+		$body = preg_replace(
 			'#\blocation\s*\.\s*(href\s*=(?!=)|assign\s*\(|replace\s*\()#',
 			'__nbLoc.$1',
 			$body,
 		) ?? $body;
+
+		// The same without ".href": parent.work.location = '/web/...' is how a RICOH MFP's
+		// header moves the pane beside it, and top.location = '...' how it signs in. Left
+		// alone the address kept its leading slash, the pane was sent to Nextcloud's own
+		// root and the browser refused it (seen on a customer site, 2026-09-27). Each window carries its
+		// own __nbLoc, so another frame's is used for another frame.
+		$body = preg_replace('#\b__nbTop\s*\.\s*location\s*=(?![=>])#', '__nbTop.__nbTopLoc.href =', $body) ?? $body;
+		$body = preg_replace('#\b(?:window|document|self)\s*\.\s*location\s*=(?![=>])#', '__nbLoc.href =', $body) ?? $body;
+		$body = preg_replace('#(?<![\w$.])location\s*=(?![=>])#', '__nbLoc.href =', $body) ?? $body;
+		return preg_replace('#\.\s*location\s*=(?![=>])#', '.__nbLoc.href =', $body) ?? $body;
 	}
 
 	/** Sends script-made requests back through the proxy instead of to Nextcloud. */
@@ -972,8 +1118,21 @@ class ProxyService {
 	}
 	var escapes = { _top: 1, _parent: 1, _blank: 1 };
 	var W = __WINDOW__;
+	// url(/…) inside a style: the ASUS on/off switch paints its knob with
+	// style="background-image:url(/switcherplugin/iphone_switch.png)", written by
+	// script after the page has loaded. Left alone it was fetched from Nextcloud and the
+	// switch showed as an empty frame (reported on an RT-AC67U, 2026-09-27).
+	function fixCss(text) {
+		return String(text).replace(/url\(\s*(['"]?)([^'")]*)\1\s*\)/gi, function (all, q, u) {
+			var fixed = fix(u);
+			return fixed === u ? all : 'url(' + q + fixed + q + ')';
+		});
+	}
 	function fixMarkup(html) {
 		return String(html)
+			.replace(/(\bstyle\s*=\s*)(["'])([^"']*)\2/gi, function (all, head, q, css) {
+				return head + q + fixCss(css) + q;
+			})
 			.replace(/(\b(?:src|href|action|data|poster)\s*=\s*["'])\/(?!\/)/gi, '$1' + P + '/')
 			// A camera's login page writes its own <script src="../script/…">
 			// with document.write, and that climb eats the ticket exactly as it
@@ -1048,9 +1207,13 @@ class ProxyService {
 			set: function (value) { descriptor.set.call(this, fix(value)); }
 		});
 	});
-	var attributes = ['src', 'href', 'action', 'data', 'poster', 'target'];
+	var attributes = ['src', 'href', 'action', 'data', 'poster', 'target', 'style'];
 	function scrub(node) {
 		if (!node || node.nodeType !== 1 || !node.getAttribute) { return; }
+		if (node.tagName === 'STYLE' && node.textContent && /url\(/i.test(node.textContent)) {
+			var sheet = fixCss(node.textContent);
+			if (sheet !== node.textContent) { node.textContent = sheet; }
+		}
 		for (var i = 0; i < attributes.length; i++) {
 			var name = attributes[i];
 			var value = node.getAttribute(name);
@@ -1060,13 +1223,20 @@ class ProxyService {
 				if (escapes[value.toLowerCase()]) { node.setAttribute(name, W); }
 				continue;
 			}
+			if (name === 'style') {
+				if (/url\(/i.test(value)) {
+					var css = fixCss(value);
+					if (css !== value) { node.setAttribute('style', css); }
+				}
+				continue;
+			}
 			if (value !== fix(value)) { node.setAttribute(name, fix(value)); }
 		}
 	}
 	function sweep(root) {
 		scrub(root);
 		if (root.querySelectorAll) {
-			var found = root.querySelectorAll('[src],[href],[action],[data],[poster],[target]');
+			var found = root.querySelectorAll('[src],[href],[action],[data],[poster],[target],[style],style');
 			for (var i = 0; i < found.length; i++) { scrub(found[i]); }
 		}
 	}
@@ -1075,6 +1245,8 @@ class ProxyService {
 			for (var i = 0; i < records.length; i++) {
 				var record = records[i];
 				if (record.type === 'attributes') { scrub(record.target); continue; }
+				// a <style> whose text was replaced by script
+				if (record.target && record.target.tagName === 'STYLE') { scrub(record.target); }
 				for (var j = 0; j < record.addedNodes.length; j++) { sweep(record.addedNodes[j]); }
 			}
 		}).observe(document.documentElement, {

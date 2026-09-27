@@ -62,6 +62,15 @@ class DeviceMapper extends QBMapper {
 		return $this->findEntities($qb);
 	}
 
+	/** Rows kept without an address because what a person wrote on them is waiting for the machine to come back. */
+	public function findParked(): array {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')->from($this->getTableName())
+			->where($qb->expr()->isNull('ip'))
+			->andWhere($qb->expr()->isNotNull('hostname'));
+		return $this->findEntities($qb);
+	}
+
 	/** Addresses that appear on more than one row — duplicates to fold together. */
 	public function duplicateIps(): array {
 		$qb = $this->db->getQueryBuilder();

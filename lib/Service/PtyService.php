@@ -73,7 +73,8 @@ class PtyService {
 			return;
 		}
 		$dir = $this->sessionDir($userId, $session, true);
-		$host = (string)$endpoint->getHost();
+		// checked again where it is used: a connection may have been saved before the fence (review X3)
+		$host = \OCP\Server::get(ToolService::class)->reach((string)$endpoint->getHost());
 		$port = (int)$endpoint->getPort() ?: 22;
 		$user = (string)$endpoint->getUsername();
 

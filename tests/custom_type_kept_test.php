@@ -56,7 +56,7 @@ $check('a template type with nothing to judge by is kept', $r === 'camera', $r);
 // The picker's templates and AUTO_TYPES must be the same set.
 $js = (string)file_get_contents(__DIR__ . '/../js/netbase.js');
 preg_match('/const TYPE_LABEL = \{(.*?)\};/s', $js, $m);
-preg_match_all('/(\w+):\s*\'/', $m[1] ?? '', $keys);
+preg_match_all('/^\s*(\w+):\s*["\']/m', $m[1] ?? '', $keys);
 $jsKeys = $keys[1];
 sort($jsKeys);
 $auto = array_merge(ScanService::AUTO_TYPES, ScanService::MANUAL_TYPES);
@@ -71,8 +71,8 @@ $check('no template is both guessed and hand-picked', array_intersect(ScanServic
 // "Container" reverted to "Unknown" on every restart. Reproduced with podman:
 // same address, new MAC, and the hand-picked type was gone.
 //
-// What a person typed now follows the address; what the scan guessed does not,
-// because a guess describes the machine that left, not the address.
+// What a person typed follows the machine (by host name), not the address; what the
+// scan guessed does not follow at all, because a guess describes the machine that left.
 $source = (string)file_get_contents(__DIR__ . '/../lib/Service/ScanService.php');
 $at = strpos($source, 'private function mergeDuplicateIps');
 // The function's real end, not a guessed character count: a window measured in
@@ -88,19 +88,32 @@ $other = $split === false ? '' : substr($merge, $split);
 $check('the branch was actually located (not an empty window)', $other !== '' && strlen($other) > 200, strlen($other) . ' chars');
 
 $check('mergeDuplicateIps has a branch for a different MAC on the same address', $split !== false);
-$check('the name a person gave it is carried across', str_contains($other, '$keep->setLabel($other->getLabel())'));
-$check('their notes are carried across', str_contains($other, '$keep->setNotes($other->getNotes())'));
-$check('their tags are carried across', str_contains($other, '$keep->setTags($other->getTags())'));
-$check('a hand-picked type is carried across', str_contains($other, '$keep->setDtype($chosen)'));
+// What a person wrote is copied by carryOwn(), and only to the machine it was
+// written about: the row with the same host name (NCC #34 — when a restart shuffled
+// container addresses, the HAProxy note followed the address onto a Redis node).
+$cAt = strpos($source, 'private function carryOwn');
+$cEnd = strpos($source, "\n\t}\n", (int)$cAt);
+$carry = $cAt === false ? '' : substr($source, $cAt, (int)$cEnd - $cAt);
+$check('carryOwn() was located', strlen($carry) > 200, strlen($carry) . ' chars');
+$check('the name a person gave it is carried across', str_contains($carry, '$to->setLabel($from->getLabel())'));
+$check('their notes are carried across', str_contains($carry, '$to->setNotes($from->getNotes())'));
+$check('their tags are carried across', str_contains($carry, '$to->setTags($from->getTags())'));
+$check('a hand-picked type is carried across', str_contains($carry, '$to->setDtype($chosen)'));
 $check(
 	'but only when it is hand-picked, never a guessed one',
-	str_contains($other, '!in_array($chosen, self::AUTO_TYPES, true)'),
+	str_contains($carry, '!in_array($chosen, self::AUTO_TYPES, true)'),
 	'no AUTO_TYPES guard on the carried type'
 );
 $check(
 	'and only when the new row has no type of its own',
-	str_contains($other, 'in_array($hasOwn, self::AUTO_TYPES, true)')
+	str_contains($carry, 'in_array($hasOwn, self::AUTO_TYPES, true)')
 );
+$check('on the same address it is carried only when the host name matches', str_contains($other, '$this->sameName($keep, $other)'));
+$check('otherwise it goes to the row with that host name', str_contains($other, '$this->rowNamed('));
+$check('or is kept aside until that name turns up', str_contains($other, '$other->setIp(null)') && str_contains($source, 'private function adoptParked'));
+foreach (['setPorts', 'setHostname', 'setWorkgroup', 'setVendor', 'setKnown'] as $keepsOut) {
+	$check("carryOwn() does not copy $keepsOut()", !str_contains($carry, $keepsOut . '('));
+}
 // What the departed machine reported about itself must not follow the address.
 foreach (['setPorts', 'setHostname', 'setWorkgroup', 'setVendor', 'setKnown'] as $keepsOut) {
 	$check("the old machine's $keepsOut() is not carried across", !str_contains($other, '$keep->' . $keepsOut . '($other->'));

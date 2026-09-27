@@ -128,7 +128,12 @@ class ApiController extends Controller {
 		} catch (\InvalidArgumentException $e) {
 			return new JSONResponse(['error' => $this->say($e)], Http::STATUS_BAD_REQUEST);
 		} catch (\RuntimeException $e) {
-			return new JSONResponse(['error' => $this->say($e), 'needsKey' => $this->needsMasterKey($e)], Http::STATUS_FORBIDDEN);
+			// 403 only for an account that may not do this (or a master key that must be
+			// given first); any other refusal is 400, so the page does not take it for an
+			// expired session and send it again (review C2, A3).
+			$key = $this->needsMasterKey($e);
+			$code = ($e instanceof \OCA\NetBase\Service\ForbiddenException || $key) ? Http::STATUS_FORBIDDEN : Http::STATUS_BAD_REQUEST;
+			return new JSONResponse(['error' => $this->say($e), 'needsKey' => $key], $code);
 		} catch (\Throwable $e) {
 			$this->logger->error('NetBase: ' . $e->getMessage(), ['exception' => $e, 'app' => 'netbase']);
 			return new JSONResponse(['error' => $this->say($e)], Http::STATUS_INTERNAL_SERVER_ERROR);
@@ -214,7 +219,12 @@ class ApiController extends Controller {
 		} catch (\InvalidArgumentException $e) {
 			return new JSONResponse(['error' => $this->say($e)], Http::STATUS_BAD_REQUEST);
 		} catch (\RuntimeException $e) {
-			return new JSONResponse(['error' => $this->say($e), 'needsKey' => $this->needsMasterKey($e)], Http::STATUS_FORBIDDEN);
+			// 403 only for an account that may not do this (or a master key that must be
+			// given first); any other refusal is 400, so the page does not take it for an
+			// expired session and send it again (review C2, A3).
+			$key = $this->needsMasterKey($e);
+			$code = ($e instanceof \OCA\NetBase\Service\ForbiddenException || $key) ? Http::STATUS_FORBIDDEN : Http::STATUS_BAD_REQUEST;
+			return new JSONResponse(['error' => $this->say($e), 'needsKey' => $key], $code);
 		} catch (\Throwable $e) {
 			$this->logger->error('NetBase: ' . $e->getMessage(), ['exception' => $e, 'app' => 'netbase']);
 			return new JSONResponse(['error' => $this->say($e)], Http::STATUS_INTERNAL_SERVER_ERROR);
@@ -344,8 +354,8 @@ class ApiController extends Controller {
 	}
 
 	#[NoAdminRequired]
-	public function updateDevice(int $id, ?string $label = null, ?string $tags = null, ?string $notes = null, ?bool $known = null, ?string $dtype = null): JSONResponse {
-		return $this->guard(function () use ($id, $label, $tags, $notes, $known, $dtype) {
+	public function updateDevice(int $id, ?string $label = null, ?string $tags = null, ?string $notes = null, ?bool $known = null, ?string $dtype = null, ?string $location = null, ?string $room = null, ?string $mount = null): JSONResponse {
+		return $this->guard(function () use ($id, $label, $tags, $notes, $known, $dtype, $location, $room, $mount) {
 			$device = $this->devices->find($id);
 			if ($device === null) {
 				throw new \InvalidArgumentException('Device not found');
@@ -358,6 +368,22 @@ class ApiController extends Controller {
 			}
 			if ($notes !== null) {
 				$device->setNotes($notes !== '' ? $notes : null);
+			}
+			// Where it is: the floor or place (location), the room, and where in the room it
+			// is installed (mount). Each one line, with
+			// control characters and runs of spaces folded, to the column's 255.
+			$oneLine = fn (string $v): string => trim((string)preg_replace('/\s+/u', ' ', (string)preg_replace('/[\x00-\x1F\x7F]/u', ' ', $v)));
+			if ($location !== null) {
+				$location = $oneLine($location);
+				$device->setLocation($location !== '' ? mb_substr($location, 0, 255) : null);
+			}
+			if ($room !== null) {
+				$room = $oneLine($room);
+				$device->setRoom($room !== '' ? mb_substr($room, 0, 255) : null);
+			}
+			if ($mount !== null) {
+				$mount = $oneLine($mount);
+				$device->setMount($mount !== '' ? mb_substr($mount, 0, 255) : null);
 			}
 			if ($known !== null) {
 				$device->setKnown($known);
@@ -781,7 +807,10 @@ class ApiController extends Controller {
 			}
 			@ini_set('zlib.output_compression', '0');
 			@set_time_limit(0);
-			ignore_user_abort(false);
+			// Carry on when the browser goes: the callback then sees connection_aborted() and
+			// returns, so the finally blocks run — the shell is ended, a half-written file is
+			// removed. With false, PHP stopped mid-write and skipped all of that (review A1).
+			ignore_user_abort(true);
 			$emit = static function (array $line): bool {
 				echo json_encode($line, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) . "\n";
 				@flush();
@@ -921,7 +950,12 @@ class ApiController extends Controller {
 		} catch (\InvalidArgumentException $e) {
 			return new JSONResponse(['error' => $this->say($e)], Http::STATUS_BAD_REQUEST);
 		} catch (\RuntimeException $e) {
-			return new JSONResponse(['error' => $this->say($e), 'needsKey' => $this->needsMasterKey($e)], Http::STATUS_FORBIDDEN);
+			// 403 only for an account that may not do this (or a master key that must be
+			// given first); any other refusal is 400, so the page does not take it for an
+			// expired session and send it again (review C2, A3).
+			$key = $this->needsMasterKey($e);
+			$code = ($e instanceof \OCA\NetBase\Service\ForbiddenException || $key) ? Http::STATUS_FORBIDDEN : Http::STATUS_BAD_REQUEST;
+			return new JSONResponse(['error' => $this->say($e), 'needsKey' => $key], $code);
 		} catch (\Throwable $e) {
 			$this->logger->error('NetBase: ' . $e->getMessage(), ['exception' => $e, 'app' => 'netbase']);
 			return new JSONResponse(['error' => $this->say($e)], Http::STATUS_INTERNAL_SERVER_ERROR);
@@ -968,7 +1002,12 @@ class ApiController extends Controller {
 		} catch (\InvalidArgumentException $e) {
 			return new JSONResponse(['error' => $this->say($e)], Http::STATUS_BAD_REQUEST);
 		} catch (\RuntimeException $e) {
-			return new JSONResponse(['error' => $this->say($e), 'needsKey' => $this->needsMasterKey($e)], Http::STATUS_FORBIDDEN);
+			// 403 only for an account that may not do this (or a master key that must be
+			// given first); any other refusal is 400, so the page does not take it for an
+			// expired session and send it again (review C2, A3).
+			$key = $this->needsMasterKey($e);
+			$code = ($e instanceof \OCA\NetBase\Service\ForbiddenException || $key) ? Http::STATUS_FORBIDDEN : Http::STATUS_BAD_REQUEST;
+			return new JSONResponse(['error' => $this->say($e), 'needsKey' => $key], $code);
 		} catch (\Throwable $e) {
 			$this->logger->error('NetBase: ' . $e->getMessage(), ['exception' => $e, 'app' => 'netbase']);
 			return new JSONResponse(['error' => $this->say($e)], Http::STATUS_INTERNAL_SERVER_ERROR);
@@ -988,7 +1027,12 @@ class ApiController extends Controller {
 		} catch (\InvalidArgumentException $e) {
 			return new JSONResponse(['error' => $this->say($e)], Http::STATUS_BAD_REQUEST);
 		} catch (\RuntimeException $e) {
-			return new JSONResponse(['error' => $this->say($e), 'needsKey' => $this->needsMasterKey($e)], Http::STATUS_FORBIDDEN);
+			// 403 only for an account that may not do this (or a master key that must be
+			// given first); any other refusal is 400, so the page does not take it for an
+			// expired session and send it again (review C2, A3).
+			$key = $this->needsMasterKey($e);
+			$code = ($e instanceof \OCA\NetBase\Service\ForbiddenException || $key) ? Http::STATUS_FORBIDDEN : Http::STATUS_BAD_REQUEST;
+			return new JSONResponse(['error' => $this->say($e), 'needsKey' => $key], $code);
 		} catch (\Throwable $e) {
 			$this->logger->error('NetBase: ' . $e->getMessage(), ['exception' => $e, 'app' => 'netbase']);
 			return new JSONResponse(['error' => $this->say($e)], Http::STATUS_INTERNAL_SERVER_ERROR);
@@ -1047,7 +1091,10 @@ class ApiController extends Controller {
 			}
 			@ini_set('zlib.output_compression', '0');
 			@set_time_limit(0);
-			ignore_user_abort(false);
+			// Carry on when the browser goes: the callback then sees connection_aborted() and
+			// returns, so the finally blocks run — the shell is ended, a half-written file is
+			// removed. With false, PHP stopped mid-write and skipped all of that (review A1).
+			ignore_user_abort(true);
 			$this->pty->serve($endpoint, $uid, $session, $cols, $rows, function (string $chunk) use ($uid, $session): bool {
 				if ($chunk !== '') {
 					$this->termLog->said($uid, $session, $chunk);
@@ -1124,7 +1171,10 @@ class ApiController extends Controller {
 			}
 			@ini_set('zlib.output_compression', '0');
 			@set_time_limit(0);
-			ignore_user_abort(false);
+			// Carry on when the browser goes: the callback then sees connection_aborted() and
+			// returns, so the finally blocks run — the shell is ended, a half-written file is
+			// removed. With false, PHP stopped mid-write and skipped all of that (review A1).
+			ignore_user_abort(true);
 			$this->bench->speedTestStream($megabytes, $upload, function (array $sample): bool {
 				echo json_encode($sample, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) . "\n";
 				@flush();
@@ -1221,7 +1271,10 @@ class ApiController extends Controller {
 			}
 			@ini_set('zlib.output_compression', '0');
 			@set_time_limit(0);
-			ignore_user_abort(false);
+			// Carry on when the browser goes: the callback then sees connection_aborted() and
+			// returns, so the finally blocks run — the shell is ended, a half-written file is
+			// removed. With false, PHP stopped mid-write and skipped all of that (review A1).
+			ignore_user_abort(true);
 			$this->pty->serveLocal($uid, $session, $cols, $rows, function (string $chunk) use ($uid, $session): bool {
 				if ($chunk !== '') {
 					$this->termLog->said($uid, $session, $chunk);
@@ -1590,6 +1643,21 @@ class ApiController extends Controller {
 			}
 			if (isset($admin['maxHosts'])) {
 				$this->config->setAppValue('netbase', 'max_hosts', (string)max(256, min(1048576, (int)$admin['maxHosts'])));
+			}
+			// the server itself and link-local addresses; refused unless this is on (review X3)
+			if (isset($admin['allowSelf'])) {
+				$this->config->setAppValue('netbase', 'allow_self_targets', $admin['allowSelf'] ? 'yes' : 'no');
+			}
+			// A fragile device that returns 5xx under load: cap simultaneous connections to one
+			// device, and retry a GET/HEAD that comes back 5xx (a small device that answers 500 when a page loads all its parts at once).
+			if (isset($admin['proxyMaxConn'])) {
+				$this->config->setAppValue('netbase', 'proxy_max_conn', (string)max(0, min(64, (int)$admin['proxyMaxConn'])));
+			}
+			if (isset($admin['proxyRetries'])) {
+				$this->config->setAppValue('netbase', 'proxy_retries', (string)max(0, min(10, (int)$admin['proxyRetries'])));
+			}
+			if (isset($admin['proxyRetryMs'])) {
+				$this->config->setAppValue('netbase', 'proxy_retry_ms', (string)max(0, min(5000, (int)$admin['proxyRetryMs'])));
 			}
 			// One more folder to look in for fonts, for a server that keeps
 			// them somewhere of its own.

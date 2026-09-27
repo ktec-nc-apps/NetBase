@@ -50,7 +50,7 @@ class DeviceProbeService {
 	 * @return array{open: list<int>, from: int, to: int, done: bool, next: int}
 	 */
 	public function ports(string $ip, int $from = 1, float $wait = 0.3): array {
-		$this->tools->validateHost($ip);
+		$this->tools->reach($ip);
 		$from = max(1, min(self::LAST_PORT, $from));
 		$to = min(self::LAST_PORT, $from + self::SLICE - 1);
 		$wait = min(2.0, max(0.1, $wait));
@@ -80,7 +80,7 @@ class DeviceProbeService {
 	 * @return list<int>
 	 */
 	public function careful(string $ip, float $wait = 2.0): array {
-		$this->tools->validateHost($ip);
+		$this->tools->reach($ip);
 		$found = $this->discovery->tcpSweep([$ip], DiscoveryService::DETAILED_PORTS, $wait, self::AT_ONCE);
 		$open = array_map('intval', $found[$ip] ?? []);
 		sort($open);
@@ -100,7 +100,7 @@ class DeviceProbeService {
 	 * @return list<array{port: int, scheme: string, status: int, title: string, server: string}>
 	 */
 	public function web(string $ip, array $ports, float $timeout = 2.5): array {
-		$this->tools->validateHost($ip);
+		$this->tools->reach($ip);
 		$ports = array_values(array_unique(array_filter(
 			array_map('intval', $ports),
 			static fn (int $p) => $p > 0 && $p <= self::LAST_PORT,

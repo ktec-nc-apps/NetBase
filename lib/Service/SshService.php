@@ -89,7 +89,8 @@ class SshService {
 			throw new \RuntimeException('No SSH library is available on this server');
 		}
 
-		$host = (string)$endpoint->getHost();
+		// checked again where it is used: a connection may have been saved before the fence (review X3)
+		$host = \OCP\Server::get(ToolService::class)->reach((string)$endpoint->getHost());
 		$port = (int)$endpoint->getPort() ?: 22;
 		$user = (string)$endpoint->getUsername();
 		$credentials = $this->endpoints->credentials($endpoint);

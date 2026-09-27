@@ -61,6 +61,74 @@ class ToolService {
 	}
 
 	/**
+	 * A host a tool is about to connect to. Everything validateHost() checks, and then
+	 * where the name actually points: the server itself (127.0.0.0/8, ::1, 0.0.0.0/8)
+	 * and link-local addresses (169.254.0.0/16 — which holds the cloud metadata
+	 * service — and fe80::/10) are refused unless an administrator has allowed them.
+	 * Every address the name resolves to is checked, not only the first (review X3, N1,
+	 * S5; owner's decision 2026-09-25).
+	 */
+	public function reach(string $host): string {
+		$host = $this->validateHost(trim($host, '[]'));
+		if ($this->config->getAppValue('netbase', 'allow_self_targets', 'no') === 'yes') {
+			return $host;
+		}
+		foreach ($this->addressesOf($host) as $ip) {
+			if (self::isSelfOrLinkLocal($ip)) {
+				throw new \InvalidArgumentException($this->l->t('NetBase does not connect to this server itself or to link-local addresses. An administrator can allow it in the NetBase settings.'));
+			}
+		}
+		return $host;
+	}
+
+	/** @return list<string> every address a host name resolves to (the literal itself for an IP) */
+	public function addressesOf(string $host): array {
+		if (filter_var($host, FILTER_VALIDATE_IP) !== false) {
+			return [$host];
+		}
+		$out = [];
+		foreach ((array)@gethostbynamel($host) as $ip) {
+			if (is_string($ip) && $ip !== '') {
+				$out[] = $ip;
+			}
+		}
+		foreach ((array)@dns_get_record($host, DNS_AAAA) as $r) {
+			if (!empty($r['ipv6'])) {
+				$out[] = (string)$r['ipv6'];
+			}
+		}
+		// names the resolver library knows but DNS does not (/etc/hosts: "localhost" and friends)
+		if ($out === []) {
+			$one = @gethostbyname($host);
+			if ($one !== $host && filter_var($one, FILTER_VALIDATE_IP) !== false) {
+				$out[] = $one;
+			}
+		}
+		return array_values(array_unique($out));
+	}
+
+	/** 127.0.0.0/8, 0.0.0.0/8, 169.254.0.0/16, ::1, ::, fe80::/10, and the same inside ::ffff: */
+	public static function isSelfOrLinkLocal(string $ip): bool {
+		$bin = @inet_pton($ip);
+		if ($bin === false) {
+			return false;
+		}
+		if (strlen($bin) === 16) {
+			// an IPv4 address written the IPv6 way is judged as the IPv4 address
+			if (substr($bin, 0, 12) === str_repeat("\0", 10) . "\xff\xff") {
+				$bin = substr($bin, 12);
+			} else {
+				if ($bin === str_repeat("\0", 15) . "\1" || $bin === str_repeat("\0", 16)) {
+					return true;
+				}
+				return (ord($bin[0]) === 0xfe) && ((ord($bin[1]) & 0xc0) === 0x80);
+			}
+		}
+		$a = ord($bin[0]);
+		return $a === 127 || $a === 0 || ($a === 169 && ord($bin[1]) === 254);
+	}
+
+	/**
 	 * A name to look up in DNS, which is not the same thing as a host name:
 	 * service records live under labels like _25._tcp and _dmarc, and those
 	 * are perfectly valid to ask for.
@@ -148,7 +216,7 @@ class ToolService {
 	}
 
 	private function whoisAsk(string $server, string $query, bool $isIp): string {
-		$server = $this->validateHost($server);
+		$server = $this->reach($server);
 		$errno = 0;
 		$errstr = '';
 		$fp = @stream_socket_client('tcp://' . $server . ':43', $errno, $errstr, 6.0);
@@ -601,7 +669,7 @@ class ToolService {
 	// ---------------------------------------------------------------- tls / http
 
 	public function tls(string $host, int $port = 443): array {
-		$host = $this->validateHost($host);
+		$host = $this->reach($host);
 		$port = max(1, min(65535, $port));
 		$context = stream_context_create(['ssl' => [
 			'capture_peer_cert' => true,
@@ -674,7 +742,7 @@ class ToolService {
 		if (filter_var($url, FILTER_VALIDATE_URL) === false) {
 			throw new \InvalidArgumentException('Not a valid URL');
 		}
-		$this->validateHost((string)parse_url($url, PHP_URL_HOST));
+		$this->reach((string)parse_url($url, PHP_URL_HOST));
 
 		$chain = [];
 		$current = $url;
@@ -717,7 +785,7 @@ class ToolService {
 				}
 				// A redirect target is validated too, so a page cannot bounce the
 				// fetch onto a loopback or internal address (SSRF).
-				$this->validateHost((string)parse_url($next, PHP_URL_HOST));
+				$this->reach((string)parse_url($next, PHP_URL_HOST));
 				$current = $next;
 				continue;
 			}
@@ -858,7 +926,7 @@ class ToolService {
 	 * @return array<string, mixed>
 	 */
 	public function tlsVersions(string $host, int $port = 443, float $timeout = 5.0): array {
-		$host = $this->validateHost($host);
+		$host = $this->reach($host);
 		$port = max(1, min(65535, $port));
 		$versions = [
 			'TLSv1.0' => STREAM_CRYPTO_METHOD_TLSv1_0_CLIENT,

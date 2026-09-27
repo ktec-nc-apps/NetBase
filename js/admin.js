@@ -65,6 +65,10 @@
 					groups: document.getElementById('nb-groups').value,
 					hideEmptyMenu: document.getElementById('nb-hide').checked,
 					maxHosts: parseInt(document.getElementById('nb-max').value, 10) || 65536,
+					allowSelf: document.getElementById('nb-self').checked,
+					proxyMaxConn: parseInt(document.getElementById('nb-pmc').value, 10) || 0,
+					proxyRetries: parseInt(document.getElementById('nb-pr').value, 10) || 0,
+					proxyRetryMs: parseInt(document.getElementById('nb-prm').value, 10) || 0,
 				},
 			},
 		};

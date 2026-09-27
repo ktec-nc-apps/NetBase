@@ -547,7 +547,7 @@ class DnsService {
 		if (filter_var($server, FILTER_VALIDATE_IP) !== false) {
 			return $server;
 		}
-		$server = $this->tools->validateHost($server);
+		$server = $this->tools->reach($server);
 		$resolved = @dns_get_record($server, DNS_A);
 		if (is_array($resolved) && $resolved !== [] && !empty($resolved[0]['ip'])) {
 			return (string)$resolved[0]['ip'];

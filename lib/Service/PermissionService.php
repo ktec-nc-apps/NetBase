@@ -155,13 +155,13 @@ class PermissionService {
 
 	public function require(string $tool): void {
 		if (!$this->can($tool)) {
-			throw new \RuntimeException('This tool is not available to your account on this instance');
+			throw new ForbiddenException('This tool is not available to your account on this instance');
 		}
 	}
 
 	public function requireAdmin(): void {
 		if (!$this->isAdmin()) {
-			throw new \RuntimeException('Administrator rights are required');
+			throw new ForbiddenException('Administrator rights are required');
 		}
 	}
 

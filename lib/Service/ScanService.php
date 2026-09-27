@@ -58,10 +58,10 @@ class ScanService {
 	 * hand — a template no scan can guess (MANUAL_TYPES) or the user's own
 	 * words — and scans leave it alone.
 	 */
-	public const AUTO_TYPES = ['router', 'printer', 'camera', 'nas', 'pc', 'phone', 'iot', 'av', 'sbc', 'server', 'host', 'unknown'];
+	public const AUTO_TYPES = ['router', 'router_wifi', 'hub', 'switch', 'switch3', 'ap', 'onu', 'pc', 'server', 'sbc', 'nas', 'phone', 'tablet', 'printer', 'camera', 'nvr', 'dvr', 'tv', 'av', 'speaker', 'mediaplayer', 'game', 'ups', 'iot', 'smarthub', 'sensor', 'voip', 'host', 'unknown'];
 
 	/** Templates the picker offers that only a person can tell apart. */
-	public const MANUAL_TYPES = ['container'];
+	public const MANUAL_TYPES = ['repeater', 'firewall', 'vpn', 'lb', 'gateway', 'laptop', 'hypervisor', 'watch', 'mfp', 'scanner', 'projector', 'pos', 'barcode', 'cardreader', 'timeclock', 'signage', 'digicam', 'webcam', 'intercom', 'access', 'alarm', 'settop', 'ereader', 'aircon', 'airpurifier', 'solar', 'pcs', 'battery', 'chargectrl', 'evcharger', 'smartmeter', 'hems', 'generator', 'pdu', 'plug', 'light', 'thermostat', 'thsensor', 'motion', 'contact', 'leak', 'lock', 'vacuum', 'robot', 'remote', 'scale', 'pet', 'pbx', 'conference', 'plc', 'industrial', 'container'];
 
 	public function __construct(
 		private DiscoveryService $discovery,
@@ -903,6 +903,7 @@ class ScanService {
 
 		$saved = $isNew ? $this->devices->insert($device) : $this->devices->update($device);
 		$this->mergeDuplicateIps($saved);
+		$this->adoptParked($saved);
 		return $saved;
 	}
 
@@ -937,6 +938,9 @@ class ScanService {
 				if (!$keep->getLabel() && $other->getLabel()) { $keep->setLabel($other->getLabel()); $changed = true; }
 				if (!$keep->getTags() && $other->getTags()) { $keep->setTags($other->getTags()); $changed = true; }
 				if (!$keep->getNotes() && $other->getNotes()) { $keep->setNotes($other->getNotes()); $changed = true; }
+				if (!$keep->getLocation() && $other->getLocation()) { $keep->setLocation($other->getLocation()); $changed = true; }
+				if (!$keep->getRoom() && $other->getRoom()) { $keep->setRoom($other->getRoom()); $changed = true; }
+				if (!$keep->getMount() && $other->getMount()) { $keep->setMount($other->getMount()); $changed = true; }
 				if (!$keep->getHostname() && $other->getHostname()) { $keep->setHostname($other->getHostname()); $changed = true; }
 				if ($other->getKnown() && !$keep->getKnown()) { $keep->setKnown(true); $changed = true; }
 				$ports = $this->mergePortList((string)$keep->getPorts(), (string)$other->getPorts());
@@ -948,31 +952,31 @@ class ScanService {
 					$changed = true;
 				}
 			} else {
-				// Two different MACs on one address. That is either a container
-				// which came back with a new MAC — they are handed out afresh on
-				// every start — or an address passed to another machine. Nothing
-				// on the wire tells the two apart, so the compromise is to drop
-				// everything the old machine said about itself (its ports, its
-				// names, its vendor, its history) with its row, and to carry
-				// across only what a person typed: the name they gave it, their
-				// notes and tags, and a type they chose by hand.
-				//
-				// A guessed type is deliberately left behind. "Printer" was the
-				// scan's opinion of the departed machine and says nothing about
-				// whatever holds the address now; the new row is classified on
-				// its own evidence. A hand-picked type is different: it is the
-				// one thing a scan can never work out for itself, and losing it
-				// on every container restart made the setting worthless.
-				if (!$keep->getLabel() && $other->getLabel()) { $keep->setLabel($other->getLabel()); $changed = true; }
-				if (!$keep->getTags() && $other->getTags()) { $keep->setTags($other->getTags()); $changed = true; }
-				if (!$keep->getNotes() && $other->getNotes()) { $keep->setNotes($other->getNotes()); $changed = true; }
-				$chosen = (string)$other->getDtype();
-				$hasOwn = (string)$keep->getDtype();
-				if ($chosen !== ''
-					&& !in_array($chosen, self::AUTO_TYPES, true)
-					&& ($hasOwn === '' || in_array($hasOwn, self::AUTO_TYPES, true))) {
-					$keep->setDtype($chosen);
-					$changed = true;
+				// Two different MACs on one address: a container that came back with a
+				// new MAC, or an address handed to another machine. Only what a person
+				// wrote (name, notes, tags, a type picked by hand) is worth keeping, and
+				// it goes to the machine it was written about — found by its host name,
+				// which a container keeps across restarts. It used to follow the address,
+				// and when a restart shuffled the addresses the HAProxy note turned up on
+				// a Redis node (NCC #34). Everything the old machine said about itself
+				// (ports, names, vendor) goes with its row.
+				if ($this->sameName($keep, $other)) {
+					$changed = $this->carryOwn($other, $keep) || $changed;
+				} elseif ($this->hasOwn($other) && ($other->getHostname() ?? '') !== '') {
+					$home = $this->rowNamed((string)$other->getHostname(), [(int)$other->getId(), (int)$keep->getId()]);
+					if ($home !== null) {
+						if ($this->carryOwn($other, $home)) {
+							$home->setDtype($this->classify($home));
+							$this->devices->update($home);
+						}
+					} else {
+						// Not seen yet under its new address: kept aside, without an
+						// address, until a device with that name turns up (adoptParked).
+						$other->setIp(null);
+						$other->setOnline(false);
+						$this->devices->update($other);
+						continue;
+					}
 				}
 			}
 			$this->devices->delete($other);
@@ -980,6 +984,73 @@ class ScanService {
 		if ($changed) {
 			$keep->setDtype($this->classify($keep));
 			$this->devices->update($keep);
+		}
+	}
+
+	/** Whether a person wrote anything on the row: a name, notes, tags, a location, a room, a mounting spot or a hand-picked type. */
+	private function hasOwn(DeviceEntity $d): bool {
+		$type = (string)$d->getDtype();
+		return ($d->getLabel() ?? '') !== '' || ($d->getNotes() ?? '') !== '' || ($d->getTags() ?? '') !== ''
+			|| ($d->getLocation() ?? '') !== '' || ($d->getRoom() ?? '') !== '' || ($d->getMount() ?? '') !== ''
+			|| ($type !== '' && !in_array($type, self::AUTO_TYPES, true));
+	}
+
+	private function sameName(DeviceEntity $a, DeviceEntity $b): bool {
+		$x = strtolower(trim((string)$a->getHostname()));
+		return $x !== '' && $x === strtolower(trim((string)$b->getHostname()));
+	}
+
+	/** Copy what a person wrote from one row to another that lacks it. @return bool whether $to changed */
+	private function carryOwn(DeviceEntity $from, DeviceEntity $to): bool {
+		$changed = false;
+		if (!$to->getLabel() && $from->getLabel()) { $to->setLabel($from->getLabel()); $changed = true; }
+		if (!$to->getTags() && $from->getTags()) { $to->setTags($from->getTags()); $changed = true; }
+		if (!$to->getNotes() && $from->getNotes()) { $to->setNotes($from->getNotes()); $changed = true; }
+		if (!$to->getLocation() && $from->getLocation()) { $to->setLocation($from->getLocation()); $changed = true; }
+		if (!$to->getRoom() && $from->getRoom()) { $to->setRoom($from->getRoom()); $changed = true; }
+		if (!$to->getMount() && $from->getMount()) { $to->setMount($from->getMount()); $changed = true; }
+		$chosen = (string)$from->getDtype();
+		$hasOwn = (string)$to->getDtype();
+		if ($chosen !== '' && !in_array($chosen, self::AUTO_TYPES, true)
+			&& ($hasOwn === '' || in_array($hasOwn, self::AUTO_TYPES, true))) {
+			$to->setDtype($chosen);
+			$changed = true;
+		}
+		return $changed;
+	}
+
+	/** The row that carries this host name now (an address, and not one of $except). */
+	private function rowNamed(string $hostname, array $except): ?DeviceEntity {
+		$want = strtolower(trim($hostname));
+		foreach ($this->devices->findAll() as $d) {
+			if (!in_array((int)$d->getId(), $except, true) && ($d->getIp() ?? '') !== ''
+				&& strtolower(trim((string)$d->getHostname())) === $want) {
+				return $d;
+			}
+		}
+		return null;
+	}
+
+	/**
+	 * A device that has just told us its name takes back what a person wrote on the row
+	 * that was set aside for that name (see mergeDuplicateIps).
+	 */
+	private function adoptParked(DeviceEntity $d): void {
+		$name = strtolower(trim((string)$d->getHostname()));
+		if ($name === '' || ($d->getIp() ?? '') === '') {
+			return;
+		}
+		$changed = false;
+		foreach ($this->devices->findParked() as $parked) {
+			if ((int)$parked->getId() === (int)$d->getId() || strtolower(trim((string)$parked->getHostname())) !== $name) {
+				continue;
+			}
+			$changed = $this->carryOwn($parked, $d) || $changed;
+			$this->devices->delete($parked);
+		}
+		if ($changed) {
+			$d->setDtype($this->classify($d));
+			$this->devices->update($d);
 		}
 	}
 
@@ -1040,6 +1111,12 @@ class ScanService {
 	 * Best guess at what a device is, from its open ports, vendor and names.
 	 * Ports beat vendor: a Buffalo NAS and a Buffalo router share a prefix.
 	 */
+	/** Whether a router's maker/name points to a home Wi-Fi router rather than a wired one. */
+	private function wifiMaker(string $vendor, string $name): bool {
+		return (bool)preg_match('/asustek|buffalo|nec platforms|aterm|tp-link|d-link|netgear|elecom|xiaomi|tenda|linksys|google.*(wifi|nest)|eero|amplifi/', $vendor)
+			|| (bool)preg_match('/\\b(wifi|wi-fi|wlan|wireless|aterm|wg\\d|wsr|wrc|ax\\d{3,}|archer|deco|orbi)\\b/', $name);
+	}
+
 	public function classify(DeviceEntity $device): string {
 		// A type the user wrote in their own words is theirs to keep: no scan
 		// may replace it with a guess, or "Container" would turn back into
@@ -1053,6 +1130,59 @@ class ScanService {
 		$name = strtolower((string)$device->getHostname() . ' ' . (string)$device->getExtra());
 		$has = static fn (int ...$p) => (bool)array_intersect($p, $ports);
 
+		// VoIP handset: SIP.
+		if ($has(5060, 5061)) {
+			return 'voip';
+		}
+		// Names/vendors that say plainly what a device is (checked before the port
+		// guesses, which cannot tell these apart).
+		// SwitchBot's hubs have no MAC block of their own (they show Espressif's), so only
+		// the name tells; and first, or "switchbot-hub-mini" would read as an L1 hub.
+		if (preg_match('/switch[ _-]?bot/', $name)) {
+			return 'smarthub';
+		}
+		if (preg_match('/\\b(nvr|network video recorder)\\b/', $name)) {
+			return 'nvr';
+		}
+		if (preg_match('/\\b(dvr|digital video recorder)\\b/', $name)) {
+			return 'dvr';
+		}
+		if (preg_match('/\\b(onu|ont|hgw|回線終端)\\b|modem/', $name)) {
+			return 'onu';
+		}
+		if (preg_match('/\\bups\\b|uninterruptible/', $name) || preg_match('/apc|american power|eaton|cyberpower|omron|salicru/', $vendor)) {
+			return 'ups';
+		}
+		if (preg_match('/\\b(access[- ]?point|\\bap\\b|aironet|unifi ?ap|omada ?ap)\\b/', $name)) {
+			return 'ap';
+		}
+		if (preg_match('/\\b(l3|layer ?3)\\b/', $name)) {
+			return 'switch3';
+		}
+		if (preg_match('/\\b(switch|catalyst|switching ?hub|swx|gs\\d|xs\\d|l2|layer ?2)\\b/', $name)) {
+			return 'switch';
+		}
+		if (preg_match('/\\bhub\\b|リピータ|repeater/', $name)) {
+			return 'hub';
+		}
+		if (preg_match('/nintendo|playstation|sony interactive|\\bps[45]\\b|xbox/', $name . ' ' . $vendor)) {
+			return 'game';
+		}
+		if (preg_match('/\\bipad\\b|\\btablet\\b/', $name)) {
+			return 'tablet';
+		}
+		if (preg_match('/\\b(echo|alexa|homepod|nest ?(audio|mini|hub)|sonos|google ?home)\\b/', $name) || preg_match('/sonos/', $vendor)) {
+			return 'speaker';
+		}
+		if (preg_match('/googlecast|chromecast|_airplay|airplay|appletv|apple ?tv|firetv|fire ?tv|aftt|amzn.?wplay|\\broku\\b/', $name) || $has(8008, 8009, 8060)) {
+			return 'mediaplayer';
+		}
+		if (preg_match('/\\b(bravia|aquos|regza|viera|tv|display|chromecast|android ?tv)\\b/', $name)) {
+			return 'tv';
+		}
+		if (preg_match('/\\b(sensor|switchbot|thermo|温湿度|センサ)\\b/', $name)) {
+			return 'sensor';
+		}
 		if ($has(9100, 515, 631)) {
 			return 'printer';
 		}
@@ -1074,7 +1204,12 @@ class ScanService {
 			return 'pc';
 		}
 		if ($has(53) && $has(80, 443)) {
-			return 'router';
+			return $this->wifiMaker($vendor, $name) ? 'router_wifi' : 'router';
+		}
+		// A managed switch answers SNMP and comes from a switch maker, but has no DNS
+		// service of its own (that would make it a router).
+		if ($has(161) && !$has(53) && preg_match('/allied telesis|cisco|juniper|arista|extreme|hpe|aruba|netgear|buffalo|mikrotik|dell.*emc|d-link/', $vendor)) {
+			return 'switch';
 		}
 
 		$vendorMap = [
@@ -1089,7 +1224,7 @@ class ScanService {
 		];
 		foreach ($vendorMap as $type => $pattern) {
 			if ($vendor !== '' && preg_match('/' . $pattern . '/', $vendor)) {
-				return $type;
+				return $type === 'router' && $this->wifiMaker($vendor, $name) ? 'router_wifi' : $type;
 			}
 		}
 

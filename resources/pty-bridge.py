@@ -108,9 +108,10 @@ def main() -> int:
                 except OSError:
                     data = b''
                 if not data:
-                    # NetBase closed the keystroke pipe; stop reading it but
-                    # keep drawing the shell until it exits on its own.
-                    stdin_open = False
+                    # NetBase closed the keystroke pipe: the request that owned
+                    # this shell is gone. Hang the shell up rather than leave it
+                    # running with nobody attached (review A1).
+                    break
                 else:
                     try:
                         _write_all(fd, data)

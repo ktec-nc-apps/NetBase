@@ -62,7 +62,7 @@ class ProbeService {
 	 * @return array<string, mixed>
 	 */
 	public function ssh(string $host, int $port = 22, bool $hostKey = true, bool $authMethods = false, float $timeout = 8.0): array {
-		$host = $this->tools->validateHost($host);
+		$host = $this->tools->reach($host);
 		$port = max(1, min(65535, $port));
 		$started = microtime(true);
 		$out = [
@@ -284,7 +284,7 @@ class ProbeService {
 	 * @return array<string, mixed>
 	 */
 	public function telnet(string $host, int $port = 23, float $timeout = 6.0): array {
-		$host = $this->tools->validateHost($host);
+		$host = $this->tools->reach($host);
 		$port = max(1, min(65535, $port));
 		$errno = 0;
 		$errstr = '';
@@ -351,7 +351,7 @@ class ProbeService {
 	 * @return array<string, mixed>
 	 */
 	public function ntp(string $host, float $timeout = 4.0): array {
-		$host = $this->tools->validateHost($host);
+		$host = $this->tools->reach($host);
 		$packet = chr(0x1b) . str_repeat("\0", 47);
 		$errno = 0;
 		$errstr = '';

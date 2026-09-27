@@ -157,7 +157,8 @@ class TransferService {
 		if ($prefer === 'scp' && $kind === 'ssh') {
 			$kind = 'scp';
 		}
-		$host = (string)$endpoint->getHost();
+		// checked again where it is used: a connection may have been saved before the fence (review X3)
+		$host = \OCP\Server::get(ToolService::class)->reach((string)$endpoint->getHost());
 		$port = (int)$endpoint->getPort() ?: (in_array($kind, ['sftp', 'scp', 'ssh'], true) ? 22 : 21);
 		$user = (string)$endpoint->getUsername();
 		$pass = $this->endpoints->secret($endpoint);
@@ -844,14 +845,11 @@ class TransferService {
 			$done = (int)ftell($out);
 			$finished = true;
 		} finally {
-			// This has to be a finally, not the catch it used to be. Stop closes
-			// the browser's end of the stream, and this request runs with
-			// ignore_user_abort(false) — deliberately, because that is what lets
-			// connection_aborted() answer Stop at all. So PHP is killed mid-write
-			// and no catch is ever entered: the handle stayed open, and with it
-			// Nextcloud's lock on the file, which is why a stopped transfer left
-			// a destination nothing could delete afterwards. A finally is run on
-			// the way out of the block whichever way it is left.
+			// Stop closes the browser's end of the stream. The request ignores the
+			// abort, so the next report sees connection_aborted() and throws, and this
+			// finally closes the handle (and Nextcloud's lock on the file) and removes
+			// the half-written file. With ignore_user_abort(false) PHP was killed
+			// mid-write and not even a finally ran (review A1).
 			fclose($out);
 			if (!$finished) {
 				try {

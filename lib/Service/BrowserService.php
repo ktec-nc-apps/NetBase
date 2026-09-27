@@ -130,7 +130,7 @@ class BrowserService {
 		if (!in_array(strtolower($parts['scheme'] ?? ''), ['http', 'https'], true)) {
 			throw new \InvalidArgumentException('Only http and https pages can be shown');
 		}
-		$this->tools->validateHost(trim($parts['host'], '[]'));
+		$this->tools->reach(trim($parts['host'], '[]'));
 		$port = (int)($parts['port'] ?? 0);
 		if ($port < 0 || $port > 65535) {
 			throw new \InvalidArgumentException('Not a valid port');

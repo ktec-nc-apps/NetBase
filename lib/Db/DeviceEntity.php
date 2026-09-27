@@ -33,6 +33,12 @@ use OCP\AppFramework\Db\Entity;
  * @method void setTags(?string $tags)
  * @method string|null getNotes()
  * @method void setNotes(?string $notes)
+ * @method string|null getLocation()
+ * @method void setLocation(?string $location)
+ * @method string|null getRoom()
+ * @method void setRoom(?string $room)
+ * @method string|null getMount()
+ * @method void setMount(?string $mount)
  * @method string|null getExtra()
  * @method void setExtra(?string $extra)
  * @method int|null getFirstSeen()
@@ -58,6 +64,9 @@ class DeviceEntity extends Entity implements \JsonSerializable {
 	protected $sources = null;
 	protected $tags = null;
 	protected $notes = null;
+	protected $location = null;
+	protected $room = null;
+	protected $mount = null;
 	protected $extra = null;
 	protected $firstSeen = null;
 	protected $lastSeen = null;
@@ -88,6 +97,9 @@ class DeviceEntity extends Entity implements \JsonSerializable {
 			'sources' => $this->sources ? explode(',', $this->sources) : [],
 			'tags' => $this->tags ? explode(',', $this->tags) : [],
 			'notes' => $this->notes,
+			'location' => $this->location,
+			'room' => $this->room,
+			'mount' => $this->mount,
 			'extra' => $this->extra ? json_decode($this->extra, true) : null,
 			'firstSeen' => $this->firstSeen,
 			'lastSeen' => $this->lastSeen,

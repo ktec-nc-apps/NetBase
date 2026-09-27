@@ -561,7 +561,7 @@ class MailService {
 	 * @return array<string, mixed>
 	 */
 	public function probe(string $host, int $port, string $protocol, string $mode = 'auto', float $timeout = 8.0): array {
-		$host = $this->tools->validateHost($host);
+		$host = $this->tools->reach($host);
 		$protocol = strtolower($protocol);
 		if (!in_array($protocol, ['smtp', 'imap', 'pop3'], true)) {
 			throw new \InvalidArgumentException('Unknown mail protocol');
@@ -687,7 +687,7 @@ class MailService {
 	 * @return array<string, mixed>
 	 */
 	public function relayTest(string $host, int $port = 25, string $mode = 'starttls', float $timeout = 8.0): array {
-		$host = $this->tools->validateHost($host);
+		$host = $this->tools->reach($host);
 		$transcript = [];
 		$probeFrom = 'relay-test@' . $this->heloName();
 		$probeTo = 'relay-test@example.com';
@@ -729,7 +729,8 @@ class MailService {
 		if (!in_array($kind, ['smtp', 'imap', 'pop3'], true)) {
 			throw new \InvalidArgumentException('Not a mail connection');
 		}
-		$host = (string)$endpoint->getHost();
+		// checked again where it is used: a connection may have been saved before the fence (review X3)
+		$host = \OCP\Server::get(ToolService::class)->reach((string)$endpoint->getHost());
 		$port = (int)$endpoint->getPort() ?: $this->defaultPort($kind, 'tls');
 		$mode = (string)$this->endpoints->option($endpoint, 'mode', 'tls');
 		$user = (string)$endpoint->getUsername();
@@ -847,7 +848,8 @@ class MailService {
 			throw new \InvalidArgumentException('This connection has no valid sender address. Set one in the connection settings.');
 		}
 
-		$host = (string)$endpoint->getHost();
+		// checked again where it is used: a connection may have been saved before the fence (review X3)
+		$host = \OCP\Server::get(ToolService::class)->reach((string)$endpoint->getHost());
 		$port = (int)$endpoint->getPort() ?: 587;
 		$mode = (string)$this->endpoints->option($endpoint, 'mode', 'starttls');
 		if ($kind !== 'smtp') {

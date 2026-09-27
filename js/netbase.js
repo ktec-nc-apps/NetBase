@@ -42,24 +42,54 @@
    */
   const SCREENS = new Map();
 
+  /**
+   * A new request token from Nextcloud, when the one this page was loaded with has gone
+   * stale — the session behind it ended (a restarted Redis, a restarted container, a
+   * timeout) and Nextcloud started a new one. Null when there is no session to renew.
+   */
+  async function renewToken() {
+    try {
+      const r = await fetch((window.OC && OC.generateUrl ? OC.generateUrl('/csrftoken') : '/index.php/csrftoken'), { credentials: 'same-origin' });
+      if (!r.ok) return null;
+      const j = await r.json();
+      if (!j || !j.token) return null;
+      TOKEN = j.token;
+      try { if (window.OC) OC.requestToken = j.token; } catch (e) { /* read-only in some versions */ }
+      return j.token;
+    } catch (e) { return null; }
+  }
+
   async function api(path, opts = {}) {
-    const method = (opts.method || 'GET').toUpperCase();
     const doFetch = (tok) => fetch(BASE + 'api/' + path, {
       headers: { 'Content-Type': 'application/json', 'requesttoken': tok },
       credentials: 'same-origin',
       ...opts,
     });
     let res = await doFetch(TOKEN);
-    if (method !== 'GET' && (res.status === 412 || res.status === 403)) {
-      const fresh = freshToken();
-      if (fresh) TOKEN = fresh;
-      res = await doFetch(TOKEN);
+    // Only a failed CSRF check (412) is asked again, with a token fetched afresh. A 403
+    // is a real refusal, and sending it twice ran the failed operation twice (review
+    // C2, A3); a GET that met a stale token used to fail outright (NCC #34).
+    if (res.status === 412) {
+      const fresh = (await renewToken()) || freshToken();
+      if (fresh) { TOKEN = fresh; res = await doFetch(TOKEN); }
     }
-    if (res.status === 401) { if (rootProxy) rootProxy.authenticated = false; throw new Error('unauthorized'); }
+    if (res.status === 401 || res.status === 412) {
+      if (res.status === 401 && rootProxy) rootProxy.authenticated = false;
+      // Offered with a Reload button: a page that lost its session is put right by one
+      // reload (the browser reopening with two NetBase tabs leaves one of them so).
+      const lost = new Error(T('Your Nextcloud session has ended. Reload the page to sign in again.'));
+      lost.sessionLost = true;
+      throw lost;
+    }
     const ct = res.headers.get('content-type') || '';
     const body = ct.includes('json') ? await res.json() : await res.text();
     if (!res.ok) {
-      const failure = new Error((body && body.error) || res.statusText);
+      // Nextcloud's own refusals say "message", NetBase's say "error"; and over HTTP/2
+      // there is no status text at all, which left the banner reading just "Error".
+      const reason = (body && (body.error || body.message)) || res.statusText
+        || T('The server answered with status {status}.', { status: res.status });
+      const failure = new Error(reason);
+      failure.status = res.status;
       // Carried on the error itself, so whoever catches it can tell a question
       // (the master key) from a fault.
       if (body && body.needsKey) failure.needsKey = true;
@@ -73,17 +103,212 @@
     .join('&');
 
   /* ---------- presentation helpers ---------- */
+  // Device-type icons as inline SVG (Tabler Icons, MIT, plus a few drawn to match).
+  // Rendered with v-html; sized and coloured by CSS (.dv-ico). The maker's name is
+  // shown as text beside the icon, so no vendor logos are bundled.
   const TYPE_ICON = {
-    router: '📶', printer: '🖨️', camera: '📷', nas: '💾', pc: '💻', phone: '📱',
-    iot: '💡', av: '📺', sbc: '🍓', server: '🖥️', container: '📦', host: '🌐', unknown: '❔',
+    router: "<svg viewBox=\"0 0 24 24\" class=\"dv-ico\"><rect x=\"3\" y=\"13\" width=\"18\" height=\"6\" rx=\"1.5\"/><circle cx=\"6.5\" cy=\"16\" r=\".6\" fill=\"currentColor\" stroke=\"none\"/><path d=\"M8.5 9.5h8M16.5 9.5l-2-2M16.5 9.5l-2 2M15.5 6H7.5M7.5 6l2-2M7.5 6l2 2\"/></svg>",
+    router_wifi: "<svg viewBox=\"0 0 24 24\" class=\"dv-ico\"><path d=\"M3 15a2 2 0 0 1 2 -2h14a2 2 0 0 1 2 2v4a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2l0 -4\" /> <path d=\"M17 17l0 .01\" /> <path d=\"M13 17l0 .01\" /> <path d=\"M15 13l0 -2\" /> <path d=\"M11.75 8.75a4 4 0 0 1 6.5 0\" /> <path d=\"M8.5 6.5a8 8 0 0 1 13 0\" /></svg>",
+    hub: "<svg viewBox=\"0 0 24 24\" class=\"dv-ico\"><rect x=\"2.5\" y=\"4.5\" width=\"19\" height=\"11.5\" rx=\"1.5\"/><path d=\"M5.5 16v3M8.5 16v3M11.5 16v3M14.5 16v3M17.5 16v3\"/><text x=\"12\" y=\"12.7\" text-anchor=\"middle\" font-size=\"8.6\" font-weight=\"700\" font-family=\"Arial\" fill=\"currentColor\" stroke=\"none\">L1</text></svg>",
+    switch: "<svg viewBox=\"0 0 24 24\" class=\"dv-ico\"><rect x=\"2.5\" y=\"4.5\" width=\"19\" height=\"11.5\" rx=\"1.5\"/><path d=\"M5.5 16v3M8.5 16v3M11.5 16v3M14.5 16v3M17.5 16v3\"/><text x=\"12\" y=\"12.7\" text-anchor=\"middle\" font-size=\"8.6\" font-weight=\"700\" font-family=\"Arial\" fill=\"currentColor\" stroke=\"none\">L2</text></svg>",
+    switch3: "<svg viewBox=\"0 0 24 24\" class=\"dv-ico\"><rect x=\"2.5\" y=\"4.5\" width=\"19\" height=\"11.5\" rx=\"1.5\"/><path d=\"M5.5 16v3M8.5 16v3M11.5 16v3M14.5 16v3M17.5 16v3\"/><text x=\"12\" y=\"12.7\" text-anchor=\"middle\" font-size=\"8.6\" font-weight=\"700\" font-family=\"Arial\" fill=\"currentColor\" stroke=\"none\">L3</text></svg>",
+    ap: "<svg viewBox=\"0 0 24 24\" class=\"dv-ico\"><path d=\"M12 12l0 .01\" /> <path d=\"M14.828 9.172a4 4 0 0 1 0 5.656\" /> <path d=\"M17.657 6.343a8 8 0 0 1 0 11.314\" /> <path d=\"M9.168 14.828a4 4 0 0 1 0 -5.656\" /> <path d=\"M6.337 17.657a8 8 0 0 1 0 -11.314\" /></svg>",
+    repeater: "<svg viewBox=\"0 0 24 24\" class=\"dv-ico\"><path d=\"M6 21v-9\"/><circle cx=\"6\" cy=\"10\" r=\"1.5\"/><path d=\"M3.4 9a4 4 0 0 1 5.2 0\"/><path d=\"M2 6.8a7.2 7.2 0 0 1 8 0\"/><text x=\"16.5\" y=\"16.3\" text-anchor=\"middle\" font-size=\"7.2\" font-weight=\"700\" font-family=\"Arial\" fill=\"currentColor\" stroke=\"none\">RPT</text></svg>",
+    onu: "<svg viewBox=\"0 0 24 24\" class=\"dv-ico\"><rect x=\"3\" y=\"11.5\" width=\"18\" height=\"8\" rx=\"1.5\"/><circle cx=\"7\" cy=\"15.5\" r=\"1\" fill=\"currentColor\" stroke=\"none\"/><circle cx=\"10.5\" cy=\"15.5\" r=\"1\" fill=\"currentColor\" stroke=\"none\"/><path d=\"M12 11.5V3.5M12 3.5l-2.5 2.5M12 3.5l2.5 2.5\"/><path d=\"M16 15.5h3\"/></svg>",
+    firewall: "<svg viewBox=\"0 0 24 24\" class=\"dv-ico\"><path d=\"M12 2c2.2 2.2 3.8 4 3.8 6a3.8 3.8 0 0 1 -7.6 0c0 -1.4 .8 -2.6 1.8 -3.5c.2 1.2 .8 2 1.6 2.3c-.3 -1.9 .1 -3.4 .4 -4.8z\"/><rect x=\"2.5\" y=\"12.8\" width=\"19\" height=\"8.2\" rx=\".8\"/><path d=\"M2.5 16.9h19M8.8 12.8v4.1M15.2 12.8v4.1M5.6 16.9v4.1M12 16.9v4.1M18.4 16.9v4.1\"/></svg>",
+    vpn: "<svg viewBox=\"0 0 24 24\" class=\"dv-ico\"><path d=\"M1.5 21h21\"/><path d=\"M3 21v-9.5a9 9 0 0 1 18 0v9.5\"/><path d=\"M7.6 21v-7.8a4.4 4.4 0 0 1 8.8 0v7.8\"/><circle cx=\"12\" cy=\"14.6\" r=\"1.75\" fill=\"currentColor\" stroke=\"none\"/><path d=\"M10.9 15.6h2.2l.7 3.6h-3.6z\" fill=\"currentColor\" stroke=\"none\"/></svg>",
+    lb: "<svg viewBox=\"0 0 24 24\" class=\"dv-ico\"><path d=\"M12 3v3\"/><path d=\"M10.5 4.5l1.5 1.5l1.5 -1.5\"/><path d=\"M12 6v14.5\"/><path d=\"M5 8.5h14\"/><path d=\"M9 20.5h6\"/><path d=\"M5 8.5l-2 3.8a2.3 2.3 0 0 0 4 0z\"/><path d=\"M19 8.5l-2 3.8a2.3 2.3 0 0 0 4 0z\"/></svg>",
+    gateway: "<svg viewBox=\"0 0 24 24\" class=\"dv-ico\"><rect x=\"2\" y=\"4.5\" width=\"2.4\" height=\"16.5\" rx=\".5\"/><rect x=\"19.6\" y=\"4.5\" width=\"2.4\" height=\"16.5\" rx=\".5\"/><path d=\"M4.4 7.2l4 1.5v9.6l-4 1.5z\"/><path d=\"M19.6 7.2l-4 1.5v9.6l4 1.5z\"/><path d=\"M12 6.2v11.6M10.2 8l1.8 -1.8l1.8 1.8M10.2 16l1.8 1.8l1.8 -1.8\"/></svg>",
+    pc: "<svg viewBox=\"0 0 24 24\" class=\"dv-ico\"><path d=\"M3 5a1 1 0 0 1 1 -1h16a1 1 0 0 1 1 1v10a1 1 0 0 1 -1 1h-16a1 1 0 0 1 -1 -1v-10\" /> <path d=\"M7 20h10\" /> <path d=\"M9 16v4\" /> <path d=\"M15 16v4\" /></svg>",
+    laptop: "<svg viewBox=\"0 0 24 24\" class=\"dv-ico\"><path d=\"M3 19l18 0\" /> <path d=\"M5 7a1 1 0 0 1 1 -1h12a1 1 0 0 1 1 1v8a1 1 0 0 1 -1 1h-12a1 1 0 0 1 -1 -1l0 -8\" /></svg>",
+    server: "<svg viewBox=\"0 0 24 24\" class=\"dv-ico\"><rect x=\"7\" y=\"3\" width=\"10\" height=\"18\" rx=\"2\"/><rect x=\"9\" y=\"6\" width=\"6\" height=\"3.2\" rx=\"1\"/><rect x=\"9\" y=\"10.4\" width=\"6\" height=\"3.2\" rx=\"1\"/><circle cx=\"10.6\" cy=\"17.8\" r=\".7\" fill=\"currentColor\" stroke=\"none\"/><circle cx=\"13.4\" cy=\"17.8\" r=\".7\" fill=\"currentColor\" stroke=\"none\"/></svg>",
+    hypervisor: "<svg viewBox=\"0 0 24 24\" class=\"dv-ico\"><path d=\"M12 4l-8 4l8 4l8 -4l-8 -4\" /> <path d=\"M4 12l8 4l8 -4\" /> <path d=\"M4 16l8 4l8 -4\" /></svg>",
+    sbc: "<svg viewBox=\"0 0 24 24\" class=\"dv-ico\"><path d=\"M5 6a1 1 0 0 1 1 -1h12a1 1 0 0 1 1 1v12a1 1 0 0 1 -1 1h-12a1 1 0 0 1 -1 -1l0 -12\" /> <path d=\"M9 9h6v6h-6l0 -6\" /> <path d=\"M3 10h2\" /> <path d=\"M3 14h2\" /> <path d=\"M10 3v2\" /> <path d=\"M14 3v2\" /> <path d=\"M21 10h-2\" /> <path d=\"M21 14h-2\" /> <path d=\"M14 21v-2\" /> <path d=\"M10 21v-2\" /></svg>",
+    nas: "<svg viewBox=\"0 0 24 24\" class=\"dv-ico\"><rect x=\"3.5\" y=\"3\" width=\"17\" height=\"18\" rx=\"2\"/><rect x=\"6.2\" y=\"5.6\" width=\"4.6\" height=\"10.6\" rx=\".8\"/><rect x=\"13.2\" y=\"5.6\" width=\"4.6\" height=\"10.6\" rx=\".8\"/><circle cx=\"8.5\" cy=\"18.6\" r=\".8\" fill=\"currentColor\" stroke=\"none\"/><circle cx=\"15.5\" cy=\"18.6\" r=\".8\" fill=\"currentColor\" stroke=\"none\"/></svg>",
+    phone: "<svg viewBox=\"0 0 24 24\" class=\"dv-ico\"><rect x=\"6\" y=\"2.5\" width=\"12\" height=\"19\" rx=\"2.2\"/><circle cx=\"9.3\" cy=\"6.6\" r=\"0.95\" fill=\"currentColor\" stroke=\"none\"/><circle cx=\"12\" cy=\"6.6\" r=\"0.95\" fill=\"currentColor\" stroke=\"none\"/><circle cx=\"14.7\" cy=\"6.6\" r=\"0.95\" fill=\"currentColor\" stroke=\"none\"/><circle cx=\"9.3\" cy=\"9.8\" r=\"0.95\" fill=\"currentColor\" stroke=\"none\"/><circle cx=\"12\" cy=\"9.8\" r=\"0.95\" fill=\"currentColor\" stroke=\"none\"/><circle cx=\"14.7\" cy=\"9.8\" r=\"0.95\" fill=\"currentColor\" stroke=\"none\"/><circle cx=\"9.3\" cy=\"13\" r=\"0.95\" fill=\"currentColor\" stroke=\"none\"/><circle cx=\"12\" cy=\"13\" r=\"0.95\" fill=\"currentColor\" stroke=\"none\"/><circle cx=\"14.7\" cy=\"13\" r=\"0.95\" fill=\"currentColor\" stroke=\"none\"/><path d=\"M10.5 18.5h3\"/></svg>",
+    tablet: "<svg viewBox=\"0 0 24 24\" class=\"dv-ico\"><rect x=\"1.8\" y=\"5\" width=\"20.4\" height=\"14.5\" rx=\"2\"/><circle cx=\"7.6\" cy=\"8.7\" r=\".95\" fill=\"currentColor\" stroke=\"none\"/><circle cx=\"11\" cy=\"8.7\" r=\".95\" fill=\"currentColor\" stroke=\"none\"/><circle cx=\"14.4\" cy=\"8.7\" r=\".95\" fill=\"currentColor\" stroke=\"none\"/><circle cx=\"17.8\" cy=\"8.7\" r=\".95\" fill=\"currentColor\" stroke=\"none\"/><circle cx=\"7.6\" cy=\"12.25\" r=\".95\" fill=\"currentColor\" stroke=\"none\"/><circle cx=\"11\" cy=\"12.25\" r=\".95\" fill=\"currentColor\" stroke=\"none\"/><circle cx=\"14.4\" cy=\"12.25\" r=\".95\" fill=\"currentColor\" stroke=\"none\"/><circle cx=\"17.8\" cy=\"12.25\" r=\".95\" fill=\"currentColor\" stroke=\"none\"/><circle cx=\"7.6\" cy=\"15.8\" r=\".95\" fill=\"currentColor\" stroke=\"none\"/><circle cx=\"11\" cy=\"15.8\" r=\".95\" fill=\"currentColor\" stroke=\"none\"/><circle cx=\"14.4\" cy=\"15.8\" r=\".95\" fill=\"currentColor\" stroke=\"none\"/><circle cx=\"17.8\" cy=\"15.8\" r=\".95\" fill=\"currentColor\" stroke=\"none\"/><circle cx=\"4.2\" cy=\"12.25\" r=\".6\" fill=\"currentColor\" stroke=\"none\"/></svg>",
+    watch: "<svg viewBox=\"0 0 24 24\" class=\"dv-ico\"><path d=\"M9 6V3h6v3M9 18v3h6v-3\"/><rect x=\"5.5\" y=\"6\" width=\"13\" height=\"12\" rx=\"3\"/><path d=\"M12 8.6V12l2.4 1.6\"/><circle cx=\"12\" cy=\"12\" r=\".7\" fill=\"currentColor\" stroke=\"none\"/></svg>",
+    printer: "<svg viewBox=\"0 0 24 24\" class=\"dv-ico\"><path d=\"M17 17h2a2 2 0 0 0 2 -2v-4a2 2 0 0 0 -2 -2h-14a2 2 0 0 0 -2 2v4a2 2 0 0 0 2 2h2\" /> <path d=\"M17 9v-4a2 2 0 0 0 -2 -2h-6a2 2 0 0 0 -2 2v4\" /> <path d=\"M7 15a2 2 0 0 1 2 -2h6a2 2 0 0 1 2 2v4a2 2 0 0 1 -2 2h-6a2 2 0 0 1 -2 -2l0 -4\" /></svg>",
+    mfp: "<svg viewBox=\"0 0 24 24\" class=\"dv-ico\"><rect x=\"4.5\" y=\"3\" width=\"15\" height=\"3\" rx=\"1\"/><rect x=\"3\" y=\"6.5\" width=\"18\" height=\"8.5\" rx=\"1.5\"/><circle cx=\"7\" cy=\"10.7\" r=\"1.2\"/><path d=\"M10.5 9.5h7M10.5 12h4\"/><path d=\"M7 15v3.5a1.5 1.5 0 0 0 1.5 1.5h7a1.5 1.5 0 0 0 1.5 -1.5v-3.5\"/><path d=\"M9.5 21h5\"/></svg>",
+    scanner: "<svg viewBox=\"0 0 24 24\" class=\"dv-ico\"><rect x=\"2.5\" y=\"5\" width=\"19\" height=\"3.2\" rx=\"1\"/><rect x=\"2.5\" y=\"9\" width=\"19\" height=\"10.5\" rx=\"1.5\"/><text x=\"12\" y=\"16.4\" text-anchor=\"middle\" font-size=\"5.6\" font-weight=\"700\" font-family=\"Arial\" textLength=\"13.5\" lengthAdjust=\"spacingAndGlyphs\" fill=\"currentColor\" stroke=\"none\">SCAN</text></svg>",
+    projector: "<svg viewBox=\"0 0 24 24\" class=\"dv-ico\"><path d=\"M8 9a5 5 0 1 0 10 0a5 5 0 0 0 -10 0\" /> <path d=\"M9 6h-4a2 2 0 0 0 -2 2v8a2 2 0 0 0 2 2h14a2 2 0 0 0 2 -2v-8a2 2 0 0 0 -2 -2h-2\" /> <path d=\"M6 15h1\" /> <path d=\"M7 18l-1 2\" /> <path d=\"M18 18l1 2\" /></svg>",
+    pos: "<svg viewBox=\"0 0 24 24\" class=\"dv-ico\"><path d=\"M21 15h-2.5c-.398 0 -.779 .158 -1.061 .439c-.281 .281 -.439 .663 -.439 1.061c0 .398 .158 .779 .439 1.061c.281 .281 .663 .439 1.061 .439h1c.398 0 .779 .158 1.061 .439c.281 .281 .439 .663 .439 1.061c0 .398 -.158 .779 -.439 1.061c-.281 .281 -.663 .439 -1.061 .439h-2.5\" /> <path d=\"M19 21v1m0 -8v1\" /> <path d=\"M13 21h-7c-.53 0 -1.039 -.211 -1.414 -.586c-.375 -.375 -.586 -.884 -.586 -1.414v-10c0 -.53 .211 -1.039 .586 -1.414c.375 -.375 .884 -.586 1.414 -.586h2m12 3.12v-1.12c0 -.53 -.211 -1.039 -.586 -1.414c-.375 -.375 -.884 -.586 -1.414 -.586h-2\" /> <path d=\"M16 10v-6c0 -.53 -.211 -1.039 -.586 -1.414c-.375 -.375 -.884 -.586 -1.414 -.586h-4c-.53 0 -1.039 .211 -1.414 .586c-.375 .375 -.586 .884 -.586 1.414v6m8 0h-8m8 0h1m-9 0h-1\" /> <path d=\"M8 14v.01\" /> <path d=\"M8 17v.01\" /> <path d=\"M12 13.99v.01\" /> <path d=\"M12 17v.01\" /></svg>",
+    barcode: "<svg viewBox=\"0 0 24 24\" class=\"dv-ico\"><rect x=\"2.5\" y=\"4.5\" width=\"19\" height=\"15\" rx=\"1.5\"/><path d=\"M5.5 8v8M7.5 8v8M9 8v8M11.5 8v8M14 8v8M15.5 8v8M18.5 8v8\"/></svg>",
+    cardreader: "<svg viewBox=\"0 0 24 24\" class=\"dv-ico\"><rect x=\"2.5\" y=\"5\" width=\"19\" height=\"14\" rx=\"2\"/><rect x=\"5\" y=\"8.4\" width=\"5.6\" height=\"4.6\" rx=\".8\"/><path d=\"M5 10.7h5.6\"/><text x=\"16\" y=\"14.4\" text-anchor=\"middle\" font-size=\"7.5\" font-weight=\"700\" font-family=\"Arial\" fill=\"currentColor\" stroke=\"none\">IC</text></svg>",
+    timeclock: "<svg viewBox=\"0 0 24 24\" class=\"dv-ico\"><path d=\"M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0\" /> <path d=\"M12 12h-3.5\" /> <path d=\"M12 7v5\" /></svg>",
+    signage: "<svg viewBox=\"0 0 24 24\" class=\"dv-ico\"><path d=\"M15 6l.01 0\" /> <path d=\"M3 6a3 3 0 0 1 3 -3h12a3 3 0 0 1 3 3v8a3 3 0 0 1 -3 3h-12a3 3 0 0 1 -3 -3l0 -8\" /> <path d=\"M3 13l4 -4a3 5 0 0 1 3 0l4 4\" /> <path d=\"M13 12l2 -2a3 5 0 0 1 3 0l3 3\" /> <path d=\"M8 21l.01 0\" /> <path d=\"M12 21l.01 0\" /> <path d=\"M16 21l.01 0\" /></svg>",
+    camera: "<svg viewBox=\"0 0 24 24\" class=\"dv-ico\"><path d=\"M3 4a1 1 0 0 1 1 -1h16a1 1 0 0 1 1 1v2a1 1 0 0 1 -1 1h-16a1 1 0 0 1 -1 -1l0 -2\" /> <path d=\"M8 14a4 4 0 1 0 8 0a4 4 0 1 0 -8 0\" /> <path d=\"M19 7v7a7 7 0 0 1 -14 0v-7\" /> <path d=\"M12 14l.01 0\" /></svg>",
+    digicam: "<svg viewBox=\"0 0 24 24\" class=\"dv-ico\"><path d=\"M7.5 7.5l1.6 -2.8h5.8l1.6 2.8\"/><rect x=\"2.5\" y=\"7.5\" width=\"19\" height=\"12.5\" rx=\"2\"/><circle cx=\"12\" cy=\"13.6\" r=\"3.9\"/><circle cx=\"18.2\" cy=\"10.2\" r=\".85\" fill=\"currentColor\" stroke=\"none\"/></svg>",
+    webcam: "<svg viewBox=\"0 0 24 24\" class=\"dv-ico\"><circle cx=\"12\" cy=\"10\" r=\"6.8\"/><circle cx=\"12\" cy=\"10\" r=\"2.6\"/><path d=\"M12 16.8V20M8 21h8\"/></svg>",
+    nvr: "<svg viewBox=\"0 0 24 24\" class=\"dv-ico\"><rect x=\"2.5\" y=\"4.5\" width=\"19\" height=\"13\" rx=\"1.5\"/><text x=\"12\" y=\"12\" text-anchor=\"middle\" font-size=\"7.8\" font-weight=\"700\" font-family=\"Arial\" fill=\"currentColor\" stroke=\"none\">NVR</text><path d=\"M5.5 14.9h3M10 14.9h3\"/><circle cx=\"17.6\" cy=\"14.9\" r=\".85\" fill=\"currentColor\" stroke=\"none\"/></svg>",
+    dvr: "<svg viewBox=\"0 0 24 24\" class=\"dv-ico\"><rect x=\"2.5\" y=\"4.5\" width=\"19\" height=\"13\" rx=\"1.5\"/><text x=\"12\" y=\"12\" text-anchor=\"middle\" font-size=\"7.8\" font-weight=\"700\" font-family=\"Arial\" fill=\"currentColor\" stroke=\"none\">DVR</text><path d=\"M5.5 14.9h3M10 14.9h3\"/><circle cx=\"17.6\" cy=\"14.9\" r=\".85\" fill=\"currentColor\" stroke=\"none\"/></svg>",
+    intercom: "<svg viewBox=\"0 0 24 24\" class=\"dv-ico\"><rect x=\"3\" y=\"3\" width=\"10\" height=\"18\" rx=\"2\"/><rect x=\"5\" y=\"5.5\" width=\"6\" height=\"4.5\" rx=\"1\"/><circle cx=\"8\" cy=\"14.5\" r=\"1.3\"/><path d=\"M6.5 18h3\"/><path d=\"M15.5 9a5 5 0 0 1 0 6\"/><path d=\"M18 6.5a9 9 0 0 1 0 11\"/></svg>",
+    access: "<svg viewBox=\"0 0 24 24\" class=\"dv-ico\"><rect x=\"2\" y=\"2\" width=\"20\" height=\"20\" rx=\"3\"/><path d=\"M5.2 16v-4.5a6.8 6.8 0 0 1 13.6 0v2.5\"/><path d=\"M8.2 18.5v-7a3.8 3.8 0 0 1 7.6 0v5.5\"/><path d=\"M12 11v8\"/></svg>",
+    alarm: "<svg viewBox=\"0 0 24 24\" class=\"dv-ico\"><path d=\"M5 13a7 7 0 1 0 14 0a7 7 0 1 0 -14 0\" /> <path d=\"M12 10l0 3l2 0\" /> <path d=\"M7 4l-2.75 2\" /> <path d=\"M17 4l2.75 2\" /></svg>",
+    tv: "<svg viewBox=\"0 0 24 24\" class=\"dv-ico\"><path d=\"M3 9a2 2 0 0 1 2 -2h14a2 2 0 0 1 2 2v9a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2l0 -9\" /> <path d=\"M16 3l-4 4l-4 -4\" /></svg>",
+    av: "<svg viewBox=\"0 0 24 24\" class=\"dv-ico\"><rect x=\"1.5\" y=\"5.5\" width=\"21\" height=\"13\" rx=\"1\"/><rect x=\"3.5\" y=\"8\" width=\"11.3\" height=\"3.8\" rx=\".3\"/><circle cx=\"4.3\" cy=\"15.4\" r=\".78\" fill=\"currentColor\" stroke=\"none\"/><circle cx=\"6.8\" cy=\"15.4\" r=\".78\" fill=\"currentColor\" stroke=\"none\"/><circle cx=\"9.3\" cy=\"15.4\" r=\".78\" fill=\"currentColor\" stroke=\"none\"/><circle cx=\"11.8\" cy=\"15.4\" r=\".78\" fill=\"currentColor\" stroke=\"none\"/><circle cx=\"14.3\" cy=\"15.4\" r=\".78\" fill=\"currentColor\" stroke=\"none\"/><circle cx=\"18.7\" cy=\"13\" r=\"2.6\"/></svg>",
+    speaker: "<svg viewBox=\"0 0 24 24\" class=\"dv-ico\"><path d=\"M5 5a2 2 0 0 1 2 -2h10a2 2 0 0 1 2 2v14a2 2 0 0 1 -2 2h-10a2 2 0 0 1 -2 -2l0 -14\" /> <path d=\"M9 14a3 3 0 1 0 6 0a3 3 0 1 0 -6 0\" /> <path d=\"M12 7l0 .01\" /></svg>",
+    mediaplayer: "<svg viewBox=\"0 0 24 24\" class=\"dv-ico\"><rect x=\"3\" y=\"4.5\" width=\"18\" height=\"12\" rx=\"2\"/><path d=\"M10 8.7l5 2.8l-5 2.8z\" fill=\"currentColor\" stroke=\"none\"/><path d=\"M12 16.5v3.5\"/><path d=\"M8 20h8\"/></svg>",
+    settop: "<svg viewBox=\"0 0 24 24\" class=\"dv-ico\"><path d=\"M3 9a2 2 0 0 1 2 -2h14a2 2 0 0 1 2 2v9a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2l0 -9\" /> <path d=\"M16 3l-4 4l-4 -4\" /> <path d=\"M15 7v13\" /> <path d=\"M18 15v.01\" /> <path d=\"M18 12v.01\" /></svg>",
+    game: "<svg viewBox=\"0 0 24 24\" class=\"dv-ico\"><path d=\"M12 5h3.5a5 5 0 0 1 0 10h-5.5l-4.015 4.227a2.3 2.3 0 0 1 -3.923 -2.035l1.634 -8.173a5 5 0 0 1 4.904 -4.019h3.4\" /> <path d=\"M14 15l4.07 4.284a2.3 2.3 0 0 0 3.925 -2.023l-1.6 -8.232\" /> <path d=\"M8 9v2\" /> <path d=\"M7 10h2\" /> <path d=\"M14 10h2\" /></svg>",
+    ereader: "<svg viewBox=\"0 0 24 24\" class=\"dv-ico\"><path d=\"M3 19a9 9 0 0 1 9 0a9 9 0 0 1 9 0\" /> <path d=\"M3 6a9 9 0 0 1 9 0a9 9 0 0 1 9 0\" /> <path d=\"M3 6l0 13\" /> <path d=\"M12 6l0 13\" /> <path d=\"M21 6l0 13\" /></svg>",
+    aircon: "<svg viewBox=\"0 0 24 24\" class=\"dv-ico\"><path d=\"M8 16a3 3 0 0 1 -3 3\" /> <path d=\"M16 16a3 3 0 0 0 3 3\" /> <path d=\"M12 16v4\" /> <path d=\"M3 7a2 2 0 0 1 2 -2h14a2 2 0 0 1 2 2v4a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2l0 -4\" /> <path d=\"M7 13v-3a1 1 0 0 1 1 -1h8a1 1 0 0 1 1 1v3\" /></svg>",
+    airpurifier: "<svg viewBox=\"0 0 24 24\" class=\"dv-ico\"><path d=\"M5 8h8.5a2.5 2.5 0 1 0 -2.34 -3.24\" /> <path d=\"M3 12h15.5a2.5 2.5 0 1 1 -2.34 3.24\" /> <path d=\"M4 16h5.5a2.5 2.5 0 1 1 -2.34 3.24\" /></svg>",
+    solar: "<svg viewBox=\"0 0 24 24\" class=\"dv-ico\"><path d=\"M8 2a4 4 0 1 0 8 0\" /> <path d=\"M4 3h1\" /> <path d=\"M19 3h1\" /> <path d=\"M12 9v1\" /> <path d=\"M17.2 7.2l.707 .707\" /> <path d=\"M6.8 7.2l-.7 .7\" /> <path d=\"M4.28 21h15.44a1 1 0 0 0 .97 -1.243l-1.5 -6a1 1 0 0 0 -.97 -.757h-12.44a1 1 0 0 0 -.97 .757l-1.5 6a1 1 0 0 0 .97 1.243\" /> <path d=\"M4 17h16\" /> <path d=\"M10 13l-1 8\" /> <path d=\"M14 13l1 8\" /></svg>",
+    pcs: "<svg viewBox=\"0 0 24 24\" class=\"dv-ico\"><path d=\"M8 12a4 4 0 0 0 4 4m0 -8a4 4 0 0 0 -4 4\" /> <path d=\"M3 12h1\" /> <path d=\"M12 3v1\" /> <path d=\"M12 20v1\" /> <path d=\"M5.6 5.6l.7 .7\" /> <path d=\"M6.3 17.7l-.7 .7\" /> <path d=\"M20 7l-3 5h4l-3 5\" /></svg>",
+    battery: "<svg viewBox=\"0 0 24 24\" class=\"dv-ico\"><path d=\"M3 7a2 2 0 0 1 2 -2h14a2 2 0 0 1 2 2v10a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2l0 -10\" /> <path d=\"M6 5v-2\" /> <path d=\"M18 3v2\" /> <path d=\"M6.5 12h3\" /> <path d=\"M14.5 12h3\" /> <path d=\"M16 10.5v3\" /></svg>",
+    chargectrl: "<svg viewBox=\"0 0 24 24\" class=\"dv-ico\"><path d=\"M19 10l-7 -7l-9 9h2v7a2 2 0 0 0 2 2h7.5\" /> <path d=\"M9 21v-6a2 2 0 0 1 2 -2h2c.661 0 1.248 .32 1.612 .815\" /> <path d=\"M19 14l-2 4h4l-2 4\" /></svg>",
+    evcharger: "<svg viewBox=\"0 0 24 24\" class=\"dv-ico\"><path d=\"M18 7l-1 1\" /> <path d=\"M14 11h1a2 2 0 0 1 2 2v3a1.5 1.5 0 0 0 3 0v-7l-3 -3\" /> <path d=\"M4 20v-14a2 2 0 0 1 2 -2h6a2 2 0 0 1 2 2v14\" /> <path d=\"M9 11.5l-1.5 2.5h3l-1.5 2.5\" /> <path d=\"M3 20l12 0\" /> <path d=\"M4 8l10 0\" /></svg>",
+    smartmeter: "<svg viewBox=\"0 0 24 24\" class=\"dv-ico\"><rect x=\"3\" y=\"5\" width=\"18\" height=\"14\" rx=\"1.5\"/><rect x=\"5.5\" y=\"8\" width=\"13\" height=\"4\" rx=\".6\"/><path d=\"M7 15.5h3M12 15.5h1.5\"/><path d=\"M16.5 14.5l1.4-2h-1.3l1.1-1.7\"/></svg>",
+    hems: "<svg viewBox=\"0 0 24 24\" class=\"dv-ico\"><path d=\"M20 11l-8 -8l-9 9h2v7a2 2 0 0 0 2 2h5\" /> <path d=\"M9 21v-6a2 2 0 0 1 2 -2h2c.325 0 .631 .077 .902 .215\" /> <path d=\"M16 22s0 -2 3 -4\" /> <path d=\"M19 21a3 3 0 0 1 0 -6h3v3a3 3 0 0 1 -3 3\" /></svg>",
+    generator: "<svg viewBox=\"0 0 24 24\" class=\"dv-ico\"><path d=\"M3 10v6\" /> <path d=\"M12 5v3\" /> <path d=\"M10 5h4\" /> <path d=\"M5 13h-2\" /> <path d=\"M6 10h2l2 -2h3.382a1 1 0 0 1 .894 .553l1.448 2.894a1 1 0 0 0 .894 .553h1.382v-2h2a1 1 0 0 1 1 1v6a1 1 0 0 1 -1 1h-2v-2h-3v2a1 1 0 0 1 -1 1h-3.465a1 1 0 0 1 -.832 -.445l-1.703 -2.555h-2v-6\" /></svg>",
+    ups: "<svg viewBox=\"0 0 24 24\" class=\"dv-ico\"><rect x=\"4\" y=\"3.5\" width=\"16\" height=\"17\" rx=\"2\"/><path d=\"M9 3.5V2h6v1.5\"/><rect x=\"7.5\" y=\"7.5\" width=\"9\" height=\"8.5\" rx=\"1\"/><path d=\"M12.6 8.8l-2.2 3.4h2.2l-2.2 3.4\"/></svg>",
+    pdu: "<svg viewBox=\"0 0 24 24\" class=\"dv-ico\"><rect x=\"4\" y=\"3\" width=\"16\" height=\"18\" rx=\"1.5\"/><path d=\"M8 6.5h.01M8 10h.01M8 13.5h.01M8 17h.01M12 6.5h4M12 10h4M12 13.5h4M12 17h4\"/></svg>",
+    iot: "<svg viewBox=\"0 0 24 24\" class=\"dv-ico\"><rect x=\"3.5\" y=\"8\" width=\"9\" height=\"9\" rx=\"1.5\"/><path d=\"M6 8V5.5M10 8V5.5M6 17v1.5M10 17v1.5M3.5 10.5H2M3.5 14.5H2\"/><path d=\"M15.5 8.5a6 6 0 0 1 0 8M18 6a9.5 9.5 0 0 1 0 13\"/></svg>",
+    smarthub: "<svg viewBox=\"0 0 24 24\" class=\"dv-ico\"><path d=\"M19 8.71l-5.333 -4.148a2.666 2.666 0 0 0 -3.274 0l-5.334 4.148a2.665 2.665 0 0 0 -1.029 2.105v7.2a2 2 0 0 0 2 2h12a2 2 0 0 0 2 -2v-7.2c0 -.823 -.38 -1.6 -1.03 -2.105\" /> <path d=\"M16 15c-2.21 1.333 -5.792 1.333 -8 0\" /></svg>",
+    plug: "<svg viewBox=\"0 0 24 24\" class=\"dv-ico\"><path d=\"M9.785 6l8.215 8.215l-2.054 2.054a5.81 5.81 0 1 1 -8.215 -8.215l2.054 -2.054\" /> <path d=\"M4 20l3.5 -3.5\" /> <path d=\"M15 4l-3.5 3.5\" /> <path d=\"M20 9l-3.5 3.5\" /></svg>",
+    light: "<svg viewBox=\"0 0 24 24\" class=\"dv-ico\"><path d=\"M3 12h1m8 -9v1m8 8h1m-15.4 -6.4l.7 .7m12.1 -.7l-.7 .7\" /> <path d=\"M9 16a5 5 0 1 1 6 0a3.5 3.5 0 0 0 -1 3a2 2 0 0 1 -4 0a3.5 3.5 0 0 0 -1 -3\" /> <path d=\"M9.7 17l4.6 0\" /></svg>",
+    thermostat: "<svg viewBox=\"0 0 24 24\" class=\"dv-ico\"><circle cx=\"12\" cy=\"12\" r=\"9\"/><path d=\"M6.2 8.2l1.2 .8M12 3.8v1.4M17.8 8.2l-1.2 .8\"/><text x=\"12\" y=\"16.6\" text-anchor=\"middle\" font-size=\"8.4\" font-weight=\"700\" font-family=\"Arial\" fill=\"currentColor\" stroke=\"none\">℃</text></svg>",
+    thsensor: "<svg viewBox=\"0 0 24 24\" class=\"dv-ico\"><path d=\"M4 13.5a4 4 0 1 0 4 0v-8.5a2 2 0 1 0 -4 0v8.5\" /> <path d=\"M4 9h4\" /> <path d=\"M13 16a4 4 0 1 0 0 -8a4.07 4.07 0 0 0 -1 .124\" /> <path d=\"M13 3v1\" /> <path d=\"M21 12h1\" /> <path d=\"M13 20v1\" /> <path d=\"M19.4 5.6l-.7 .7\" /> <path d=\"M18.7 17.7l.7 .7\" /></svg>",
+    motion: "<svg viewBox=\"0 0 24 24\" class=\"dv-ico\"><circle cx=\"7.5\" cy=\"4.6\" r=\"1.9\"/><path d=\"M7.5 7.5v6.5M7.5 14l-2.8 6M7.5 14l2.8 6M4 10.3h7\"/><path d=\"M14.5 9a4.5 4.5 0 0 1 0 6\"/><path d=\"M17.5 6.5a8.5 8.5 0 0 1 0 11\"/></svg>",
+    contact: "<svg viewBox=\"0 0 24 24\" class=\"dv-ico\"><path d=\"M13 12v.01\" /> <path d=\"M3 21h18\" /> <path d=\"M5 21v-16a2 2 0 0 1 2 -2h6m4 10.5v7.5\" /> <path d=\"M21 7h-7m3 -3l-3 3l3 3\" /></svg>",
+    leak: "<svg viewBox=\"0 0 24 24\" class=\"dv-ico\"><path d=\"M7.502 19.423c2.602 2.105 6.395 2.105 8.996 0c2.602 -2.105 3.262 -5.708 1.566 -8.546l-4.89 -7.26c-.42 -.625 -1.287 -.803 -1.936 -.397a1.376 1.376 0 0 0 -.41 .397l-4.893 7.26c-1.695 2.838 -1.035 6.441 1.567 8.546\" /></svg>",
+    sensor: "<svg viewBox=\"0 0 24 24\" class=\"dv-ico\"><path d=\"M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0\" /> <path d=\"M11 12a1 1 0 1 0 2 0a1 1 0 1 0 -2 0\" /> <path d=\"M13.41 10.59l2.59 -2.59\" /> <path d=\"M7 12a5 5 0 0 1 5 -5\" /></svg>",
+    lock: "<svg viewBox=\"0 0 24 24\" class=\"dv-ico\"><rect x=\"2.5\" y=\"11\" width=\"10\" height=\"9\" rx=\"1.5\"/><path d=\"M5 11v-2.5a2.5 2.5 0 0 1 5 0v2.5\"/><circle cx=\"7.5\" cy=\"15.5\" r=\".9\" fill=\"currentColor\" stroke=\"none\"/><rect x=\"14\" y=\"4\" width=\"7.5\" height=\"12\" rx=\"1.2\"/><rect x=\"15.8\" y=\"6.3\" width=\"3.2\" height=\"2.6\" rx=\".5\"/><path d=\"M15.8 12h3.9M15.8 14h2.4\"/></svg>",
+    vacuum: "<svg viewBox=\"0 0 24 24\" class=\"dv-ico\"><circle cx=\"12\" cy=\"12\" r=\"9\"/><path d=\"M6.3 8.2a7.2 7.2 0 0 1 11.4 0\"/><circle cx=\"12\" cy=\"13\" r=\"2.2\"/><path d=\"M6.8 16.8l-1.6 1.2M8.2 18.2l-.9 1.7M5.6 15.2l-1.8 .5\"/></svg>",
+    robot: "<svg viewBox=\"0 0 24 24\" class=\"dv-ico\"><path d=\"M6 6a2 2 0 0 1 2 -2h8a2 2 0 0 1 2 2v4a2 2 0 0 1 -2 2h-8a2 2 0 0 1 -2 -2l0 -4\" /> <path d=\"M12 2v2\" /> <path d=\"M9 12v9\" /> <path d=\"M15 12v9\" /> <path d=\"M5 16l4 -2\" /> <path d=\"M15 14l4 2\" /> <path d=\"M9 18h6\" /> <path d=\"M10 8v.01\" /> <path d=\"M14 8v.01\" /></svg>",
+    remote: "<svg viewBox=\"0 0 24 24\" class=\"dv-ico\"><path d=\"M10 10a2 2 0 1 0 4 0a2 2 0 1 0 -4 0\" /> <path d=\"M7 5a2 2 0 0 1 2 -2h6a2 2 0 0 1 2 2v14a2 2 0 0 1 -2 2h-6a2 2 0 0 1 -2 -2l0 -14\" /> <path d=\"M12 3v2\" /> <path d=\"M10 15v.01\" /> <path d=\"M10 18v.01\" /> <path d=\"M14 18v.01\" /> <path d=\"M14 15v.01\" /></svg>",
+    scale: "<svg viewBox=\"0 0 24 24\" class=\"dv-ico\"><rect x=\"3\" y=\"3\" width=\"18\" height=\"18\" rx=\"4\"/><rect x=\"8.5\" y=\"5.8\" width=\"7\" height=\"3.4\" rx=\".8\"/><ellipse cx=\"9\" cy=\"15.2\" rx=\"1.8\" ry=\"3\"/><ellipse cx=\"15\" cy=\"15.2\" rx=\"1.8\" ry=\"3\"/></svg>",
+    pet: "<svg viewBox=\"0 0 24 24\" class=\"dv-ico\"><path d=\"M14.7 13.5c-1.1 -2 -1.441 -2.5 -2.7 -2.5c-1.259 0 -1.736 .755 -2.836 2.747c-.942 1.703 -2.846 1.845 -3.321 3.291c-.097 .265 -.145 .677 -.143 .962c0 1.176 .787 2 1.8 2c1.259 0 3 -1 4.5 -1s3.241 1 4.5 1c1.013 0 1.8 -.823 1.8 -2c0 -.285 -.049 -.697 -.146 -.962c-.475 -1.451 -2.512 -1.835 -3.454 -3.538\" /> <path d=\"M20.188 8.082a1.039 1.039 0 0 0 -.406 -.082h-.015c-.735 .012 -1.56 .75 -1.993 1.866c-.519 1.335 -.28 2.7 .538 3.052c.129 .055 .267 .082 .406 .082c.739 0 1.575 -.742 2.011 -1.866c.516 -1.335 .273 -2.7 -.54 -3.052l-.001 0\" /> <path d=\"M9.474 9c.055 0 .109 0 .163 -.011c.944 -.128 1.533 -1.346 1.32 -2.722c-.203 -1.297 -1.047 -2.267 -1.932 -2.267c-.055 0 -.109 0 -.163 .011c-.944 .128 -1.533 1.346 -1.32 2.722c.204 1.293 1.048 2.267 1.933 2.267\" /> <path d=\"M16.456 6.733c.214 -1.376 -.375 -2.594 -1.32 -2.722a1.164 1.164 0 0 0 -.162 -.011c-.885 0 -1.728 .97 -1.93 2.267c-.214 1.376 .375 2.594 1.32 2.722c.054 .007 .108 .011 .162 .011c.885 0 1.73 -.974 1.93 -2.267\" /> <path d=\"M5.69 12.918c.816 -.352 1.054 -1.719 .536 -3.052c-.436 -1.124 -1.271 -1.866 -2.009 -1.866c-.14 0 -.277 .027 -.407 .082c-.816 .352 -1.054 1.719 -.536 3.052c.436 1.124 1.271 1.866 2.009 1.866c.14 0 .277 -.027 .407 -.082\" /></svg>",
+    voip: "<svg viewBox=\"0 0 24 24\" class=\"dv-ico\"><g transform=\"translate(4.8 -0.4) scale(.6)\" stroke-width=\"3.3\"><path d=\"M5 4h4l2 5l-2.5 1.5a11 11 0 0 0 5 5l1.5 -2.5l5 2v4a2 2 0 0 1 -2 2a16 16 0 0 1 -15 -15a2 2 0 0 1 2 -2\"/></g><text x=\"12\" y=\"21\" text-anchor=\"middle\" font-size=\"7.6\" font-weight=\"700\" font-family=\"Arial\" fill=\"currentColor\" stroke=\"none\">IP</text></svg>",
+    pbx: "<svg viewBox=\"0 0 24 24\" class=\"dv-ico\"><g transform=\"translate(4.8 -0.4) scale(.6)\" stroke-width=\"3.3\"><path d=\"M5 4h4l2 5l-2.5 1.5a11 11 0 0 0 5 5l1.5 -2.5l5 2v4a2 2 0 0 1 -2 2a16 16 0 0 1 -15 -15a2 2 0 0 1 2 -2\"/></g><text x=\"12\" y=\"21\" text-anchor=\"middle\" font-size=\"6.8\" font-weight=\"700\" font-family=\"Arial\" fill=\"currentColor\" stroke=\"none\">PBX</text></svg>",
+    conference: "<svg viewBox=\"0 0 24 24\" class=\"dv-ico\"><rect x=\"2.5\" y=\"3.5\" width=\"19\" height=\"13\" rx=\"1.5\"/><circle cx=\"8.6\" cy=\"8.4\" r=\"1.9\"/><circle cx=\"15.4\" cy=\"8.4\" r=\"1.9\"/><path d=\"M5.6 14.4a3 3 0 0 1 6 0M12.4 14.4a3 3 0 0 1 6 0\"/><path d=\"M12 16.5v3M8.5 20.5h7\"/></svg>",
+    plc: "<svg viewBox=\"0 0 24 24\" class=\"dv-ico\"><rect x=\"3\" y=\"3\" width=\"18\" height=\"18\" rx=\"3\"/><path d=\"M9.5 6.3v4.2M14.5 6.3v4.2\"/><text x=\"12\" y=\"18.4\" text-anchor=\"middle\" font-size=\"6.6\" font-weight=\"700\" font-family=\"Arial\" fill=\"currentColor\" stroke=\"none\">PLC</text></svg>",
+    industrial: "<svg viewBox=\"0 0 24 24\" class=\"dv-ico\"><path d=\"M3 21h18\" /> <path d=\"M5 21v-12l5 4v-4l5 4h4\" /> <path d=\"M19 21v-8l-1.436 -9.574a.5 .5 0 0 0 -.495 -.426h-1.145a.5 .5 0 0 0 -.494 .418l-1.43 8.582\" /> <path d=\"M9 17h1\" /> <path d=\"M14 17h1\" /></svg>",
+    host: "<svg viewBox=\"0 0 24 24\" class=\"dv-ico\"><path d=\"M6 9a6 6 0 1 0 12 0a6 6 0 0 0 -12 0\" /> <path d=\"M12 3c1.333 .333 2 2.333 2 6s-.667 5.667 -2 6\" /> <path d=\"M12 3c-1.333 .333 -2 2.333 -2 6s.667 5.667 2 6\" /> <path d=\"M6 9h12\" /> <path d=\"M3 20h7\" /> <path d=\"M14 20h7\" /> <path d=\"M10 20a2 2 0 1 0 4 0a2 2 0 0 0 -4 0\" /> <path d=\"M12 15v3\" /></svg>",
+    container: "<svg viewBox=\"0 0 24 24\" class=\"dv-ico\"><path d=\"M12 3l8 4.5l0 9l-8 4.5l-8 -4.5l0 -9l8 -4.5\" /> <path d=\"M12 12l8 -4.5\" /> <path d=\"M12 12l0 9\" /> <path d=\"M12 12l-8 -4.5\" /></svg>",
+    unknown: "<svg viewBox=\"0 0 24 24\" class=\"dv-ico\"><path d=\"M5 5a2 2 0 0 1 2 -2h10a2 2 0 0 1 2 2v14a2 2 0 0 1 -2 2h-10a2 2 0 0 1 -2 -2l0 -14\" /> <path d=\"M12 16v.01\" /> <path d=\"M12 13a2 2 0 0 0 .914 -3.782a1.98 1.98 0 0 0 -2.414 .483\" /></svg>",
   };
+  // A type the user typed in their own words has no drawing; this tag stands in.
+  const CUSTOM_TYPE_SVG = '<svg viewBox="0 0 24 24" class="dv-ico"><path d="M7 4h6.5a2 2 0 0 1 1.4 .6l5 5a2 2 0 0 1 0 2.8l-6.5 6.5a2 2 0 0 1 -2.8 0l-5 -5a2 2 0 0 1 -.6 -1.4V6a2 2 0 0 1 2 -2z"/><circle cx="9.5" cy="8.5" r="1.1" fill="currentColor" stroke="none"/></svg>';
   // Every template but "container" is one a scan can guess; "container" is
   // only ever chosen by hand, so scans leave it alone (ScanService::AUTO_TYPES).
   const TYPE_LABEL = {
-    router: 'Network gear', printer: 'Printer', camera: 'Camera', nas: 'NAS',
-    pc: 'PC', phone: 'Phone', iot: 'IoT', av: 'AV device', sbc: 'Single-board',
-    server: 'Server', container: 'Container', host: 'Host', unknown: 'Unknown',
+    router: "Router (wired)",
+    router_wifi: "Router (Wi-Fi)",
+    hub: "Hub (L1)",
+    switch: "Switch (L2)",
+    switch3: "Switch (L3)",
+    ap: "Access point",
+    repeater: "Wi-Fi repeater",
+    onu: "ONU / modem",
+    firewall: "Firewall",
+    vpn: "VPN gateway",
+    lb: "Load balancer",
+    gateway: "Gateway",
+    pc: "PC",
+    laptop: "Laptop",
+    server: "Server machine",
+    hypervisor: "Hypervisor",
+    sbc: "Single-board",
+    nas: "NAS",
+    phone: "Phone",
+    tablet: "Tablet",
+    watch: "Smartwatch",
+    printer: "Printer",
+    mfp: "Multifunction printer",
+    scanner: "Scanner",
+    projector: "Projector",
+    pos: "POS / register",
+    barcode: "Barcode",
+    cardreader: "Card reader",
+    timeclock: "Time clock",
+    signage: "Digital signage",
+    camera: "Security camera",
+    digicam: "Digital camera",
+    webcam: "Web camera",
+    nvr: "Recorder (NVR)",
+    dvr: "Recorder (DVR)",
+    intercom: "Intercom",
+    access: "Access control",
+    alarm: "Alarm panel",
+    tv: "TV",
+    av: "AV device",
+    speaker: "Speaker",
+    mediaplayer: "Media player",
+    settop: "Set-top box",
+    game: "Game console",
+    ereader: "E-reader",
+    aircon: "Air conditioner",
+    airpurifier: "Air purifier",
+    solar: "Solar panel",
+    pcs: "Power conditioner",
+    battery: "Storage battery",
+    chargectrl: "Charge controller",
+    evcharger: "EV charger",
+    smartmeter: "Smart meter",
+    hems: "HEMS",
+    generator: "Generator",
+    ups: "UPS",
+    pdu: "PDU",
+    iot: "IoT",
+    smarthub: "Smart hub",
+    plug: "Smart plug",
+    light: "Smart light",
+    thermostat: "Thermostat",
+    thsensor: "Temp/humidity sensor",
+    motion: "Motion sensor",
+    contact: "Contact sensor",
+    leak: "Leak sensor",
+    sensor: "Sensor",
+    lock: "Smart lock",
+    vacuum: "Robot vacuum",
+    robot: "Robot",
+    remote: "Smart remote",
+    scale: "Smart scale",
+    pet: "Pet device",
+    voip: "VoIP phone",
+    pbx: "PBX",
+    conference: "Conferencing",
+    plc: "PLC",
+    industrial: "Industrial",
+    host: "Host",
+    container: "Container",
+    unknown: "Unknown",
   };
+  // Types gathered into the categories shown in the picker (as option groups) and
+  // in the all-types reference. A PLC is a networked controller, and a host or a
+  // container is a computer/server, so they sit with those (owner, 2026-09-27).
+  const TYPE_CATEGORY = [
+    { label: 'Networking', types: ['router', 'router_wifi', 'hub', 'switch', 'switch3', 'ap', 'repeater', 'onu', 'firewall', 'vpn', 'lb', 'gateway', 'plc'] },
+    { label: 'Computers', types: ['pc', 'laptop', 'server', 'hypervisor', 'sbc', 'nas', 'host', 'container'] },
+    { label: 'Mobile devices', types: ['phone', 'tablet', 'watch'] },
+    { label: 'Office equipment', types: ['printer', 'mfp', 'scanner', 'projector', 'pos', 'barcode', 'cardreader', 'timeclock', 'signage'] },
+    { label: 'Cameras & security', types: ['camera', 'digicam', 'webcam', 'nvr', 'dvr', 'intercom', 'access', 'alarm'] },
+    { label: 'AV & appliances', types: ['tv', 'av', 'speaker', 'mediaplayer', 'settop', 'game', 'ereader', 'aircon', 'airpurifier'] },
+    { label: 'Energy & power', types: ['solar', 'pcs', 'battery', 'chargectrl', 'evcharger', 'smartmeter', 'hems', 'generator', 'ups', 'pdu'] },
+    { label: 'Smart & IoT', types: ['iot', 'smarthub', 'plug', 'light', 'thermostat', 'thsensor', 'motion', 'contact', 'leak', 'sensor', 'lock', 'vacuum', 'robot', 'remote', 'scale', 'pet'] },
+    { label: 'Voice & control', types: ['voip', 'pbx', 'conference', 'industrial'] },
+    { label: 'Other devices', types: ['unknown'] },
+  ];
+  // Where a device is, in three parts, each chosen from presets or typed: the floor
+  // or place ("1F"), the room ("Guest room") and where in it ("Wall"). Keys carry a
+  // 'loc:' prefix so a word like "Office" never borrows another screen's translation;
+  // floors ("2F") are written as they are. The list is the owner's pick (2026-09-27).
+  const WHERE_FIELDS = [
+    { key: 'location', label: 'Place', hint: 'e.g. 1F', groups: [
+      { label: 'loc:Buildings and sites', items: ['loc:Home', 'loc:Parents\' home', 'loc:Second home', 'loc:Annex', 'loc:Apartment', 'loc:Condominium', 'loc:Office', 'loc:Head office', 'loc:Branch', 'loc:Sales office', 'loc:Store', 'loc:Factory', 'loc:Warehouse', 'loc:Workshop', 'loc:School', 'loc:Hospital', 'loc:Data center', 'loc:Rental space'] },
+      { label: 'loc:Floors', items: ['B3', 'B2', 'B1', '1F', '2F', '3F', '4F', '5F', '6F', '7F', '8F', '9F', '10F', 'loc:Basement', 'loc:Rooftop', 'loc:Attic', 'loc:Loft'] },
+      { label: 'loc:Outdoors and grounds', items: ['loc:Garage', 'loc:Carport', 'loc:Car shed', 'loc:Parking lot', 'loc:Shed', 'loc:Garden', 'loc:Veranda', 'loc:Balcony', 'loc:Terrace', 'loc:Outdoors', 'loc:Gate', 'loc:Site entrance', 'loc:Passage', 'loc:Roof', 'loc:Utility pole', 'loc:Cubicle substation'] },
+    ] },
+    { key: 'room', label: 'Room', hint: 'e.g. Guest room', groups: [
+      { label: 'loc:Rooms at home', items: ['loc:Entrance', 'loc:Hallway', 'loc:Stairs', 'loc:Living room', 'loc:Dining room', 'loc:Kitchen', 'loc:Japanese-style room', 'loc:Western-style room', 'loc:Bedroom', 'loc:Children\'s room', 'loc:Study room', 'loc:Den', 'loc:Guest room', 'loc:Parlor', 'loc:Closet', 'loc:Oshiire closet', 'loc:Pantry', 'loc:Bathroom', 'loc:Changing room', 'loc:Washroom', 'loc:Toilet', 'loc:Laundry room', 'loc:Home theater', 'loc:Game room', 'loc:Pet room'] },
+      { label: 'loc:Rooms at work', items: ['loc:Office room', 'loc:President\'s office', 'loc:Executive room', 'loc:Meeting room', 'loc:Reception room', 'loc:Reception', 'loc:Lobby', 'loc:Waiting room', 'loc:Break room', 'loc:Locker room', 'loc:Kitchenette', 'loc:Cafeteria', 'loc:Commercial kitchen', 'loc:Sales floor', 'loc:Checkout', 'loc:Back room', 'loc:Stockroom', 'loc:Work room', 'loc:Classroom', 'loc:Staff room', 'loc:Consultation room', 'loc:Treatment room', 'loc:Patient room', 'loc:Nurses\' station', 'loc:Server room', 'loc:Machine room', 'loc:Security office', 'loc:Guard room', 'loc:Manager\'s office', 'loc:Night duty room', 'loc:Archive', 'loc:Records room', 'loc:Print room', 'loc:Studio'] },
+    ] },
+    { key: 'mount', label: 'Installed at', hint: 'e.g. Wall', groups: [
+      { label: 'loc:Where it is mounted', items: ['loc:Ceiling', 'loc:Above the ceiling', 'loc:Wall', 'loc:Under the floor', 'loc:Shelf', 'loc:Rack', 'loc:Server rack', 'loc:Distribution board', 'loc:Multimedia box', 'loc:TV stand', 'loc:Behind the TV', 'loc:By the window', 'loc:Pillar', 'loc:Cabinet'] },
+    ] },
+  ];
   /**
    * The bytes behind the terminal's key buttons.
    *
@@ -403,6 +628,10 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
             </label>
             <button class="btn sm keep" v-if="allowed('scan')" :title="t('Edit the devices you have named, all in one place')" @click="openRegEditor"><span class="ic"><svg viewBox="0 0 24 24"><path d="M4 20h16"/><path d="M14.5 4.5l3 3L8 17l-3.5.5L5 14z"/></svg></span><span class="lb">{{ t('Edit named') }}</span></button>
             <button class="btn sm keep" :title="t('Download what this tool found')" @click="exportCsv" :disabled="!shownDevices.length"><span class="ic"><svg viewBox="0 0 24 24"><path d="M12 3.5v11.5"/><path d="M7.5 10.5L12 15l4.5-4.5"/><path d="M4 17.5V19a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-1.5"/></svg></span><span class="lb">CSV</span></button>
+            <div class="view-toggle" role="group" :aria-label="t('View')">
+              <button class="vt" :class="{on: deviceView==='list'}" @click="setDeviceView('list')" :title="t('List view')"><svg viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg><span class="vt-lb">{{ t('List view') }}</span></button>
+              <button class="vt" :class="{on: deviceView==='card'}" @click="setDeviceView('card')" :title="t('Card view')"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span class="vt-lb">{{ t('Card view') }}</span></button>
+            </div>
           </div>
           <!-- Whatever this tool has found: onto the clipboard, into a file, or
                into the person's own Nextcloud folder. -->
@@ -428,6 +657,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         <div class="global-busy" :class="{on: anyBusy}" role="progressbar" :aria-label="t('Working…')"><span></span></div>
         <div v-if="banner" class="banner" :class="banner.kind">
           <span>{{ banner.text }}</span>
+          <button v-if="banner.reload" class="btn sm reload" @click="reloadPage">{{ t('Reload the page') }}</button>
           <button class="btn xs ib" :title="t('Close')" :aria-label="t('Close')" @click="banner=null"><svg viewBox="0 0 24 24"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg></button>
         </div>
 
@@ -522,7 +752,8 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
           </div>
 
           <div v-if="!shownDevices.length" class="empty-hint">{{ allowed('scan') ? t('No devices recorded yet. Start a scan to build the list.') : t('No devices have been recorded yet. An administrator has to run a scan first.') }}</div>
-          <table v-else class="grid">
+          <template v-else>
+          <table v-if="deviceView==='list'" class="grid">
             <thead>
               <tr>
                 <th class="c-dot"></th>
@@ -549,9 +780,9 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
             </thead>
             <tbody>
               <tr v-for="g in deviceGroups" :key="g.key" @click="openDevice(g.rep)" @contextmenu.prevent="openRowMenu(g.rep, $event)" :class="{offline: !g.online}">
-                <td class="c-dot"><span class="dot" :class="{on: g.online}" :title="g.online ? t('Online') : t('Not seen in the last sweep')"></span></td>
+                <td class="c-dot"><span class="dot" :class="{on: g.online}" :title="g.online ? t('Online') : t('Not seen in the last sweep')"></span><span class="dv-slot" v-html="icon(g.rep)"></span></td>
                 <td class="c-name">
-                  <div class="pair-a"><span class="ic">{{ icon(g.rep) }}</span><span class="nm" :class="{unnamed: !listName(g.rep).named}">{{ listName(g.rep).text }}</span><span class="badge self" v-if="g.isSelf">{{ t('this server') }}</span><span class="badge" v-if="g.rep.label">{{ t('named') }}</span></div>
+                  <div class="pair-a"><span class="nm" :class="{unnamed: !listName(g.rep).named}">{{ listName(g.rep).text }}</span><span class="badge self" v-if="g.isSelf">{{ t('this server') }}</span><span class="badge" v-if="g.rep.label">{{ t('named') }}</span></div>
                   <!-- Ports belong to the address they are open on, so they sit
                        on each address line and open a window on THAT IP — a
                        device with several addresses shows each one's ports. -->
@@ -571,15 +802,27 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
                       </span>
                     </div>
                   </template>
+                  <div class="pair-loc" v-if="whereText(g.rep)" :title="whereText(g.rep)">📍 {{ whereText(g.rep) }}</div>
                   <div class="pair-note" v-if="g.rep.notes" :title="g.rep.notes">📝 {{ g.rep.notes }}</div>
                 </td>
                 <td class="c-pair">
-                  <div class="pair-a">{{ typeText(g.rep.type) }}</div>
+                  <span class="tchip">{{ typeText(g.rep.type) }}</span>
                 </td>
                 <td class="dim c-extra">{{ ago(g.lastSeen) }}</td>
               </tr>
             </tbody>
           </table>
+          <div v-else class="dev-cards">
+            <div v-for="g in deviceGroups" :key="g.key" class="dev-card" :class="{offline: !g.online}" @click="openDevice(g.rep)" @contextmenu.prevent="openRowMenu(g.rep, $event)">
+              <div class="dc-top"><span class="dv-slot big" v-html="icon(g.rep)"></span><span class="dot" :class="{on: g.online}" :title="g.online ? t('Online') : t('Not seen in the last sweep')"></span></div>
+              <div class="dc-maker" v-if="vendorShort(g.rep)">{{ vendorShort(g.rep) }}</div>
+              <div class="dc-name" :class="{unnamed: !listName(g.rep).named}">{{ listName(g.rep).text }}</div>
+              <div class="dc-type"><span class="tchip">{{ typeText(g.rep.type) }}</span></div>
+              <div class="dc-loc" v-if="whereText(g.rep)" :title="whereText(g.rep)">📍 {{ whereText(g.rep) }}</div>
+              <div class="dc-ip mono">{{ g.rep.ip }}</div>
+            </div>
+          </div>
+          </template>
         </section>
 
         <!-- ============ dns ============ -->
@@ -1934,22 +2177,33 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
       <div class="modal wide">
         <div class="drawer-head">
           <span class="ic big">🛠</span>
-          <div><strong>{{ t('Edit named devices') }}</strong><div class="dim">{{ t('The devices you have given a name. Rename them, change the type, edit the note, or remove one.') }}</div></div>
+          <div><strong>{{ t('Edit named devices') }}</strong><div class="dim">{{ t('The devices you have given a name. Change the name, type, where it is or the note, or remove one.') }}</div></div>
           <span class="spacer"></span>
           <button class="btn xs ib" :title="t('Close')" :aria-label="t('Close')" @click="editReg=false"><svg viewBox="0 0 24 24"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg></button>
         </div>
         <div class="drawer-body reg-body">
           <p v-if="!editRegRows.length" class="dim">{{ t('No named devices yet. Open a device from the list and give it a name to add it here.') }}</p>
           <table v-else class="reg-table">
-            <thead><tr><th>{{ t('Name') }}</th><th>{{ t('Type') }}</th><th>{{ t('Notes') }}</th><th class="reg-id">{{ t('IPv4') }} / {{ t('MAC address') }}</th><th></th></tr></thead>
+            <thead><tr><th>{{ t('Name') }}</th><th>{{ t('Type') }}</th><th v-for="f in whereFields" :key="f.key">{{ t(f.label) }}</th><th>{{ t('Notes') }}</th><th class="reg-id">{{ t('IPv4') }} / {{ t('MAC address') }}</th><th></th></tr></thead>
             <tbody>
               <tr v-for="r in editRegRows" :key="r.id" :class="{'reg-del': r.remove}">
                 <td><input v-model="r.label" :placeholder="r.hostname || r.ip" :disabled="r.remove"></td>
                 <td><div class="type-pick">
-                  <select v-if="r.type !== customType" v-model="r.type" :disabled="r.remove" :aria-label="t('Type')" @change="focusOwnType($event)"><option v-for="(l,k) in typeLabels" :key="k" :value="k">{{ t(l) }}</option><option :value="customType">{{ t('Other (enter your own)') }}</option></select>
+                  <select v-if="r.type !== customType" v-model="r.type" :disabled="r.remove" :aria-label="t('Type')" @change="focusOwnType($event)"><optgroup v-for="cg in typeOptions" :key="cg.label" :label="cg.label"><option v-for="o in cg.items" :key="o.v" :value="o.v">{{ o.label }}</option></optgroup><option :value="customType">{{ t('Other (enter your own)') }}</option></select>
                   <span v-else class="type-own">
                     <input v-model="r.typeText" :disabled="r.remove" maxlength="32" :placeholder="t('Enter a type')" :aria-label="t('Enter a type')" @keydown.esc.stop="r.type = typeBack(r.oldType)">
                     <button type="button" class="btn xs ib type-back" :disabled="r.remove" :title="t('Choose from the list')" :aria-label="t('Choose from the list')" @click="r.type = typeBack(r.oldType)"><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></button>
+                  </span>
+                </div></td>
+                <td v-for="f in whereFields" :key="f.key"><div class="type-pick">
+                  <select v-if="!r.own[f.key]" :value="r[f.key]" :class="{unset: !r[f.key]}" :disabled="r.remove" :aria-label="t(f.label)" @change="pickWhereRow(r, f.key, $event)">
+                    <option value="">{{ t('Not set') }}</option>
+                    <optgroup v-for="g in whereChoices(f, r[f.key])" :key="g.label" :label="g.label"><option v-for="o in g.items" :key="o.v" :value="o.v">{{ o.label }}</option></optgroup>
+                    <option :value="customType">{{ t('Other (enter your own)') }}</option>
+                  </select>
+                  <span v-else class="type-own">
+                    <input v-model="r[f.key]" :disabled="r.remove" maxlength="255" :placeholder="t(f.hint)" :aria-label="t(f.label)" @keydown.esc.stop="r.own[f.key] = false">
+                    <button type="button" class="btn xs ib type-back" :disabled="r.remove" :title="t('Choose from the list')" :aria-label="t('Choose from the list')" @click="r.own[f.key] = false"><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></button>
                   </span>
                 </div></td>
                 <td><input v-model="r.notes" :disabled="r.remove"></td>
@@ -2898,7 +3152,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
     <div v-if="selected" class="drawer-backdrop" @click.self="selected=null">
       <div class="drawer">
         <div class="drawer-head">
-          <span class="ic big">{{ icon(selected) }}</span>
+          <span class="dv-slot big" v-html="icon(selected)"></span>
           <div>
             <div class="dev-title" :class="{unnamed: !(selected.label || selected.hostname)}">{{ selected.label || selected.hostname || selected.ip }}</div>
           </div>
@@ -2941,16 +3195,32 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
           <template v-if="allowed('scan')">
             <div class="fl"><span class="fl-label">{{ t('Type') }}</span>
               <div class="type-pick">
-                <select v-if="editType !== customType" v-model="editType" :aria-label="t('Type')" @change="focusOwnType($event)"><option v-for="(l,k) in typeLabels" :key="k" :value="k">{{ t(l) }}</option><option :value="customType">{{ t('Other (enter your own)') }}</option></select>
+                <select v-if="editType !== customType" v-model="editType" :aria-label="t('Type')" @change="focusOwnType($event)"><optgroup v-for="cg in typeOptions" :key="cg.label" :label="cg.label"><option v-for="o in cg.items" :key="o.v" :value="o.v">{{ o.label }}</option></optgroup><option :value="customType">{{ t('Other (enter your own)') }}</option></select>
                 <span v-else class="type-own">
                   <input v-model="editTypeText" maxlength="32" :placeholder="t('Enter a type')" :aria-label="t('Enter a type')" @keydown.esc.stop="editType = typeBack(selected.type)">
                   <button type="button" class="btn xs ib type-back" :title="t('Choose from the list')" :aria-label="t('Choose from the list')" @click="editType = typeBack(selected.type)"><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></button>
                 </span>
               </div>
             </div>
+            <!-- Chosen like the type: from the list (the owner's presets and whatever has
+                 already been written here), or typed under "Other". -->
+            <div class="fl" v-for="f in whereFields" :key="f.key"><span class="fl-label">{{ t(f.label) }}</span>
+              <div class="type-pick">
+                <select v-if="!whereOwn[f.key]" :value="editWhere[f.key]" :class="{unset: !editWhere[f.key]}" :aria-label="t(f.label)" @change="pickWhere(f.key, $event)">
+                  <option value="">{{ t('Not set') }}</option>
+                  <optgroup v-for="g in whereChoices(f, editWhere[f.key])" :key="g.label" :label="g.label"><option v-for="o in g.items" :key="o.v" :value="o.v">{{ o.label }}</option></optgroup>
+                  <option :value="customType">{{ t('Other (enter your own)') }}</option>
+                </select>
+                <span v-else class="type-own">
+                  <input v-model="editWhere[f.key]" maxlength="255" :placeholder="t(f.hint)" :aria-label="t(f.label)" @keydown.esc.stop="whereOwn[f.key] = false">
+                  <button type="button" class="btn xs ib type-back" :title="t('Choose from the list')" :aria-label="t('Choose from the list')" @click="whereOwn[f.key] = false"><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></button>
+                </span>
+              </div>
+            </div>
             <label class="fl"><span class="fl-label">{{ t('Notes') }}</span><textarea v-model="editNotes" rows="2"></textarea></label>
           </template>
-          <div class="kv" v-else-if="selected.notes">
+          <div class="kv" v-else-if="selected.notes || whereText(selected)">
+            <template v-for="f in whereFields" :key="f.key"><div v-if="selected[f.key]"><span>{{ t(f.label) }}</span><code class="wrap">{{ selected[f.key] }}</code></div></template>
             <div v-if="selected.notes"><span>{{ t('Notes') }}</span><code class="wrap">{{ selected.notes }}</code></div>
           </div>
           <div class="drawer-tools">
@@ -3187,7 +3457,8 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         // has got, and what it came back with.
         deep: { busy: '', percent: 0, note: '', pages: [] },
         filter: '', onlyOnline: true, sortKey: 'ip', sortDir: 1,
-        selected: null, editLabel: '', editNotes: '', editType: 'unknown', editTypeText: '', customType: CUSTOM_TYPE,
+        deviceView: (function(){try{return localStorage.getItem('netbase.deviceView')==='card'?'card':'list';}catch(e){return 'list';}})(),
+        selected: null, editLabel: '', editNotes: '', editWhere: { location: '', room: '', mount: '' }, whereOwn: { location: false, room: false, mount: false }, whereFields: WHERE_FIELDS, editType: 'unknown', editTypeText: '', customType: CUSTOM_TYPE,
         shellModal: false, shellStage: 'idle', shellCode: '', shellEmail: '', shellError: '', shellBusy: false,
         busy: {},
         dnsHost: '', dnsWanted: ['A', 'AAAA', 'MX', 'NS', 'TXT'], dnsResult: null,
@@ -3354,6 +3625,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         // NETBASE-STORE-REMOVED: pathResult: null,
         // NETBASE-STORE-REMOVED: nmapTargets: '', nmapPreset: 'quick', nmapExtra: '', nmapResult: null,
         typeLabels: TYPE_LABEL,
+        typeGroups: TYPE_CATEGORY,
       };
     },
     computed: {
@@ -3648,11 +3920,25 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         const n = Number(this.openPort);
         return Number.isInteger(n) && n > 0 && n < 65536;
       },
+      // Every place already written on a device, offered back while typing.
+      typeOptions() {
+        return TYPE_CATEGORY.map((cg) => ({
+          label: this.t(cg.label),
+          items: this.byEnglish(cg.types.map((k) => ({ ...this.optionFor(TYPE_LABEL[k], this.t(TYPE_LABEL[k])), v: k }))),
+        }));
+      },
+      usedWhere() {
+        const out = {};
+        for (const f of WHERE_FIELDS) {
+          out[f.key] = [...new Set(this.devices.map((d) => (d[f.key] || '').trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b));
+        }
+        return out;
+      },
       shownDevices() {
         const needle = this.filter.trim().toLowerCase();
         let list = this.devices.filter((d) => (!this.onlyOnline || d.online));
         if (needle) {
-          list = list.filter((d) => [d.name, d.ip, d.mac, d.vendor, d.hostname, d.notes]
+          list = list.filter((d) => [d.name, d.ip, d.mac, d.vendor, d.hostname, d.notes, d.location, d.room, d.mount]
             .filter(Boolean).some((v) => String(v).toLowerCase().includes(needle)));
         }
         const key = this.sortKey;
@@ -3693,6 +3979,50 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
       // Reading this.locale makes every t() call re-evaluate when the language
       // changes, so switching redraws the whole interface.
       t(text, vars) { return this.locale, T(text, vars); },
+      // A location preset in the reader's language; a floor ("2F") as written.
+      locText(k) {
+        if (!String(k).startsWith('loc:')) return k;
+        const s = this.t(k);
+        return s === k ? k.slice(4) : s;
+      },
+      // The list for one part: the presets in their groups, then what has been typed by
+      // hand on any device (and the value in hand), so it can be picked again.
+      whereChoices(f, current) {
+        const groups = f.groups.map((g) => ({
+          label: this.locText(g.label),
+          items: this.byEnglish(g.items.map((k) => this.optionFor(String(k).startsWith('loc:') ? k.slice(4) : k, this.locText(k))), g.label === 'loc:Floors'),
+        }));
+        const known = new Set(groups.flatMap((g) => g.items.map((o) => o.v)));
+        const own = [...this.usedWhere[f.key], current].filter((v, i, a) => v && !known.has(v) && a.indexOf(v) === i)
+          .sort((x, y) => x.localeCompare(y)).map((v) => ({ v, label: v }));
+        if (own.length) groups.push({ label: this.t('Entered by hand'), items: own });
+        return groups;
+      },
+      // One entry of a list: "<the reader's language> - English" (English alone when the
+      // two are the same), valued by what the reader sees, since that is what is saved.
+      // The list is in English order (byEnglish), which the English half makes plain.
+      optionFor(english, shown) {
+        return { v: shown, en: english, label: shown && shown !== english ? shown + ' - ' + english : english };
+      },
+      // Every list in English order, whatever the language, so an entry is always in the
+      // same place and typing its first letter jumps to it. Floors keep their own order
+      // (B3 … 10F), which the alphabet would scramble.
+      byEnglish(items, keepOrder) {
+        if (keepOrder) return items;
+        const c = new Intl.Collator('en', { numeric: true, sensitivity: 'base' });
+        return items.slice().sort((a, b) => c.compare(a.en, b.en));
+      },
+      // "Other" turns the list into a text field in the same place, as for the type.
+      pickWhere(key, ev) {
+        if (ev.target.value === this.customType) { this.whereOwn[key] = true; this.editWhere[key] = ''; this.focusOwnType(ev); return; }
+        this.editWhere[key] = ev.target.value;
+      },
+      pickWhereRow(r, key, ev) {
+        if (ev.target.value === this.customType) { r.own[key] = true; r[key] = ''; this.focusOwnType(ev); return; }
+        r[key] = ev.target.value;
+      },
+      // "1F Guest room Wall": the three parts in one line, empty ones left out.
+      whereText(d) { return d ? [d.location, d.room, d.mount].filter(Boolean).join(' ') : ''; },
       ago, stamp,
       progressText(scan) {
         const p = scan && scan.progress;
@@ -3730,7 +4060,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
       phaseWaiting(scan) {
         return !!(scan && scan.progress && scan.progress.key === 'mcastListen');
       },
-      icon(d) { return TYPE_ICON[d.type] || (d.type ? CUSTOM_TYPE_ICON : TYPE_ICON.unknown); },
+      icon(d) { return TYPE_ICON[d.type] || (d.type ? CUSTOM_TYPE_SVG : TYPE_ICON.unknown); },
       // A template's translated label, or the user's own words as they typed them.
       typeText(type) {
         if (!type) return this.t(TYPE_LABEL.unknown);
@@ -3760,6 +4090,20 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         if (!d.vendor) return d.mac ? T('Not registered') : '—';
         return d.vendor === '__randomized__' ? T('Randomised (privacy) address') : d.vendor;
       },
+      // Just the maker's name, for the label shown before the device icon. Empty
+      // when the maker is unknown or a privacy MAC. Common company suffixes are
+      // trimmed so the row stays short (ASUSTek COMPUTER INC. -> ASUSTek).
+      vendorShort(d) {
+        // A maker known only by the device's own name (SwitchBot's hubs carry Espressif's
+        // MAC block), shown by that name rather than by the radio chip's maker.
+        const said = [d.hostname, d.label, d.extra && d.extra.mdns].filter(Boolean).join(' ');
+        if (/switch[ _-]?bot/i.test(said)) return 'SwitchBot';
+        if (!d.vendor || d.vendor === '__randomized__') return '';
+        let v = String(d.vendor)
+          .replace(/[,.]?\s*(inc|inc\.|corp|corp\.|corporation|co\.,? ?ltd\.?|co\.|ltd\.?|gmbh|s\.a\.|technologies|technology|electronics|electronic|communications|computer|company|networks|international)\b\.?/gi, '')
+          .replace(/\s{2,}/g, ' ').replace(/[\s,\.]+$/, '').trim();
+        return v.length > 22 ? v.slice(0, 21) + '…' : v;
+      },
       fieldLabel(key) {
         const map = {
           registrar: 'Registrar', created: 'Created', updated: 'Updated', expires: 'Expires',
@@ -3775,14 +4119,16 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         if (this.sortKey === key) { this.sortDir *= -1; } else { this.sortKey = key; this.sortDir = 1; }
         try { localStorage.setItem('netbase.sort', JSON.stringify({ key: this.sortKey, dir: this.sortDir })); } catch (e) { /* private window */ }
       },
+      setDeviceView(v) { this.deviceView = v; try { localStorage.setItem('netbase.deviceView', v); } catch (e) {} },
       sortClass(key) { return this.sortKey === key ? (this.sortDir > 0 ? 'sorted asc' : 'sorted desc') : ''; },
       fail(e) {
         clearTimeout(this.noteTimer);
         // A refusal that only wants the master key is not an error to read and
         // dismiss — it is a question. So it is asked instead of announced.
         if (e && e.needsKey) { this.keyAsk = true; return; }
-        this.banner = { kind: 'error', text: String((e && e.message) || e) };
+        this.banner = { kind: 'error', text: String((e && e.message) || e), reload: !!(e && e.sessionLost) };
       },
+      reloadPage() { window.location.reload(); },
       note(text) {
         this.banner = { kind: 'info', text };
         // An informational notice (a finished scan, a saved file) fades on its
@@ -4328,6 +4674,8 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         this.selected = d;
         this.editLabel = d.label || '';
         this.editNotes = d.notes || '';
+        this.editWhere = { location: d.location || '', room: d.room || '', mount: d.mount || '' };
+        this.whereOwn = { location: false, room: false, mount: false };
         const pick = this.typePick(d.type);
         this.editType = pick.type;
         this.editTypeText = pick.text;
@@ -4337,7 +4685,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
           const dtype = this.typeToSave(this.editType, this.editTypeText, this.selected.type);
           const r = await api('devices/' + this.selected.id, {
             method: 'PATCH',
-            body: JSON.stringify({ label: this.editLabel, notes: this.editNotes, dtype, known: true }),
+            body: JSON.stringify({ label: this.editLabel, notes: this.editNotes, ...this.editWhere, dtype, known: true }),
           });
           const i = this.devices.findIndex((d) => d.id === r.device.id);
           if (i >= 0) this.devices.splice(i, 1, r.device);
@@ -4354,7 +4702,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
           .sort((a, b) => String(a.label || a.hostname || a.ip).localeCompare(String(b.label || b.hostname || b.ip)))
           .map((d) => {
             const pick = this.typePick(d.type);
-            return { id: d.id, ip: d.ip, mac: d.mac, hostname: d.hostname, label: d.label || '', type: pick.type, typeText: pick.text, oldType: d.type, notes: d.notes || '', remove: false };
+            return { id: d.id, ip: d.ip, mac: d.mac, hostname: d.hostname, label: d.label || '', type: pick.type, typeText: pick.text, oldType: d.type, notes: d.notes || '', location: d.location || '', room: d.room || '', mount: d.mount || '', own: { location: false, room: false, mount: false }, remove: false };
           });
         this.editReg = true;
       },
@@ -4368,7 +4716,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
             }
             await api('devices/' + r.id, {
               method: 'PATCH',
-              body: JSON.stringify({ label: r.label, notes: r.notes, dtype: this.typeToSave(r.type, r.typeText, r.oldType), known: true }),
+              body: JSON.stringify({ label: r.label, notes: r.notes, location: r.location, room: r.room, mount: r.mount, dtype: this.typeToSave(r.type, r.typeText, r.oldType), known: true }),
             }).catch(() => {});
           }
           await this.loadDevices();
@@ -7526,11 +7874,16 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         return { name: file, text: head + '\n\n' + body + '\n' };
       },
       devicesAsText() {
+        // What a person wrote goes with the list, as in the CSV (NCC #34): where it is
+        // and the notes — each kept to one cell, so a tab or a line break in a note
+        // cannot shift the columns.
+        const cell = (v) => String(v == null ? '' : v).replace(/[\t\r\n]+/g, ' ').trim();
         const rows = this.shownDevices.map((d) => [
           d.online ? '●' : '○', d.ip, d.name || '', d.mac || '', this.vendorText(d) || '',
           d.type ? this.typeText(d.type) : '', (d.ports || []).join(' '),
-        ].join('\t'));
-        return ['status\tip\tname\tmac\tvendor\ttype\tports', ...rows].join('\n');
+          d.location, d.room, d.mount, d.notes,
+        ].map(cell).join('\t'));
+        return ['status\tip\tname\tmac\tvendor\ttype\tports\tlocation\troom\tmount\tnotes', ...rows].join('\n');
       },
       /** The free-domain results as text — the rows on screen (after the two
        *  show/hide switches), each as "<mark> <domain>", with a header noting how
@@ -7588,6 +7941,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
           ['mDNS', extra.mdns || ''],
           [T('Reverse DNS'), extra.rdns || ''],
           ['SSDP', extra.ssdp || ''],
+          ...WHERE_FIELDS.map((f) => [T(f.label), device[f.key] || '']),
           [T('Notes'), device.notes || ''],
         ];
         return rows.filter((r) => String(r[1]).trim() !== '');
@@ -7625,12 +7979,20 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         } catch (e) { this.fail(e); }
       },
       exportCsv() {
-        const head = ['name', 'ip', 'mac', 'vendor', 'type', 'ports', 'workgroup', 'firstSeen', 'lastSeen', 'online'];
+        // What a person wrote is part of the list too (NCC #34): the name they gave it,
+        // its tags and its notes.
+        const head = ['name', 'label', 'hostname', 'ip', 'mac', 'vendor', 'type', 'ports', 'workgroup', 'tags', 'location', 'room', 'mount', 'notes', 'firstSeen', 'lastSeen', 'online'];
         const rows = this.shownDevices.map((d) => [
-          d.name, d.ip, d.mac, this.vendorText(d), d.type, d.ports.join(' '), d.workgroup,
-          stamp(d.firstSeen), stamp(d.lastSeen), d.online ? 'yes' : 'no',
+          d.name, d.label, d.hostname, d.ip, d.mac, this.vendorText(d), d.type, d.ports.join(' '), d.workgroup,
+          (d.tags || []).join(' '), d.location, d.room, d.mount, d.notes, stamp(d.firstSeen), stamp(d.lastSeen), d.online ? 'yes' : 'no',
         ]);
-        const esc = (v) => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"';
+        // A name a device gave itself ("=HYPERLINK(...)") must not become a formula when the
+        // file is opened in a spreadsheet (review C8).
+        const esc = (v) => {
+          let t = String(v == null ? '' : v);
+          if (/^[=+\-@\t\r]/.test(t)) t = "'" + t;
+          return '"' + t.replace(/"/g, '""') + '"';
+        };
         const csv = [head, ...rows].map((r) => r.map(esc).join(',')).join('\r\n');
         const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' });
         const a = document.createElement('a');

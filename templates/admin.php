@@ -57,9 +57,30 @@ declare(strict_types=1);
 		<p class="settings-hint nb-sub"><?php p($l->t('This is what makes an all-administrators setup vanish from other people\'s menus.')); ?></p>
 	</div>
 
+	<div class="nb-field nb-check">
+		<input type="checkbox" id="nb-self" class="checkbox"<?php p($_['allowSelf'] ? ' checked' : ''); ?>>
+		<label for="nb-self"><?php p($l->t('Allow connections to this server itself and to link-local addresses')); ?></label>
+		<p class="settings-hint nb-sub"><?php p($l->t('Off by default. When on, the device window and every tool may reach 127.0.0.1, ::1, 169.254.x.x (where cloud servers keep their metadata service) and fe80::. Turn it on only to open a service that listens on this server.')); ?></p>
+	</div>
+
 	<div class="nb-field nb-narrow">
 		<label for="nb-max"><?php p($l->t('Largest scan, in addresses')); ?></label>
 		<input type="number" id="nb-max" min="256" max="1048576" value="<?php p((string)$_['maxHosts']); ?>">
+	</div>
+
+	<h3><?php p($l->t('Opening device pages (proxy)')); ?></h3>
+	<p class="settings-hint"><?php p($l->t('Some small devices answer a few files and then return errors when a page loads all of its parts at once, so the page comes up blank. These limits ease that.')); ?></p>
+	<div class="nb-field nb-narrow">
+		<label for="nb-pmc"><?php p($l->t('Most connections to one device at once (0 = no limit)')); ?></label>
+		<input type="number" id="nb-pmc" min="0" max="64" value="<?php p((string)$_['proxyMaxConn']); ?>">
+	</div>
+	<div class="nb-field nb-narrow">
+		<label for="nb-pr"><?php p($l->t('Retries when a device page part returns an error (0 = never)')); ?></label>
+		<input type="number" id="nb-pr" min="0" max="10" value="<?php p((string)$_['proxyRetries']); ?>">
+	</div>
+	<div class="nb-field nb-narrow">
+		<label for="nb-prm"><?php p($l->t('Wait between those retries (milliseconds)')); ?></label>
+		<input type="number" id="nb-prm" min="0" max="5000" step="50" value="<?php p((string)$_['proxyRetryMs']); ?>">
 	</div>
 
 	<div class="nb-actions">

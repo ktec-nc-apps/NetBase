@@ -2,6 +2,54 @@
 
 All notable changes to NetBase are documented here.
 
+## 0.7.0 — 2026-09-27
+
+### Fixed
+
+- **Device pages that open through the proxy now render device interfaces built from
+  framesets and script-set locations.** A menu that moves a neighbouring frame with
+  `parent.<frame>.location = '/…'` (RICOH Web Image Monitor) and a switch whose image is
+  set in a `style="background-image:url(/…)"` written by script after load (ASUS routers)
+  were not rewritten, leaving a blank pane or a missing control. Inline `on*=` handlers and
+  `href="javascript:…"` are rewritten too.
+- **The device list no longer shows a bare "Error".** When the page's request token has
+  gone stale (a restarted session), the page fetches a fresh one and retries; a real
+  refusal now shows why instead of an empty status line.
+- **A note kept on a device follows the device, not the address.** When containers restart
+  and swap IP addresses, a hand-typed note/name/type is carried across by host name, not by
+  the address it used to hold, so it no longer lands on a different device.
+- **Every download includes what a person wrote.** CSV, Copy, "Download as a file" and "Save
+  the result" now carry the name, notes, tags and where the device is installed; values that
+  begin with `=`, `+`, `-` or `@` are quoted in the CSV so a spreadsheet does not treat them as
+  a formula, and a note with a line break or a tab stays in its own cell.
+- **A tab that lost its session says so and offers a reload.** When the browser reopens with
+  two NetBase tabs, both sign in again from "remember me" at the same moment and one of the two
+  sessions wins; the other tab now says the session ended and has a "Reload the page" button,
+  instead of failing quietly. (The race itself is Nextcloud's and happens on its own pages too.)
+- **Dark mode.** The new device views follow the light and dark themes.
+
+### Added
+
+- **Device types you can tell apart at a glance: 81 types in 10 categories, each with its own
+  icon.** Wired and Wi-Fi routers, L1/L2/L3 switches, NVR and DVR, security, digital and web
+  cameras, Wi-Fi repeaters, VPN, load balancers, PLC, smart-home and energy devices and more.
+  A scan now guesses more of them from names, ports and makers — media players (Chromecast,
+  Fire TV, Apple TV), game consoles, smart speakers, UPS, VoIP phones and SwitchBot hubs among
+  them. The type
+  picker lists them by category.
+- **A card view** beside the list, switched from the toolbar.
+- **Where each device is installed, in three parts: place, room and position** (for example
+  "1F / Guest room / Wall"). Each is picked from a list of presets or typed in; what has been
+  typed once is offered again. The lists — and the type picker — show "your language - English"
+  and are in English order, so an entry is in the same place in every language.
+- **Proxy resilience for fragile device web servers.** Some small devices serve a few files
+  and then return 5xx when a page loads all its parts at once. NetBase now limits how many
+  requests it makes to one device at a time and retries a GET/HEAD that returns 5xx. All
+  three values are set in the admin settings.
+- **Device targets are fenced to the local network by default.** The proxy and the tools no
+  longer reach this server itself (127.0.0.1, ::1) or link-local/metadata addresses
+  (169.254.0.0/16) unless an administrator turns that on.
+
 ## 0.6.2 — 2026-09-17
 
 ### Changed

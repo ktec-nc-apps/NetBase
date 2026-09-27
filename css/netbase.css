@@ -148,7 +148,9 @@
 #netbase-root .topbar .title .nm { font-weight: 700; font-size: 17px; white-space: nowrap; }
 #netbase-root .topbar .title .desc { color: var(--muted); font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 #netbase-root .spacer { flex: 1 1 auto; }
-#netbase-root .topbar-actions { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; }
+/* When the buttons need more room than the row has (longer words in some languages, the
+   labelled list/card switch), they go on to a second line rather than off the edge. */
+#netbase-root .topbar-actions { display: flex; align-items: center; gap: 8px; flex: 0 1 auto; flex-wrap: wrap; justify-content: flex-end; min-width: 0; row-gap: 6px; }
 #netbase-root .topbar-actions .filter { width: 260px; }
 /* A tab's own controls sit in the row with the rest until the room runs out. */
 #netbase-root .tab-actions { display: contents; }
@@ -249,8 +251,8 @@
   border-left: 2px solid var(--border);
 }
 #netbase-root .scan-sub .scan-sub-head { font-size: 12.5px; font-weight: 600; color: var(--muted); letter-spacing: .02em; }
-#netbase-root .scan-sub label { display: inline-flex; align-items: center; gap: 7px; font-size: 13.5px; color: var(--muted); }
-#netbase-root .scan-sub select { font-size: 13px; padding: 4px 8px; min-height: 0; width: auto; margin: 0; }
+#netbase-root .scan-sub label { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 7px; font-size: 13.5px; color: var(--muted); max-width: 100%; min-width: 0; }
+#netbase-root .scan-sub select { font-size: 13px; padding: 4px 8px; min-height: 0; width: auto; margin: 0; max-width: 100%; min-width: 0; }
 #netbase-root .scan-sub .opt-label { white-space: nowrap; }
 #netbase-root .progress { margin-top: 14px; }
 #netbase-root .progress .phase-line { display: flex; align-items: center; margin-bottom: 6px; }
@@ -305,7 +307,10 @@
 #netbase-root table.grid tbody tr.offline td { opacity: .55; }
 #netbase-root table.grid.compact { box-shadow: none; }
 #netbase-root table.grid.compact th, #netbase-root table.grid.compact td { padding: 6px 10px; font-size: 13px; cursor: default; }
-#netbase-root table.grid .c-dot { width: 26px; padding-right: 0; }
+#netbase-root table.grid th.c-dot { width: 58px; padding-right: 4px; }
+#netbase-root table.grid td.c-dot { width: 58px; padding-right: 4px; white-space: nowrap; vertical-align: top; }
+#netbase-root table.grid td.c-dot .dot { margin-right: 8px; vertical-align: middle; }
+#netbase-root table.grid td.c-dot .dv-slot { vertical-align: middle; }
 /* A lamp: amber and lit when the device answered the last sweep, plain grey
    when it did not. */
 #netbase-root .dot {
@@ -331,7 +336,7 @@
 /* The name cell now holds two stacked lines, so the flex row moves inwards
    to the first of them; the cell itself is an ordinary block again. */
 #netbase-root table.grid td.c-name { display: table-cell; }
-#netbase-root table.grid td.c-name .pair-a { display: flex; align-items: center; gap: 8px; }
+#netbase-root table.grid td.c-name .pair-a { display: flex; align-items: center; gap: 8px; min-height: 30px; }
 #netbase-root .c-name .nm { font-weight: 600; }
 
 #netbase-root .chips { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 10px; }
@@ -1357,3 +1362,64 @@
    stays in the hover tooltip. */
 #netbase-root .avail-row.avail-taken .avail-domain { color: var(--muted); }
 #netbase-root .avail-row.avail-unknown .avail-domain { text-decoration: line-through; color: var(--muted); opacity: .75; }
+
+/* ---------- device icons (v0.7: SVG type icons + maker text) ---------- */
+#netbase-root .dv-slot { width: 30px; height: 30px; display: inline-flex; align-items: center; justify-content: center; flex: 0 0 30px; }
+#netbase-root .dv-slot .dv-ico { width: 30px; height: 30px; stroke: var(--accent); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+#netbase-root .dv-slot .dv-ico [fill="currentColor"] { fill: var(--accent); stroke: none; }
+#netbase-root .dv-slot.big { width: 40px; height: 40px; flex-basis: 40px; }
+#netbase-root .dv-slot.big .dv-ico { width: 40px; height: 40px; }
+#netbase-root td.c-name .pair-a .dv-maker {
+  font-weight: 700; font-size: 12px; color: var(--muted); white-space: nowrap;
+  max-width: 130px; overflow: hidden; text-overflow: ellipsis; flex: 0 0 auto;
+}
+#netbase-root td.c-name .pair-a .tchip, #netbase-root table.grid td.c-pair .tchip {
+  display: inline-flex; align-items: center; font-size: 12px; font-weight: 600;
+  color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent);
+  padding: 1px 9px; border-radius: 99px; flex: 0 0 auto;
+}
+
+/* ---------- device card view + list/card toggle (v0.7) ---------- */
+/* A joined pair in the toolbar; each half shows its icon AND its name so it is
+   never a guess which view is which, and the lit half is the current view. */
+#netbase-root .view-toggle { display: inline-flex; gap: 0; margin: 0; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+#netbase-root .view-toggle .vt {
+  height: 32px; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 0 11px; background: var(--surface); border: 0; cursor: pointer; color: var(--muted);
+  font-size: 13px; font-weight: 600; white-space: nowrap;
+}
+#netbase-root .view-toggle .vt + .vt { border-left: 1px solid var(--border); }
+#netbase-root .view-toggle .vt svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+#netbase-root .view-toggle .vt:hover:not(.on) { background: var(--surface-2); color: var(--text); }
+#netbase-root .view-toggle .vt.on { color: var(--primary-ink); background: var(--primary); }
+#netbase-root .dev-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 14px; }
+#netbase-root .dev-card {
+  aspect-ratio: 1 / 1.2; background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+  padding: 11px 12px; display: flex; flex-direction: column; cursor: pointer; transition: .12s; min-width: 0;
+}
+#netbase-root .dev-card:hover { border-color: var(--accent); transform: translateY(-1px); box-shadow: 0 4px 14px rgba(0,0,0,.08); }
+#netbase-root .dev-card.offline { opacity: .55; }
+#netbase-root .dev-card .dc-top { display: flex; align-items: flex-start; justify-content: space-between; flex: 1; }
+#netbase-root .dev-card .dc-maker { font-size: 11px; font-weight: 700; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 6px; }
+#netbase-root .dev-card .dc-name { font-weight: 600; font-size: 13.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#netbase-root .dev-card .dc-name.unnamed { color: var(--muted); }
+#netbase-root .dev-card .dc-type { margin-top: 5px; }
+#netbase-root .dev-card .dc-type .tchip {
+  display: inline-flex; align-items: center; font-size: 11px; font-weight: 600; color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent); padding: 1px 8px; border-radius: 99px;
+}
+#netbase-root .dev-card .dc-ip { color: var(--muted); font-size: 11px; margin-top: 4px; }
+#netbase-root .dev-card .dot { margin-top: 4px; }
+
+/* ---------- where a device is installed (v0.7) ---------- */
+#netbase-root table.grid td.c-name .pair-loc {
+	font-size: 12px; color: var(--text); margin-top: 3px; max-width: 30em;
+	overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+#netbase-root .dev-card .dc-loc { font-size: 11.5px; color: var(--text); margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#netbase-root .banner .btn.reload + .btn { margin-left: 6px; }
+/* A part left empty reads as a hint, not as a value. */
+#netbase-root .type-pick select.unset { color: var(--muted); }
+#netbase-root .type-pick select.unset option { color: var(--text); }
+#netbase-root table.grid td.c-pair .tchip { white-space: nowrap; }
+#netbase-root .dev-card .dc-type .tchip { display: inline-block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: top; }

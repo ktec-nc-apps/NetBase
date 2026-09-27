@@ -49,7 +49,7 @@ class TelnetService {
 		string $command = '',
 		float $timeout = 12.0,
 	): array {
-		$host = $this->tools->validateHost($host);
+		$host = $this->tools->reach($host);
 		$port = max(1, min(65535, $port));
 		$timeout = min(30.0, max(3.0, $timeout));
 		$target = str_contains($host, ':') && filter_var($host, FILTER_VALIDATE_IP) !== false ? '[' . $host . ']' : $host;

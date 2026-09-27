@@ -37,6 +37,10 @@ class AdminSettings implements ISettings {
 			'groups' => $this->permissions->groups(),
 			'hideEmptyMenu' => $this->permissions->hidesEmptyMenu(),
 			'maxHosts' => (int)$this->config->getAppValue('netbase', 'max_hosts', '65536'),
+			'allowSelf' => $this->config->getAppValue('netbase', 'allow_self_targets', 'no') === 'yes',
+			'proxyMaxConn' => (int)$this->config->getAppValue('netbase', 'proxy_max_conn', '4'),
+			'proxyRetries' => (int)$this->config->getAppValue('netbase', 'proxy_retries', '2'),
+			'proxyRetryMs' => (int)$this->config->getAppValue('netbase', 'proxy_retry_ms', '400'),
 			'ouiEntries' => $this->oui->count(),
 			'neighbourLimits' => $this->discovery->neighbourLimits(),
 		], '');
