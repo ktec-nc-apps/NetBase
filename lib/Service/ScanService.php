@@ -58,10 +58,10 @@ class ScanService {
 	 * hand — a template no scan can guess (MANUAL_TYPES) or the user's own
 	 * words — and scans leave it alone.
 	 */
-	public const AUTO_TYPES = ['router', 'router_wifi', 'hub', 'switch', 'switch3', 'ap', 'onu', 'pc', 'server', 'sbc', 'nas', 'phone', 'tablet', 'printer', 'camera', 'nvr', 'dvr', 'tv', 'av', 'speaker', 'mediaplayer', 'game', 'ups', 'iot', 'smarthub', 'sensor', 'voip', 'host', 'unknown'];
+	public const AUTO_TYPES = ['router', 'router_wifi', 'hub', 'switch', 'switch3', 'ap', 'onu', 'pc', 'server', 'sbc', 'nas', 'phone', 'tablet', 'printer', 'camera', 'nvr', 'dvr', 'tv', 'av', 'speaker', 'mediaplayer', 'game', 'ups', 'iot', 'smarthub', 'plug', 'light', 'sensor', 'voip', 'host', 'unknown'];
 
 	/** Templates the picker offers that only a person can tell apart. */
-	public const MANUAL_TYPES = ['repeater', 'firewall', 'vpn', 'lb', 'gateway', 'laptop', 'hypervisor', 'watch', 'mfp', 'scanner', 'projector', 'pos', 'barcode', 'cardreader', 'timeclock', 'signage', 'digicam', 'webcam', 'intercom', 'access', 'alarm', 'settop', 'ereader', 'aircon', 'airpurifier', 'solar', 'pcs', 'battery', 'chargectrl', 'evcharger', 'smartmeter', 'hems', 'generator', 'pdu', 'plug', 'light', 'thermostat', 'thsensor', 'motion', 'contact', 'leak', 'lock', 'vacuum', 'robot', 'remote', 'scale', 'pet', 'pbx', 'conference', 'plc', 'industrial', 'container'];
+	public const MANUAL_TYPES = ['repeater', 'firewall', 'vpn', 'lb', 'gateway', 'laptop', 'hypervisor', 'watch', 'mfp', 'scanner', 'projector', 'pos', 'barcode', 'cardreader', 'timeclock', 'signage', 'digicam', 'webcam', 'intercom', 'access', 'alarm', 'settop', 'ereader', 'aircon', 'airpurifier', 'solar', 'pcs', 'battery', 'chargectrl', 'evcharger', 'smartmeter', 'hems', 'generator', 'pdu', 'thermostat', 'thsensor', 'motion', 'contact', 'leak', 'lock', 'vacuum', 'robot', 'remote', 'scale', 'pet', 'pbx', 'conference', 'plc', 'industrial', 'container'];
 
 	public function __construct(
 		private DiscoveryService $discovery,
@@ -1127,7 +1127,9 @@ class ScanService {
 		}
 		$ports =$device->getPorts() ? array_map('intval', explode(',', (string)$device->getPorts())) : [];
 		$vendor = strtolower((string)$device->getVendor());
-		$name = strtolower((string)$device->getHostname() . ' ' . (string)$device->getExtra());
+		// The name a person gave the device counts too: many devices announce no name at all,
+		// and the model number typed as their name ("BSL-WS-G2116M") is the best clue there is.
+		$name = strtolower((string)$device->getHostname() . ' ' . (string)$device->getLabel() . ' ' . (string)$device->getExtra());
 		$has = static fn (int ...$p) => (bool)array_intersect($p, $ports);
 
 		// VoIP handset: SIP.
@@ -1141,6 +1143,10 @@ class ScanService {
 		if (preg_match('/switch[ _-]?bot/', $name)) {
 			return 'smarthub';
 		}
+		// Before any rule that reads "switch": a Nintendo Switch is a game console.
+		if (preg_match('/nintendo|playstation|sony interactive|\\bps[45]\\b|xbox/', $name . ' ' . $vendor)) {
+			return 'game';
+		}
 		if (preg_match('/\\b(nvr|network video recorder)\\b/', $name)) {
 			return 'nvr';
 		}
@@ -1153,20 +1159,35 @@ class ScanService {
 		if (preg_match('/\\bups\\b|uninterruptible/', $name) || preg_match('/apc|american power|eaton|cyberpower|omron|salicru/', $vendor)) {
 			return 'ups';
 		}
-		if (preg_match('/\\b(access[- ]?point|\\bap\\b|aironet|unifi ?ap|omada ?ap)\\b/', $name)) {
+		if (preg_match('/\\b(access[- ]?point|\\bap\\b|aironet|unifi ?ap|omada ?ap)\\b/', $name)
+			|| preg_match('/(^|[^a-z0-9])(wapm|waps|wapg)-/', $name)) {
 			return 'ap';
 		}
 		if (preg_match('/\\b(l3|layer ?3)\\b/', $name)) {
 			return 'switch3';
 		}
-		if (preg_match('/\\b(switch|catalyst|switching ?hub|swx|gs\\d|xs\\d|l2|layer ?2)\\b/', $name)) {
+		// Switch model families, which say "switch" nowhere: Buffalo BSL/BS-GS/LSW, TP-Link
+		// TL-SG/SF, D-Link DGS/DES, NETGEAR GS/XS/JGS, Cisco SG/CBS, Yamaha SWX. A Buffalo
+		// BSL-WS-G2116M used to come out as a Wi-Fi router, on its maker's name alone.
+		if (preg_match('/(^|[^a-z0-9])(bsl-|bs-g[su]|lsw\\d|tl-s[gf]\\d|dgs-\\d|des-\\d|sg\\d{3}|cbs\\d{3}|gs\\d{3}|xs\\d{3}|jgs\\d{3}|swx\\d{3})/', $name)) {
+			return 'switch';
+		}
+		// Smart plugs, bulbs and cameras from makers that also sell routers (TP-Link Tapo,
+		// Kasa) or whose radio is Espressif's: the model name is what tells them apart.
+		if (preg_match('/tapo[ _-]?p1\\d\\d|(^|[^a-z0-9])(p1(00|05|10|15)m?|hs1\\d\\d|kp\\d{3})([^a-z0-9]|$)|smart[ _-]?plug|meross|shelly[ _-]?plug/', $name)) {
+			return 'plug';
+		}
+		if (preg_match('/tapo[ _-]?l\\d{3}|smart[ _-]?(bulb|light)|\\bbulb\\b/', $name)) {
+			return 'light';
+		}
+		if (preg_match('/eufy[ _-]?cam|tapo[ _-]?c\\d{3}|\\b(ip[ _-]?cam|camera|arlo|reolink|wyze[ _-]?cam|atom[ _-]?cam)\\b/', $name)) {
+			return 'camera';
+		}
+		if (preg_match('/\\b(switch|catalyst|switching ?hub|swx|l2|layer ?2)\\b/', $name)) {
 			return 'switch';
 		}
 		if (preg_match('/\\bhub\\b|リピータ|repeater/', $name)) {
 			return 'hub';
-		}
-		if (preg_match('/nintendo|playstation|sony interactive|\\bps[45]\\b|xbox/', $name . ' ' . $vendor)) {
-			return 'game';
 		}
 		if (preg_match('/\\bipad\\b|\\btablet\\b/', $name)) {
 			return 'tablet';
@@ -1214,7 +1235,11 @@ class ScanService {
 
 		$vendorMap = [
 			'printer' => 'brother|epson|seiko epson|canon|ricoh|oki electric|kyocera|fuji xerox|fujifilm business|sharp corporation|konica minolta|zebra|star micronics',
-			'router' => 'yamaha|buffalo|nec platforms|tp-link|d-link|netgear|aterm|cisco|juniper|fortinet|mikrotik|ubiquiti|allied telesis|elecom|asustek.*router',
+			// Only makers whose boxes on a LAN are nearly always routers. Buffalo, TP-Link,
+			// NETGEAR, D-Link, ELECOM, Cisco, Ubiquiti and Allied Telesis also sell switches,
+			// NAS and plugs, so their name alone says nothing; the rules above (a DNS service,
+			// SNMP, the model name) decide for them.
+			'router' => 'yamaha|nec platforms|aterm|fortinet|juniper|mikrotik|asustek.*router',
 			'phone' => 'apple.*iphone|xiaomi communications|oppo|vivo mobile|huawei device|samsung electro',
 			'iot' => 'espressif|tuya|shelly|sonoff|itead|amazon technologies|google, inc|nest labs|switchbot|ampak|realtek semiconductor',
 			'av' => 'sony|panasonic|lg electronics|sharp|toshiba|roku|bose|yamaha corporation of america|denon|onkyo',

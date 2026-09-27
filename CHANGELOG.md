@@ -2,6 +2,25 @@
 
 All notable changes to NetBase are documented here.
 
+## 0.7.1 — 2026-09-27
+
+### Fixed
+
+- **A maker's name alone no longer decides that a device is a router.** Buffalo, TP-Link,
+  NETGEAR, D-Link, ELECOM, Cisco, Ubiquiti and Allied Telesis also sell switches, NAS and
+  smart plugs, so a Buffalo switch and a TP-Link Tapo plug both came out as Wi-Fi routers. A
+  device is now called a router when there is a reason (it answers DNS), and model names decide
+  first: switch families (Buffalo BSL/BS-GS, TP-Link TL-SG/SF, NETGEAR GS/XS, D-Link DGS/DES,
+  Cisco SG/CBS, Yamaha SWX), Buffalo WAPM/WAPS access points, Tapo plugs and bulbs, and cameras
+  such as eufyCam. The name you give a device counts too, since many devices announce none.
+- **A Nintendo Switch is a game console,** not an L2 switch.
+- **The "another network" and "Secondary network" labels are no longer cut off** in English and
+  other languages with longer words; the addresses beside them stay in one column.
+
+### Changed
+
+- **New screenshots** of the current interface, including the card view and the device details.
+
 ## 0.7.0 — 2026-09-27
 
 ### Fixed

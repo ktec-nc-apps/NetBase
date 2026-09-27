@@ -1259,8 +1259,10 @@
 /* The network badge leads every address line in a fixed-width slot (wide enough
    for 副ネットワーク9 / another-network), reserved even on the main network so
    every IP — badged or not — starts at the same column. */
-#netbase-root table.grid td.c-name .addr-line .addr-net { flex: 0 0 8.5em; overflow: hidden; }
-#netbase-root table.grid td.c-name .addr-line .addr-net .badge { margin: 0; }
+/* Wide enough for the longest label ("Secondary network 1"), the same on every row so
+   the addresses beside it stay in one column. */
+#netbase-root table.grid td.c-name .addr-line .addr-net { flex: 0 0 13em; overflow: hidden; }
+#netbase-root table.grid td.c-name .addr-line .addr-net .badge { margin: 0; white-space: nowrap; max-width: 100%; overflow: hidden; text-overflow: ellipsis; display: inline-block; vertical-align: middle; }
 /* Every column is fixed-width so the one after it always starts at the same x:
    IP  = "255.255.255.255/32" = 18ch, MAC = "aa:bb:cc:dd:ee:ff" = 17ch.
    Vendor is fixed at 54ch — half of the OUI database's longest name (108ch);
