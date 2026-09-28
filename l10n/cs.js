@@ -1564,7 +1564,8 @@ OC.L10N.register(
         "Place": "Místo",
         "Not set": "Nenastaveno",
         "Entered by hand": "Zadáno ručně",
-        "The devices you have given a name. Change the name, type, where it is or the note, or remove one.": "Zařízení, která jste pojmenovali. Změňte název, typ, umístění nebo poznámku, případně zařízení odeberte."
+        "The devices you have given a name. Change the name, type, where it is or the note, or remove one.": "Zařízení, která jste pojmenovali. Změňte název, typ, umístění nebo poznámku, případně zařízení odeberte.",
+        "Other networks": "Jiné sítě"
     },
     "nplurals=4; plural=(n == 1 && n % 1 == 0) ? 0 : (n >= 2 && n <= 4 && n % 1 == 0) ? 1: (n % 1 != 0 ) ? 2 : 3;"
 );

@@ -628,10 +628,6 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
             </label>
             <button class="btn sm keep" v-if="allowed('scan')" :title="t('Edit the devices you have named, all in one place')" @click="openRegEditor"><span class="ic"><svg viewBox="0 0 24 24"><path d="M4 20h16"/><path d="M14.5 4.5l3 3L8 17l-3.5.5L5 14z"/></svg></span><span class="lb">{{ t('Edit named') }}</span></button>
             <button class="btn sm keep" :title="t('Download what this tool found')" @click="exportCsv" :disabled="!shownDevices.length"><span class="ic"><svg viewBox="0 0 24 24"><path d="M12 3.5v11.5"/><path d="M7.5 10.5L12 15l4.5-4.5"/><path d="M4 17.5V19a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-1.5"/></svg></span><span class="lb">CSV</span></button>
-            <div class="view-toggle" role="group" :aria-label="t('View')">
-              <button class="vt" :class="{on: deviceView==='list'}" @click="setDeviceView('list')" :title="t('List view')"><svg viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg><span class="vt-lb">{{ t('List view') }}</span></button>
-              <button class="vt" :class="{on: deviceView==='card'}" @click="setDeviceView('card')" :title="t('Card view')"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span class="vt-lb">{{ t('Card view') }}</span></button>
-            </div>
           </div>
           <!-- Whatever this tool has found: onto the clipboard, into a file, or
                into the person's own Nextcloud folder. -->
@@ -663,6 +659,12 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
 
         <!-- ============ devices ============ -->
         <section v-if="tab==='devices'">
+          <!-- 一覧とカードの切り替え。機器一覧の上の枠（スキャンする対象）の右上に重ねて出す。
+               枠が無い人（スキャンの権限が無い）には、同じ場所にボタンだけ出る（オーナー 2026-09-27・28）。 -->
+          <div class="view-toggle dev-vt" :class="{solo: !allowed('scan')}" role="group" :aria-label="t('View')">
+              <button class="vt" :class="{on: deviceView==='list'}" @click="setDeviceView('list')" :title="t('List view')"><svg viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg><span class="vt-lb">{{ t('List view') }}</span></button>
+              <button class="vt" :class="{on: deviceView==='card'}" @click="setDeviceView('card')" :title="t('Card view')"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span class="vt-lb">{{ t('Card view') }}</span></button>
+          </div>
           <div class="card scan-card" v-if="allowed('scan')">
             <!-- What is being scanned, before anything about how. The two are
                  different jobs: one walks every address in the network, the
@@ -812,15 +814,30 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
               </tr>
             </tbody>
           </table>
-          <div v-else class="dev-cards">
-            <div v-for="g in deviceGroups" :key="g.key" class="dev-card" :class="{offline: !g.online}" @click="openDevice(g.rep)" @contextmenu.prevent="openRowMenu(g.rep, $event)">
-              <div class="dc-top"><span class="dv-slot big" v-html="icon(g.rep)"></span><span class="dot" :class="{on: g.online}" :title="g.online ? t('Online') : t('Not seen in the last sweep')"></span></div>
-              <div class="dc-maker" v-if="vendorShort(g.rep)">{{ vendorShort(g.rep) }}</div>
-              <div class="dc-name" :class="{unnamed: !listName(g.rep).named}">{{ listName(g.rep).text }}</div>
-              <div class="dc-type"><span class="tchip">{{ typeText(g.rep.type) }}</span></div>
-              <div class="dc-loc" v-if="whereText(g.rep)" :title="whereText(g.rep)">📍 {{ whereText(g.rep) }}</div>
-              <div class="dc-ip mono">{{ g.rep.ip }}</div>
+          <!-- カード表示：ネットワークが一つならそのまま、複数あればネットワークごとに見出しを付けて分ける（オーナー 2026-09-28）。 -->
+          <div v-else class="dev-card-sections">
+            <div v-for="sec in deviceCardSections" :key="sec.key" class="dev-card-section">
+              <div class="dcs-head mono" v-if="deviceCardSections.length > 1">{{ sec.label }}</div>
+              <div class="dev-cards">
+                <div v-for="g in sec.groups" :key="g.key" class="dev-card" :class="{offline: !g.online}" @mouseenter="showCardTip(g, $event)" @mouseleave="hideCardTip" @click="hideCardTip(); openDevice(g.rep)" @contextmenu.prevent="openRowMenu(g.rep, $event)">
+                  <div class="dc-top"><span class="dv-slot big" v-html="icon(g.rep)"></span><span class="dot" :class="{on: g.online}" :title="g.online ? t('Online') : t('Not seen in the last sweep')"></span></div>
+                  <div class="dc-maker" v-if="vendorShort(g.rep)">{{ vendorShort(g.rep) }}</div>
+                  <div class="dc-name" :class="{unnamed: !listName(g.rep).named}">{{ listName(g.rep).text }}</div>
+                  <div class="dc-type"><span class="tchip">{{ typeText(g.rep.type) }}</span></div>
+                  <div class="dc-loc" v-if="whereText(g.rep)" :title="whereText(g.rep)">📍 {{ whereText(g.rep) }}</div>
+                  <div class="dc-note" v-if="g.rep.notes" :title="g.rep.notes">📝 {{ g.rep.notes }}</div>
+                  <div class="dc-ip mono">{{ g.rep.ip }}</div>
+                </div>
+              </div>
             </div>
+          </div>
+          <div v-if="cardTip && deviceView==='card'" class="card-tip" :style="{ left: cardTip.x + 'px', top: cardTip.y + 'px' }">
+            <div class="ct-maker" v-if="vendorShort(cardTip.g.rep)">{{ vendorShort(cardTip.g.rep) }}</div>
+            <div class="ct-name">{{ listName(cardTip.g.rep).text }}</div>
+            <div class="ct-type"><span class="tchip">{{ typeText(cardTip.g.rep.type) }}</span></div>
+            <div class="ct-row" v-if="whereText(cardTip.g.rep)">📍 {{ whereText(cardTip.g.rep) }}</div>
+            <div class="ct-row ct-note" v-if="cardTip.g.rep.notes">📝 {{ cardTip.g.rep.notes }}</div>
+            <div class="ct-row mono" v-for="m in cardTip.g.members" :key="m.id">{{ m.ip }}<span class="dim" v-if="m.mac"> · {{ m.mac }}</span></div>
           </div>
           </template>
         </section>
@@ -3457,6 +3474,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         // has got, and what it came back with.
         deep: { busy: '', percent: 0, note: '', pages: [] },
         filter: '', onlyOnline: true, sortKey: 'ip', sortDir: 1,
+        cardTip: null, cardTipTimer: null,
         deviceView: (function(){try{return localStorage.getItem('netbase.deviceView')==='card'?'card':'list';}catch(e){return 'list';}})(),
         selected: null, editLabel: '', editNotes: '', editWhere: { location: '', room: '', mount: '' }, whereOwn: { location: false, room: false, mount: false }, whereFields: WHERE_FIELDS, editType: 'unknown', editTypeText: '', customType: CUSTOM_TYPE,
         shellModal: false, shellStage: 'idle', shellCode: '', shellEmail: '', shellError: '', shellBusy: false,
@@ -3953,6 +3971,67 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
       // One entry per physical device: rows that share a MAC (the server's two
       // addresses, say) are folded together and their addresses listed under
       // the one name. Devices without a MAC stand alone.
+      /**
+       * The cards, by network: a device goes under the network its address is in
+       * (the networks scanned and this server's own). One network, one run of
+       * cards with no heading; several, a heading and a run for each.
+       */
+      deviceCardSections() {
+        const ipn = (ip) => String(ip || '').split('.').reduce((n, o) => (n * 256) + Number(o), 0);
+        const nets = [];
+        const add = (cidr) => {
+          const m = String(cidr || '').match(/^(\d+\.\d+\.\d+\.\d+)\/(\d+)$/);
+          if (!m) return;
+          const bits = Number(m[2]);
+          const mask = bits === 0 ? 0 : (-1 << (32 - bits)) >>> 0;
+          const base = (ipn(m[1]) & mask) >>> 0;
+          const label = [base >>> 24, (base >>> 16) & 255, (base >>> 8) & 255, base & 255].join('.') + '/' + bits;
+          if (!nets.some((n) => n.label === label)) nets.push({ label, base, mask, bits });
+        };
+        for (const t2 of (this.status.targets || [])) add(t2.cidr);
+        for (const [net, bits] of this.localSubnets()) add(net + '/' + bits);
+        // The narrowest network that holds the address wins.
+        nets.sort((a, b) => b.bits - a.bits);
+        // An address on no network this server knows is shown under its own /24,
+        // the way it would be written, rather than as "other".
+        const netOf = (ip) => {
+          const here = ipn(ip);
+          if (!ip || !Number.isFinite(here) || !/^\d+\.\d+\.\d+\.\d+$/.test(String(ip))) return null;
+          const known = nets.find((n) => ((here & n.mask) >>> 0) === n.base);
+          if (known) return known;
+          const base = (here & 0xFFFFFF00) >>> 0;
+          return { label: [base >>> 24, (base >>> 16) & 255, (base >>> 8) & 255, 0].join('.') + '/24', base };
+        };
+        const secs = {};
+        const order = [];
+        const put = (net, card) => {
+          const key = net ? net.label : 'other';
+          if (!secs[key]) { secs[key] = { key, label: net ? net.label : this.t('Other networks'), base: net ? net.base : Infinity, groups: [] }; order.push(key); }
+          secs[key].groups.push(card);
+        };
+        for (const g of this.deviceGroups) {
+          // A machine on several networks (this server: the LAN and its container
+          // bridges) is on each of them: one card under each, with the address it
+          // has there (owner, 2026-09-28).
+          const byNet = {};
+          const nOrder = [];
+          for (const m of g.members) {
+            const net = netOf(m.ip);
+            const k = net ? net.label : 'other';
+            if (!byNet[k]) { byNet[k] = { net, members: [] }; nOrder.push(k); }
+            byNet[k].members.push(m);
+          }
+          if (nOrder.length <= 1) { put(byNet[nOrder[0]] ? byNet[nOrder[0]].net : null, g); continue; }
+          for (const k of nOrder) {
+            const part = byNet[k];
+            const inRep = part.members.indexOf(g.rep) >= 0;
+            const rep = inRep ? g.rep : Object.assign({}, g.rep, { ip: part.members[0].ip });
+            put(part.net, Object.assign({}, g, { key: g.key + '@' + k, members: part.members, rep, online: part.members.some((m) => m.online) }));
+          }
+        }
+        for (const k of order) secs[k].groups.sort((a, b) => ipn(a.rep.ip) - ipn(b.rep.ip));
+        return order.map((k) => secs[k]).sort((a, b) => a.base - b.base);
+      },
       deviceGroups() {
         const groups = [];
         const byKey = {};
@@ -4119,6 +4198,20 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         if (this.sortKey === key) { this.sortDir *= -1; } else { this.sortKey = key; this.sortDir = 1; }
         try { localStorage.setItem('netbase.sort', JSON.stringify({ key: this.sortKey, dir: this.sortDir })); } catch (e) { /* private window */ }
       },
+      // カードは高さを固定して1〜2行で切り、マウスを乗せると全部をポップアップで見せる
+      // （オーナー 2026-09-28 案2）。触れる画面ではカードを押せば詳しい画面が開く。
+      showCardTip(g, ev) {
+        clearTimeout(this.cardTipTimer);
+        const el = ev.currentTarget;
+        this.cardTipTimer = setTimeout(() => {
+          if (!el || !el.isConnected) return;
+          const r = el.getBoundingClientRect();
+          const w = 280;
+          const right = r.right + 8 + w <= window.innerWidth;
+          this.cardTip = { g, x: right ? r.right + 8 : Math.max(8, r.left - 8 - w), y: Math.max(8, Math.min(r.top, window.innerHeight - 240)) };
+        }, 350);
+      },
+      hideCardTip() { clearTimeout(this.cardTipTimer); this.cardTip = null; },
       setDeviceView(v) { this.deviceView = v; try { localStorage.setItem('netbase.deviceView', v); } catch (e) {} },
       sortClass(key) { return this.sortKey === key ? (this.sortDir > 0 ? 'sorted asc' : 'sorted desc') : ''; },
       fail(e) {

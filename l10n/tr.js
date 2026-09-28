@@ -1564,7 +1564,8 @@ OC.L10N.register(
         "Place": "Yer",
         "Not set": "Belirtilmedi",
         "Entered by hand": "Elle girilenler",
-        "The devices you have given a name. Change the name, type, where it is or the note, or remove one.": "Ad verdiğiniz cihazlar. Adını, türünü, yerini veya notunu değiştirin ya da birini kaldırın."
+        "The devices you have given a name. Change the name, type, where it is or the note, or remove one.": "Ad verdiğiniz cihazlar. Adını, türünü, yerini veya notunu değiştirin ya da birini kaldırın.",
+        "Other networks": "Diğer ağlar"
     },
     "nplurals=2; plural=(n > 1);"
 );

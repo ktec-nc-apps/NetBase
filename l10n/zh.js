@@ -1564,7 +1564,8 @@ OC.L10N.register(
         "Place": "地点",
         "Not set": "未设置",
         "Entered by hand": "手动输入的",
-        "The devices you have given a name. Change the name, type, where it is or the note, or remove one.": "已命名设备的列表。可以修改名称、类型、所在位置和备注，也可以删除设备。"
+        "The devices you have given a name. Change the name, type, where it is or the note, or remove one.": "已命名设备的列表。可以修改名称、类型、所在位置和备注，也可以删除设备。",
+        "Other networks": "其他网络"
     },
     "nplurals=1; plural=0;"
 );

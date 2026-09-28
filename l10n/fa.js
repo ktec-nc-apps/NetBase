@@ -1564,7 +1564,8 @@ OC.L10N.register(
         "Place": "مکان",
         "Not set": "تنظیم‌نشده",
         "Entered by hand": "واردشده به‌صورت دستی",
-        "The devices you have given a name. Change the name, type, where it is or the note, or remove one.": "دستگاه‌هایی که برایشان نام گذاشته‌اید. نام، گونه، مکان یا یادداشت را تغییر دهید، یا یکی را حذف کنید."
+        "The devices you have given a name. Change the name, type, where it is or the note, or remove one.": "دستگاه‌هایی که برایشان نام گذاشته‌اید. نام، گونه، مکان یا یادداشت را تغییر دهید، یا یکی را حذف کنید.",
+        "Other networks": "شبکه‌های دیگر"
     },
     "nplurals=2; plural=(n > 1);"
 );

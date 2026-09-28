@@ -1564,7 +1564,8 @@ OC.L10N.register(
         "Place": "Place",
         "Not set": "Not set",
         "Entered by hand": "Entered by hand",
-        "The devices you have given a name. Change the name, type, where it is or the note, or remove one.": "The devices you have given a name. Change the name, type, where it is or the note, or remove one."
+        "The devices you have given a name. Change the name, type, where it is or the note, or remove one.": "The devices you have given a name. Change the name, type, where it is or the note, or remove one.",
+        "Other networks": "Other networks"
     },
     "nplurals=2; plural=(n != 1);"
 );

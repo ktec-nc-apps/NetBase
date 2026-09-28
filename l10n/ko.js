@@ -1564,7 +1564,8 @@ OC.L10N.register(
         "Place": "장소",
         "Not set": "설정 안 됨",
         "Entered by hand": "직접 입력한 항목",
-        "The devices you have given a name. Change the name, type, where it is or the note, or remove one.": "이름을 붙인 기기 목록입니다. 이름·종류·설치 위치·메모를 바꾸거나 삭제할 수 있습니다."
+        "The devices you have given a name. Change the name, type, where it is or the note, or remove one.": "이름을 붙인 기기 목록입니다. 이름·종류·설치 위치·메모를 바꾸거나 삭제할 수 있습니다.",
+        "Other networks": "기타 네트워크"
     },
     "nplurals=1; plural=0;"
 );

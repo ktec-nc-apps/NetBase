@@ -1564,7 +1564,8 @@ OC.L10N.register(
         "Place": "Место",
         "Not set": "Не задано",
         "Entered by hand": "Введено вручную",
-        "The devices you have given a name. Change the name, type, where it is or the note, or remove one.": "Устройства, которым вы дали имя. Измените имя, тип, местоположение или заметку либо удалите устройство."
+        "The devices you have given a name. Change the name, type, where it is or the note, or remove one.": "Устройства, которым вы дали имя. Измените имя, тип, местоположение или заметку либо удалите устройство.",
+        "Other networks": "Другие сети"
     },
     "nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);"
 );

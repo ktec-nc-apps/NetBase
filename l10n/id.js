@@ -1564,7 +1564,8 @@ OC.L10N.register(
         "Place": "Tempat",
         "Not set": "Belum diatur",
         "Entered by hand": "Diisi sendiri",
-        "The devices you have given a name. Change the name, type, where it is or the note, or remove one.": "Perangkat yang sudah Anda beri nama. Ubah nama, jenis, lokasi, atau catatannya, atau hapus salah satunya."
+        "The devices you have given a name. Change the name, type, where it is or the note, or remove one.": "Perangkat yang sudah Anda beri nama. Ubah nama, jenis, lokasi, atau catatannya, atau hapus salah satunya.",
+        "Other networks": "Jaringan lain"
     },
     "nplurals=1; plural=0;"
 );

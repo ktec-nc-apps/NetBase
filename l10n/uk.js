@@ -1564,7 +1564,8 @@ OC.L10N.register(
         "Place": "Місце",
         "Not set": "Не задано",
         "Entered by hand": "Введено вручну",
-        "The devices you have given a name. Change the name, type, where it is or the note, or remove one.": "Пристрої, яким ви дали назву. Змініть назву, тип, місце чи примітку або видаліть пристрій."
+        "The devices you have given a name. Change the name, type, where it is or the note, or remove one.": "Пристрої, яким ви дали назву. Змініть назву, тип, місце чи примітку або видаліть пристрій.",
+        "Other networks": "Інші мережі"
     },
     "nplurals=4; plural=(n % 1 == 0 && n % 10 == 1 && n % 100 != 11 ? 0 : n % 1 == 0 && n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14) ? 1 : n % 1 == 0 && (n % 10 ==0 || (n % 10 >=5 && n % 10 <=9) || (n % 100 >=11 && n % 100 <=14 )) ? 2: 3);"
 );

@@ -1564,7 +1564,8 @@ OC.L10N.register(
         "Place": "場所",
         "Not set": "未設定",
         "Entered by hand": "手入力したもの",
-        "The devices you have given a name. Change the name, type, where it is or the note, or remove one.": "名前をつけた機器の一覧です。名前・種別・設置場所・メモの変更と、削除ができます。"
+        "The devices you have given a name. Change the name, type, where it is or the note, or remove one.": "名前をつけた機器の一覧です。名前・種別・設置場所・メモの変更と、削除ができます。",
+        "Other networks": "その他のネットワーク"
     },
     "nplurals=1; plural=0;"
 );

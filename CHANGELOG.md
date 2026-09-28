@@ -2,6 +2,34 @@
 
 All notable changes to NetBase are documented here.
 
+## 0.7.2 — 2026-09-28
+
+### Fixed
+
+- **Nothing a device's card holds is out of reach any more.** A card cut the place off
+  after one line ("My Study Server roo…"), never showed the note, and kept a large empty
+  gap under the icon however much was filled in. Cards now keep one size, with the details
+  starting right under the icon and the address along the bottom; the name takes up to two
+  lines, wrapping even in the middle of a long word, and the place and the note one line
+  each. Rest the pointer on a card and everything opens beside it — maker, name, type, the
+  whole place, the whole note, and every address with its MAC. On a touch screen, tap the
+  card for the device's details as before. The pop-up stands out in the dark theme too.
+  Thanks to @Cuello for reporting it.
+- **The buttons at the top no longer slide up out of view.** When they wrapped onto a
+  second row, the bar was squeezed to one row's height and the first row was pushed up
+  under the Nextcloud header.
+
+### Changed
+
+- **The card view is divided by network.** When the devices are on more than one network,
+  each network gets its own heading (such as `10.0.0.0/16`) with a line beside it, and
+  its cards below, in address order. A machine on several networks — this server, with its
+  LAN and its container bridges — appears under each of them with the address it has
+  there. An address on a network NetBase does not know is shown under its own /24. With a
+  single network, the cards are shown as before, with no heading.
+- **The list/card switch sits at the top right of the scan panel** above the device list,
+  instead of among the buttons at the top. On a narrow screen it sits just above the panel.
+
 ## 0.7.1 — 2026-09-27
 
 ### Fixed

@@ -1564,7 +1564,8 @@ OC.L10N.register(
         "Place": "Địa điểm",
         "Not set": "Chưa đặt",
         "Entered by hand": "Đã tự nhập",
-        "The devices you have given a name. Change the name, type, where it is or the note, or remove one.": "Danh sách các thiết bị bạn đã đặt tên. Bạn có thể đổi tên, loại, vị trí hoặc ghi chú, hay xóa thiết bị."
+        "The devices you have given a name. Change the name, type, where it is or the note, or remove one.": "Danh sách các thiết bị bạn đã đặt tên. Bạn có thể đổi tên, loại, vị trí hoặc ghi chú, hay xóa thiết bị.",
+        "Other networks": "Mạng khác"
     },
     "nplurals=1; plural=0;"
 );
