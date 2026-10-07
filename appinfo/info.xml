@@ -22,6 +22,7 @@ What each part is for:
 - SSH and Telnet — a credential-free probe, and commands or a full terminal on a saved connection
 - Benchmarks — internet speed, LAN throughput over iperf3, resolver comparison, HTTP timing
 - Every result can be copied, downloaded or saved straight into your own Nextcloud files
+- An AI assistant, through the AI-Hub app, that explains what is on the screen (a scan, a ping, a list of devices); administrators who switch it on can let it suggest commands, run only after the person approves each one. Without AI-Hub it is simply not shown
 
 Access is per tool. NetBase is an administrator's app, and everything that touches the local network defaults to administrators — but each tool can be opened to named groups or to everyone from Administration settings, so an instance can lend out whois, DNS and the other harmless lookups without lending out the network. Where an account is allowed nothing, NetBase leaves itself out of that account's app menu.
 
@@ -44,11 +45,12 @@ Available in twenty languages, and NetBase can be set to a different language fr
 - SSH・Telnet ― 資格情報なしの調査と、保存済み接続先でのコマンド実行・仮想ターミナル
 - ベンチマーク ― 回線速度、iperf3によるLAN帯域、リゾルバ比較、HTTP時間内訳
 - どの結果もコピー・ダウンロード・Nextcloudのファイルへの保存が可能
+- AI-Hub アプリを通した AI アシスタント。画面にある結果（スキャン・ping・機器の一覧など）を説明します。管理者が有効にすると、コマンドを提案させることもでき、実行はその都度ご本人が承認したときだけです。AI-Hub が無ければ表示されません
 
 公開範囲はツール単位で設定できます。NetBaseは管理者向けのアプリで、ローカルネットワークに触れる機能は既定で管理者のみですが、管理設定から各ツールを指定グループや全員に開放できます。ネットワークそのものを渡すことなく、whois・DNSといった無害な調査だけを一般利用者に使ってもらえます。何も許可されていない利用者には、アプリメニューにも表示しません。
 
 20言語に対応し、NetBaseだけをNextcloud本体と別の言語に設定することもできます（利用者ごと）。]]></description>
-	<version>0.7.2</version>
+	<version>0.8.0</version>
 	<licence>agpl</licence>
 	<author>KTEC</author>
 	<namespace>NetBase</namespace>
@@ -78,6 +80,7 @@ Available in twenty languages, and NetBase can be set to a different language fr
 	</commands>
 	<settings>
 		<admin>OCA\NetBase\Settings\AdminSettings</admin>
+		<admin>OCA\NetBase\Settings\AiAdmin</admin>
 		<admin-section>OCA\NetBase\Settings\AdminSection</admin-section>
 	</settings>
 </info>

@@ -48,10 +48,18 @@ class BenchmarkService {
 		private DiscoveryService $discovery,
 		private L10nService $l,
 		private MlabService $mlab,
+		private ToolService $tools,
 		private IConfig $config,
 		private LoggerInterface $logger,
 	) {
 	}
+
+	/**
+	 * The only schemes curl may speak here. A URL, or a redirect, for anything
+	 * else (gopher:, file:, dict: …) would turn a timing test into a request
+	 * to whatever the server itself can reach (review 2026-10-04, medium 3).
+	 */
+	private const HTTP_ONLY = CURLPROTO_HTTP | CURLPROTO_HTTPS;
 
 	// ---------------------------------------------------------------- interfaces
 
@@ -609,6 +617,8 @@ class BenchmarkService {
 				CURLOPT_CONNECTTIMEOUT => 5,
 				CURLOPT_FRESH_CONNECT => true,
 				CURLOPT_USERAGENT => 'NetBase (Nextcloud)',
+				CURLOPT_PROTOCOLS => self::HTTP_ONLY,
+				CURLOPT_REDIR_PROTOCOLS => self::HTTP_ONLY,
 			]);
 			if (curl_exec($curl) !== false) {
 				$times[] = (float)curl_getinfo($curl, CURLINFO_CONNECT_TIME) * 1000;
@@ -638,6 +648,11 @@ class BenchmarkService {
 		if (filter_var($url, FILTER_VALIDATE_URL) === false) {
 			throw new \InvalidArgumentException('Not a valid URL');
 		}
+		// Where it points is checked as every other tool's target is: the server
+		// itself and link-local addresses are refused unless an administrator
+		// allowed them. Without this, http://127.0.0.1:8080/ timed a service
+		// that is not meant to be reached from here (review 2026-10-04, medium 3).
+		$this->tools->reach((string)parse_url($url, PHP_URL_HOST));
 		// One request, no redirect following: curl reports timings for the last
 		// connection it used, and a redirect that reuses the open connection
 		// reports a TLS handshake of zero, which would read as "no TLS".
@@ -648,6 +663,8 @@ class BenchmarkService {
 			CURLOPT_TIMEOUT => 30,
 			CURLOPT_CONNECTTIMEOUT => 10,
 			CURLOPT_USERAGENT => 'NetBase (Nextcloud)',
+			CURLOPT_PROTOCOLS => self::HTTP_ONLY,
+			CURLOPT_REDIR_PROTOCOLS => self::HTTP_ONLY,
 		]);
 		$body = curl_exec($curl);
 		if ($body === false) {
@@ -759,15 +776,13 @@ class BenchmarkService {
 
 	// ---------------------------------------------------------------- helpers
 
+	/**
+	 * The iperf3 target: a valid host name or address, and one this server may
+	 * connect to at all — its own addresses and link-local ones are refused
+	 * unless an administrator allowed them (review 2026-10-04, medium 3).
+	 */
 	private function validateTarget(string $host): string {
-		$host = trim($host);
-		if (filter_var($host, FILTER_VALIDATE_IP) !== false) {
-			return $host;
-		}
-		if (!preg_match('/^(?=.{1,253}$)([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?\.)*[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$/i', $host)) {
-			throw new \InvalidArgumentException($this->l->t('Not a valid host name: %s', [$host]));
-		}
-		return $host;
+		return $this->tools->reach(trim($host));
 	}
 
 	/** @param list<float> $values */

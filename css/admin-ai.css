@@ -1,0 +1,15 @@
+/* NetBase — administration settings: the AI assistant (through AI-Hub). */
+#netbase-ai-admin { max-width: 900px; }
+#netbase-ai-admin fieldset[disabled] { opacity: .5; }
+#netbase-ai-admin fieldset[disabled] * { cursor: not-allowed; }
+#netbase-ai-admin h3 { margin: 18px 0 6px; font-size: 15px; font-weight: 600; }
+#netbase-ai-admin .nb-ai-state { padding: 6px 10px; border-radius: 6px; background: var(--color-background-dark, #f2f2f2); display: inline-block; }
+#netbase-ai-admin .nb-ai-state.warn { background: var(--color-warning-hover, #fff3cd); }
+#netbase-ai-admin .nb-ai-groups { margin-left: 28px; }
+#netbase-ai-admin .nb-ai-groups.dim { opacity: .5; }
+#netbase-ai-admin .nb-ai-save { margin-top: 16px; display: flex; gap: 12px; align-items: center; }
+#netbase-ai-admin .nb-ai-danger {
+	border: 1px solid var(--color-warning, #c98600); border-radius: 8px; padding: 10px 12px; margin-top: 6px;
+	background: color-mix(in srgb, var(--color-warning, #c98600) 10%, transparent);
+}
+#netbase-ai-admin .nb-ai-warn { margin: 6px 0 0 28px; color: var(--color-main-text); font-size: 13px; line-height: 1.5; }

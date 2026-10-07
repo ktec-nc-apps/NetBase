@@ -91,8 +91,21 @@ $check(
 // ---- the interface --------------------------------------------------------
 
 $js = (string)file_get_contents($root . '/js/netbase.js');
-$check('the row menu offers it', str_contains($js, 'pingDevice(rowMenu.device)'));
-$check('the menu entry is hidden for a row with no address', str_contains($js, 'v-if="rowMenu.device && rowMenu.device.ip"'));
+// The row menu is the shared right-click menu (ctxmOpen), filled by
+// nbCtxDevice() for a device row, in the list and in the cards alike.
+$at = strpos($js, 'nbCtxDevice(device, event) {');
+$rowMenu = $at === false ? '' : substr($js, $at, 1200);
+$check(
+	'the row menu offers it',
+	substr_count($js, '@contextmenu.prevent="nbCtxDevice(g.rep, $event)"') === 2
+		&& str_contains($rowMenu, "T('Ping this device'), run: () => this.pingDevice(device)"),
+	$at === false ? 'no nbCtxDevice()' : 'no Ping entry, or a view without the row menu'
+);
+$check(
+	'the menu entry is hidden for a row with no address',
+	(bool)preg_match("~if \(device && device\.ip\) items\.push\(\{[^}]*T\('Ping this device'\)~", $rowMenu),
+	'the Ping entry is not behind device.ip'
+);
 $check('the browser sends the id, not an address', str_contains($js, "api('devices/' + d.id + '/ping'"));
 
 // A machine with a foot in several networks is one row per address. The row
@@ -122,7 +135,7 @@ $keys = [
 	'%s is not on a network this server is connected to, so it cannot be pinged from here.',
 	'The ping command is not installed on this server, so reachability cannot be tested this way.',
 ];
-$langs = ['ar', 'cs', 'de', 'en', 'es', 'fa', 'fr', 'hi', 'id', 'it', 'ja', 'ko', 'pl', 'pt', 'ru', 'th', 'tr', 'uk', 'vi', 'zh'];
+$langs = ['ar', 'cs', 'de', 'en', 'es', 'fa', 'fr', 'hi', 'id', 'it', 'ja', 'ko', 'pl', 'pt_BR', 'pt_PT', 'ru', 'th', 'tr', 'uk', 'vi', 'zh', 'zh_CN'];
 $short = [];
 foreach ($langs as $lang) {
 	$json = json_decode((string)file_get_contents($root . '/l10n/' . $lang . '.json'), true)['translations'] ?? [];

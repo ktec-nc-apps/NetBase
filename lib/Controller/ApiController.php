@@ -120,23 +120,56 @@ class ApiController extends Controller {
 		return $this->l10n->t(str_replace('%', '%%', $message));
 	}
 
+	/**
+	 * A failure, as the browser is told about it.
+	 *
+	 * A validation failure is a 400 with its message. A refusal is 403 only for
+	 * an account that may not do this (or a master key that must be given
+	 * first); any other refusal is 400, so the page does not take it for an
+	 * expired session and send it again (review C2, A3). Anything else is a
+	 * fault in NetBase or below it: it goes to the log in full, and the browser
+	 * is told a fixed sentence rather than the exception's own words, which can
+	 * name paths, hosts and library internals (review 2026-10-04, low 13).
+	 */
+	private function failure(\Throwable $e): JSONResponse {
+		if ($e instanceof \InvalidArgumentException) {
+			return new JSONResponse(['error' => $this->say($e)], Http::STATUS_BAD_REQUEST);
+		}
+		if ($e instanceof \RuntimeException) {
+			$key = $this->needsMasterKey($e);
+			$code = ($e instanceof \OCA\NetBase\Service\ForbiddenException || $key) ? Http::STATUS_FORBIDDEN : Http::STATUS_BAD_REQUEST;
+			return new JSONResponse(['error' => $this->say($e), 'needsKey' => $key], $code);
+		}
+		$this->logger->error('NetBase: ' . $e->getMessage(), ['exception' => $e, 'app' => 'netbase']);
+		return new JSONResponse(['error' => $this->unexpected()], Http::STATUS_INTERNAL_SERVER_ERROR);
+	}
+
+	/** What the browser is told when something unforeseen broke: the details are in the log, not on the screen. */
+	private function unexpected(): string {
+		return $this->l10n->t('Something went wrong on the server. The details are in the Nextcloud log.');
+	}
+
+	/**
+	 * The words a streamed response may carry about a failure: the exception's
+	 * own only when they were written for the reader (a validation failure or a
+	 * refusal); a fault of any other kind is logged and reported in one fixed
+	 * sentence (review 2026-10-04, low 13).
+	 */
+	private function shown(\Throwable $e): string {
+		if ($e instanceof \InvalidArgumentException || $e instanceof \RuntimeException) {
+			return $this->say($e);
+		}
+		$this->logger->error('NetBase: ' . $e->getMessage(), ['exception' => $e, 'app' => 'netbase']);
+		return $this->unexpected();
+	}
+
 	/** Wrap a handler so a validation or permission failure becomes a clean JSON error. */
 	private function guard(callable $handler, string $tool): JSONResponse {
 		try {
 			$this->permissions->require($tool);
 			return new JSONResponse($handler());
-		} catch (\InvalidArgumentException $e) {
-			return new JSONResponse(['error' => $this->say($e)], Http::STATUS_BAD_REQUEST);
-		} catch (\RuntimeException $e) {
-			// 403 only for an account that may not do this (or a master key that must be
-			// given first); any other refusal is 400, so the page does not take it for an
-			// expired session and send it again (review C2, A3).
-			$key = $this->needsMasterKey($e);
-			$code = ($e instanceof \OCA\NetBase\Service\ForbiddenException || $key) ? Http::STATUS_FORBIDDEN : Http::STATUS_BAD_REQUEST;
-			return new JSONResponse(['error' => $this->say($e), 'needsKey' => $key], $code);
 		} catch (\Throwable $e) {
-			$this->logger->error('NetBase: ' . $e->getMessage(), ['exception' => $e, 'app' => 'netbase']);
-			return new JSONResponse(['error' => $this->say($e)], Http::STATUS_INTERNAL_SERVER_ERROR);
+			return $this->failure($e);
 		}
 	}
 
@@ -216,18 +249,8 @@ class ApiController extends Controller {
 		try {
 			$this->permissions->requireAdmin();
 			return new JSONResponse($handler());
-		} catch (\InvalidArgumentException $e) {
-			return new JSONResponse(['error' => $this->say($e)], Http::STATUS_BAD_REQUEST);
-		} catch (\RuntimeException $e) {
-			// 403 only for an account that may not do this (or a master key that must be
-			// given first); any other refusal is 400, so the page does not take it for an
-			// expired session and send it again (review C2, A3).
-			$key = $this->needsMasterKey($e);
-			$code = ($e instanceof \OCA\NetBase\Service\ForbiddenException || $key) ? Http::STATUS_FORBIDDEN : Http::STATUS_BAD_REQUEST;
-			return new JSONResponse(['error' => $this->say($e), 'needsKey' => $key], $code);
 		} catch (\Throwable $e) {
-			$this->logger->error('NetBase: ' . $e->getMessage(), ['exception' => $e, 'app' => 'netbase']);
-			return new JSONResponse(['error' => $this->say($e)], Http::STATUS_INTERNAL_SERVER_ERROR);
+			return $this->failure($e);
 		}
 	}
 
@@ -828,7 +851,7 @@ class ApiController extends Controller {
 			} catch (\Throwable $e) {
 				// The status line has already gone out, so a failure has to be
 				// reported in the body like everything else.
-				$emit(['stage' => 'error', 'message' => $this->say($e)]);
+				$emit(['stage' => 'error', 'message' => $this->shown($e)]);
 			}
 		});
 		$response->addHeader('Content-Type', 'application/x-ndjson');
@@ -923,11 +946,8 @@ class ApiController extends Controller {
 		}
 		try {
 			$saved = $this->transfer->saveToFiles($uid, $folder, $name, $content);
-		} catch (\InvalidArgumentException $e) {
-			return new JSONResponse(['error' => $this->say($e)], Http::STATUS_BAD_REQUEST);
 		} catch (\Throwable $e) {
-			$this->logger->error('NetBase: ' . $e->getMessage(), ['exception' => $e, 'app' => 'netbase']);
-			return new JSONResponse(['error' => $this->say($e)], Http::STATUS_INTERNAL_SERVER_ERROR);
+			return $this->failure($e);
 		}
 		return new JSONResponse($saved);
 	}
@@ -947,18 +967,8 @@ class ApiController extends Controller {
 		try {
 			$this->permissions->require('preview');
 			$token = $this->proxy->issue($base, (string)$this->permissions->uid());
-		} catch (\InvalidArgumentException $e) {
-			return new JSONResponse(['error' => $this->say($e)], Http::STATUS_BAD_REQUEST);
-		} catch (\RuntimeException $e) {
-			// 403 only for an account that may not do this (or a master key that must be
-			// given first); any other refusal is 400, so the page does not take it for an
-			// expired session and send it again (review C2, A3).
-			$key = $this->needsMasterKey($e);
-			$code = ($e instanceof \OCA\NetBase\Service\ForbiddenException || $key) ? Http::STATUS_FORBIDDEN : Http::STATUS_BAD_REQUEST;
-			return new JSONResponse(['error' => $this->say($e), 'needsKey' => $key], $code);
 		} catch (\Throwable $e) {
-			$this->logger->error('NetBase: ' . $e->getMessage(), ['exception' => $e, 'app' => 'netbase']);
-			return new JSONResponse(['error' => $this->say($e)], Http::STATUS_INTERNAL_SERVER_ERROR);
+			return $this->failure($e);
 		}
 		// The trailing slash matters: everything the device page points at is
 		// resolved against this address, and without it the last segment — the
@@ -975,9 +985,6 @@ class ApiController extends Controller {
 	 * image. It is a picture, not a frame: nothing from the page runs in the
 	 * browser, and a page only this server can reach still shows up.
 	 */
-	#[NoAdminRequired]
-	#[NoCSRFRequired]
-	#[UserRateLimit(limit: 60, period: 60)]
 	/**
 	 * A picture of the page a device window is showing.
 	 *
@@ -986,8 +993,13 @@ class ApiController extends Controller {
 	 * the same stored session: what comes back is the page as the person is
 	 * seeing it, signed in, and not the login screen they got past ten minutes
 	 * ago. The ticket has to be theirs — redeeming it here is what checks that.
+	 *
+	 * Fetched by the page without a request token (the answer is an image), so
+	 * the CSRF check is waived here as it is for preview() below.
 	 */
 	#[NoAdminRequired]
+	#[NoCSRFRequired]
+	#[UserRateLimit(limit: 60, period: 60)]
 	public function windowShot(string $token, string $path = '', int $width = 1280, int $height = 900) {
 		try {
 			$this->permissions->require('preview');
@@ -999,18 +1011,8 @@ class ApiController extends Controller {
 				$this->urls->linkToRoute('netbase.proxy.open', ['token' => $token, 'path' => ltrim($path, '/')])
 			), '/');
 			$result = $this->browser->screenshot($url . ($path === '' ? '/' : ''), $width, $height, 5000, false);
-		} catch (\InvalidArgumentException $e) {
-			return new JSONResponse(['error' => $this->say($e)], Http::STATUS_BAD_REQUEST);
-		} catch (\RuntimeException $e) {
-			// 403 only for an account that may not do this (or a master key that must be
-			// given first); any other refusal is 400, so the page does not take it for an
-			// expired session and send it again (review C2, A3).
-			$key = $this->needsMasterKey($e);
-			$code = ($e instanceof \OCA\NetBase\Service\ForbiddenException || $key) ? Http::STATUS_FORBIDDEN : Http::STATUS_BAD_REQUEST;
-			return new JSONResponse(['error' => $this->say($e), 'needsKey' => $key], $code);
 		} catch (\Throwable $e) {
-			$this->logger->error('NetBase: ' . $e->getMessage(), ['exception' => $e, 'app' => 'netbase']);
-			return new JSONResponse(['error' => $this->say($e)], Http::STATUS_INTERNAL_SERVER_ERROR);
+			return $this->failure($e);
 		}
 		if (!$result['ok']) {
 			return new JSONResponse(['error' => $result['error']], Http::STATUS_BAD_GATEWAY);
@@ -1020,22 +1022,21 @@ class ApiController extends Controller {
 		return $response;
 	}
 
+	/**
+	 * Loaded as an <img src>, which carries no request token; without the
+	 * attributes being on this method — they used to sit above the docblock of
+	 * windowShot() and so belonged to it — every preview failed with 412
+	 * (review 2026-10-04, medium 2).
+	 */
+	#[NoAdminRequired]
+	#[NoCSRFRequired]
+	#[UserRateLimit(limit: 60, period: 60)]
 	public function preview(string $url, int $width = 1280, int $height = 900, int $wait = 4000, bool $full = false) {
 		try {
 			$this->permissions->require('preview');
 			$result = $this->browser->screenshot($url, $width, $height, $wait, $full);
-		} catch (\InvalidArgumentException $e) {
-			return new JSONResponse(['error' => $this->say($e)], Http::STATUS_BAD_REQUEST);
-		} catch (\RuntimeException $e) {
-			// 403 only for an account that may not do this (or a master key that must be
-			// given first); any other refusal is 400, so the page does not take it for an
-			// expired session and send it again (review C2, A3).
-			$key = $this->needsMasterKey($e);
-			$code = ($e instanceof \OCA\NetBase\Service\ForbiddenException || $key) ? Http::STATUS_FORBIDDEN : Http::STATUS_BAD_REQUEST;
-			return new JSONResponse(['error' => $this->say($e), 'needsKey' => $key], $code);
 		} catch (\Throwable $e) {
-			$this->logger->error('NetBase: ' . $e->getMessage(), ['exception' => $e, 'app' => 'netbase']);
-			return new JSONResponse(['error' => $this->say($e)], Http::STATUS_INTERNAL_SERVER_ERROR);
+			return $this->failure($e);
 		}
 		if (!$result['ok']) {
 			return new JSONResponse(['error' => $result['error']], Http::STATUS_BAD_GATEWAY);
@@ -1074,12 +1075,19 @@ class ApiController extends Controller {
 		if (!$this->permissions->can('sshexec')) {
 			return new JSONResponse(['error' => $this->l10n->t('Not allowed')], Http::STATUS_FORBIDDEN);
 		}
-		$uid = (string)$this->uid();
-		$endpoint = $this->endpointFor($id, $connection);
-		// Whether this terminal is recorded, and where it is going, are settled
-		// here: the callback below closes the session before the first byte
-		// moves, and a closed session can no longer be read for settings.
-		$this->termLog->begin($uid, $session, 'ssh', (string)$endpoint->getHost());
+		try {
+			$uid = (string)$this->uid();
+			$endpoint = $this->endpointFor($id, $connection);
+			// Whether this terminal is recorded, and where it is going, are settled
+			// here: the callback below closes the session before the first byte
+			// moves, and a closed session can no longer be read for settings.
+			$this->termLog->begin($uid, $session, 'ssh', (string)$endpoint->getHost());
+		} catch (\Throwable $e) {
+			// A connection id that is not theirs, a master key not yet given, a
+			// bad address: answered as 400 or 403 with a message, like every other
+			// request, rather than as a 500 (review 2026-10-04, low 14).
+			return $this->failure($e);
+		}
 		$response = new ProxyResponse(function (IOutput $output) use ($endpoint, $uid, $session, $cols, $rows): void {
 			// Nextcloud locks the session file for the length of a request.
 			// This one lasts as long as the terminal does, and every keystroke
@@ -1249,21 +1257,26 @@ class ApiController extends Controller {
 		if (!$this->shellGate->hasTicket()) {
 			return new JSONResponse(['error' => $this->l10n->t('Not verified')], Http::STATUS_FORBIDDEN);
 		}
-		$uid = (string)$this->uid();
-		// The most powerful thing this app does, so it leaves a record: who
-		// opened a shell, from where, and which gate let them through. Written
-		// before the session is closed, while the route is still readable.
-		$this->logger->info('NetBase: a shell was opened on this server', [
-			'app' => 'netbase',
-			'user' => $uid,
-			'remoteAddress' => $this->request->getRemoteAddress(),
-			'gate' => $this->shellGate->route(),
-		]);
-		// Read before the session is closed, and handed to the shell as it starts.
-		$env = $this->shellEnvironment($uid);
-		// Likewise settled here, for the same reason: once the stream begins
-		// there is no session left to ask.
-		$this->termLog->begin($uid, $session, 'shell', (string)$this->urls->getBaseUrl());
+		try {
+			$uid = (string)$this->uid();
+			// The most powerful thing this app does, so it leaves a record: who
+			// opened a shell, from where, and which gate let them through. Written
+			// before the session is closed, while the route is still readable.
+			$this->logger->info('NetBase: a shell was opened on this server', [
+				'app' => 'netbase',
+				'user' => $uid,
+				'remoteAddress' => $this->request->getRemoteAddress(),
+				'gate' => $this->shellGate->route(),
+			]);
+			// Read before the session is closed, and handed to the shell as it starts.
+			$env = $this->shellEnvironment($uid);
+			// Likewise settled here, for the same reason: once the stream begins
+			// there is no session left to ask.
+			$this->termLog->begin($uid, $session, 'shell', (string)$this->urls->getBaseUrl());
+		} catch (\Throwable $e) {
+			// Answered as 400 or 403 with a message rather than as a 500 (review 2026-10-04, low 14).
+			return $this->failure($e);
+		}
 		$response = new ProxyResponse(function (IOutput $output) use ($uid, $session, $cols, $rows, $env): void {
 			$this->session->close();
 			while (ob_get_level() > 0) {
@@ -1454,8 +1467,8 @@ class ApiController extends Controller {
 	 */
 	private function availableLanguages(): array {
 		$names = [
-			'ja' => '日本語', 'en' => 'English', 'zh' => '简体中文', 'es' => 'Español',
-			'fr' => 'Français', 'de' => 'Deutsch', 'ru' => 'Русский', 'pt' => 'Português',
+			'ja' => '日本語', 'en' => 'English', 'zh_CN' => '简体中文', 'es' => 'Español',
+			'fr' => 'Français', 'de' => 'Deutsch', 'ru' => 'Русский', 'pt_PT' => 'Português (Portugal)',
 			'ar' => 'العربية', 'hi' => 'हिन्दी', 'ko' => '한국어', 'it' => 'Italiano',
 			'tr' => 'Türkçe', 'id' => 'Bahasa Indonesia', 'vi' => 'Tiếng Việt', 'th' => 'ไทย',
 			'fa' => 'فارسی', 'pl' => 'Polski', 'uk' => 'Українська', 'cs' => 'Čeština',
@@ -1463,10 +1476,19 @@ class ApiController extends Controller {
 		$out = [];
 		foreach (glob(__DIR__ . '/../../l10n/*.json') ?: [] as $path) {
 			$code = basename($path, '.json');
+			if (isset(Application::SAME_AS[$code])) {
+				continue;
+			}
 			$out[] = ['code' => $code, 'name' => $names[$code] ?? $code];
 		}
 		usort($out, static fn (array $a, array $b) => strcmp($a['code'], $b['code']));
 		return $out;
+	}
+
+	/** The NetBase language setting; a "pt" or "zh" stored before the rename is read as the code it now means. */
+	private function storedLanguage(string $uid): string {
+		$lang = $this->config->getUserValue($uid, 'netbase', 'language', 'auto');
+		return Application::OLD_LANGUAGES[$lang] ?? $lang;
 	}
 
 	/** @return list<string> */
@@ -1495,7 +1517,7 @@ class ApiController extends Controller {
 	public function getSettings(): JSONResponse {
 		$uid = $this->permissions->uid();
 		return new JSONResponse([
-			'language' => $uid ? $this->config->getUserValue($uid, 'netbase', 'language', 'auto') : 'auto',
+			'language' => $uid ? $this->storedLanguage($uid) : 'auto',
 			'languages' => $this->availableLanguages(),
 			'theme' => $uid ? $this->config->getUserValue($uid, 'netbase', 'theme', 'auto') : 'auto',
 			'lastTargets' => $uid ? $this->config->getUserValue($uid, 'netbase', 'last_targets', '') : '',
@@ -1533,13 +1555,17 @@ class ApiController extends Controller {
 			// Devices whose own page this person has agreed to show in full.
 			'trustedDevices' => $uid ? (array)(json_decode($this->config->getUserValue($uid, 'netbase', 'trusted_devices', '[]'), true) ?: []) : [],
 			'tools' => PermissionService::TOOLS,
-			'admin' => [
+			// The administrator's own settings — who may use what, the font
+			// directory on this server — are for an administrator's screen only;
+			// the page shows them to nobody else, so nobody else is sent them
+			// (review 2026-10-04, low 11).
+			'admin' => $this->permissions->isAdmin() ? [
 				'levels' => $this->permissions->levels(),
 				'groups' => $this->permissions->groups(),
 				'hideEmptyMenu' => $this->permissions->hidesEmptyMenu(),
 				'maxHosts' => (int)$this->config->getAppValue('netbase', 'max_hosts', '65536'),
 				'fontDir' => $this->config->getAppValue('netbase', 'font_dir', ''),
-			],
+			] : null,
 		]);
 	}
 
@@ -1560,6 +1586,9 @@ class ApiController extends Controller {
 				continue;
 			}
 			$value = mb_substr((string)$settings[$key], 0, 512);
+			if ($key === 'language') {
+				$value = Application::OLD_LANGUAGES[$value] ?? $value;
+			}
 			if ($key === 'language' && $value !== 'auto' && !in_array($value, $this->languageCodes(), true)) {
 				continue;
 			}

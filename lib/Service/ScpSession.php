@@ -388,9 +388,14 @@ class ScpSession {
 			return str_contains($out, 'netbase-ok');
 		}
 		// The exit status is the honest answer where the server reports one;
-		// the echo is the fallback for a shell that does not.
+		// the echo is the fallback for a shell that does not. "No status" is not
+		// a success: read that way, a failed rm or mv on a server that never
+		// sends one showed as done (review 2026-10-04, low 10).
 		$status = method_exists($this->scp, 'getExitStatus') ? $this->scp->getExitStatus() : null;
-		return $status === 0 || $status === null || $status === false;
+		if (is_int($status)) {
+			return $status === 0;
+		}
+		return str_contains($out, 'netbase-ok');
 	}
 
 	/**

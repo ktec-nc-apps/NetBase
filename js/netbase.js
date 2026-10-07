@@ -10,6 +10,10 @@
 
   const BASE = ((window.OC && OC.generateUrl) ? OC.generateUrl('/apps/netbase') : '/apps/netbase') + '/';
   let TOKEN = (window.OC && OC.requestToken) ? OC.requestToken : '';
+  // AI-Hub's own pages for a remembered conversation: read back, saved, summed up (the owner, 2026-10-06).
+  const HUB = ((window.OC && OC.generateUrl) ? OC.generateUrl('/apps/ai_hub') : '/apps/ai_hub') + '/conversation';
+  /** Where this tab keeps the token of its conversation with the AI (sessionStorage). */
+  const AI_CONV_KEY = 'netbase.ai.conversation';
   let rootProxy = null;
 
   function i18nSubst(s, vars) {
@@ -57,6 +61,19 @@
       try { if (window.OC) OC.requestToken = j.token; } catch (e) { /* read-only in some versions */ }
       return j.token;
     } catch (e) { return null; }
+  }
+
+  /** A request to AI-Hub's conversation pages: GET without a body, POST with one. */
+  async function hub(path, body) {
+    const res = await fetch(HUB + path, {
+      method: body ? 'POST' : 'GET', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json', requesttoken: (window.OC && OC.requestToken) || TOKEN },
+      body: body ? JSON.stringify(body) : undefined,
+    });
+    const ct = res.headers.get('content-type') || '';
+    const data = ct.includes('json') ? await res.json() : null;
+    if (!res.ok) throw new Error((data && data.error) || ('HTTP ' + res.status));
+    return data;
   }
 
   async function api(path, opts = {}) {
@@ -565,7 +582,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
    */
 
   const TEMPLATE = `
-  <div class="layout" :class="{'menu-open': menu}">
+  <div class="layout" :class="{'menu-open': menu, 'has-ai': ai.show}">
     <div class="nav-backdrop" v-if="menu" @click="menu=false"></div>
     <aside class="sidebar" :class="{open: menu}">
       <div class="brand"><span class="logo"><svg viewBox="333 400 1335 1030"><path d="M1040.38,1352.06c-3.65-4.48-4.91-9.8-3.78-15.97l115.97-542.87c1.12-6.16,4.33-11.48,9.66-15.97,5.32-4.48,11.06-6.72,17.23-6.72h262.19c37.53,0,69.33,7.14,95.38,21.43,26.05,14.29,45.51,33.06,58.4,56.3,12.88,23.25,19.33,47.77,19.33,73.53,0,12.33-1.13,22.98-3.36,31.93-5.61,28.02-15.27,50.57-28.99,67.65-13.73,17.1-27.31,30.12-40.76,39.08,25.21,20.73,37.82,47.62,37.82,80.67,0,12.89-1.68,27.46-5.04,43.7-7.85,35.29-19.05,65.42-33.61,90.34-14.57,24.93-37.12,45.1-67.65,60.5-30.54,15.42-71.01,23.11-121.43,23.11h-296.64c-6.17,0-11.07-2.23-14.71-6.72ZM1353.41,1228.53c19.04,0,35.15-6.16,48.32-18.49,13.16-12.32,19.75-27.17,19.75-44.54,0-11.76-4.2-21.28-12.6-28.57-8.4-7.27-19.62-10.92-33.61-10.92h-138.66l-21.85,102.52h138.66ZM1284.5,900.79l-20.17,95.8h130.25c16.81,0,30.53-4.2,41.18-12.61,10.64-8.4,17.36-20.17,20.17-35.29,1.12-6.72,1.68-11.2,1.68-13.45,0-11.2-3.65-19.75-10.92-25.63-7.29-5.88-17.94-8.82-31.93-8.82h-130.25Z" fill="none" stroke="#fff" stroke-width="100" stroke-linejoin="round" stroke-linecap="round"/><path d="M1040.38,1352.06c-3.65-4.48-4.91-9.8-3.78-15.97l115.97-542.87c1.12-6.16,4.33-11.48,9.66-15.97,5.32-4.48,11.06-6.72,17.23-6.72h262.19c37.53,0,69.33,7.14,95.38,21.43,26.05,14.29,45.51,33.06,58.4,56.3,12.88,23.25,19.33,47.77,19.33,73.53,0,12.33-1.13,22.98-3.36,31.93-5.61,28.02-15.27,50.57-28.99,67.65-13.73,17.1-27.31,30.12-40.76,39.08,25.21,20.73,37.82,47.62,37.82,80.67,0,12.89-1.68,27.46-5.04,43.7-7.85,35.29-19.05,65.42-33.61,90.34-14.57,24.93-37.12,45.1-67.65,60.5-30.54,15.42-71.01,23.11-121.43,23.11h-296.64c-6.17,0-11.07-2.23-14.71-6.72ZM1353.41,1228.53c19.04,0,35.15-6.16,48.32-18.49,13.16-12.32,19.75-27.17,19.75-44.54,0-11.76-4.2-21.28-12.6-28.57-8.4-7.27-19.62-10.92-33.61-10.92h-138.66l-21.85,102.52h138.66ZM1284.5,900.79l-20.17,95.8h130.25c16.81,0,30.53-4.2,41.18-12.61,10.64-8.4,17.36-20.17,20.17-35.29,1.12-6.72,1.68-11.2,1.68-13.45,0-11.2-3.65-19.75-10.92-25.63-7.29-5.88-17.94-8.82-31.93-8.82h-130.25Z" fill="#2e3192"/><path d="M902.67,1351.87c-6.55-6.05-12.12-13.83-16.73-23.34l-201.98-440.64-83.09,438.06c-1.55,9.5-5.97,17.72-13.28,24.62s-15.19,10.36-23.66,10.36h-151.2c-8.47,0-15.19-3.45-20.19-10.36s-6.73-15.12-5.2-24.62l159.28-837.22c1.53-9.5,5.95-17.72,13.27-24.62s15.2-10.38,23.67-10.38h96.95c19.22,0,33.08,9.94,41.55,29.81l204.28,443.23,83.11-438.05c1.53-9.5,5.95-17.72,13.27-24.62s15.19-10.38,23.66-10.38h151.2c8.45,0,15.19,3.47,20.19,10.38s6.73,15.12,5.2,24.62l-159.28,837.22c-1.55,9.5-5.97,17.72-13.28,24.62s-15.19,10.36-23.66,10.36h-96.94c-11.55,0-20.59-3.02-27.12-9.06Z" fill="none" stroke="#fff" stroke-width="100" stroke-linejoin="round" stroke-linecap="round"/><path d="M902.67,1351.87c-6.55-6.05-12.12-13.83-16.73-23.34l-201.98-440.64-83.09,438.06c-1.55,9.5-5.97,17.72-13.28,24.62s-15.19,10.36-23.66,10.36h-151.2c-8.47,0-15.19-3.45-20.19-10.36s-6.73-15.12-5.2-24.62l159.28-837.22c1.53-9.5,5.95-17.72,13.27-24.62s15.2-10.38,23.67-10.38h96.95c19.22,0,33.08,9.94,41.55,29.81l204.28,443.23,83.11-438.05c1.53-9.5,5.95-17.72,13.27-24.62s15.19-10.38,23.66-10.38h151.2c8.45,0,15.19,3.47,20.19,10.38s6.73,15.12,5.2,24.62l-159.28,837.22c-1.55,9.5-5.97,17.72-13.28,24.62s-15.19,10.36-23.66,10.36h-96.94c-11.55,0-20.59-3.02-27.12-9.06Z" fill="#2970e2"/></svg></span><span>NetBase</span><span class="tag" v-if="version">v{{ version }}</span></div>
@@ -659,9 +676,12 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
 
         <!-- ============ devices ============ -->
         <section v-if="tab==='devices'">
-          <!-- 一覧とカードの切り替え。機器一覧の上の枠（スキャンする対象）の右上に重ねて出す。
-               枠が無い人（スキャンの権限が無い）には、同じ場所にボタンだけ出る（オーナー 2026-09-27・28）。 -->
-          <div class="view-toggle dev-vt" :class="{solo: !allowed('scan')}" role="group" :aria-label="t('View')">
+          <!-- 一覧とカードの切り替え。機器一覧の上の枠（スキャンする対象）の右上に出す。
+               枠が無い人（スキャンの権限が無い）には、同じ場所にボタンだけ出る（オーナー 2026-09-27・28）。
+               枠がある人には、枠の一行目（スキャン対象）の右端に並べて出す（下の scan-what の中）。重ねると
+               幅が足りない時に「ネットワーク範囲指定」を覆って押せなくなったため（2026-10-06）。
+               この切り替えは二か所にある。変える時は両方を同じに変える。 -->
+          <div v-if="!allowed('scan')" class="view-toggle dev-vt solo" role="group" :aria-label="t('View')">
               <button class="vt" :class="{on: deviceView==='list'}" @click="setDeviceView('list')" :title="t('List view')"><svg viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg><span class="vt-lb">{{ t('List view') }}</span></button>
               <button class="vt" :class="{on: deviceView==='card'}" @click="setDeviceView('card')" :title="t('Card view')"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span class="vt-lb">{{ t('Card view') }}</span></button>
           </div>
@@ -677,6 +697,11 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
               <label :title="t('Walks every address in the networks below. Thorough, and the slow one.')">
                 <input type="radio" value="network" v-model="scanWhat"> {{ t('The whole network') }}
               </label>
+              <!-- 一覧とカードの切り替え（上の solo と同じもの）。行の右端に寄せ、入りきらなければ次の行へ回る。 -->
+              <div class="view-toggle dev-vt" role="group" :aria-label="t('View')">
+                <button class="vt" :class="{on: deviceView==='list'}" @click="setDeviceView('list')" :title="t('List view')"><svg viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg><span class="vt-lb">{{ t('List view') }}</span></button>
+                <button class="vt" :class="{on: deviceView==='card'}" @click="setDeviceView('card')" :title="t('Card view')"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span class="vt-lb">{{ t('Card view') }}</span></button>
+              </div>
             </div>
             <div class="scan-row">
               <label class="fl" v-if="scanWhat === 'network'" :title="t('Which networks to look at. Left blank, it uses the ones this server is on. Several can be given, separated by commas.')">
@@ -755,7 +780,11 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
 
           <div v-if="!shownDevices.length" class="empty-hint">{{ allowed('scan') ? t('No devices recorded yet. Start a scan to build the list.') : t('No devices have been recorded yet. An administrator has to run a scan first.') }}</div>
           <template v-else>
-          <table v-if="deviceView==='list'" class="grid">
+          <!-- The list keeps every column; when the work area is narrower than the
+               table (a 1280px window, the AI assistant open), the table slides
+               sideways inside its own frame — the page itself never does. -->
+          <div v-if="deviceView==='list'" class="grid-scroll">
+          <table class="grid">
             <thead>
               <tr>
                 <th class="c-dot"></th>
@@ -781,7 +810,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
               </tr>
             </thead>
             <tbody>
-              <tr v-for="g in deviceGroups" :key="g.key" @click="openDevice(g.rep)" @contextmenu.prevent="openRowMenu(g.rep, $event)" :class="{offline: !g.online}">
+              <tr v-for="g in deviceGroups" :key="g.key" @click="openDevice(g.rep)" @contextmenu.prevent="nbCtxDevice(g.rep, $event)" :class="{offline: !g.online}">
                 <td class="c-dot"><span class="dot" :class="{on: g.online}" :title="g.online ? t('Online') : t('Not seen in the last sweep')"></span><span class="dv-slot" v-html="icon(g.rep)"></span></td>
                 <td class="c-name">
                   <div class="pair-a"><span class="nm" :class="{unnamed: !listName(g.rep).named}">{{ listName(g.rep).text }}</span><span class="badge self" v-if="g.isSelf">{{ t('this server') }}</span><span class="badge" v-if="g.rep.label">{{ t('named') }}</span></div>
@@ -796,12 +825,13 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
                       <span class="addr-vendor dim" :title="macVendor(m)">{{ macVendor(m) ? '(' + macVendor(m) + ')' : '' }}</span>
                       <span class="addr-ports dim" v-if="m.ports && m.ports.length" @click.stop>
                         <span class="addr-ports-label">{{ t('ports') }}</span>
-                        <template v-for="(p,i) in m.ports" :key="p">
-                          <a v-if="portLink(m, p)" href="#" :title="portLink(m, p).title" @click.prevent="openDeviceWindow(m, p)">{{ p }}</a>
-                          <a v-else-if="portTool(m, p)" href="#" :title="portTool(m, p).title" @click.prevent="openPortTool(m, p)">{{ p }}</a>
-                          <span v-else>{{ p }}</span><span v-if="i < m.ports.length - 1">, </span>
-                        </template>
+                        <!-- Each port holds its comma, so a list that wraps in a
+                             narrow slot breaks after "53," — never before ", 80". -->
+                        <span class="port-one" v-for="(p,i) in m.ports" :key="p"><a v-if="portLink(m, p)" href="#" :title="portLink(m, p).title" @click.prevent="openDeviceWindow(m, p)">{{ p }}</a><a v-else-if="portTool(m, p)" href="#" :title="portTool(m, p).title" @click.prevent="openPortTool(m, p)">{{ p }}</a><span v-else>{{ p }}</span><template v-if="i < m.ports.length - 1">,</template></span>
                       </span>
+                      <!-- An address with no open ports keeps the slot, so its vendor
+                           gives up the same width as the lines that have them. -->
+                      <span class="addr-ports" v-else></span>
                     </div>
                   </template>
                   <div class="pair-loc" v-if="whereText(g.rep)" :title="whereText(g.rep)">📍 {{ whereText(g.rep) }}</div>
@@ -814,12 +844,13 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
               </tr>
             </tbody>
           </table>
+          </div>
           <!-- カード表示：ネットワークが一つならそのまま、複数あればネットワークごとに見出しを付けて分ける（オーナー 2026-09-28）。 -->
           <div v-else class="dev-card-sections">
             <div v-for="sec in deviceCardSections" :key="sec.key" class="dev-card-section">
               <div class="dcs-head mono" v-if="deviceCardSections.length > 1">{{ sec.label }}</div>
               <div class="dev-cards">
-                <div v-for="g in sec.groups" :key="g.key" class="dev-card" :class="{offline: !g.online}" @mouseenter="showCardTip(g, $event)" @mouseleave="hideCardTip" @click="hideCardTip(); openDevice(g.rep)" @contextmenu.prevent="openRowMenu(g.rep, $event)">
+                <div v-for="g in sec.groups" :key="g.key" class="dev-card" :class="{offline: !g.online}" @mouseenter="showCardTip(g, $event)" @mouseleave="hideCardTip" @click="hideCardTip(); openDevice(g.rep)" @contextmenu.prevent="nbCtxDevice(g.rep, $event)">
                   <div class="dc-top"><span class="dv-slot big" v-html="icon(g.rep)"></span><span class="dot" :class="{on: g.online}" :title="g.online ? t('Online') : t('Not seen in the last sweep')"></span></div>
                   <div class="dc-maker" v-if="vendorShort(g.rep)">{{ vendorShort(g.rep) }}</div>
                   <div class="dc-name" :class="{unnamed: !listName(g.rep).named}">{{ listName(g.rep).text }}</div>
@@ -2065,6 +2096,69 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
       </div>
     </main>
 
+    <!-- ============ the AI assistant ============
+         Through AI-Hub, modelled on EditBase's (2026-10-04). Shut until asked
+         for: a narrow handle down the right edge, the triangle pointing the way
+         it opens. Open, a column as wide as the person keeps it. It runs nothing
+         and reads only what the administrator allows: the result on the screen,
+         sent from here as the person sees it, and the device list, which the
+         server adds itself. -->
+    <aside class="ai-col" :class="{ 'is-drop': ai.drop }" v-if="ai.show && ai.open" :style="{ flex: '0 0 ' + aiWidth(), width: aiWidth() }"
+      @dragover="aiDragOver" @dragleave="aiDragLeave" @drop="aiDrop">
+      <!-- The edge between the work and the assistant (the owner, 2026-10-06): dragged, the
+           column takes the width there and then and the work gives up the same; let go, the
+           width is kept as Settings keeps it. A double click puts back the 500px it starts at;
+           with the keyboard, ← and → move it 10px. -->
+      <div class="ai-grip" role="separator" aria-orientation="vertical" tabindex="0"
+        :aria-valuenow="parseFloat(aiWidth())" :aria-valuemin="ai.widthU === '%' ? 15 : 240" :aria-valuemax="ai.widthU === '%' ? 60 : 1200" :aria-valuetext="aiWidth()"
+        :title="t('Drag to change the width; double-click to reset')" :aria-label="t('Drag to change the width; double-click to reset')"
+        @pointerdown="aiGripDown" @pointermove="aiGripMove" @pointerup="aiGripUp" @pointercancel="aiGripUp" @lostpointercapture="aiGripUp"
+        @dblclick="aiGripReset" @keydown="aiGripKey"></div>
+      <div class="ai-head">
+        <span class="ai-title">{{ t('AI assistant') }}</span>
+        <span class="ai-sub" v-if="ai.adminTools">{{ t('administrator tools') }}</span>
+        <span class="grow"></span>
+        <span class="ai-model" v-if="ai.model" :title="ai.model">{{ ai.model }}</span>
+        <!-- The conversation saved to Files as Markdown, as it stands or summed up by the AI
+             (the owner, 2026-10-06): AI-Hub/NetBase/ in the person's Files. -->
+        <button type="button" class="ai-ic" @click="aiSave(false)" :disabled="!ai.msgs.length || ai.busy || !!ai.saving" :title="t('Save the conversation')" :aria-label="t('Save the conversation')"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 2.5h8l2 2v8.5a.5.5 0 0 1-.5.5h-9a.5.5 0 0 1-.5-.5v-10a.5.5 0 0 1 .5-.5z"/><path d="M5.5 2.5v3h5v-3M5 13.5v-4h6v4"/></svg></button>
+        <button type="button" class="ai-ic" @click="aiSave(true)" :disabled="!ai.msgs.length || ai.busy || !!ai.saving || !ai.ready" :title="t('Sum up the conversation and save it')" :aria-label="t('Sum up the conversation and save it')"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3.5h10M3 6.5h10M3 9.5h6M3 12.5h4"/><path d="M11.5 10v4M9.5 12l2 2 2-2"/></svg></button>
+        <button type="button" class="btn xs ai-new" :disabled="ai.busy" :title="t('New conversation')" :aria-label="t('New conversation')" @click="aiClear">＋<span class="lb"> {{ t('New conversation') }}</span></button>
+        <button type="button" class="hnd" :title="t('Hide') + ' — ' + t('AI assistant')" :aria-label="t('Hide') + ' — ' + t('AI assistant')" @click="aiToggle">{{ aiTriangle() }}</button>
+      </div>
+      <div class="ai-msgs" ref="aiMsgs">
+        <p class="ai-hint" v-if="!ai.msgs.length">{{ t('Ask what the result on the screen means, or how to do something in NetBase.') }}</p>
+        <p class="ai-hint" v-if="!ai.msgs.length && ai.imagesOk">{{ t('You can also paste (Ctrl+V) or drop images here.') }}</p>
+        <!-- A command the administrator's tools will not run until the administrator
+             approves it arrives as a marker in the answer; the marker is taken out of the
+             text and shown as a button, and pressing it sends the approval as the
+             person's own message (review 2026-10-04, medium 8). -->
+        <!-- Each message can be copied as it stands (the owner, 2026-10-06): the button shows while
+             the pointer is on the message; images sent with a question are shown small above its words. -->
+        <div class="ai-msg" :class="m.role" v-for="(m, i) in ai.msgs" :key="i"><div class="ai-bubble"><div class="ai-imgs" v-if="m.images && m.images.length"><img v-for="(im, k) in m.images" :key="k" :src="im.url" :alt="im.name" :title="im.name"></div>{{ m.text }}<div class="ai-confirm" v-if="m.confirm && m.confirm.length"><button type="button" class="btn xs primary" v-for="h in m.confirm" :key="h" :disabled="ai.busy" @click="aiApprove(m, h)">▶ {{ t('Run this command') }}</button></div></div><button type="button" class="ai-copy" v-if="m.text" :class="{ done: m.copied }" :title="t('Copy')" :aria-label="t('Copy')" @click="aiCopy(m)">{{ m.copied ? '✓' : '📋' }}<span class="ai-copied" v-if="m.copied" role="status">{{ t('Copied') }}</span></button></div>
+        <div class="ai-msg assistant" v-if="ai.busy"><div class="ai-bubble busy">{{ t('Thinking…') }}</div></div>
+        <p class="ai-err" v-if="ai.error">{{ ai.error }}</p>
+        <p class="ai-note" v-if="ai.note" role="status">{{ ai.note }}</p>
+        <p class="ai-note" v-if="ai.saving" role="status">{{ ai.saving === 'summary' ? t('Summing up the conversation…') : t('Saving the conversation…') }}</p>
+        <p class="ai-saved" v-if="ai.saved" role="status">{{ t('Saved to {path}.', { path: ai.saved.path }) }}
+          <a :href="ai.saved.url" target="_blank" rel="noopener">{{ t('Open in Files') }}</a></p>
+      </div>
+      <div class="ai-foot">
+        <!-- Images pasted (Ctrl+V) or dropped go with the next question: shown small here, × takes one off. -->
+        <div class="ai-att" v-if="ai.images.length || ai.attNote">
+          <span class="ai-thumb" v-for="(im, k) in ai.images" :key="im.id"><img :src="im.url" :alt="im.name" :title="im.name"><button type="button" :title="t('Remove image')" :aria-label="t('Remove image')" @click="aiUnattach(k)">×</button></span>
+          <p class="ai-attnote" v-if="ai.attNote" role="alert">{{ ai.attNote }}</p>
+        </div>
+        <textarea v-model="ai.input" rows="2" :placeholder="ai.ready ? t('Message to the assistant…') : aiNotReady()" :disabled="!ai.ready"
+          @keydown="aiKey($event)" @paste="aiPaste" @compositionstart="ai.composing = true" @compositionend="ai.composing = false"></textarea>
+        <button class="btn primary" @click="aiSend" :disabled="ai.busy || !ai.ready || (!ai.input.trim() && !ai.images.length)">{{ t('Send') }}</button>
+      </div>
+    </aside>
+    <div class="ai-bar" v-if="ai.show && !ai.open">
+      <button type="button" class="hnd" :title="t('Show') + ' — ' + t('AI assistant')" :aria-label="t('Show') + ' — ' + t('AI assistant')" @click="aiToggle">{{ aiTriangle() }}</button>
+      <span class="ai-lb">{{ t('AI assistant') }}</span>
+    </div>
+
     <!-- ============ system information ============ -->
     <!-- Opening a shell: shown only when a code has to be entered, or when
          something is in the way. On a closed network the shell opens with no
@@ -2375,7 +2469,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
                dialog longer than the screen, and the one being changed was
                never wholly in view. -->
           <div class="set-tabs" role="tablist">
-            <button v-for="s in settingTabs" :key="s.id"
+            <button v-for="s in settingTabsShown" :key="s.id"
                     class="set-tab" :class="{active: settingTab === s.id}"
                     role="tab" :aria-selected="settingTab === s.id" :title="t(s.label)"
                     @click="settingTab = s.id">
@@ -2403,6 +2497,20 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
               </select>
             </label>
             <p class="dim tiny">{{ t('NetBase can speak a different language from the rest of Nextcloud.') }}</p>
+
+            <!-- The AI assistant's width lives here, with the other appearance
+                 settings, not in the column's own header -- so NetBase is set
+                 the way the other Base apps are (the owner's unification). -->
+            <template v-if="ai.show">
+              <h4>🤖 {{ t('Width of the AI assistant') }}</h4>
+              <div class="fl">
+                <span class="ai-widthbox">
+                  <input type="number" step="1" :min="ai.widthU === '%' ? 15 : 240" :max="ai.widthU === '%' ? 60 : 1200" v-model.number="ai.widthW" :aria-label="t('Width of the AI assistant')" @change="aiSaveWidth">
+                  <select v-model="ai.widthU" :aria-label="t('Width of the AI assistant')" @change="aiSaveWidth"><option value="px">px</option><option value="%">%</option></select>
+                </span>
+              </div>
+              <p class="dim tiny">{{ t('In pixels (240 to 1200), or as a percentage of the width of the window (15 to 60).') }}</p>
+            </template>
           </section>
 
           <section class="set-group" v-show="settingTab === 'term'">
@@ -2744,30 +2852,21 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
       </div>
     </div>
 
-    <div v-if="rowMenu.open" class="row-menu-veil" @click="rowMenu.open = false" @contextmenu.prevent="rowMenu.open = false">
-      <ul class="row-menu" :style="{ left: rowMenu.x + 'px', top: rowMenu.y + 'px' }" @click.stop>
-        <li class="row-menu-head">{{ rowMenu.device ? (rowMenu.device.name || rowMenu.device.ip) : '' }}</li>
-        <li v-for="(a,i) in rowActions(rowMenu.device)" :key="i">
-          <button class="row-menu-item" @click="rowMenu.open = false; a.run()">
-            <span class="ic">{{ a.icon }}</span>{{ a.label }}
-          </button>
-        </li>
-        <li v-if="!rowActions(rowMenu.device).length" class="row-menu-none">{{ t('No way in on the ports it has open') }}</li>
-        <li class="row-menu-rule"></li>
-        <!-- Unlike the entries above, this does not depend on a port being
-             open: a device that answers nothing at all is exactly the one
-             worth pinging. -->
-        <li v-if="rowMenu.device && rowMenu.device.ip">
-          <button class="row-menu-item" @click="rowMenu.open = false; pingDevice(rowMenu.device)">
-            <span class="ic">📡</span>{{ t('Ping this device') }}
-          </button>
-        </li>
-        <li>
-          <button class="row-menu-item" @click="rowMenu.open = false; openDevice(rowMenu.device)">
-            <span class="ic">📋</span>{{ t('Properties') }}
-          </button>
-        </li>
-      </ul>
+    <!-- ============ one right-button menu for the whole app (as in EditBase) ============
+         The native menu is refused everywhere inside NetBase (onRootCtxMenu),
+         except inside an xterm terminal, which needs the right button for paste.
+         In its place this menu offers only what the spot already offers by other
+         means: a device row's own actions, a result's save and copy, and the
+         usual cut/copy/paste/select-all in a place to type. -->
+    <div v-if="nbctx.open" class="nb-ctx-back" @mousedown="ctxmClose" @contextmenu.prevent="ctxmClose"></div>
+    <div v-if="nbctx.open" class="nb-ctxmenu" :style="{ left: nbctx.x + 'px', top: nbctx.y + 'px' }" @contextmenu.prevent>
+      <div class="hd" v-if="nbctx.head">{{ nbctx.head }}</div>
+      <template v-for="(it, i) in nbctx.items" :key="i">
+        <div v-if="it.sep" class="sep"></div>
+        <button v-else class="ci" :class="{danger: it.danger}" :disabled="it.disabled" @click="ctxmRun(it)">
+          <span class="ic">{{ it.icon || '' }}</span><span class="lbl">{{ it.label }}</span>
+        </button>
+      </template>
     </div>
 
     <!-- ============ text windows (a file, open beside the list) ============ -->
@@ -3456,6 +3555,22 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         // On a narrow screen the tool list is a drawer rather than a column,
         // and a device's page fills the screen instead of floating over it.
         menu: false, narrow: window.innerWidth <= 900,
+        // The AI assistant: shown only when AI-Hub is there and the administrator
+        // allows this person; always shut when the page opens. Its width is set
+        // in Settings → AI assistant, not in the column's own header.
+        ai: { show: false, ready: false, reason: '', model: '', read: [], search: false, adminTools: false, open: false,
+          // The column's width, kept on the server per person ("500px" or "30%");
+          // widthW / widthU are the number and the unit in Settings → AI assistant.
+          width: '500px', widthW: 500, widthU: 'px', msgs: [], input: '', busy: false, error: '', composing: false, ask: 0,
+          // One token per conversation, kept in this tab's sessionStorage: sent with each
+          // question so AI-Hub remembers the exchange across reloads of this tab, for this
+          // login; remade (and the old one forgotten) on a new conversation. Made lazily
+          // when the first question is asked (the owner, 2026-10-06).
+          conversationId: '',
+          // saving to Files and what was saved; a word when AI-Hub had let the conversation go
+          saving: '', saved: null, note: '',
+          // images waiting to go with the next question; whether this AI connection takes images
+          images: [], attNote: '', drop: false, imagesOk: false },
         status: { canScan: false, canLookup: false, isAdmin: false, binaries: {}, nmap: { available: false }, ouiEntries: 0, targets: [] },
         settings: { language: 'auto', theme: 'auto', languages: [], tabOrder: [], keyFolder: '', rootIdleMinutes: 10, termFont: 'system', termFontSize: TERM_SIZE_DEFAULT, shellLang: '', shellEnv: '', shellLocales: [], termLogOn: false, termLogSteps: 5000, termLogDays: 30 },
         termFonts: TERM_FONTS,
@@ -3613,7 +3728,9 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         locale: 0,
         picker: { open: false, title: '', path: '', parent: null, entries: [], foldersOnly: false, onPick: null },
         windows: [], terms: [], windowSeq: 0, windowTop: 3000, drag: null,
-        rowMenu: { open: false, x: 0, y: 0, device: null },
+        // One right-button menu for the whole app (as in EditBase). Its items are
+        // built when it opens: {icon, label, run, disabled, danger} or {sep:true}.
+        nbctx: { open: false, x: 0, y: 0, head: '', items: [] },
         // The answer to "is that row really gone?", kept on screen until it is
         // closed: the numbers and the caveat are worth reading twice, which a
         // notice that fades after six seconds does not allow.
@@ -3647,6 +3764,8 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
       };
     },
     computed: {
+      /** The parts of Settings on offer: the AI assistant's only while it is there for this person. */
+      settingTabsShown() { return this.settingTabs.filter((s) => s.id !== 'ai' || this.ai.show); },
       /**
        * This server's own address, as somewhere to open a console.
        *
@@ -4058,6 +4177,452 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
       // Reading this.locale makes every t() call re-evaluate when the language
       // changes, so switching redraws the whole interface.
       t(text, vars) { return this.locale, T(text, vars); },
+
+      // ---- the AI assistant (through AI-Hub; modelled on EditBase, 2026-10-04) ----
+      // It answers in words only. It runs nothing: it is shown the result on the
+      // screen, as the person sees it, and explains it. The device list, when the
+      // administrator allows it, is added by the server, never sent from here.
+      async aiLoad() {
+        try {
+          const st = await api('ai/status');
+          Object.assign(this.ai, { show: !!st.show, ready: !!st.ready, reason: st.reason || '', model: st.model || '',
+            read: Array.isArray(st.read) ? st.read : [], search: !!st.search, adminTools: !!st.adminTools, imagesOk: !!st.images });
+          if (st.width && this.aiValidWidth(String(st.width))) { this.ai.width = this.aiValidWidth(String(st.width)); this.aiSplitWidth(); }
+        } catch (e) { this.ai.show = false; }
+        if (this.ai.show) { await this.aiRestore(); }
+      },
+      // ---- the conversation lasts while this tab is open and the person stays logged in
+      // (the owner, 2026-10-06). Its token is kept in this tab's sessionStorage, so a reload
+      // goes on with it and a new tab starts afresh; AI-Hub keeps what was said, for the
+      // login it was said in, so after logging out and in again it starts afresh too.
+      aiConvToken(make) {
+        let id = this.ai.conversationId;
+        if (!id) { try { id = sessionStorage.getItem(AI_CONV_KEY) || ''; } catch (e) { id = ''; } }
+        if (!id && make) {
+          id = this.aiNewConvId();
+          try { sessionStorage.setItem(AI_CONV_KEY, id); } catch (e) { /* kept for this page only */ }
+        }
+        this.ai.conversationId = id;
+        return id;
+      },
+      /** An answer as the page shows it: the approval markers become buttons, the words lose them. */
+      aiAnswer(answer) {
+        const confirm = [];
+        const text = String(answer || '').replace(/\[\[nb-confirm:([0-9a-f]{8,64})\]\]/gi, (all, h) => {
+          const hash = h.toLowerCase();
+          if (!confirm.includes(hash)) { confirm.push(hash); }
+          return '';
+        }).replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim();
+        return { role: 'assistant', text, confirm };
+      },
+      /** What AI-Hub still keeps of this tab's conversation, back on the screen. */
+      async aiRestore() {
+        const id = this.aiConvToken(false);
+        if (!id || this.ai.msgs.length) { return; }
+        try {
+          const r = await hub('?app=netbase&conversation=' + encodeURIComponent(id));
+          const turns = (Array.isArray(r && r.turns) ? r.turns : []).filter((m) => m && (m.role === 'user' || m.role === 'assistant') && typeof m.text === 'string');
+          if (this.ai.msgs.length || this.ai.conversationId !== id) { return; }
+          // a command already approved further on is not offered again
+          const approved = new Set(turns.filter((m) => m.role === 'user').map((m) => (/^approve ([0-9a-f]{8,64})$/i.exec(m.text.trim()) || [])[1]).filter(Boolean).map((h) => h.toLowerCase()));
+          this.ai.msgs = turns.map((m) => {
+            if (m.role === 'user') { return { role: 'user', text: m.text }; }
+            const a = this.aiAnswer(m.text);
+            a.confirm = a.confirm.filter((h) => !approved.has(h));
+            return a;
+          });
+          this.aiScroll();
+        } catch (e) { /* nothing to show: a new conversation */ }
+      },
+      /**
+       * Save the conversation to Files as Markdown (AI-Hub/NetBase/…), or have the AI sum
+       * it up once and save the summary. AI-Hub does both, from what it keeps.
+       */
+      async aiSave(summary) {
+        const id = this.aiConvToken(false);
+        if (!id || !this.ai.msgs.length || this.ai.busy || this.ai.saving) { return; }
+        this.ai.error = '';
+        this.ai.saved = null;
+        this.ai.saving = summary ? 'summary' : 'plain';
+        this.aiScroll();
+        try {
+          let file = null;
+          if (!summary) {
+            file = await hub('/save', { app: 'netbase', conversation: id });
+          } else {
+            const r = await hub('/summary', { app: 'netbase', conversation: id });
+            if (!r || !r.id) { throw new Error((r && r.error) || 'not-ready'); }
+            const until = Date.now() + 10 * 60 * 1000;
+            while (Date.now() < until && !file) {
+              await new Promise((res) => setTimeout(res, 1500));
+              const x = await hub('/result/' + encodeURIComponent(r.id));
+              if (x.state === 'running') { continue; }
+              if (x.state === 'done' && x.file) { file = x.file; break; }
+              throw new Error(x.error || x.state);
+            }
+            if (!file) { throw new Error('timeout'); }
+          }
+          if (!file || !file.path) { throw new Error('not-saved'); }
+          this.ai.saved = { path: file.path, url: file.url || '' };
+        } catch (e) {
+          const m = String((e && e.message) || e || '');
+          this.ai.error = m === 'empty' || m === 'HTTP 404' ? this.t('There is nothing kept of this conversation to save.')
+            : (summary && ['busy', 'not-ready', 'timeout'].indexOf(m) >= 0 ? this.aiError(e) : this.t('The conversation could not be saved.'));
+        } finally {
+          this.ai.saving = '';
+          this.aiScroll();
+        }
+      },
+      aiNotReady() {
+        return {
+          'no-key': this.t('AI-Hub has no API key yet.'),
+          'no-cli': this.t('AI-Hub\'s command line tool is not set up.'),
+          'no-model': this.t('AI-Hub has no model chosen yet.'),
+          'no-store': this.t('AI-Hub cannot keep an answer on this server.'),
+        }[this.ai.reason] || this.t('The assistant is not ready.');
+      },
+      aiToggle() {
+        this.ai.open = !this.ai.open;
+        if (this.ai.open) {
+          this.$nextTick(() => { const ta = this.$el && this.$el.querySelector('.ai-col textarea'); if (ta) { ta.focus(); } this.aiScroll(); });
+        }
+      },
+      /** The triangle on the handle points the way the assistant opens: in from the right, or up from below on a phone. */
+      aiTriangle() {
+        if (this.narrow) { return this.ai.open ? '▼' : '▲'; }
+        return this.ai.open ? '▶' : '◀';
+      },
+      /** A fresh conversation token: random where the browser can, otherwise time plus chance. */
+      aiNewConvId() {
+        try {
+          if (window.crypto && crypto.getRandomValues) {
+            const a = new Uint8Array(12);
+            crypto.getRandomValues(a);
+            return Array.from(a, (b) => b.toString(16).padStart(2, '0')).join('');
+          }
+        } catch (e) { /* fall through to the time-and-chance token */ }
+        return 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
+      },
+      /** A new conversation. An answer still on its way to the old one is dropped, and the server forgets it. */
+      aiClear() {
+        const old = this.aiConvToken(false);
+        this.ai.ask += 1;
+        Object.assign(this.ai, { msgs: [], busy: false, error: '', saved: null, note: '' });
+        this.ai.conversationId = '';
+        try { sessionStorage.removeItem(AI_CONV_KEY); } catch (e) { /* nothing kept */ }
+        if (old) {
+          api('ai/forget', { method: 'POST', body: JSON.stringify({ conversation: old }) }).catch(() => { /* best effort */ });
+        }
+      },
+      aiKey(e) {
+        if (e.key === 'Enter' && !e.shiftKey && !e.isComposing && !this.ai.composing && e.keyCode !== 229) {
+          e.preventDefault();
+          this.aiSend();
+        }
+      },
+      aiScroll() { this.$nextTick(() => { const box = this.$refs.aiMsgs; if (box) { box.scrollTop = box.scrollHeight; } }); },
+      // ---- copying a message, and images with a question (the owner, 2026-10-06) ----
+      /**
+       * Copy one message as it stands on the screen: the person's own words, or the answer's
+       * plain text (Markdown marks and all). The clipboard API where the browser offers it,
+       * otherwise a hidden text box and the copy command.
+       */
+      async aiCopy(m) {
+        const text = String((m && m.text) || '');
+        let ok = false;
+        try {
+          if (navigator.clipboard && window.isSecureContext) { await navigator.clipboard.writeText(text); ok = true; }
+        } catch (e) { ok = false; }
+        if (!ok) {
+          const prev = document.activeElement;
+          const ta = document.createElement('textarea');
+          ta.value = text;
+          ta.setAttribute('readonly', '');
+          ta.style.cssText = 'position:fixed;top:-1000px;left:-1000px;opacity:0;';
+          document.body.appendChild(ta);
+          ta.select();
+          try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+          document.body.removeChild(ta);
+          if (prev && prev.focus) { try { prev.focus({ preventScroll: true }); } catch (e) { /* ignore */ } }
+        }
+        if (!ok) { return; }
+        m.copied = (m.copied || 0) + 1;
+        const mark = m.copied;
+        setTimeout(() => { if (m.copied === mark) { m.copied = 0; } }, 1500);
+      },
+      /** A pasted image goes with the question; pasted words are pasted as ever (text from Word or Excel brings a picture of itself too). */
+      aiPaste(e) {
+        const cd = e.clipboardData;
+        const files = Array.from((cd && cd.files) || []);
+        if (!files.length) { return; }
+        let text = '';
+        try { text = cd.getData('text/plain') || ''; } catch (err) { text = ''; }
+        if (text.trim()) { return; }
+        e.preventDefault();
+        this.aiAddFiles(files);
+      },
+      aiHasFiles(e) {
+        const types = e.dataTransfer && e.dataTransfer.types;
+        return !!types && Array.from(types).includes('Files');
+      },
+      aiDragOver(e) {
+        if (!this.aiHasFiles(e)) { return; }
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'copy';
+        this.ai.drop = true;
+      },
+      aiDragLeave(e) {
+        if (!e.currentTarget || !e.currentTarget.contains(e.relatedTarget)) { this.ai.drop = false; }
+      },
+      aiDrop(e) {
+        this.ai.drop = false;
+        if (!this.aiHasFiles(e)) { return; }
+        e.preventDefault();
+        this.aiAddFiles(Array.from(e.dataTransfer.files || []));
+      },
+      /**
+       * Add images to the question: PNG, JPEG, GIF or WebP, up to 4, at most 5 MB each. A photo
+       * longer than 2000px is made smaller here first; anything refused says why under the
+       * thumbnails. AI-Hub checks all of it again on the server.
+       */
+      async aiAddFiles(files) {
+        const MAX_N = 4;
+        const MAX_BYTES = 5 * 1024 * 1024;
+        const TYPES = ['image/png', 'image/jpeg', 'image/gif', 'image/webp'];
+        this.ai.attNote = '';
+        if (!this.ai.ready) { return; }
+        if (!this.ai.imagesOk) { this.ai.attNote = this.t('This AI connection cannot send images.'); return; }
+        for (const f of files) {
+          if (!TYPES.includes(f.type)) { this.ai.attNote = this.t('Only PNG, JPEG, GIF and WebP images can be sent.'); continue; }
+          if (this.ai.images.length >= MAX_N) { this.ai.attNote = this.t('Up to 4 images can be sent at once.'); break; }
+          let img = null;
+          try { img = await this.aiPrepImage(f, MAX_BYTES); } catch (e) { this.ai.attNote = this.t('The image could not be read.'); continue; }
+          if (!img) { this.ai.attNote = this.t('An image can be at most 5 MB.'); continue; }
+          if (this.ai.images.length >= MAX_N) { this.ai.attNote = this.t('Up to 4 images can be sent at once.'); break; }
+          this.ai.images.push(img);
+        }
+        this.aiScroll();
+      },
+      /** One image, ready to send: made smaller if its long side is over 2000px; null when it is still over the size limit. */
+      async aiPrepImage(file, maxBytes) {
+        const LONG = 2000;
+        let blob = file;
+        const src = URL.createObjectURL(file);
+        try {
+          const im = await new Promise((resolve, reject) => { const i = new Image(); i.onload = () => resolve(i); i.onerror = reject; i.src = src; });
+          const w = im.naturalWidth; const h = im.naturalHeight;
+          if (!w || !h) { throw new Error('unreadable'); }
+          if (Math.max(w, h) > LONG) {
+            const k = LONG / Math.max(w, h);
+            const c = document.createElement('canvas');
+            c.width = Math.max(1, Math.round(w * k)); c.height = Math.max(1, Math.round(h * k));
+            const g = c.getContext('2d');
+            const encode = (type) => new Promise((resolve) => c.toBlob(resolve, type, 0.9));
+            g.drawImage(im, 0, 0, c.width, c.height);
+            blob = await encode(file.type === 'image/jpeg' || file.type === 'image/webp' ? file.type : 'image/png');
+            if (blob && blob.size > maxBytes && blob.type !== 'image/jpeg') {
+              // A photo kept as PNG can still be too large: as JPEG, on white (JPEG has no transparency).
+              g.globalCompositeOperation = 'destination-over';
+              g.fillStyle = '#fff';
+              g.fillRect(0, 0, c.width, c.height);
+              blob = await encode('image/jpeg');
+            }
+            if (!blob) { throw new Error('unreadable'); }
+          }
+        } finally { URL.revokeObjectURL(src); }
+        if (blob.size > maxBytes) { return null; }
+        const url = await new Promise((resolve, reject) => { const r = new FileReader(); r.onload = () => resolve(String(r.result)); r.onerror = reject; r.readAsDataURL(blob); });
+        const comma = url.indexOf(',');
+        return { id: Date.now().toString(36) + Math.random().toString(36).slice(2, 8), name: file.name || '', type: blob.type || file.type, size: blob.size, url, data: url.slice(comma + 1) };
+      },
+      aiUnattach(k) {
+        this.ai.images.splice(k, 1);
+        this.ai.attNote = '';
+      },
+      /** "500px" or "30%", within sense (pixels 240–1200, a percentage of the window 15–60); null otherwise. */
+      aiValidWidth(w) {
+        const m = /^(\d{1,4}(?:\.\d{1,2})?)(px|%)$/.exec(String(w || '').trim());
+        if (!m) return null;
+        const n = Number(m[1]);
+        if ((m[2] === 'px' && n >= 240 && n <= 1200) || (m[2] === '%' && n >= 15 && n <= 60)) return m[1] + m[2];
+        return null;
+      },
+      /** The column's width as CSS. A percentage is of the layout, which is the window's width. */
+      aiWidth() { return this.aiValidWidth(this.ai.width) || '500px'; },
+      /** The kept width ("500px", "30%") as the number and the unit shown in Settings → AI assistant. */
+      aiSplitWidth() {
+        const m = /^(\d+(?:\.\d+)?)(px|%)$/.exec(this.ai.width);
+        this.ai.widthW = m ? Number(m[1]) : 500;
+        this.ai.widthU = m ? m[2] : 'px';
+      },
+      // ---- the edge between the work and the AI assistant (the owner, 2026-10-06) ----
+      // Dragged, the column takes the width the pointer leaves it, in the unit the setting is
+      // kept in (a percentage stays a percentage of the layout, which is the window's width),
+      // within the limits Settings allows and never past the column's own 70%. Let go, it is
+      // kept where Settings keeps it. A double click puts back 500px; ← → move it 10px.
+      aiGripDown(e) {
+        if (e.button !== 0) return;
+        const col = e.currentTarget.parentElement;
+        this._aiGrip = { x: e.clientX, w: col.getBoundingClientRect().width, was: this.aiWidth() };
+        try { e.currentTarget.setPointerCapture(e.pointerId); } catch (err) { /* the moves still come while the pointer is over it */ }
+        document.documentElement.classList.add('nb-col-resizing');
+        e.preventDefault();
+      },
+      aiGripMove(e) {
+        if (this._aiGrip) this.aiGripPx(this._aiGrip.w + this._aiGrip.x - e.clientX, e.currentTarget.parentElement);
+      },
+      aiGripUp() {
+        const g = this._aiGrip;
+        if (!g) return;
+        this._aiGrip = null;
+        document.documentElement.classList.remove('nb-col-resizing');
+        if (this.aiWidth() !== g.was) this.aiGripSave();
+      },
+      aiGripPx(px, col) {
+        const box = (col && col.parentElement && col.parentElement.getBoundingClientRect().width) || window.innerWidth || 1000;
+        px = Math.min(px, box * 0.7);
+        const u = this.ai.widthU === '%' ? '%' : 'px';
+        let n = u === '%' ? px / box * 100 : Math.round(px);
+        n = u === '%' ? Math.min(60, Math.max(15, n)) : Math.min(1200, Math.max(240, n));
+        this.ai.width = (Math.round(n * 100) / 100) + u;
+        this.aiSplitWidth();
+      },
+      aiGripKey(e) {
+        const d = { ArrowLeft: 10, ArrowRight: -10 }[e.key];
+        if (!d) return;
+        e.preventDefault();
+        const col = e.currentTarget.parentElement;
+        this.aiGripPx(col.getBoundingClientRect().width + d, col);
+        clearTimeout(this._aiGripT);
+        this._aiGripT = setTimeout(() => this.aiGripSave(), 400);
+      },
+      aiGripReset() { this.ai.width = '500px'; this.aiSplitWidth(); this.aiGripSave(); },
+      async aiGripSave() {
+        clearTimeout(this._aiGripT);
+        try { await api('ai/width', { method: 'POST', body: JSON.stringify({ width: this.aiWidth() }) }); } catch (e) { /* kept on this page at least */ }
+      },
+      /**
+       * Settings → AI assistant: the number and the unit, brought within sense (pixels
+       * 240–1200, a percentage 15–60) the moment they change, applied at once and kept
+       * on the server, per person -- the way the other settings in that dialog are.
+       */
+      async aiSaveWidth() {
+        const u = this.ai.widthU === '%' ? '%' : 'px';
+        let n = Number(this.ai.widthW);
+        if (!(n > 0)) n = u === '%' ? 30 : 500;
+        n = u === '%' ? Math.min(60, Math.max(15, n)) : Math.min(1200, Math.max(240, n));
+        n = Math.round(n * 100) / 100;
+        const w = n + u;
+        this.ai.widthW = n; this.ai.widthU = u;
+        if (w === this.ai.width) return;
+        this.ai.width = w;
+        try { await api('ai/width', { method: 'POST', body: JSON.stringify({ width: w }) }); } catch (e) { /* kept for this page at least */ }
+      },
+      /**
+       * What the model is shown: which tab the person is on and the result on it,
+       * as they see it -- the text of the active tool's section without its input
+       * cards (the boxes and buttons that ask the question).
+       */
+      aiContext() {
+        const out = { tab: this.tab, label: this.t(this.currentTab.label), text: '' };
+        const content = this.$el && this.$el.querySelector('.main > .content');
+        const section = content && Array.from(content.children).find((el) => el.tagName === 'SECTION');
+        if (!section) return out;
+        const parts = [];
+        const skip = (el) => el.classList && (el.classList.contains('tool-card') || el.classList.contains('seg')
+          || el.classList.contains('view-toggle') || el.classList.contains('scan-card') || el.classList.contains('card-tip'));
+        for (const el of Array.from(section.children)) {
+          if (skip(el)) continue;
+          const text = (el.innerText || '').trim();
+          if (text) parts.push(text);
+        }
+        out.text = parts.join('\n\n').replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n').slice(0, 20000);
+        return out;
+      },
+      aiError(e) {
+        const m = String((e && e.message) || e || '');
+        if (m === 'busy') { return this.t('Too many questions at once. Wait a moment and ask again.'); }
+        if (m === 'not-ready') { return this.aiNotReady(); }
+        if (m === 'not-allowed') { return this.t('The administrator has not allowed the assistant for you.'); }
+        if (m === 'timeout') { return this.t('No answer came back in time.'); }
+        if (m === 'no-images') { return this.t('This AI connection cannot send images.'); }
+        if (m === 'too-many-images') { return this.t('Up to 4 images can be sent at once.'); }
+        if (m === 'image-too-large') { return this.t('An image can be at most 5 MB.'); }
+        if (m === 'image-type') { return this.t('Only PNG, JPEG, GIF and WebP images can be sent.'); }
+        return this.t('The assistant could not answer: {e}', { e: m });
+      },
+      async aiSend() {
+        const text = this.ai.input.trim();
+        const images = this.ai.images.slice();
+        if ((!text && !images.length) || this.ai.busy || !this.ai.ready) { return; }
+        this.ai.input = '';
+        this.ai.error = '';
+        this.ai.images = [];
+        this.ai.attNote = '';
+        this.ai.saved = null;
+        this.ai.note = '';
+        this.ai.msgs.push({ role: 'user', text, images: images.map((im) => ({ url: im.url, name: im.name })) });
+        this.aiScroll();
+        await this.aiRound(text, images);
+      },
+      /** One question and its answer. The ticket tells a reply to a conversation already cleared from one still wanted. */
+      async aiRound(message, images = []) {
+        const ticket = this.ai.ask;
+        const conversation = this.aiConvToken(true);
+        let fresh = false;
+        // The server keeps the transcript for this token, so the history is only a
+        // fallback -- it is used when no token is given; here the token wins.
+        // A turn that had images says how many; the images themselves go with their own question only.
+        const history = this.ai.msgs.slice(0, -1).map((m) => (m.images && m.images.length ? { role: m.role, text: m.text, images: m.images.length } : { role: m.role, text: m.text }));
+        this.ai.busy = true;
+        this.aiScroll();
+        let answer = null;
+        try {
+          const r = await api('ai/ask', { method: 'POST', body: JSON.stringify({ history, message, context: this.aiContext(), conversation,
+            images: images.map((im) => ({ type: im.type, data: im.data })) }) });
+          if (!r || !r.id) { throw new Error((r && r.error) || 'not-ready'); }
+          const until = Date.now() + 10 * 60 * 1000;
+          while (Date.now() < until) {
+            await new Promise((res) => setTimeout(res, 1500));
+            if (ticket !== this.ai.ask) { return; }
+            const x = await api('ai/result/' + encodeURIComponent(r.id));
+            if (x.state === 'running') { continue; }
+            if (x.state === 'done') { answer = String(x.text || ''); fresh = !!x.fresh; break; }
+            throw new Error(x.error || x.state);
+          }
+          if (answer === null) { throw new Error('timeout'); }
+        } catch (e) {
+          if (ticket === this.ai.ask) { this.ai.busy = false; this.ai.error = this.aiError(e); this.aiScroll(); }
+          return;
+        }
+        if (ticket !== this.ai.ask) { return; }
+        // AI-Hub no longer kept the conversation (a new login, or twelve hours unused): what the
+        // screen still showed before this question is gone from the AI too, so it goes from here.
+        if (fresh && this.ai.msgs.length > 1) {
+          this.ai.msgs = this.ai.msgs.slice(-1);
+          this.ai.note = this.t('The earlier conversation had ended, so this one starts afresh.');
+        }
+        // [[nb-confirm:<hash>]] marks a command the server refused to run until the
+        // administrator approves it. The marker becomes a button; the text loses it.
+        this.ai.msgs.push(this.aiAnswer(answer));
+        this.ai.busy = false;
+        this.aiScroll();
+      },
+      /**
+       * The administrator approves one refused command. The approval is a message of
+       * their own ("approve <hash>"), so the server takes it from them and never from
+       * anything the model wrote; the hash names the exact command, so nothing else
+       * is approved with it.
+       */
+      async aiApprove(m, hash) {
+        if (this.ai.busy || !this.ai.ready) { return; }
+        m.confirm = (m.confirm || []).filter((h) => h !== hash);
+        const text = 'approve ' + hash;
+        this.ai.error = '';
+        this.ai.msgs.push({ role: 'user', text });
+        this.aiScroll();
+        await this.aiRound(text);
+      },
       // A location preset in the reader's language; a floor ("2F") as written.
       locText(k) {
         if (!String(k).startsWith('loc:')) return k;
@@ -5218,16 +5783,125 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
           }
         }
       },
-      openRowMenu(device, event) {
-        // Near the pointer, but never off the edge.
-        const width = 260;
-        const height = 40 + (this.rowActions(device).length + 2) * 34;
-        this.rowMenu = {
-          open: true, device,
-          x: Math.min(event.clientX, window.innerWidth - width - 8),
-          y: Math.min(event.clientY, Math.max(8, window.innerHeight - height - 8)),
-        };
+      // ---- one right-button menu for the whole app (modelled on EditBase) ----
+      // The native menu is refused everywhere inside NetBase, except inside an
+      // xterm terminal, which needs the right button for its own paste. In its
+      // place a small menu offers only what the spot already offers elsewhere.
+      onRootCtxMenu(event) {
+        const t = event.target;
+        // The terminal keeps the browser's (or xterm's) own right button.
+        if (t && t.closest && t.closest('.term-screen, .xterm')) { return; }
+        // A more specific handler (a device row, a file row, a menu's own
+        // backdrop) has already taken it and refused the native menu.
+        if (event.defaultPrevented) { return; }
+        // A place to type: cut / copy / paste / select all.
+        const field = this.ctxField(t);
+        if (field) { event.preventDefault(); this.nbCtxField(field, event); return; }
+        // A tool's result: copy it (or the selection), or save it to Files.
+        if (t && t.closest && t.closest('.content') && this.hasResult) {
+          event.preventDefault();
+          const sel = String((window.getSelection && window.getSelection().toString()) || '').trim();
+          const items = [];
+          if (sel) items.push({ icon: '⧉', label: T('Copy'), run: () => this.copyText(sel, T('Copied')) });
+          else items.push({ icon: '⧉', label: T('Copy'), run: () => this.copyResult() });
+          items.push({ icon: '💾', label: T('Save it to your Nextcloud files'), run: () => this.saveResultToFiles() });
+          this.ctxmOpen(event.clientX, event.clientY, '', items);
+          return;
+        }
+        // Everywhere else the native menu is still refused, but nothing of ours
+        // is put in its place.
+        event.preventDefault();
+        this.ctxmClose();
       },
+      /** The place to type the point is in, or null -- never the xterm helper. */
+      ctxField(node) {
+        let el = node;
+        while (el && el.nodeType === 1 && el !== document.body) {
+          if (el.classList && (el.classList.contains('term-screen') || el.classList.contains('xterm'))) return null;
+          const tag = el.tagName;
+          if (tag === 'TEXTAREA') return el;
+          if (tag === 'INPUT') {
+            const ty = (el.getAttribute('type') || 'text').toLowerCase();
+            return ['text', 'search', 'url', 'tel', 'email', 'password', 'number', ''].indexOf(ty) >= 0 ? el : null;
+          }
+          if (el.isContentEditable) return el;
+          el = el.parentElement;
+        }
+        return null;
+      },
+      /** A device row's own actions -- the same ways in the row offers elsewhere. */
+      nbCtxDevice(device, event) {
+        const items = this.rowActions(device).map((a) => ({ icon: a.icon, label: a.label, run: a.run }));
+        if (!items.length) items.push({ label: T('No way in on the ports it has open'), disabled: true });
+        items.push({ sep: true });
+        // Ping does not depend on an open port: a device that answers nothing at
+        // all is exactly the one worth pinging.
+        if (device && device.ip) items.push({ icon: '📡', label: T('Ping this device'), run: () => this.pingDevice(device) });
+        items.push({ icon: '📋', label: T('Properties'), run: () => this.openDevice(device) });
+        this.ctxmOpen(event.clientX, event.clientY, device ? (device.name || device.ip) : '', items);
+      },
+      /** Cut / copy / paste / select all for a place to type (as EditBase does). */
+      nbCtxField(field, event) {
+        const editable = !field.disabled && !field.readOnly;
+        const start = field.selectionStart;
+        const end = field.selectionEnd;
+        const hasSel = start != null && end != null && end > start;
+        const value = field.value != null ? field.value : (field.textContent || '');
+        const canPaste = editable && !!(navigator.clipboard && navigator.clipboard.readText);
+        this.ctxmOpen(event.clientX, event.clientY, '', [
+          { icon: '✂', label: T('Cut'), disabled: !editable || !hasSel, run: () => this.fieldClip(field, 'cut') },
+          { icon: '⧉', label: T('Copy'), disabled: !hasSel, run: () => this.fieldClip(field, 'copy') },
+          { icon: '📋', label: T('Paste'), disabled: !canPaste, run: () => this.fieldPaste(field) },
+          { sep: true },
+          { label: T('Select all'), disabled: !value.length, run: () => { field.focus(); if (field.select) field.select(); } },
+        ]);
+      },
+      /** Cut or copy the field's selection. execCommand dispatches input, so v-model follows. */
+      fieldClip(field, how) {
+        field.focus();
+        try { document.execCommand(how); } catch (e) { /* the keyboard shortcut still works */ }
+      },
+      /** Paste at the caret. execCommand('paste') is blocked, so the clipboard is read. */
+      async fieldPaste(field) {
+        field.focus();
+        let text = '';
+        try { text = await navigator.clipboard.readText(); }
+        catch (e) { this.note(T('The browser did not allow the clipboard to be read')); return; }
+        if (!text) return;
+        const v = field.value || '';
+        const s = field.selectionStart == null ? v.length : field.selectionStart;
+        const e = field.selectionEnd == null ? s : field.selectionEnd;
+        field.value = v.slice(0, s) + text + v.slice(e);
+        const at = s + text.length;
+        try { field.setSelectionRange(at, at); } catch (err) { /* number inputs refuse a range */ }
+        // Tell Vue: v-model listens for input, not for a value set from script.
+        field.dispatchEvent(new Event('input', { bubbles: true }));
+      },
+      /** Place the menu at the pointer, then keep the whole of it on screen. */
+      ctxmOpen(x, y, head, items) {
+        const clean = [];
+        for (const it of (items || [])) {
+          if (!it) continue;
+          if (it.sep && (!clean.length || clean[clean.length - 1].sep)) continue;
+          clean.push(it);
+        }
+        while (clean.length && clean[clean.length - 1].sep) clean.pop();
+        if (!clean.length) { this.ctxmClose(); return; }
+        this.nbctx = { open: true, x: Math.max(6, x), y: Math.max(6, y), head: head || '', items: clean };
+        this.$nextTick(() => {
+          const el = this.$el && this.$el.querySelector ? this.$el.querySelector('.nb-ctxmenu') : null;
+          if (!el) return;
+          const r = el.getBoundingClientRect();
+          if (r.right > window.innerWidth - 6) this.nbctx.x = Math.max(6, window.innerWidth - r.width - 6);
+          if (r.bottom > window.innerHeight - 6) this.nbctx.y = Math.max(6, window.innerHeight - r.height - 6);
+        });
+      },
+      ctxmClose() { if (this.nbctx.open) this.nbctx.open = false; },
+      ctxmRun(it) {
+        this.ctxmClose();
+        if (it && typeof it.run === 'function') it.run();
+      },
+      onCtxKey(event) { if (event.key === 'Escape' && this.nbctx.open) this.ctxmClose(); },
       /**
        * The ways into this device, from the ports it actually has open.
        *
@@ -5617,6 +6291,9 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         const chosen = this.settings.language && this.settings.language !== 'auto'
           ? this.settings.language
           : (document.documentElement.lang || 'en');
+        // a language with its country (zh_CN, pt_BR, or the page's own pt-BR) names the locale itself
+        const full = /^([a-z]{2})[-_]([a-z]{2})$/i.exec(String(chosen));
+        if (full) return full[1].toLowerCase() + '_' + full[2].toUpperCase() + '.UTF-8';
         const lang = String(chosen).slice(0, 2).toLowerCase();
         return (LOCALE_HINTS[lang] || (lang + '_' + lang.toUpperCase())) + '.UTF-8';
       },
@@ -7109,7 +7786,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
        */
       async openText(entry) {
         const path = this.joinPath(this.filesData.path, entry.name);
-        const r = await this.guarded('text', () => api('files/text?' + qs(this.textQuery(path))));
+        const r = await this.guarded('text', () => api('files/read', { method: 'POST', body: JSON.stringify(this.textQuery(path)) }));
         if (!r) return;
         const offset = (this.textWins.length % 6) * 26;
         this.textWins.push({
@@ -7122,16 +7799,15 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
           h: this.narrow ? window.innerHeight : Math.min(620, window.innerHeight - 140),
         });
       },
-      /** The connection details a text request needs, without the file target. */
+      /**
+       * The body of a request to read one file: the connection and the path.
+       *
+       * Sent as JSON by POST, never as a query string: the one-off connection's
+       * password and the sudo password are in here, and in the address they
+       * ended up in the web server's log (review 2026-10-04, high 1).
+       */
       textQuery(path) {
-        const out = { path, id: this.filesConn, prefer: this.filesKind };
-        if (!this.filesConn) {
-          Object.entries(this.adhoc).forEach(([k, v]) => {
-            out['connection[' + k + ']'] = typeof v === 'boolean' ? (v ? 1 : 0) : v;
-          });
-        }
-        if (this.asRoot && this.sudoPassword) out.sudoPassword = this.sudoPassword;
-        return out;
+        return this.fileTarget({ path });
       },
       textChanged(w) { return w.text !== w.original; },
       async saveText(w) {
@@ -7152,7 +7828,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         }
       },
       async reloadText(w) {
-        const r = await this.guarded('text', () => api('files/text?' + qs(this.textQuery(w.path))));
+        const r = await this.guarded('text', () => api('files/read', { method: 'POST', body: JSON.stringify(this.textQuery(w.path)) }));
         if (!r) return;
         w.text = r.text;
         w.original = r.text;
@@ -7170,18 +7846,15 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
        * it asks.
        */
       listQuery(path) {
-        const sudo = this.asRoot && this.sudoPassword ? { sudoPassword: this.sudoPassword } : {};
-        const prefer = { prefer: this.filesKind };
-        return this.filesConn
-          ? qs({ id: this.filesConn, path: path || '', ...sudo, ...prefer })
-          // Booleans have to travel as 1/0: PHP reads the string "false" as true.
-          : qs({ id: 0, path: path || '', ...sudo, ...prefer, ...Object.fromEntries(Object.entries(this.adhoc).map(([k, v]) => ['connection[' + k + ']', typeof v === 'boolean' ? (v ? 1 : 0) : v])) });
+        // The body of a POST, as JSON, for the same reason as textQuery(): the
+        // passwords in it must not go into the address (review 2026-10-04, high 1).
+        return this.fileTarget({ path: path || '' });
       },
       async browse(path) {
         if (!this.filesConn && !this.adhocActive) { this.filesData = null; return; }
         this.touchRoot();
-        const query = this.listQuery(path);
-        const r = await this.guarded('browse', () => api('files/list?' + query));
+        const body = JSON.stringify(this.listQuery(path));
+        const r = await this.guarded('browse', () => api('files/list', { method: 'POST', body }));
         if (!r) return;
         this.filesData = r;
         this.filesPath = r.path;
@@ -7290,7 +7963,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
           // deleted rather than deleted blind.
           let inside = 0;
           if (action === 'rmdir') {
-            const held = await this.guarded('fileact', () => api('files/list?' + this.listQuery(path)));
+            const held = await this.guarded('fileact', () => api('files/list', { method: 'POST', body: JSON.stringify(this.listQuery(path)) }));
             if (!held) return;
             inside = (held.entries || []).length;
           }
@@ -8137,6 +8810,10 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
       if (this.liveTimer) clearInterval(this.liveTimer);
       window.removeEventListener('message', this.onWindowMessage);
       window.removeEventListener('resize', this.onViewportResize);
+      const root = document.getElementById('netbase-root');
+      if (root) root.removeEventListener('contextmenu', this.onRootCtxMenu);
+      window.removeEventListener('keydown', this.onCtxKey);
+      window.removeEventListener('scroll', this.ctxmClose, true);
     },
     mounted() {
       rootProxy = this;
@@ -8148,10 +8825,16 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
       window.addEventListener('message', this.onWindowMessage);
       window.addEventListener('resize', this.onViewportResize);
       const root = document.getElementById('netbase-root');
+      // The right button is NetBase's own everywhere inside the app (the terminal
+      // keeps its own); Escape or a scroll puts the menu away.
+      if (root) root.addEventListener('contextmenu', this.onRootCtxMenu);
+      window.addEventListener('keydown', this.onCtxKey);
+      window.addEventListener('scroll', this.ctxmClose, true);
       if (root && root.dataset.theme) this.settings.theme = root.dataset.theme;
       this.applyTheme();
       this.watchNcTheme();
       this.load();
+      this.aiLoad();
     },
   });
 

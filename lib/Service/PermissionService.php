@@ -153,6 +153,28 @@ class PermissionService {
 		return false;
 	}
 
+	/**
+	 * Whether this person (not necessarily the one signed in to this request) may use
+	 * at least one tool. For the AI assistant's rule on who may ask, which AI-Hub checks
+	 * again in the request that works the answer out -- a request with no session, where
+	 * canUseAnything() knows nobody (2026-10-06: every question from someone who is not
+	 * an administrator was refused there as user-not-allowed).
+	 */
+	public function canUseAnythingFor(string $uid): bool {
+		if ($uid === '') {
+			return false;
+		}
+		if ($this->groupManager->isAdmin($uid)) {
+			return true;
+		}
+		foreach ($this->levels() as $level) {
+			if ($level === self::ALL || ($level === self::GROUPS && $this->inConfiguredGroup($uid))) {
+				return true;
+			}
+		}
+		return false;
+	}
+
 	public function require(string $tool): void {
 		if (!$this->can($tool)) {
 			throw new ForbiddenException('This tool is not available to your account on this instance');

@@ -8,13 +8,13 @@ NetBase turns your Nextcloud into a network console. It finds every device on yo
 
 ### Device windows
 
-**How it works.** The server fetches the device's own page and rewrites every address inside it — links, stylesheets, scripts, forms, redirects, meta refreshes, and the ones the page's scripts build while it runs — so the whole interface arrives on Nextcloud's address instead of the device's. Each window carries a signed ticket naming the address, the person and an expiry, and the device's session is held on the server, so signing in survives from page to page. Only addresses on this server's own networks, or hosts a scan has actually seen, can be opened; the page is pinned by policy to the proxy's own path, and sandboxed against navigating anything but itself.
+**How it works.** The server fetches the device's own page and rewrites every address inside it — links, stylesheets, scripts, forms, redirects, meta refreshes, and the ones the page's scripts build while it runs — so the whole interface arrives on Nextcloud's address instead of the device's. Each window carries a signed ticket naming the address, the person and an expiry, and the device's session is held on the server, so signing in survives from page to page. Only private-range addresses, this server's own addresses, or hosts a scan has actually seen can be opened; the page is pinned by policy to the proxy's own path, and sandboxed against navigating anything but itself.
 
 **What it is for.** Changing a branch router's settings from somewhere else entirely. Reading a printer's toner levels and its tray configuration. Sending new firmware or restoring a saved configuration. Supporting a customer's equipment without a VPN, a jump host or a site visit. Several windows can be open at once, moved and resized, each remembering where it has been.
 
 ### Device discovery and inventory
 
-**How it works.** Nextcloud runs unprivileged, so raw sockets — and therefore ARP scanning in PHP — are not available. NetBase makes the kernel do the work instead: sending a datagram to an on-link address forces the kernel to resolve it, and the result lands in the neighbour table, which is world readable. Names come from the devices themselves over NetBIOS, mDNS, WS-Discovery and SSDP, all plain UDP, and vendors from the bundled IEEE registries — more than 53,000 prefixes, so no MAC address is ever sent anywhere. Open ports are checked at one of five depths, from a short list of fifteen that keeps a sweep quick to every one of the 65,535. NetBase also listens, continuously and in the background, to the announcements devices make to the multicast group: those are carried at the level of the wire, so a device on a different subnet of the same cable — a camera left on its factory address, say — is found even though nothing can route to it and it can never answer a question. The server NetBase runs on is written down too; a machine never asks the network for its own address, so it is never in its own neighbour table.
+**How it works.** Nextcloud runs unprivileged, so raw sockets — and therefore ARP scanning in PHP — are not available. NetBase makes the kernel do the work instead: sending a datagram to an on-link address forces the kernel to resolve it, and the result lands in the neighbour table, which is world readable. Names come from the devices themselves over NetBIOS, mDNS, WS-Discovery and SSDP, all plain UDP, and vendors from the bundled IEEE registries — more than 53,000 prefixes, so no MAC address is ever sent anywhere. Open ports are checked at one of five depths, from a short list of fifteen that keeps a sweep quick to every one of the 65,535. NetBase also listens, continuously and in the background, to the announcements devices make to the multicast group: those are carried at the level of the wire, so a device on a different subnet of the same cable — a camera left on its factory address, say — is found even though nothing can route to it and it can never answer a question. The server NetBase runs on is written down too; a machine never asks the network for its own address, so it is never in its own neighbour table. A sweep, and the port scan of a single device, stay on the local network — a private address range, or a network this server is attached to; a public range is refused.
 
 **What it is for.** Building the asset list a site never quite had. Finding the device nobody remembers installing. Seeing which addresses are free before assigning one. Exporting the lot as CSV for an inventory that lives outside Nextcloud. When a device is switched off its neighbour entry can linger; an optional helper an administrator installs (a one-line sudoers rule — the app shows the exact script, and it is entirely optional) lets NetBase clear the table so a refresh reflects only what is live now.
 
@@ -86,6 +86,11 @@ NetBase turns your Nextcloud into a network console. It finds every device on yo
 
 **What it is for.** Attaching the evidence to a ticket. Keeping a before-and-after pair around a change. Handing a colleague the exact output rather than a description of it.
 
+### AI assistant
+
+**How it works.** A chat that knows NetBase and explains what is on the screen — a scan, a ping, a list of devices — in the person's own language, through the free **AI-Hub** app, where the AI service, its key and its limits are set once for every app on the server. It runs nothing itself. Administrators who switch it on can let it suggest commands, and a command runs only after the person approves that very command by typing `approve` and the code shown for it. Without AI-Hub it is simply not shown.
+
+**What it is for.** Reading an unfamiliar scan result, a trace or an error without searching for it.
 ### Access, appearance and language
 
 **How it works.** NetBase is an administrator's app, and everything that touches the local network — the device windows, the sweep, Wake-on-LAN, mail tests, FTP, SFTP, SSH, the device list itself — defaults to administrators. But every tool has its own level, set in **Administration settings → NetBase**: administrators only, administrators plus named groups, or every signed-in account. Any of them can be opened up, including the ones that ship closed. Where an account is allowed nothing at all, NetBase leaves itself out of that account's app menu rather than advertising a door that will not open. The theme and the language are per account, and the sidebar can be dragged into whatever order suits the work.
@@ -214,13 +219,13 @@ Nextcloud 用のネットワーク総合ツールです。LAN上の機器を検�
 
 ### 機器ウィンドウ（機器の設定画面）
 
-**仕組み** ― サーバーが機器のページを取得し、その中のアドレス（リンク、スタイルシート、スクリプト、フォーム、リダイレクト、meta refresh、ページのスクリプトが実行時に組み立てるものまで）をすべて書き換えて、機器のアドレスではなく Nextcloud のアドレスとして返します。ウィンドウごとに、対象アドレス・利用者・有効期限を記した署名付きの許可証を発行し、機器のログイン状態はサーバー側で保持するため、ページを移動してもログインが切れません。開けるのはこのサーバーが属するネットワーク上のアドレスと、検出済みの機器だけです。表示中のページは通信先がプロキシ経路に限定され、自分自身以外へは遷移できません。
+**仕組み** ― サーバーが機器のページを取得し、その中のアドレス（リンク、スタイルシート、スクリプト、フォーム、リダイレクト、meta refresh、ページのスクリプトが実行時に組み立てるものまで）をすべて書き換えて、機器のアドレスではなく Nextcloud のアドレスとして返します。ウィンドウごとに、対象アドレス・利用者・有効期限を記した署名付きの許可証を発行し、機器のログイン状態はサーバー側で保持するため、ページを移動してもログインが切れません。開けるのはプライベートアドレス帯のアドレス、このサーバー自身のアドレス、検出済みの機器だけです。表示中のページは通信先がプロキシ経路に限定され、自分自身以外へは遷移できません。
 
 **用途** ― 外出先から拠点ルーターの設定変更。プリンタのトナー残量やトレイ構成の確認。ファームウェア更新や設定ファイルの復元。VPN も踏み台も訪問もなしでの顧客機器の遠隔サポート。複数のウィンドウを同時に開いて並べられ、それぞれが表示履歴を覚えています。
 
 ### 機器の検出と台帳
 
-**仕組み** ― Nextcloud は非特権で動作するため raw ソケット（つまり PHP からの ARP スキャン）は使えません。そこでカーネルに仕事をさせます。同一リンク上のアドレスへデータグラムを送るとカーネルは必ずアドレス解決を行い、その結果が誰でも読める近隣テーブルに残ります。名前は NetBIOS・mDNS・WS-Discovery・SSDP という素の UDP で機器自身に尋ね、ベンダーは同梱の IEEE 登録簿（53,000件超）で判定します。MACアドレスを外部へ送ることはありません。 開いているポートの確認は5段階から選べます。掃引を速いまま保つ主要ポート15個から、65,535個すべてまでです。また、機器がマルチキャストグループへ送る「名乗り」を、背景で常時受信しています。これは配線の層で運ばれるため、同じ配線につながった別サブネットの機器 ― 出荷時アドレスのままのカメラなど ― も、経路が無く問い合わせに答えられない相手であっても見つかります。NetBase 自身が動いているサーバーも記録します。機器は自分自身のアドレスをネットワークに尋ねないため、自分の近隣テーブルには決して載らないからです。
+**仕組み** ― Nextcloud は非特権で動作するため raw ソケット（つまり PHP からの ARP スキャン）は使えません。そこでカーネルに仕事をさせます。同一リンク上のアドレスへデータグラムを送るとカーネルは必ずアドレス解決を行い、その結果が誰でも読める近隣テーブルに残ります。名前は NetBIOS・mDNS・WS-Discovery・SSDP という素の UDP で機器自身に尋ね、ベンダーは同梱の IEEE 登録簿（53,000件超）で判定します。MACアドレスを外部へ送ることはありません。 開いているポートの確認は5段階から選べます。掃引を速いまま保つ主要ポート15個から、65,535個すべてまでです。また、機器がマルチキャストグループへ送る「名乗り」を、背景で常時受信しています。これは配線の層で運ばれるため、同じ配線につながった別サブネットの機器 ― 出荷時アドレスのままのカメラなど ― も、経路が無く問い合わせに答えられない相手であっても見つかります。NetBase 自身が動いているサーバーも記録します。機器は自分自身のアドレスをネットワークに尋ねないため、自分の近隣テーブルには決して載らないからです。掃引も、1台の機器のポートスキャンも、ローカルネットワーク（プライベートアドレス帯か、このサーバーが属するネットワーク）に限られ、公開IPアドレス帯は拒否します。
 
 **用途** ― 作りかけのまま放置されがちな機器台帳の整備。誰も覚えていない機器の発見。IPアドレス払い出し前の空き確認。CSV 書き出しによる社内資産管理との連携。電源を切った機器の項目が残ることがありますが、管理者が任意で入れるヘルパー（1行の sudoers 設定。スクリプト全文はアプリが表示。導入は完全に任意）により、近隣テーブルをクリアして「今生きている機器」だけを表示できます。
 
@@ -292,6 +297,11 @@ Nextcloud 用のネットワーク総合ツールです。LAN上の機器を検�
 
 **用途** ― 対応記録への証跡添付。作業前後の記録の保管。説明ではなく実際の出力そのものを同僚へ渡す。
 
+### AI アシスタント
+
+**仕組み** ― NetBase を知っているチャットが、画面にあるもの（スキャン・ping・機器の一覧など）を、使っている言語で説明します。無料の **AI-Hub** アプリを通して動き、AI サービス・キー・制限はそこでサーバー内の全アプリ分を一度に設定します。自分では何も実行しません。管理者が有効にすると、コマンドを提案させることもでき、実行は、そのコマンドごとに表示されるコードと `approve` をご本人が入力して承認したときだけです。AI-Hub が無ければ表示されません。
+
+**用途** ― 見慣れないスキャン結果・経路・エラーを、調べ回らずに読み解くこと。
 ### 公開範囲・表示・言語
 
 **仕組み** ― NetBase は管理者向けのアプリで、ローカルネットワークに触れる機能（機器ウィンドウ、スキャン、Wake-on-LAN、メール検査、FTP・SFTP、SSH、機器台帳そのもの）は既定で管理者のみです。ただし公開範囲はツール単位で、**管理設定 → NetBase** から「管理者のみ／指定グループ／全員」を選べます。既定で閉じている機能も含め、どれでも開放できます。何も許可されていない利用者には、開かない扉を見せないよう、アプリメニューにも表示しません。テーマと言語は利用者ごと、サイドバーの並び順もドラッグで変更できます。

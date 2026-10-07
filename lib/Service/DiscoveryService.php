@@ -1263,6 +1263,46 @@ class DiscoveryService {
 		return $ips;
 	}
 
+	/**
+	 * Whether a scan target — one IPv4 address or a CIDR block — lies on the
+	 * local network: wholly inside a private range (10/8, 172.16/12,
+	 * 192.168/16) or wholly inside a network this server has an interface on,
+	 * which admits a public range only where the server itself sits in it.
+	 * Sweeping anything else (8.8.8.0/24, a stranger's public address) is not
+	 * what a LAN tool is for (review 2026-10-04, medium 7).
+	 */
+	public function isLocalTarget(string $target): bool {
+		[$net, $bits] = str_contains($target, '/') ? explode('/', $target, 2) : [$target, '32'];
+		$bits = (int)$bits;
+		if (filter_var($net, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) === false || $bits < 0 || $bits > 32) {
+			return false;
+		}
+		$span = static function (string $address, int $prefix): array {
+			$mask = $prefix === 0 ? 0 : ((-1 << (32 - $prefix)) & 0xFFFFFFFF);
+			$first = ((int)ip2long($address)) & $mask;
+			return [$first, $first | (~$mask & 0xFFFFFFFF)];
+		};
+		[$first, $last] = $span($net, $bits);
+		$blocks = [['10.0.0.0', 8], ['172.16.0.0', 12], ['192.168.0.0', 16]];
+		foreach ($this->interfaces() as $if) {
+			if ($if['loopback']) {
+				continue;
+			}
+			foreach ($if['addresses'] as $addr) {
+				if (($addr['family'] ?? '') === 'inet' && isset($addr['network'], $addr['cidr']) && (int)$addr['cidr'] > 0) {
+					$blocks[] = [(string)$addr['network'], (int)$addr['cidr']];
+				}
+			}
+		}
+		foreach ($blocks as [$blockNet, $blockBits]) {
+			[$from, $to] = $span($blockNet, $blockBits);
+			if ($first >= $from && $last <= $to) {
+				return true;
+			}
+		}
+		return false;
+	}
+
 	public function maskToCidr(string $netmask): int {
 		$long = ip2long($netmask);
 		if ($long === false) {

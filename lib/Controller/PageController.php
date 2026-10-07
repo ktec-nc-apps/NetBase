@@ -35,6 +35,7 @@ class PageController extends Controller {
 	public function index(): TemplateResponse {
 		$user = $this->userSession->getUser();
 		$lang = $user ? $this->config->getUserValue($user->getUID(), Application::APP_ID, 'language', 'auto') : 'auto';
+		$lang = Application::OLD_LANGUAGES[$lang] ?? $lang; // shipped as "pt" and "zh" until 2026-10
 		$l = $this->l10nFactory->get(Application::APP_ID, $lang === 'auto' ? null : $lang);
 
 		// Someone who may not use a single tool has nothing to load here, and

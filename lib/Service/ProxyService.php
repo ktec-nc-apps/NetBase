@@ -53,7 +53,14 @@ class ProxyService {
 		'cache-control', 'expires', 'pragma', 'etag', 'last-modified', 'date', 'vary', 'location',
 	];
 
-	private static function passes(string $name): bool {
+	private static function passes(string $name, int $status = 200): bool {
+		// A device whose own sign-in page works out the digest answer itself (an
+		// H.VIEW / Uniview recorder: its script reads the nonce from this header
+		// of a 200 answer and signs every request with it) cannot sign in without
+		// it. On a 401 NetBase asks for the password itself, so it stays out there.
+		if ($name === 'www-authenticate') {
+			return $status !== 401;
+		}
 		return in_array($name, self::PASS_HEADERS, true) && !in_array($name, self::DROP_HEADERS, true);
 	}
 
@@ -81,19 +88,26 @@ class ProxyService {
 	 * therefore travels signed, so the proxy can tell that NetBase itself
 	 * issued it, to whom, and until when.
 	 */
-	public function issue(string $base, string $userId, int $seconds = 14400): string {
+	public function issue(string $base, string $userId, int $seconds = 14400, bool $navigationOnly = false): string {
 		$base = $this->validateBase($base);
-		$claim = json_encode([
+		$claim = [
 			'b' => $base,
 			'u' => $userId,
 			'e' => time() + max(60, $seconds),
-		], JSON_UNESCAPED_SLASHES);
-		$payload = self::pack((string)$claim);
+		];
+		if ($navigationOnly) {
+			// Made for a link on one device's page to another device: good only
+			// for following that link as a page, never for a request a script
+			// makes (review 2026-10-04, medium 6). The controller turns a
+			// navigation with it into an ordinary ticket for the new device.
+			$claim['n'] = 1;
+		}
+		$payload = self::pack((string)json_encode($claim, JSON_UNESCAPED_SLASHES));
 		return $payload . '.' . self::pack($this->crypto->calculateHMAC($payload, $this->secret()));
 	}
 
 	/**
-	 * @return array{base: string, userId: string}
+	 * @return array{base: string, userId: string, navigationOnly: bool}
 	 * @throws \RuntimeException when the ticket is not ours, or no longer valid
 	 */
 	public function redeem(string $token): array {
@@ -113,7 +127,7 @@ class ProxyService {
 		if ((int)$claim['e'] < time()) {
 			throw new \RuntimeException('This window has been open for a long time and its ticket has expired. Open the device again from the device list.');
 		}
-		return ['base' => (string)$claim['b'], 'userId' => (string)$claim['u']];
+		return ['base' => (string)$claim['b'], 'userId' => (string)$claim['u'], 'navigationOnly' => !empty($claim['n'])];
 	}
 
 	private function secret(): string {
@@ -417,7 +431,7 @@ class ProxyService {
 
 		$out = [];
 		foreach ($headers as $name => $value) {
-			if (!self::passes($name)) {
+			if (!self::passes($name, (int)$status)) {
 				// set-cookie among them: the jar already holds the cookie; passing it on
 				// would set one on Nextcloud's own domain.
 				continue;
@@ -493,14 +507,16 @@ class ProxyService {
 		// answer starts arriving, Nextcloud has already decided this response is
 		// a 200, and a partial answer has to say so or a resumed download and a
 		// seek in a video both break.
-		$output->setHeader('HTTP/1.1 ' . $status . ' ' . (self::REASONS[$status] ?? 'Status'));
-		$output->setHttpResponseCode($status);
 		foreach ($headers as $name => $value) {
-			if (!self::passes($name)) {
+			if (!self::passes($name, (int)$status)) {
 				continue;
 			}
 			$output->setHeader($name . ': ' . $value);
 		}
+		// After the headers: PHP makes a 401 of any response the moment a
+		// WWW-Authenticate header is set on it (see writeBuffered).
+		$output->setHeader('HTTP/1.1 ' . $status . ' ' . (self::REASONS[$status] ?? 'Status'));
+		$output->setHttpResponseCode($status);
 	}
 
 	// ------------------------------------------------------------------ safety
@@ -569,6 +585,16 @@ class ProxyService {
 		}
 	}
 
+	/**
+	 * The address each checked base resolved to, for the length of this
+	 * request. pin() connects to this and to nothing else, so a name that
+	 * answers differently a moment later cannot send the connection somewhere
+	 * the check refused (review 2026-10-04, medium 5).
+	 *
+	 * @var array<string, string>
+	 */
+	private array $checked = [];
+
 	public function validateBase(string $base): string {
 		if (!preg_match('#^(https?)://([^/:]+|\[[0-9a-fA-F:]+\])(?::(\d+))?$#', rtrim($base, '/'), $m)) {
 			throw new \InvalidArgumentException('Not a valid address');
@@ -590,12 +616,16 @@ class ProxyService {
 		}
 		// An IPv6 literal keeps its brackets, or the address and the port run together (review X9).
 		$shown = filter_var($host, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6) !== false ? '[' . $host . ']' : $host;
-		return $scheme . '://' . $shown . ($port !== '' ? ':' . $port : '');
+		$normal = $scheme . '://' . $shown . ($port !== '' ? ':' . $port : '');
+		$this->checked[$normal] = $address;
+		return $normal;
 	}
 
 	/**
 	 * curl is held to the address that was checked, so a name that answers differently a
 	 * moment later cannot lead the connection somewhere the check refused (review X4).
+	 * The address is the one validateBase() looked at in this same request, not a second
+	 * lookup of the name: two lookups could be answered differently on purpose (medium 5).
 	 * @return list<string> CURLOPT_RESOLVE entries (none for an IP literal)
 	 */
 	private function pin(string $base): array {
@@ -607,8 +637,13 @@ class ProxyService {
 			return [];
 		}
 		$port = ($m[2] ?? '') !== '' ? $m[2] : (str_starts_with($base, 'https') ? '443' : '80');
-		$ips = $this->tools->addressesOf($host);
-		$ip = $ips[0] ?? '';
+		$ip = $this->checked[$base] ?? '';
+		if ($ip === '') {
+			// Not checked in this request (which deliver() always does first):
+			// then it is checked now, the same way, before anything connects.
+			$this->validateBase($base);
+			$ip = $this->checked[$base] ?? '';
+		}
 		return $ip === '' ? [] : [$host . ':' . $port . ':' . (str_contains($ip, ':') ? '[' . $ip . ']' : $ip)];
 	}
 
@@ -1423,10 +1458,13 @@ JS;
 		// A device that sends you to another one — a controller to the access
 		// point it manages, a page to the device's own name rather than its
 		// address — should not send you out of the window. If NetBase may open
-		// that address too, it gets a window's worth of ticket of its own.
+		// that address too, it gets a ticket of its own — one good only for
+		// following the link as a page. A ticket of the ordinary kind here let
+		// the page of one device read another's, with the password and the
+		// cookies remembered for it (review 2026-10-04, medium 6).
 		if ($userId !== '' && preg_match('#^(https?://[^/]+)(/.*)?$#i', $url, $m) === 1) {
 			try {
-				$elsewhere = $this->issue($m[1], $userId);
+				$elsewhere = $this->issue($m[1], $userId, 14400, true);
 			} catch (\Throwable $e) {
 				return $url;
 			}

@@ -53,6 +53,9 @@ class ScanService {
 	 */
 	public const HEARD_FOR = 1200;
 
+	/** Said when a target is off the local network. English here; the controller translates it. */
+	public const NOT_LOCAL = 'NetBase scans only the local network: private address ranges and the networks this server is attached to.';
+
 	/**
 	 * The types classify() can guess. Anything else in dtype was chosen by
 	 * hand — a template no scan can guess (MANUAL_TYPES) or the user's own
@@ -90,6 +93,12 @@ class ScanService {
 			$size = $this->planSize($target);
 			if ($size === 0) {
 				continue;
+			}
+			// A sweep stays on the local network: a private range, or a network
+			// this server is attached to. A public range is refused rather than
+			// swept from here (review 2026-10-04, medium 7).
+			if (!$this->discovery->isLocalTarget($target)) {
+				throw new \InvalidArgumentException(self::NOT_LOCAL);
 			}
 			$plan[] = ['target' => $target, 'size' => $size];
 			$total += $size;

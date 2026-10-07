@@ -34,6 +34,7 @@ class L10nService {
 			$language = $user !== null
 				? $this->config->getUserValue($user->getUID(), Application::APP_ID, 'language', 'auto')
 				: 'auto';
+			$language = Application::OLD_LANGUAGES[$language] ?? $language; // shipped as "pt" and "zh" until 2026-10
 			$this->l = $this->factory->get(Application::APP_ID, $language === 'auto' ? null : $language);
 		}
 		return $this->l;

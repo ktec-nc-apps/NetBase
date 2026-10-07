@@ -2,6 +2,26 @@
 
 All notable changes to NetBase are documented here.
 
+## 0.8.0 — 2026-10-08
+
+An AI assistant, through the new AI-Hub app, and the fixes from a review of the whole app.
+
+### Added
+
+- **An AI assistant, through the AI-Hub app.** A chat that knows NetBase and explains what is on the screen — a scan, a ping, a list of devices — in the person's own language. It runs nothing itself. Administration settings → NetBase → AI assistant: on or off, who may use it, what it may read. Shown only when AI-Hub is installed.
+- **An assistant that may act, for administrators who switch it on.** It can suggest commands, and a command runs only after the person approves it by typing `approve` and the code shown for that very command.
+
+### Fixed
+
+- **Passwords no longer travel in the address.** Browsing files over FTP/SFTP sent the sudo password, the connection secret and the key passphrase in the address, where they were written to the web server's log and the browser's history. They are now sent in the body of a request. If you used the file browser before, remove those lines from your web server's access log.
+- **"See the page as a picture" works again** for every user; its request lacked the permission attributes and always failed.
+- **The HTTP timing and the iperf test reach only what a scan could reach.** They could be pointed at the server itself, at cloud metadata addresses, or at other protocols.
+- **A terminal log no longer keeps passwords** typed at sudo, su and ssh prompts.
+- **A device window connects to the address that was checked.** The name was resolved twice, so a changed DNS answer between the check and the connection could lead to another machine.
+- **A device's page can no longer open other devices' windows from its own scripts.** Another device's address is followed only as a page.
+- **An answer that carries a digest challenge keeps its status.** An H.VIEW / Uniview recorder answers its sign-in with a 200 that carries a `WWW-Authenticate` header, which its own page reads to work out the digest answer. NetBase dropped the header, and PHP turned the 200 into a 401, so the browser's own password box appeared over the recorder's page.
+- **A failed delete or move on an SSH server that sends no exit status** no longer shows as done.
+
 ## 0.7.2 — 2026-09-28
 
 ### Fixed

@@ -52,6 +52,9 @@ class TermLogService {
 	/** Days, ceiling. */
 	private const MAX_DAYS = 3650;
 
+	/** What stands in for a line typed at a password prompt. */
+	public const MASKED = '••••••••';
+
 	public function __construct(
 		private TermLogMapper $mapper,
 		private IConfig $config,
@@ -152,12 +155,65 @@ class TermLogService {
 			return;
 		}
 		$line = $dir . '/typed';
+		// What is typed at a password prompt is not kept — not in the table, and
+		// not even in the working file. sudo, su and ssh all ask for one in the
+		// terminal, and a recording that kept the answer would hold the password
+		// of every server the person signs in to (review 2026-10-04, medium 4).
+		// The prompt is known by what the terminal said last; from then until
+		// the Return that answers it, the line is a mask and nothing more.
+		$hidden = $dir . '/secret';
+		$asks = $this->asksForSecret($dir . '/said');
+		if ($asks && !is_file($hidden)) {
+			@touch($hidden);
+		} elseif (!$asks && is_file($hidden) && $this->shellPromptShowing($dir . '/said')) {
+			// The prompt was abandoned (Ctrl-C) and the shell is back.
+			@unlink($hidden);
+		}
+		if (is_file($hidden)) {
+			if (strpbrk($data, "\r\n") === false) {
+				return;
+			}
+			@unlink($hidden);
+			$data = self::MASKED . "\n";
+		}
 		if ((int)@filesize($line) <= self::MAX_TYPED) {
 			@file_put_contents($line, $data, FILE_APPEND | LOCK_EX);
 		}
 		if (strpbrk($data, "\r\n") !== false) {
 			$this->flush($userId, $session, $dir);
 		}
+	}
+
+	/**
+	 * Whether the terminal's latest words are a request for a password: the
+	 * prompts of sudo, su, ssh, passwd and their kin all end in "password"
+	 * (or "passphrase") followed by a colon, in English or in Japanese.
+	 */
+	private function asksForSecret(string $saidFile): bool {
+		$tail = $this->tailOf($saidFile);
+		return $tail !== ''
+			&& preg_match('/(password|passphrase|passcode|pin code|パスワード|暗証番号)[^\r\n]{0,80}[:：]\s*$/iu', $tail) === 1;
+	}
+
+	/** Whether the terminal's latest words look like a shell prompt waiting for a command. */
+	private function shellPromptShowing(string $saidFile): bool {
+		return preg_match('/[$#%>]\s*$/', $this->tailOf($saidFile)) === 1;
+	}
+
+	/** The last few hundred bytes the terminal said, with the colours and cursor moves taken out. */
+	private function tailOf(string $saidFile): string {
+		$size = (int)@filesize($saidFile);
+		if ($size <= 0) {
+			return '';
+		}
+		$handle = @fopen($saidFile, 'r');
+		if ($handle === false) {
+			return '';
+		}
+		fseek($handle, max(0, $size - 512));
+		$tail = (string)stream_get_contents($handle);
+		fclose($handle);
+		return $this->clean($tail, 1024);
 	}
 
 	/**
@@ -171,7 +227,7 @@ class TermLogService {
 			return;
 		}
 		$this->flush($userId, $session, $dir, true);
-		foreach (['meta', 'typed', 'said'] as $name) {
+		foreach (['meta', 'typed', 'said', 'secret'] as $name) {
 			@unlink($dir . '/' . $name);
 		}
 		@rmdir($dir);

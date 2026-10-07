@@ -50,7 +50,7 @@ class DeviceProbeService {
 	 * @return array{open: list<int>, from: int, to: int, done: bool, next: int}
 	 */
 	public function ports(string $ip, int $from = 1, float $wait = 0.3): array {
-		$this->tools->reach($ip);
+		$this->localOnly($ip);
 		$from = max(1, min(self::LAST_PORT, $from));
 		$to = min(self::LAST_PORT, $from + self::SLICE - 1);
 		$wait = min(2.0, max(0.1, $wait));
@@ -80,7 +80,7 @@ class DeviceProbeService {
 	 * @return list<int>
 	 */
 	public function careful(string $ip, float $wait = 2.0): array {
-		$this->tools->reach($ip);
+		$this->localOnly($ip);
 		$found = $this->discovery->tcpSweep([$ip], DiscoveryService::DETAILED_PORTS, $wait, self::AT_ONCE);
 		$open = array_map('intval', $found[$ip] ?? []);
 		sort($open);
@@ -100,7 +100,7 @@ class DeviceProbeService {
 	 * @return list<array{port: int, scheme: string, status: int, title: string, server: string}>
 	 */
 	public function web(string $ip, array $ports, float $timeout = 2.5): array {
-		$this->tools->reach($ip);
+		$this->localOnly($ip);
 		$ports = array_values(array_unique(array_filter(
 			array_map('intval', $ports),
 			static fn (int $p) => $p > 0 && $p <= self::LAST_PORT,
@@ -120,6 +120,20 @@ class DeviceProbeService {
 			}
 		}
 		return $out;
+	}
+
+	/**
+	 * A device is asked about itself only on the local network: everything
+	 * reach() refuses (this server, link-local), and then anything that is
+	 * neither a private address nor on a network this server is attached to.
+	 * Without the second half, any public address could be put through a scan
+	 * of all 65,535 ports from here (review 2026-10-04, medium 7).
+	 */
+	private function localOnly(string $ip): void {
+		$this->tools->reach($ip);
+		if (!$this->discovery->isLocalTarget($ip)) {
+			throw new \InvalidArgumentException(ScanService::NOT_LOCAL);
+		}
 	}
 
 	/** https first where the number says so, otherwise plain http first. */

@@ -18,6 +18,7 @@ use OCP\AppFramework\Http\IOutput;
 use OCP\AppFramework\Http\RedirectResponse;
 use OCP\IRequest;
 use OCP\IURLGenerator;
+use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -34,6 +35,7 @@ class ProxyController extends Controller {
 		private ProxyService $proxy,
 		private L10nService $l,
 		private IURLGenerator $urls,
+		private IUserSession $userSession,
 		private LoggerInterface $logger,
 	) {
 		parent::__construct(Application::APP_ID, $request);
@@ -49,15 +51,20 @@ class ProxyController extends Controller {
 	public function open(string $token, string $path = '') {
 		try {
 			$ticket = $this->proxy->redeem($token);
+			// The ticket is a bearer — nothing but the address carries it — so it
+			// is also held to the account it was issued to whenever the browser
+			// says who that is: the window is on this origin and sends the
+			// session along with every request (review 2026-10-04, low 9).
+			$signedIn = $this->userSession->getUser();
+			if ($signedIn !== null && $signedIn->getUID() !== $ticket['userId']) {
+				throw new \RuntimeException($this->l->t('This window belongs to another account.'));
+			}
+			if (!empty($ticket['navigationOnly'])) {
+				return $this->followLink($ticket, $path);
+			}
 			$prefix = rtrim($this->urls->linkToRoute('netbase.proxy.open', ['token' => $token, 'path' => '']), '/');
 
-			// The window adds a cache-buster of its own; a device that does not
-			// expect it can answer with something else entirely, so it is taken
-			// off again before the request leaves this server.
-			$query = implode('&', array_filter(
-				explode('&', (string)($_SERVER['QUERY_STRING'] ?? '')),
-				static fn (string $pair) => $pair !== '' && !str_starts_with($pair, '_nb='),
-			));
+			$query = $this->query();
 			$method = strtoupper($this->request->getMethod());
 			$type = strtolower((string)$this->request->getHeader('Content-Type'));
 			$form = $type === '' || str_contains($type, 'form-urlencoded') || str_contains($type, 'multipart/');
@@ -120,7 +127,7 @@ class ProxyController extends Controller {
 					$this->logger->info('NetBase proxy: ' . $e->getMessage(), ['exception' => $e, 'app' => 'netbase']);
 					$output->setHttpResponseCode(Http::STATUS_BAD_GATEWAY);
 					$output->setHeader('Content-Type: text/html; charset=utf-8');
-					$output->setOutput($this->problemPage($e->getMessage()));
+					$output->setOutput($this->problemPage($this->shown($e)));
 					return;
 				}
 				if (!empty($result['streamed'])) {
@@ -135,12 +142,62 @@ class ProxyController extends Controller {
 			return $this->problem($e->getMessage(), Http::STATUS_FORBIDDEN);
 		} catch (\Throwable $e) {
 			$this->logger->warning('NetBase proxy: ' . $e->getMessage(), ['exception' => $e, 'app' => 'netbase']);
-			return $this->problem($e->getMessage(), Http::STATUS_BAD_GATEWAY);
+			return $this->problem($this->shown($e), Http::STATUS_BAD_GATEWAY);
 		}
 
 		$response->setContentSecurityPolicy($this->policy());
 		$response->cacheFor(0);
 		return $response;
+	}
+
+	/**
+	 * The query string as the device should see it. The window adds a
+	 * cache-buster of its own; a device that does not expect it can answer
+	 * with something else entirely, so it is taken off again before the
+	 * request leaves this server.
+	 */
+	private function query(): string {
+		return implode('&', array_filter(
+			explode('&', (string)($_SERVER['QUERY_STRING'] ?? '')),
+			static fn (string $pair) => $pair !== '' && !str_starts_with($pair, '_nb='),
+		));
+	}
+
+	/**
+	 * A ticket made for a link on one device's page to another device.
+	 *
+	 * It opens that device only by being followed — a page shown in the window
+	 * — and not through a request a script makes: with an ordinary ticket in
+	 * the link, the page of one device could read another's, with the password
+	 * and the cookies NetBase remembers for it (review 2026-10-04, medium 6).
+	 * Browsers say which of the two a request is; a navigation is sent on to a
+	 * ticket of the ordinary kind for the new device, so its own page then
+	 * works like any other window's.
+	 *
+	 * @param array{base: string, userId: string} $ticket
+	 */
+	private function followLink(array $ticket, string $path) {
+		if (strtolower((string)$this->request->getHeader('Sec-Fetch-Mode')) !== 'navigate') {
+			return $this->problem($this->l->t('A link to another device can only be followed as a page.'), Http::STATUS_FORBIDDEN);
+		}
+		$fresh = $this->proxy->issue($ticket['base'], $ticket['userId']);
+		$query = $this->query();
+		return new RedirectResponse(
+			rtrim($this->urls->linkToRoute('netbase.proxy.open', ['token' => $fresh, 'path' => $path]), '/')
+			. ($path === '' ? '/' : '') . ($query !== '' ? '?' . $query : ''),
+		);
+	}
+
+	/**
+	 * The words shown for a failure: the exception's own only when they were
+	 * written for the reader (a refused address, a device that did not answer);
+	 * a fault of any other kind is in the log and reported in one fixed
+	 * sentence (review 2026-10-04, low 13).
+	 */
+	private function shown(\Throwable $e): string {
+		return ($e instanceof \RuntimeException || $e instanceof \InvalidArgumentException)
+			? $e->getMessage()
+			: $this->l->t('Something went wrong on the server. The details are in the Nextcloud log.');
 	}
 
 	/**
@@ -163,14 +220,20 @@ class ProxyController extends Controller {
 		// stayed blank. The streaming path always did both; this one now does
 		// too.
 		$status = (int)$result['status'] ?: 200;
-		$output->setHeader('HTTP/1.1 ' . $status . ' ' . (ProxyService::REASONS[$status] ?? 'Status'));
-		$output->setHttpResponseCode($status);
 		foreach ((array)$result['headers'] as $name => $value) {
 			$output->setHeader($name . ': ' . $value);
 		}
-		// The window has no origin of its own, so anything it asks for itself
-		// counts as cross-origin; the ticket, not the origin, is what decides.
-		$output->setHeader('Access-Control-Allow-Origin: *');
+		// Set after the headers, never before: PHP turns any response that
+		// carries a WWW-Authenticate header into a 401 the moment the header is
+		// set. An H.VIEW recorder answers its sign-in with a 200 that carries
+		// one, the browser was handed a 401 instead, put up its own password
+		// box over the recorder's page, and the sign-in never went on.
+		$output->setHeader('HTTP/1.1 ' . $status . ' ' . (ProxyService::REASONS[$status] ?? 'Status'));
+		$output->setHttpResponseCode($status);
+		// No Access-Control-Allow-Origin here any more. The window is shown with
+		// allow-same-origin, so the page's own requests are same-origin and need
+		// none; with "*" any other origin that learnt a ticket could read the
+		// device's pages through it (review 2026-10-04, medium 6).
 		// Nextcloud sends no-referrer on everything it serves, which is right
 		// for Nextcloud and wrong here: a camera at one site turns every page
 		// after the sign-in away unless the request says which of its own pages

@@ -19,6 +19,14 @@ return [
 		['name' => 'proxy#open', 'url' => '/proxy/{token}/{path}', 'verb' => 'HEAD', 'postfix' => 'head', 'requirements' => ['path' => '.*'], 'defaults' => ['path' => '']],
 		['name' => 'proxy#open', 'url' => '/proxy/{token}/{path}', 'verb' => 'OPTIONS', 'postfix' => 'options', 'requirements' => ['path' => '.*'], 'defaults' => ['path' => '']],
 
+		// the AI assistant, through AI-Hub (modelled on EditBase, 2026-10-04)
+		['name' => 'ai#status', 'url' => '/api/ai/status', 'verb' => 'GET'],
+		['name' => 'ai#ask', 'url' => '/api/ai/ask', 'verb' => 'POST'],
+		['name' => 'ai#result', 'url' => '/api/ai/result/{id}', 'verb' => 'GET'],
+		['name' => 'ai#forget', 'url' => '/api/ai/forget', 'verb' => 'POST'],
+		['name' => 'ai#saveAdmin', 'url' => '/api/ai/admin', 'verb' => 'POST'],
+		['name' => 'ai#saveWidth', 'url' => '/api/ai/width', 'verb' => 'POST'],
+
 		// status & settings
 		['name' => 'api#status', 'url' => '/api/status', 'verb' => 'GET'],
 		['name' => 'api#getSettings', 'url' => '/api/settings', 'verb' => 'GET'],
@@ -92,14 +100,20 @@ return [
 		['name' => 'api#nextcloudFiles', 'url' => '/api/nc-files', 'verb' => 'GET'],
 
 		// file transfer
-		['name' => 'api#filesList', 'url' => '/api/files/list', 'verb' => 'GET'],
+		// Listing and reading go by POST like the rest: the one-off connection's
+		// password and the sudo password travel in the body, where a GET put
+		// them in the address and so in the web server's access log and the
+		// browser's history (review 2026-10-04, high 1).
+		['name' => 'api#filesList', 'url' => '/api/files/list', 'verb' => 'POST'],
 		['name' => 'api#filesDownload', 'url' => '/api/files/download', 'verb' => 'POST'],
 		['name' => 'api#filesUpload', 'url' => '/api/files/upload', 'verb' => 'POST'],
 		['name' => 'api#filesManage', 'url' => '/api/files/manage', 'verb' => 'POST'],
 		// A transfer, reported while it runs, so the browser can draw a bar
 		// rather than a spinner that says nothing.
 		['name' => 'api#filesTransfer', 'url' => '/api/files/transfer', 'verb' => 'POST'],
-		['name' => 'api#filesText', 'url' => '/api/files/text', 'verb' => 'GET'],
+		// Reading a file is a POST under its own address, since /api/files/text
+		// by POST is already the save (same reason as the listing above).
+		['name' => 'api#filesText', 'url' => '/api/files/read', 'verb' => 'POST'],
 		['name' => 'api#filesSaveText', 'url' => '/api/files/text', 'verb' => 'POST'],
 
 		// mail

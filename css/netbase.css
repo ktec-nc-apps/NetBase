@@ -140,19 +140,155 @@
 #netbase-root .sidebar-foot { padding: 9px 12px; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 6px; }
 
 #netbase-root .main { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; }
+
+/* ---------- the AI assistant (through AI-Hub) ----------
+   A column at the far right, as wide as the person keeps it; shut, a handle
+   down the edge with the triangle pointing the way it opens. */
+#netbase-root .ai-col {
+  flex: 0 0 500px; min-width: 240px; max-width: 70%; display: flex; flex-direction: column; min-height: 0;
+  background: var(--surface); border-left: 1px solid var(--border); font-size: 13.5px;
+}
+/* The edge between the work and the assistant (the owner, 2026-10-06): a thin strip over
+   the column's left border. Pointed at, it shows the resize cursor and a line in the accent
+   colour; dragged, it sets the column's width. Not on a narrow screen, where the column
+   stacks under the work. */
+#netbase-root .ai-col { position: relative; }
+#netbase-root .ai-grip {
+  position: absolute; top: 0; bottom: 0; left: -2px; width: 8px; z-index: 6;
+  cursor: col-resize; touch-action: none; outline: none;
+}
+#netbase-root .ai-grip::after {
+  content: ''; position: absolute; top: 0; bottom: 0; left: 1px; width: 2px; background: transparent; transition: background .15s;
+}
+#netbase-root .ai-grip:hover::after, #netbase-root .ai-grip:focus-visible::after,
+html.nb-col-resizing #netbase-root .ai-grip::after { background: var(--primary); }
+html.nb-col-resizing, html.nb-col-resizing * { cursor: col-resize !important; -webkit-user-select: none !important; user-select: none !important; }
+/* One row, never two: the model's name is the one thing that gives way (cut with an
+   ellipsis) so that "+ New conversation" and the handle always stay on the right. */
+#netbase-root .ai-head {
+  display: flex; align-items: center; gap: 8px; flex-wrap: nowrap; padding: 8px 8px 8px 12px; min-height: 56px; box-sizing: border-box;
+  border-bottom: 1px solid var(--border); font-weight: 700; color: var(--muted);
+}
+#netbase-root .ai-head > * { flex: 0 0 auto; }
+#netbase-root .ai-head .ai-sub { font-weight: 400; font-size: 11.5px; white-space: nowrap; }
+#netbase-root .ai-head .grow { flex: 1 1 auto; }
+#netbase-root .ai-head .ai-title { color: var(--text); white-space: nowrap; }
+#netbase-root .ai-head .ai-model { flex: 0 1 auto; min-width: 0; font-weight: 400; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 30%; }
+#netbase-root .ai-head .btn.xs { white-space: nowrap; }
+/* The handles -- on the shut strip and in the open column's header -- are one and the
+   same, the triangle pointing the way the column opens or closes (as in EditBase). */
+#netbase-root .ai-bar .hnd, #netbase-root .ai-head .hnd {
+  flex: 0 0 auto; border: 0; border-radius: 6px; padding: 8px 5px; background: var(--surface-2); color: var(--muted);
+  cursor: pointer; font-size: 11px; line-height: 1;
+}
+#netbase-root .ai-bar .hnd:hover, #netbase-root .ai-head .hnd:hover { background: var(--primary); color: var(--primary-ink, #fff); }
+#netbase-root .ai-msgs { flex: 1 1 auto; overflow-y: auto; padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; }
+#netbase-root .ai-hint { color: var(--muted); margin: 4px 0; }
+#netbase-root .ai-msg { display: flex; flex-direction: column; max-width: 92%; }
+#netbase-root .ai-msg.user { align-self: flex-end; align-items: flex-end; }
+#netbase-root .ai-msg.assistant { align-self: flex-start; }
+/* The answer is words, shown as they came: line breaks kept, nothing read as HTML. */
+#netbase-root .ai-bubble {
+  padding: 7px 10px; border-radius: 10px; line-height: 1.55; white-space: pre-wrap; overflow-wrap: anywhere;
+  -webkit-user-select: text; user-select: text;
+}
+#netbase-root .ai-msg.user .ai-bubble { background: color-mix(in srgb, var(--primary) 14%, var(--surface)); }
+#netbase-root .ai-msg.assistant .ai-bubble { background: var(--surface-2); }
+#netbase-root .ai-bubble.busy { color: var(--muted); }
+/* The "run this command" button under an answer that is waiting for the administrator's approval. */
+#netbase-root .ai-confirm { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 6px; }
+#netbase-root .ai-err { color: var(--danger); margin: 2px 0; }
+/* Saving the conversation to Files (the owner, 2026-10-06): two small icon buttons in the
+   head, and a line under the messages that says where it went. */
+#netbase-root .ai-head .ai-ic {
+  flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; padding: 0; margin: 0;
+  border: 1px solid transparent; border-radius: 6px; background: transparent; color: var(--text); cursor: pointer;
+}
+#netbase-root .ai-head .ai-ic:hover:not(:disabled) { background: var(--surface-2); border-color: var(--border); }
+#netbase-root .ai-head .ai-ic:disabled { opacity: .4; cursor: default; }
+#netbase-root .ai-head .ai-ic svg { display: block; }
+#netbase-root .ai-note { color: var(--muted); margin: 2px 0; font-size: 12.5px; }
+#netbase-root .ai-saved { color: var(--muted); margin: 2px 0; font-size: 12.5px; overflow-wrap: anywhere; }
+#netbase-root .ai-saved a { color: var(--primary); text-decoration: underline; white-space: nowrap; }
+/* A narrow column (down to 240px): the head stays one row -- "New conversation" keeps only its
+   "＋" (the words stay in its tooltip), and the gaps close up. */
+#netbase-root .ai-col { container-type: inline-size; }
+@container (max-width: 420px) {
+  #netbase-root .ai-head { gap: 4px; padding-left: 10px; }
+  #netbase-root .ai-head .ai-new .lb { display: none; }
+  #netbase-root .ai-head .ai-new { padding-left: 8px; padding-right: 8px; }
+}
+#netbase-root .ai-foot { display: flex; gap: 6px; align-items: flex-end; padding: 8px; border-top: 1px solid var(--border); }
+#netbase-root .ai-foot textarea { flex: 1 1 auto; min-height: 40px; max-height: 160px; resize: vertical; }
+/* Copying a message, and images with a question (the owner, 2026-10-06). The copy button sits
+   beside the message -- left of the person's, right of the answer's -- and shows while the
+   pointer is on the message (always, faintly, where there is no pointer to hover with). */
+#netbase-root .ai-msgs .ai-msg { position: relative; max-width: calc(100% - 34px); }
+#netbase-root .ai-copy {
+  position: absolute; bottom: 0; box-sizing: border-box; width: 28px; height: 28px; min-width: 0; min-height: 0; margin: 0; padding: 0;
+  display: flex; align-items: center; justify-content: center;
+  border: 1px solid var(--border); border-radius: 6px; background: var(--surface); color: var(--muted);
+  font: inherit; font-size: 13px; line-height: 1; cursor: pointer; opacity: 0; transition: opacity .12s;
+}
+#netbase-root .ai-msg.assistant .ai-copy { left: calc(100% + 4px); }
+#netbase-root .ai-msg.user .ai-copy { right: calc(100% + 4px); }
+#netbase-root .ai-msgs .ai-msg:hover .ai-copy, #netbase-root .ai-copy:focus-visible, #netbase-root .ai-copy.done { opacity: 1; }
+#netbase-root .ai-copy:hover { color: var(--text); border-color: var(--primary); }
+#netbase-root .ai-copy.done { color: var(--primary); border-color: var(--primary); }
+@media (hover: none) { #netbase-root .ai-copy { opacity: .75; } }
+#netbase-root .ai-copied {
+  position: absolute; bottom: 3px; white-space: nowrap; pointer-events: none;
+  padding: 2px 7px; border-radius: 4px; font-size: 11.5px; line-height: 1.5; background: var(--text); color: var(--surface);
+}
+/* the label sits beside the button, over the message's corner: never past the panel's edge, nor above the first message */
+#netbase-root .ai-msg.assistant .ai-copied { right: calc(100% + 4px); }
+#netbase-root .ai-msg.user .ai-copied { left: calc(100% + 4px); }
+#netbase-root .ai-imgs { display: flex; flex-wrap: wrap; gap: 4px; margin: 1px 0 4px; white-space: normal; }
+#netbase-root .ai-imgs img { display: block; max-width: 140px; max-height: 140px; border-radius: 6px; object-fit: contain; background: var(--surface); }
+#netbase-root .ai-foot { flex-wrap: wrap; }
+/* the box and Send stay on one line, the thumbnails above them */
+#netbase-root .ai-foot textarea { flex-basis: 0; min-width: 0; }
+#netbase-root .ai-att { flex: 1 0 100%; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; min-width: 0; }
+#netbase-root .ai-thumb {
+  position: relative; width: 56px; height: 56px; flex: 0 0 56px; box-sizing: border-box; overflow: hidden;
+  border: 1px solid var(--border); border-radius: 6px; background: var(--surface);
+}
+#netbase-root .ai-thumb img { display: block; width: 100%; height: 100%; object-fit: contain; }
+#netbase-root .ai-thumb button {
+  position: absolute; top: 2px; right: 2px; box-sizing: border-box; width: 20px; height: 20px; min-width: 0; min-height: 0; margin: 0; padding: 0;
+  display: flex; align-items: center; justify-content: center; border: 0; border-radius: 50%;
+  background: rgba(0, 0, 0, .62); color: #fff; font: inherit; font-size: 14px; line-height: 1; cursor: pointer;
+}
+#netbase-root .ai-thumb button:hover, #netbase-root .ai-thumb button:focus-visible { background: var(--danger, #c00); }
+#netbase-root .ai-attnote { flex: 1 0 100%; margin: 0; color: var(--danger); font-size: 12.5px; }
+#netbase-root .ai-col.is-drop { outline: 2px dashed var(--primary); outline-offset: -4px; }
+#netbase-root .ai-bar {
+  flex: 0 0 28px; width: 28px; display: flex; flex-direction: column; align-items: center; gap: 10px; padding-top: 10px;
+  background: var(--surface); border-left: 1px solid var(--border); -webkit-user-select: none; user-select: none;
+}
+#netbase-root .ai-bar .ai-lb { writing-mode: vertical-rl; font-size: 12px; font-weight: 600; color: var(--muted); letter-spacing: .5px; white-space: nowrap; }
+/* Settings -> Appearance and language: the AI assistant's width as a number and its unit, side by side. */
+#netbase-root .ai-widthbox { display: inline-flex; gap: 6px; align-items: center; }
+#netbase-root .ai-widthbox input { width: 110px; margin: 0; }
+#netbase-root .ai-widthbox select { width: 80px; margin: 0; }
 #netbase-root .topbar {
   display: flex; align-items: center; gap: 12px; padding: 14px 20px;
   border-bottom: 1px solid var(--border); background: var(--surface); min-height: 62px;
   /* 下の中身に押されて縮むと、2段に折り返したボタンの1段目が上にはみ出した（オーナー 2026-09-28）。 */
   flex-shrink: 0;
 }
-#netbase-root .topbar .title { display: flex; align-items: baseline; gap: 10px; min-width: 0; }
+/* The tab's name and its one-line explanation. The explanation is never cut short or hidden
+   (it was cut to "L…" with the assistant open; the owner, 2026-10-06): it wraps when it must,
+   and when there is too little room beside the name it goes on to the line below it. When the
+   buttons need the room, they go on to a line of their own under the title instead. */
+#netbase-root .topbar { flex-wrap: wrap; row-gap: 8px; }
+#netbase-root .topbar .title { display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 10px; row-gap: 2px; flex: 0 1 auto; min-width: min(16em, 100%); }
 #netbase-root .topbar .title .nm { font-weight: 700; font-size: 17px; white-space: nowrap; }
-#netbase-root .topbar .title .desc { color: var(--muted); font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#netbase-root .topbar .title .desc { flex: 1 1 12em; min-width: 0; color: var(--muted); font-size: 13px; line-height: 1.4; white-space: normal; overflow-wrap: anywhere; }
 #netbase-root .spacer { flex: 1 1 auto; }
 /* When the buttons need more room than the row has (longer words in some languages, the
    labelled list/card switch), they go on to a second line rather than off the edge. */
-#netbase-root .topbar-actions { display: flex; align-items: center; gap: 8px; flex: 0 1 auto; flex-wrap: wrap; justify-content: flex-end; min-width: 0; row-gap: 6px; }
+#netbase-root .topbar-actions { display: flex; align-items: center; gap: 8px; flex: 1 1 26em; flex-wrap: wrap; justify-content: flex-end; min-width: 0; row-gap: 6px; }
 #netbase-root .topbar-actions .filter { width: 260px; }
 /* A tab's own controls sit in the row with the rest until the room runs out. */
 #netbase-root .tab-actions { display: contents; }
@@ -231,7 +367,10 @@
 #netbase-root .scan-what label { display: inline-flex; align-items: center; gap: 7px; font-size: 13.5px; color: var(--text); }
 #netbase-root .scan-what .fl-label { margin-right: 2px; }
 
-#netbase-root .scan-row { display: flex; align-items: flex-end; gap: 10px; }
+/* Wraps when it runs out of room, rather than squeezing the fields to a
+   letter wide or pushing the last button out of the card (with the AI
+   assistant open, 1280px: 2026-10-06). */
+#netbase-root .scan-row { display: flex; align-items: flex-end; gap: 10px; flex-wrap: wrap; }
 /* The field carries a bottom margin for use in a stacked form. In this row it
    only pushes the box 12px above the button beside it, which is exactly the
    height of the margin. The row provides its own spacing. */
@@ -308,6 +447,15 @@
 #netbase-root table.grid tbody tr:hover { background: var(--surface-2); }
 #netbase-root table.grid tbody tr.offline td { opacity: .55; }
 #netbase-root table.grid.compact { box-shadow: none; }
+/* The device list's frame. The table inside keeps its full width, and when it
+   needs more than the work area has, it slides sideways within this frame (as
+   RegiBase's and FormulaBase's tables do) — the page never scrolls sideways. */
+#netbase-root .grid-scroll {
+  max-width: 100%; overflow-x: auto; overflow-y: hidden; overscroll-behavior-x: contain;
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow);
+}
+#netbase-root .grid-scroll > table.grid { border: 0; border-radius: 0; box-shadow: none; overflow: visible; }
+#netbase-root .grid-scroll > table.grid tbody tr:last-child td { border-bottom: 0; }
 #netbase-root table.grid.compact th, #netbase-root table.grid.compact td { padding: 6px 10px; font-size: 13px; cursor: default; }
 #netbase-root table.grid th.c-dot { width: 58px; padding-right: 4px; }
 #netbase-root table.grid td.c-dot { width: 58px; padding-right: 4px; white-space: nowrap; vertical-align: top; }
@@ -808,6 +956,28 @@
 #netbase-root .row-menu-rule { height: 1px; background: var(--border); margin: 5px 0; }
 #netbase-root .row-menu-none { padding: 7px 14px; font-size: 13px; color: var(--muted); }
 
+/* The one right-button menu for the whole app, in NetBase's own colours so it
+   follows light and dark (the look is EditBase's, with an nb- prefix). */
+.nb-ctx-back { position: fixed; inset: 0; z-index: 4100; }
+#netbase-root .nb-ctxmenu {
+  position: fixed; z-index: 4101; min-width: 220px; max-width: min(320px, calc(100vw - 16px)); padding: 5px;
+  background: var(--surface); color: var(--text); border: 1px solid var(--border);
+  border-radius: 11px; box-shadow: var(--shadow); font-size: 13.5px;
+}
+#netbase-root .nb-ctxmenu .ci {
+  display: flex; align-items: center; gap: 10px; width: 100%;
+  font: inherit; text-align: left; cursor: pointer; background: none; border: 0;
+  color: inherit; padding: 7px 10px; border-radius: 7px;
+}
+#netbase-root .nb-ctxmenu .ci .ic { flex: 0 0 auto; width: 1.3em; text-align: center; }
+#netbase-root .nb-ctxmenu .ci .lbl { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#netbase-root .nb-ctxmenu .ci:hover:not([disabled]), #netbase-root .nb-ctxmenu .ci:focus-visible { background: var(--surface-2); color: var(--primary); }
+#netbase-root .nb-ctxmenu .ci[disabled] { opacity: .4; cursor: default; }
+#netbase-root .nb-ctxmenu .ci.danger { color: var(--danger); }
+#netbase-root .nb-ctxmenu .ci.danger:hover:not([disabled]) { background: color-mix(in srgb, var(--danger) 12%, var(--surface)); color: var(--danger); }
+#netbase-root .nb-ctxmenu .hd { padding: 5px 10px 6px; font-size: 12px; font-weight: 700; color: var(--muted); letter-spacing: .03em; max-width: 240px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#netbase-root .nb-ctxmenu .sep { height: 1px; background: var(--border); margin: 5px 6px; }
+
 /* The remote file list. A row is a thing you act on: clicking picks it,
    double-clicking opens a folder, and the right button offers the rest. The
    pointer says so, and the picked row stays visible while a dialog is up. */
@@ -1022,8 +1192,6 @@
   #netbase-root .topbar-actions .filter { width: 180px; }
 }
 @media (max-width: 1350px) {
-  /* The tab's one-line explanation goes before the buttons lose their words. */
-  #netbase-root .topbar .title .desc { display: none; }
   #netbase-root .topbar-actions .filter { width: 150px; }
 }
 @media (max-width: 1120px) {
@@ -1106,6 +1274,20 @@
 @media (max-width: 900px) and (prefers-reduced-motion: reduce) {
   #netbase-root .sidebar { transition: none; }
 }
+/* On a phone the assistant stacks under the work instead of standing beside
+   it; its handle is a strip along the bottom, the triangle pointing up. */
+@media (max-width: 900px) {
+  #netbase-root .layout.has-ai { flex-direction: column; }
+  #netbase-root .layout.has-ai .main { flex: 1 1 auto; min-height: 0; }
+  #netbase-root .ai-col {
+    flex: 0 0 45% !important; width: 100% !important; min-width: 0; max-width: none;
+    border-left: 0; border-top: 1px solid var(--border);
+  }
+  #netbase-root .ai-grip { display: none; }
+  #netbase-root .ai-bar { width: 100%; flex: 0 0 34px; flex-direction: row; justify-content: center; padding: 0 12px; border-left: 0; border-top: 1px solid var(--border); }
+  #netbase-root .ai-bar .hnd { padding: 5px 12px; }
+  #netbase-root .ai-bar .ai-lb { writing-mode: horizontal-tb; }
+}
 
 @media (max-width: 720px) {
   /* iOS zooms the page in on any field it thinks is too small to read. */
@@ -1114,6 +1296,9 @@
      squeeze it back to one and cut the second off. */
   #netbase-root .topbar { flex: 0 0 auto; flex-wrap: wrap; gap: 8px; padding: 8px 12px; min-height: 0; }
   #netbase-root .topbar .title .nm { font-size: 15px; }
+  /* The title takes its row beside the menu button; the explanation goes under the name. */
+  #netbase-root .topbar .title { flex: 1 1 calc(100% - 56px); min-width: 0; }
+  #netbase-root .topbar .title .desc { flex-basis: 100%; }
   /* With no room to push them to the far side, the buttons follow the title
      and wrap onto a second line only when they have to. */
   #netbase-root .topbar > .spacer { display: none; }
@@ -1147,6 +1332,8 @@
   /* Except in the device list, where the row itself opens a panel holding
      everything these columns say. */
   #netbase-root table.grid .c-extra { display: none; }
+  /* Its frame already slides sideways; the table inside stays a table. */
+  #netbase-root .grid-scroll > table.grid { display: table; max-width: none; overflow: visible; }
   #netbase-root table.grid th, #netbase-root table.grid td { padding: 8px 9px; }
 
   #netbase-root .kv { grid-template-columns: 1fr; }
@@ -1272,7 +1459,11 @@
    within the box (never truncated). Ports then follow at a constant column. */
 #netbase-root table.grid td.c-name .addr-line .addr-ip { color: var(--text); font-weight: 500; flex: 0 0 18ch; }
 #netbase-root table.grid td.c-name .addr-line .addr-mac { font-size: 11px; flex: 0 0 17ch; }
-#netbase-root table.grid td.c-name .addr-line .addr-vendor { font-size: 11px; flex: 0 0 54ch; min-width: 0; white-space: normal; word-break: break-word; }
+/* When the work area is short of room (a 1280px window), the vendor gives up
+   width first — down to 16ch, wrapping within its box, never cut — so every
+   column of the table still shows. Only the vendor shrinks, by the same amount
+   on every line, so the ports after it keep one column. */
+#netbase-root table.grid td.c-name .addr-line .addr-vendor { font-size: 11px; flex: 0 1 54ch; min-width: 16ch; white-space: normal; word-break: break-word; }
 #netbase-root table.grid td.c-name .addr-line.addr-off .addr-ip { opacity: .5; }
 #netbase-root table.grid td.c-name .addr-line.addr-off .addr-mac { opacity: .6; }
 /* Several addresses on one device are separated by a thin dotted rule. */
@@ -1281,8 +1472,9 @@
    because every preceding column is fixed-width, the ports' leading edge lands
    at the same column on every row. A long port list wraps *within* this column
    (it takes the remaining width), so the leading edge stays put. */
-#netbase-root table.grid td.c-name .addr-ports { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 5px; font-size: 11px; flex: 1 1 auto; min-width: 0; }
+#netbase-root table.grid td.c-name .addr-ports { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 5px; font-size: 11px; flex: 1 1 0; min-width: 9ch; }
 #netbase-root table.grid td.c-name .addr-ports .addr-ports-label { opacity: .55; margin-right: 2px; }
+#netbase-root table.grid td.c-name .addr-ports .port-one { white-space: nowrap; }
 #netbase-root table.grid td.c-name .addr-ports a { color: var(--primary); text-decoration: none; }
 #netbase-root table.grid td.c-name .addr-ports a:hover { text-decoration: underline; }
 #netbase-root table.grid td.c-name .pair-note {
@@ -1427,14 +1619,15 @@
 #netbase-root .type-pick select.unset option { color: var(--text); }
 #netbase-root table.grid td.c-pair .tchip { white-space: nowrap; }
 #netbase-root .dev-card .dc-type .tchip { display: inline-block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: top; }
-/* 一覧とカードの切り替え：機器一覧の上の枠（スキャンする対象）の右上に重ねる。枠が無ければ同じ場所に単独で。 */
+/* 一覧とカードの切り替え：機器一覧の上の枠（スキャンする対象）の右上に出す。枠が無ければ同じ場所に単独で。
+   枠の中では重ねずに、一行目（スキャン対象）の右端に並べる。幅が足りなければ、字を縮めずに次の行の右端へ
+   回る（重ねていた頃は、AI を開いた 1280〜1400px で「ネットワーク範囲指定」を覆い、押せなかった・2026-10-06）。 */
 #netbase-root section { position: relative; }
-#netbase-root .view-toggle.dev-vt { position: absolute; top: 10px; right: 12px; z-index: 3; background: var(--surface); }
-#netbase-root .view-toggle.dev-vt.solo { position: static; float: right; margin: 0 0 8px 8px; }
-/* 狭い画面では枠の中の字に重なるので、重ねずに枠のすぐ上の右側に出す。 */
-@media (max-width: 700px) {
-  #netbase-root .view-toggle.dev-vt { position: static; float: none; display: flex; width: max-content; margin: 0 0 8px auto; }
-}
+#netbase-root .view-toggle.dev-vt { background: var(--surface); }
+#netbase-root .scan-what > .view-toggle.dev-vt { flex: 0 0 auto; margin-left: auto; }
+/* 枠が無い人の単独のボタンは、表の上の右端に一行で出す。右に浮かせていた頃は、表がボタンの幅だけ
+   狭められて横に並んでいた（2026-10-06）。 */
+#netbase-root .view-toggle.dev-vt.solo { display: flex; width: max-content; margin: 0 0 8px auto; }
 /* カード表示のネットワークごとの見出しと区切り（オーナー 2026-09-28）。 */
 #netbase-root .dev-card-section + .dev-card-section { margin-top: 26px; }
 #netbase-root .dcs-head { font-size: 13px; font-weight: 600; color: var(--muted); margin: 0 0 10px 2px; display: flex; align-items: center; gap: 10px; }
