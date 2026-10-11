@@ -2,6 +2,11 @@
 
 All notable changes to NetBase are documented here.
 
+## 0.8.1 — 2026-10-11
+
+Only the Japanese text was rewritten — the README, the App Store description and the changelog — to read naturally. No feature was added or changed.
+（README・App Store の説明・変更履歴の日本語の文章を、自然な日本語に差し替えただけです。機能の追加や変更はありません。）
+
 ## 0.8.0 — 2026-10-08
 
 An AI assistant, through the new AI-Hub app, and the fixes from a review of the whole app.

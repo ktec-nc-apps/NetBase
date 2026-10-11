@@ -3,7 +3,7 @@
 	<id>netbase</id>
 	<name>NetBase</name>
 	<summary>Network toolbox — fast LAN device discovery with vendor lookup, plus DNS, whois, TLS, mail and file-transfer tools</summary>
-	<summary lang="ja">ネットワーク総合ツール ― LAN機器の高速検出とベンダー判別、DNS・whois・TLS・メール・ファイル転送の各ツール</summary>
+	<summary lang="ja">ネットワーク管理ツール集 ― LAN 上の機器の高速検出とベンダー判別に加え、DNS・whois・TLS・メール・ファイル転送のツールを備えています</summary>
 	<description><![CDATA[NetBase turns your Nextcloud into a network console: it finds every device on the LAN, opens each one's own settings page from inside Nextcloud, and keeps the everyday lookup tools on the same screen.
 
 Device windows are the heart of it. The server fetches a device's own web interface and rewrites every address inside it, so a router, a switch, a printer or a NAS can be signed into and configured from anywhere the Nextcloud is reachable — no VPN, no jump host, no site visit. Firmware can be sent, a configuration restored, a backup taken. Several windows can be open at once.
@@ -27,30 +27,30 @@ What each part is for:
 Access is per tool. NetBase is an administrator's app, and everything that touches the local network defaults to administrators — but each tool can be opened to named groups or to everyone from Administration settings, so an instance can lend out whois, DNS and the other harmless lookups without lending out the network. Where an account is allowed nothing, NetBase leaves itself out of that account's app menu.
 
 Available in twenty languages, and NetBase can be set to a different language from the rest of Nextcloud, per account.]]></description>
-	<description lang="ja"><![CDATA[NetBaseは、Nextcloudをネットワーク管理コンソールに変えるアプリです。LAN上の機器を洗い出し、各機器の設定画面をNextcloudの中から開き、日常的に使う調査ツールを同じ画面に揃えます。
+	<description lang="ja"><![CDATA[NetBase は、Nextcloud をネットワーク管理コンソールとして使えるようにするアプリです。LAN 上の機器をすべて検出し、各機器の設定画面を Nextcloud の中から開けます。日常的に使う調査ツールも同じ画面にまとめています。
 
-中心となるのが「機器ウィンドウ」です。サーバーが機器のWeb管理画面を取得し、その中のアドレスをすべて書き換えて表示するため、ルーター・スイッチ・プリンタ・NASの設定を、Nextcloudに届く場所ならどこからでも操作できます。VPNも踏み台も訪問も不要です。ファームウェアの送信、設定の復元、バックアップの取得もそのまま行えます。複数のウィンドウを同時に開けます。
+中心となる機能は「機器ウィンドウ」です。サーバーが機器の Web 管理画面を取得し、その中のアドレスをすべて書き換えて表示するため、Nextcloud にアクセスできる場所であればどこからでも、ルーター、スイッチ、プリンター、NAS にログインして設定を変更できます。VPN も踏み台サーバーも、現地への訪問も必要ありません。ファームウェアの送信、設定の復元、バックアップの取得もできます。ウィンドウは複数同時に開けます。
 
-検出にroot権限・エージェント・追加パッケージは不要です。カーネルの近隣テーブルを起こして読み取り、NetBIOS・mDNS・WS-Discovery・SSDPで各機器に名前を尋ねます。あわせて、機器が自ら発信する情報を背景で常時受信しているため、同じ配線につながった別サブネットの機器 ― こちらから到達できず、問い合わせにも答えられない相手 ― も一覧に現れます。MACアドレスは同梱のIEEE登録簿（53,000件超）でオフライン判別します。
+機器の検出に、root 権限、エージェント、追加のパッケージは必要ありません。NetBase はカーネルの近隣テーブルに機器を登録させてから読み取り、NetBIOS・mDNS・WS-Discovery・SSDP で各機器に名前を問い合わせます。また、機器が送信するアナウンスをバックグラウンドで常に受信しているため、同じケーブルにつながった別サブネットの機器も一覧に表示されます。こちらからは接続できず、問い合わせにも応答できない機器でも同様です。MAC アドレスは、同梱の IEEE レジストリ（53,000 件を超えるベンダーのプレフィックス）を使って、オフラインで判別します。
 
-各機能の用途:
-- 機器ウィンドウ ― 機器の設定画面を、Nextcloud経由でどこからでも
-- LANスキャンと台帳 ― 機器名・IPv4・MAC・ベンダー・種別・開放ポート、CSV書き出し
-- DNS ― 任意のレコード種別を任意のDNSサーバーへ、リゾルバ比較、委任追跡、ゾーン転送検査
-- whois・空きドメイン検索 ― ドメイン/IPアドレスの照会（IANA委譲追跡・whoisコマンド不要）と、ドット前の名前を語尾一括で調べて空きを探す検索
-- Wake-on-LAN ― MACアドレスを指定して機器を起動
-- TLS・HTTP ― 証明書とチェーンと有効期限、受け付けるTLSバージョン、リダイレクト連鎖、セキュリティヘッダー
-- メール ― SPF・DKIM・DMARC・MTA-STS・DANE・ブロックリスト、SMTP/IMAP/POP3のサーバー検査、第三者中継テスト、実際の試験送信
-- FTP・SFTP ― リモートサーバーの閲覧と、Nextcloudフォルダーとのファイル受け渡し
-- SSH・Telnet ― 資格情報なしの調査と、保存済み接続先でのコマンド実行・仮想ターミナル
-- ベンチマーク ― 回線速度、iperf3によるLAN帯域、リゾルバ比較、HTTP時間内訳
-- どの結果もコピー・ダウンロード・Nextcloudのファイルへの保存が可能
-- AI-Hub アプリを通した AI アシスタント。画面にある結果（スキャン・ping・機器の一覧など）を説明します。管理者が有効にすると、コマンドを提案させることもでき、実行はその都度ご本人が承認したときだけです。AI-Hub が無ければ表示されません
+各機能でできること:
+- 機器ウィンドウ ― どこからでも、Nextcloud 経由で機器の設定画面を操作
+- LAN スキャンと機器台帳 ― 名前、IPv4 アドレス、MAC アドレス、ベンダー、種類、開いているポートを一覧にし、CSV でエクスポート
+- DNS ― 任意の DNS サーバーへの、あらゆる種類のレコードの問い合わせ、リゾルバの比較、委任の追跡、ゾーン転送のテスト
+- whois・空きドメイン検索 ― ドメインや IP アドレスの調査（IANA からの紹介をたどるため whois コマンドは不要）と、1 つの名前を多数のトップレベルドメインで一度に調べて、まだ空いているドメインを探す検索
+- Wake-on-LAN ― MAC アドレスを指定して機器を起動
+- TLS・HTTP ― 証明書とそのチェーン・有効期限、受け付ける TLS バージョン、リダイレクトの経路、セキュリティヘッダー
+- メール ― SPF・DKIM・DMARC・MTA-STS・DANE・ブロックリストの確認、SMTP/IMAP/POP3 サーバーのテスト、オープンリレーのテスト、実際のテストメールの送信
+- FTP・SFTP ― リモートサーバーの閲覧と、Nextcloud のフォルダーとの間のファイルのやり取り
+- SSH・Telnet ― 認証情報なしでの調査と、保存済みの接続先でのコマンド実行やターミナル
+- ベンチマーク ― インターネットの速度、iperf3 による LAN のスループット、リゾルバの比較、HTTP の時間の内訳
+- どの結果も、コピー、ダウンロード、ご自身の Nextcloud のファイルへの直接保存が可能
+- AI-Hub アプリを通じて動作する AI アシスタント。画面の内容（スキャン結果、ping、機器一覧など）を説明します。管理者が有効にすると、コマンドを提案させることもできます。提案されたコマンドは、ユーザーが 1 つずつ承認したときだけ実行されます。AI-Hub が無い場合、この機能は表示されません
 
-公開範囲はツール単位で設定できます。NetBaseは管理者向けのアプリで、ローカルネットワークに触れる機能は既定で管理者のみですが、管理設定から各ツールを指定グループや全員に開放できます。ネットワークそのものを渡すことなく、whois・DNSといった無害な調査だけを一般利用者に使ってもらえます。何も許可されていない利用者には、アプリメニューにも表示しません。
+アクセス権はツールごとに設定します。NetBase は管理者向けのアプリで、ローカルネットワークに関わる機能は、初期設定では管理者だけが使えます。ただし、管理者設定から各ツールを、指定したグループや全ユーザーに公開できます。ネットワークへのアクセス権を渡さずに、whois や DNS など危険のない調査だけをほかのユーザーに使ってもらえます。何も許可されていないユーザーには、アプリメニューに NetBase を表示しません。
 
-20言語に対応し、NetBaseだけをNextcloud本体と別の言語に設定することもできます（利用者ごと）。]]></description>
-	<version>0.8.0</version>
+20 の言語に対応しています。NetBase だけを Nextcloud 本体とは別の言語に、ユーザーごとに設定することもできます。]]></description>
+	<version>0.8.1</version>
 	<licence>agpl</licence>
 	<author>KTEC</author>
 	<namespace>NetBase</namespace>
