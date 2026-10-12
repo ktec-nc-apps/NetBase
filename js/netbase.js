@@ -733,6 +733,9 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
                   <button class="btn" :disabled="!(status.arpFlush && status.arpFlush.available) || busy.arpflush" :class="{working: busy.arpflush}" @click="clearArp" :title="t('Forget every remembered address so a refresh shows only what answers now. Stale entries (a device switched off) disappear. Needs a helper an administrator installs.')">{{ t('Clear the ARP table') }}</button>
                   <button v-if="!(status.arpFlush && status.arpFlush.available)" class="btn xs ib arp-help-btn" :title="t('How to switch this on')" :aria-label="t('How to switch this on')" @click="arpHelp = true">?</button>
                 </span>
+                <!-- For a device the scan cannot see: no port to probe, or NetBase in a
+                     container whose bridge hides the LAN (Nextcloud AIO, Docker). -->
+                <button class="btn" @click="openAddDevice" :title="t('Add a device the scan does not find, by its IP address.')">{{ t('Add by address') }}</button>
               </template>
               <button class="btn primary" v-else disabled>{{ t('Scanning…') }}</button>
               <button class="btn" v-if="scanning" @click="cancelScan">{{ t('Stop') }}</button>
@@ -2337,6 +2340,29 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
          unprivileged and cannot flush the kernel table itself; an administrator
          installs a tiny helper and a one-line sudoers rule, and NetBase then
          detects it and enables the button on its own. -->
+    <!-- Typing in it is work, so a click outside does not close it. -->
+    <div v-if="addDev.open" class="drawer-backdrop centred">
+      <div class="modal">
+        <div class="drawer-head">
+          <span class="ic big">➕</span>
+          <div><strong>{{ t('Add a device by address') }}</strong><div class="dim">{{ t('For a device the scan does not find — for example when NetBase runs in a container (Nextcloud AIO, Docker) and sees the LAN only through its bridge.') }}</div></div>
+          <span class="spacer"></span>
+          <button class="btn xs ib" :title="t('Close')" :aria-label="t('Close')" @click="addDev.open=false"><svg viewBox="0 0 24 24"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg></button>
+        </div>
+        <div class="drawer-body">
+          <label class="fl"><span class="fl-label">{{ t('IP address') }}</span>
+            <input ref="addDevIp" v-model="addDev.ip" placeholder="192.168.1.20" inputmode="decimal" @keyup.enter="addDevice"></label>
+          <label class="fl"><span class="fl-label">{{ t('Name (optional)') }}</span>
+            <input v-model="addDev.label" @keyup.enter="addDevice"></label>
+          <p v-if="addDev.error" class="empty-hint">⚠ {{ addDev.error }}</p>
+        </div>
+        <div class="drawer-foot">
+          <span class="spacer"></span>
+          <button class="btn sm" @click="addDev.open=false">{{ t('Cancel') }}</button>
+          <button class="btn sm primary" :disabled="addDev.busy || !addDev.ip.trim()" :class="{working: addDev.busy}" @click="addDevice">{{ t('Add') }}</button>
+        </div>
+      </div>
+    </div>
     <div v-if="arpHelp" class="drawer-backdrop centred" @click.self="arpHelp=false">
       <div class="modal wide">
         <div class="drawer-head">
@@ -3620,6 +3646,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         availShowTaken: true, availShowUnknown: false,
         editReg: false, editRegRows: [],
         arpHelp: false,
+        addDev: { open: false, ip: '', label: '', busy: false, error: '' },
         // NETBASE-STORE-REMOVED: pingHost: '', pingResult: null, traceResult: null,
         // NETBASE-STORE-REMOVED: portHost: '', portList: '', portResult: null,
         tlsHost: '', tlsPort: 443, tlsResult: null, httpResult: null,
@@ -5442,6 +5469,27 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
           .filter((m) => rank(m) < 999)
           .sort((a, b) => (rank(a) - rank(b)) || (value(a.ip) - value(b.ip)))[0];
         return best || device;
+      },
+      openAddDevice() {
+        this.addDev = { open: true, ip: '', label: '', busy: false, error: '' };
+        this.$nextTick(() => { if (this.$refs.addDevIp) this.$refs.addDevIp.focus(); });
+      },
+      async addDevice() {
+        const ip = this.addDev.ip.trim();
+        if (!ip || this.addDev.busy) return;
+        this.addDev.busy = true;
+        this.addDev.error = '';
+        try {
+          const r = await api('devices', { method: 'POST', body: JSON.stringify({ ip, label: this.addDev.label.trim() }) });
+          this.addDev.open = false;
+          await this.loadDevices();
+          const added = r && r.device ? this.devices.find((x) => x.id === r.device.id) : null;
+          if (added) this.openDevice(added);
+        } catch (e) {
+          this.addDev.error = String((e && e.message) || e);
+        } finally {
+          this.addDev.busy = false;
+        }
       },
       async pingDevice(device) {
         const d = this.pingTarget(device);

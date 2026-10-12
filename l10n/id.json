@@ -1631,7 +1631,15 @@
         "Open in Files": "Buka di Berkas",
         "There is nothing kept of this conversation to save.": "Tidak ada lagi catatan percakapan ini yang bisa disimpan.",
         "The conversation could not be saved.": "Percakapan tidak dapat disimpan.",
-        "The earlier conversation had ended, so this one starts afresh.": "Percakapan sebelumnya sudah berakhir, jadi percakapan ini dimulai dari awal."
+        "The earlier conversation had ended, so this one starts afresh.": "Percakapan sebelumnya sudah berakhir, jadi percakapan ini dimulai dari awal.",
+        "Add by address": "Tambah lewat alamat",
+        "Add a device the scan does not find, by its IP address.": "Tambahkan perangkat yang tidak ditemukan pemindaian melalui alamat IP-nya.",
+        "Add a device by address": "Tambah perangkat lewat alamat",
+        "For a device the scan does not find — for example when NetBase runs in a container (Nextcloud AIO, Docker) and sees the LAN only through its bridge.": "Untuk perangkat yang tidak ditemukan pemindaian — misalnya saat NetBase berjalan di dalam kontainer (Nextcloud AIO, Docker) dan hanya melihat LAN melalui bridge-nya.",
+        "IP address": "Alamat IP",
+        "Name (optional)": "Nama (opsional)",
+        "Add": "Tambah",
+        "Enter an IPv4 address, such as 192.168.1.20.": "Masukkan alamat IPv4, seperti 192.168.1.20."
     },
     "pluralForm": "nplurals=1; plural=0;"
 }

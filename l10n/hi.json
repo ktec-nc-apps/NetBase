@@ -1631,7 +1631,15 @@
         "Open in Files": "फ़ाइलें में खोलें",
         "There is nothing kept of this conversation to save.": "इस बातचीत का सहेजने लायक कोई रिकॉर्ड नहीं बचा है।",
         "The conversation could not be saved.": "बातचीत सहेजी नहीं जा सकी।",
-        "The earlier conversation had ended, so this one starts afresh.": "पिछली बातचीत समाप्त हो चुकी थी, इसलिए यह नए सिरे से शुरू हो रही है।"
+        "The earlier conversation had ended, so this one starts afresh.": "पिछली बातचीत समाप्त हो चुकी थी, इसलिए यह नए सिरे से शुरू हो रही है।",
+        "Add by address": "पते से जोड़ें",
+        "Add a device the scan does not find, by its IP address.": "जो डिवाइस स्कैन में नहीं मिलता, उसे उसके IP पते से जोड़ें।",
+        "Add a device by address": "पते से डिवाइस जोड़ें",
+        "For a device the scan does not find — for example when NetBase runs in a container (Nextcloud AIO, Docker) and sees the LAN only through its bridge.": "उस डिवाइस के लिए जो स्कैन में नहीं मिलता — जैसे जब NetBase किसी कंटेनर (Nextcloud AIO, Docker) में चलता है और LAN को केवल अपने ब्रिज से देख पाता है।",
+        "IP address": "IP पता",
+        "Name (optional)": "नाम (वैकल्पिक)",
+        "Add": "जोड़ें",
+        "Enter an IPv4 address, such as 192.168.1.20.": "कोई IPv4 पता दर्ज करें, जैसे 192.168.1.20।"
     },
     "pluralForm": "nplurals=2; plural=(n != 1);"
 }

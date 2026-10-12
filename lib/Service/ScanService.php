@@ -33,6 +33,14 @@ class ScanService {
 	public const PORT_BUDGET = 4096;
 
 	/**
+	 * Addresses per sweep step beyond this server's own subnets. Each batch
+	 * there is a TCP sweep of DiscoveryService::REACH_PORTS, which waits out
+	 * its 1.5 s timeout once per 512 sockets: 48 × 20 ports is two of them,
+	 * about three seconds a step, and a /24 in about twenty.
+	 */
+	public const BEYOND_CHUNK = 48;
+
+	/**
 	 * The waits offered for a port to answer, in seconds.
 	 *
 	 * A closed port that refuses is instant whatever this is set to; the wait
@@ -260,9 +268,24 @@ class ScanService {
 		$this->absorbNeighbours($queue, $options);
 
 		$ips = $this->addressSlice($queue['plan'], $cursor, $chunk);
-		if ($ips !== []) {
-			$this->discovery->primeNeighbours($ips, (int)$options['rate']);
+		// Addresses beyond this server's own subnets never reach the neighbour
+		// table: NetBase in a bridged container (Nextcloud AIO, Docker, Podman)
+		// sees only the bridge, and a LAN behind a router is not on-link either.
+		// Those are found by whether they accept a connection, which costs a
+		// timeout per batch, so such a step takes fewer addresses.
+		$beyond = $this->discovery->offLinkOnly($ips);
+		if ($beyond !== [] && $chunk > self::BEYOND_CHUNK) {
+			$chunk = self::BEYOND_CHUNK;
+			$ips = $this->addressSlice($queue['plan'], $cursor, $chunk);
+			$beyond = $this->discovery->offLinkOnly($ips);
+		}
+		$near = array_values(array_diff($ips, $beyond));
+		if ($near !== []) {
+			$this->discovery->primeNeighbours($near, (int)$options['rate']);
 			usleep((int)($options['settle'] * 1000));
+		}
+		if ($beyond !== []) {
+			$this->absorbReached($queue, $this->discovery->reachBeyond($beyond));
 		}
 		$this->absorbNeighbours($queue, $options);
 
@@ -735,7 +758,7 @@ class ScanService {
 	 * reliable, root-free test is whether the host answers a connection at all
 	 * (open or refused). Off-link addresses are left to what they announce.
 	 */
-	private function confirmLiveness(array $queue): void {
+	private function confirmLiveness(array &$queue): void {
 		$ips = $queue['ips'] ?? [];
 		foreach ($this->devices->findAll() as $d) {
 			$ip = (string)$d->getIp();
@@ -743,11 +766,37 @@ class ScanService {
 				$ips[] = $ip;
 			}
 		}
-		$ips = $this->discovery->onLinkOnly(array_values(array_unique($ips)));
-		if ($ips === []) {
-			return;
+		$ips = array_values(array_unique($ips));
+		$near = $this->discovery->onLinkOnly($ips);
+		if ($near !== []) {
+			$this->devices->markOnline($this->discovery->alive($near));
 		}
-		$this->devices->markOnline($this->discovery->alive($ips));
+		// Beyond the server's subnets the neighbour table knows nothing, so a
+		// device found there earlier is here now only if it still accepts a
+		// connection. Those that do join this scan, so a port scan or a name
+		// lookup that follows covers them as well.
+		$beyond = $this->discovery->offLinkOnly($ips);
+		if ($beyond !== []) {
+			$this->absorbReached($queue, $this->discovery->reachBeyond($beyond));
+		}
+	}
+
+	/**
+	 * Record the devices beyond this server's subnets that accepted a
+	 * connection. There is no MAC to be had across a router, so the row is
+	 * keyed by its address until a later phase (NetBIOS) learns one.
+	 *
+	 * @param array<string, list<int>> $reached
+	 */
+	private function absorbReached(array &$queue, array $reached): void {
+		$known = array_flip($queue['ips'] ?? []);
+		foreach ($reached as $ip => $ports) {
+			$this->upsert((string)$ip, null, ['source' => 'tcp', 'present' => true, 'addPorts' => $ports]);
+			if (!isset($known[$ip])) {
+				$queue['ips'][] = (string)$ip;
+				$known[$ip] = true;
+			}
+		}
 	}
 
 	/** Read the ARP table and record everything new in it. */

@@ -1631,7 +1631,15 @@
         "Open in Files": "Apri in File",
         "There is nothing kept of this conversation to save.": "Di questa conversazione non resta nulla da salvare.",
         "The conversation could not be saved.": "Impossibile salvare la conversazione.",
-        "The earlier conversation had ended, so this one starts afresh.": "La conversazione precedente era terminata, quindi questa riparte da capo."
+        "The earlier conversation had ended, so this one starts afresh.": "La conversazione precedente era terminata, quindi questa riparte da capo.",
+        "Add by address": "Aggiungi per indirizzo",
+        "Add a device the scan does not find, by its IP address.": "Aggiungi tramite indirizzo IP un dispositivo che la scansione non trova.",
+        "Add a device by address": "Aggiungi un dispositivo per indirizzo",
+        "For a device the scan does not find — for example when NetBase runs in a container (Nextcloud AIO, Docker) and sees the LAN only through its bridge.": "Per un dispositivo che la scansione non trova, ad esempio quando NetBase gira in un container (Nextcloud AIO, Docker) e vede la rete locale solo attraverso il suo bridge.",
+        "IP address": "Indirizzo IP",
+        "Name (optional)": "Nome (facoltativo)",
+        "Add": "Aggiungi",
+        "Enter an IPv4 address, such as 192.168.1.20.": "Inserisci un indirizzo IPv4, ad esempio 192.168.1.20."
     },
     "pluralForm": "nplurals=2; plural=(n != 1);"
 }

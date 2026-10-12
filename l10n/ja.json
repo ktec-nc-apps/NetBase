@@ -1631,7 +1631,15 @@
         "Open in Files": "ファイルで開く",
         "There is nothing kept of this conversation to save.": "この会話は保存できる記録が残っていません。",
         "The conversation could not be saved.": "会話を保存できませんでした。",
-        "The earlier conversation had ended, so this one starts afresh.": "前の会話は終了していたため、新しい会話として始めました。"
+        "The earlier conversation had ended, so this one starts afresh.": "前の会話は終了していたため、新しい会話として始めました。",
+        "Add by address": "アドレスで追加",
+        "Add a device the scan does not find, by its IP address.": "調査で見つからない機器を、IP アドレスを入れて追加します。",
+        "Add a device by address": "アドレスを入れて機器を追加",
+        "For a device the scan does not find — for example when NetBase runs in a container (Nextcloud AIO, Docker) and sees the LAN only through its bridge.": "調査で見つからない機器を追加します。たとえば NetBase がコンテナ（Nextcloud AIO や Docker）の中で動いていて、LAN をブリッジ越しにしか見られない場合です。",
+        "IP address": "IP アドレス",
+        "Name (optional)": "名前（省略可）",
+        "Add": "追加",
+        "Enter an IPv4 address, such as 192.168.1.20.": "192.168.1.20 のような IPv4 アドレスを入れてください。"
     },
     "pluralForm": "nplurals=1; plural=0;"
 }

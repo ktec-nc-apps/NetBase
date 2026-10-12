@@ -1632,7 +1632,15 @@ OC.L10N.register(
         "Open in Files": "Abrir em Arquivos",
         "There is nothing kept of this conversation to save.": "Não há nada guardado desta conversa para salvar.",
         "The conversation could not be saved.": "Não foi possível salvar a conversa.",
-        "The earlier conversation had ended, so this one starts afresh.": "A conversa anterior havia terminado, então esta começa do zero."
+        "The earlier conversation had ended, so this one starts afresh.": "A conversa anterior havia terminado, então esta começa do zero.",
+        "Add by address": "Adicionar por endereço",
+        "Add a device the scan does not find, by its IP address.": "Adicione pelo endereço IP um dispositivo que a varredura não encontra.",
+        "Add a device by address": "Adicionar um dispositivo por endereço",
+        "For a device the scan does not find — for example when NetBase runs in a container (Nextcloud AIO, Docker) and sees the LAN only through its bridge.": "Para um dispositivo que a varredura não encontra — por exemplo, quando o NetBase roda em um contêiner (Nextcloud AIO, Docker) e só enxerga a rede local pela bridge.",
+        "IP address": "Endereço IP",
+        "Name (optional)": "Nome (opcional)",
+        "Add": "Adicionar",
+        "Enter an IPv4 address, such as 192.168.1.20.": "Digite um endereço IPv4, como 192.168.1.20."
     },
     "nplurals=2; plural=(n > 1);"
 );

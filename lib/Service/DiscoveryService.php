@@ -1189,6 +1189,57 @@ class DiscoveryService {
 	}
 
 	/**
+	 * Ports tried when looking for a device beyond this server's own subnets:
+	 * web and admin pages, file sharing, NAS consoles (5000/5001), printers,
+	 * and the ones home devices keep open — Sonos 1400, Chromecast and smart
+	 * TVs 8008/8009, AirPlay 7000, cameras 554, iPhones 62078.
+	 */
+	public const REACH_PORTS = [80, 443, 22, 445, 139, 5000, 5001, 8080, 8443, 631, 9100, 1400, 8008, 8009, 7000, 62078, 554, 53, 3389, 23];
+
+	/**
+	 * Which of these addresses, beyond this server's own subnets, run a service
+	 * that accepts a connection. This is how devices are found where the
+	 * neighbour table cannot see them — NetBase in a container on a bridge
+	 * (Nextcloud AIO, Docker, Podman), or a LAN behind a router.
+	 *
+	 * Only a completed connection counts. Across a router a refusal or an
+	 * "unreachable" can come from the router or a firewall rather than the
+	 * device, so it proves nothing. And if every address of a batch answers,
+	 * something in between is answering for all of them (a proxy, or a firewall
+	 * that accepts every connection), so none of them is taken as a device.
+	 *
+	 * The wait is longer than on-link: a printer or a TV in power save misses
+	 * the first SYN and answers only the retry a second later. At 0.8 s a
+	 * sleeping printer here was missed one sweep in three; at 1.5 s, never.
+	 *
+	 * @param list<string> $ips
+	 * @return array<string, list<int>> the addresses that accepted a connection, with the ports that did
+	 */
+	public function reachBeyond(array $ips, float $timeout = 1.5): array {
+		$ips = array_values(array_unique(array_filter($ips, static fn ($ip) => filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) !== false)));
+		if ($ips === []) {
+			return [];
+		}
+		$found = $this->tcpSweep($ips, self::REACH_PORTS, $timeout);
+		if (count($ips) >= 16 && count($found) === count($ips)) {
+			return [];
+		}
+		return $found;
+	}
+
+	/**
+	 * The addresses that are not on any of this server's own subnets — the
+	 * complement of onLinkOnly(). IPv4 only.
+	 *
+	 * @param list<string> $ips
+	 * @return list<string>
+	 */
+	public function offLinkOnly(array $ips): array {
+		$ips = array_values(array_unique(array_filter($ips, static fn ($ip) => filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) !== false)));
+		return array_values(array_diff($ips, $this->onLinkOnly($ips)));
+	}
+
+	/**
 	 * Keep only the addresses on one of this server's own subnets. A TCP probe
 	 * to an off-link address would test the route, not the device, so presence
 	 * there is judged by what the device announces, not by this.

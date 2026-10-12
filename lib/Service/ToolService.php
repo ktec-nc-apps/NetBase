@@ -427,9 +427,9 @@ class ToolService {
 	 * question this answers is the narrow one the device list raises: "that row
 	 * says the device is not answering; is it really gone?" So the caller
 	 * passes an address that is already in the list, and it is checked against
-	 * this server's own subnets before a single packet is sent. An address
-	 * beyond them is refused rather than pinged: NetBase does not send ICMP out
-	 * to the internet.
+	 * this server's own subnets, or the private ranges, before a single packet
+	 * is sent. Any other address is refused rather than pinged: NetBase does
+	 * not send ICMP out to the internet.
 	 *
 	 * NetBase is unprivileged, so this is the `ping` binary, which normally
 	 * carries cap_net_raw for exactly this purpose. Where it is missing — a
@@ -443,7 +443,10 @@ class ToolService {
 		if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) === false) {
 			throw new \InvalidArgumentException('Not an IP address');
 		}
-		if ($this->discovery->onLinkOnly([$ip]) === []) {
+		// On one of this server's subnets, or in a private range: NetBase in a
+		// bridged container (Nextcloud AIO, Docker) sees the LAN only through
+		// its bridge, and the devices it found there must be pingable too.
+		if ($this->discovery->onLinkOnly([$ip]) === [] && !$this->discovery->isLocalTarget($ip)) {
 			throw new \InvalidArgumentException($this->l->t('%s is not on a network this server is connected to, so it cannot be pinged from here.', [$ip]));
 		}
 		if (!$this->exec->available('ping')) {

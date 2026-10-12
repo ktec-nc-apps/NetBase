@@ -1632,7 +1632,15 @@ OC.L10N.register(
         "Open in Files": "Відкрити у «Файлах»",
         "There is nothing kept of this conversation to save.": "Від цієї розмови не залишилося нічого, що можна зберегти.",
         "The conversation could not be saved.": "Не вдалося зберегти розмову.",
-        "The earlier conversation had ended, so this one starts afresh.": "Попередня розмова вже завершилася, тому ця починається заново."
+        "The earlier conversation had ended, so this one starts afresh.": "Попередня розмова вже завершилася, тому ця починається заново.",
+        "Add by address": "Додати за адресою",
+        "Add a device the scan does not find, by its IP address.": "Додати за IP-адресою пристрій, якого сканування не знаходить.",
+        "Add a device by address": "Додати пристрій за адресою",
+        "For a device the scan does not find — for example when NetBase runs in a container (Nextcloud AIO, Docker) and sees the LAN only through its bridge.": "Для пристрою, якого сканування не знаходить, — наприклад, коли NetBase працює в контейнері (Nextcloud AIO, Docker) і бачить локальну мережу лише через свій міст.",
+        "IP address": "IP-адреса",
+        "Name (optional)": "Назва (необов’язково)",
+        "Add": "Додати",
+        "Enter an IPv4 address, such as 192.168.1.20.": "Введіть IPv4-адресу, наприклад 192.168.1.20."
     },
     "nplurals=4; plural=(n % 1 == 0 && n % 10 == 1 && n % 100 != 11 ? 0 : n % 1 == 0 && n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14) ? 1 : n % 1 == 0 && (n % 10 ==0 || (n % 10 >=5 && n % 10 <=9) || (n % 100 >=11 && n % 100 <=14 )) ? 2: 3);"
 );

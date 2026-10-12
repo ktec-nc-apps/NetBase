@@ -1632,7 +1632,15 @@ OC.L10N.register(
         "Open in Files": "Dosyalar'da aç",
         "There is nothing kept of this conversation to save.": "Bu sohbetten kaydedilecek bir şey kalmadı.",
         "The conversation could not be saved.": "Sohbet kaydedilemedi.",
-        "The earlier conversation had ended, so this one starts afresh.": "Önceki sohbet sona ermişti, bu yüzden bu sohbet baştan başlıyor."
+        "The earlier conversation had ended, so this one starts afresh.": "Önceki sohbet sona ermişti, bu yüzden bu sohbet baştan başlıyor.",
+        "Add by address": "Adresle ekle",
+        "Add a device the scan does not find, by its IP address.": "Taramanın bulamadığı bir cihazı IP adresiyle ekleyin.",
+        "Add a device by address": "Adresle cihaz ekle",
+        "For a device the scan does not find — for example when NetBase runs in a container (Nextcloud AIO, Docker) and sees the LAN only through its bridge.": "Taramanın bulamadığı cihazlar için — örneğin NetBase bir konteynerde (Nextcloud AIO, Docker) çalışıyor ve yerel ağı yalnızca köprüsü üzerinden görüyorsa.",
+        "IP address": "IP adresi",
+        "Name (optional)": "Ad (isteğe bağlı)",
+        "Add": "Ekle",
+        "Enter an IPv4 address, such as 192.168.1.20.": "192.168.1.20 gibi bir IPv4 adresi girin."
     },
     "nplurals=2; plural=(n > 1);"
 );

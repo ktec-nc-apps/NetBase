@@ -1631,7 +1631,15 @@
         "Open in Files": "เปิดในไฟล์",
         "There is nothing kept of this conversation to save.": "ไม่มีบันทึกของบทสนทนานี้เหลือให้บันทึก",
         "The conversation could not be saved.": "บันทึกบทสนทนาไม่ได้",
-        "The earlier conversation had ended, so this one starts afresh.": "บทสนทนาก่อนหน้าสิ้นสุดไปแล้ว บทสนทนานี้จึงเริ่มใหม่"
+        "The earlier conversation had ended, so this one starts afresh.": "บทสนทนาก่อนหน้าสิ้นสุดไปแล้ว บทสนทนานี้จึงเริ่มใหม่",
+        "Add by address": "เพิ่มด้วยที่อยู่",
+        "Add a device the scan does not find, by its IP address.": "เพิ่มอุปกรณ์ที่การสแกนหาไม่พบด้วยที่อยู่ IP",
+        "Add a device by address": "เพิ่มอุปกรณ์ด้วยที่อยู่",
+        "For a device the scan does not find — for example when NetBase runs in a container (Nextcloud AIO, Docker) and sees the LAN only through its bridge.": "สำหรับอุปกรณ์ที่การสแกนหาไม่พบ เช่น เมื่อ NetBase ทำงานในคอนเทนเนอร์ (Nextcloud AIO, Docker) และมองเห็น LAN ได้ผ่านบริดจ์เท่านั้น",
+        "IP address": "ที่อยู่ IP",
+        "Name (optional)": "ชื่อ (ไม่บังคับ)",
+        "Add": "เพิ่ม",
+        "Enter an IPv4 address, such as 192.168.1.20.": "ป้อนที่อยู่ IPv4 เช่น 192.168.1.20"
     },
     "pluralForm": "nplurals=1; plural=0;"
 }

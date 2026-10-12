@@ -1632,7 +1632,15 @@ OC.L10N.register(
         "Open in Files": "在“文件”中打开",
         "There is nothing kept of this conversation to save.": "此对话没有可保存的记录。",
         "The conversation could not be saved.": "无法保存对话。",
-        "The earlier conversation had ended, so this one starts afresh.": "之前的对话已结束，因此这是一次新的对话。"
+        "The earlier conversation had ended, so this one starts afresh.": "之前的对话已结束，因此这是一次新的对话。",
+        "Add by address": "按地址添加",
+        "Add a device the scan does not find, by its IP address.": "通过 IP 地址添加扫描找不到的设备。",
+        "Add a device by address": "按地址添加设备",
+        "For a device the scan does not find — for example when NetBase runs in a container (Nextcloud AIO, Docker) and sees the LAN only through its bridge.": "用于扫描找不到的设备——例如 NetBase 运行在容器（Nextcloud AIO、Docker）中，只能通过网桥看到局域网时。",
+        "IP address": "IP 地址",
+        "Name (optional)": "名称（可选）",
+        "Add": "添加",
+        "Enter an IPv4 address, such as 192.168.1.20.": "请输入 IPv4 地址，例如 192.168.1.20。"
     },
     "nplurals=1; plural=0;"
 );

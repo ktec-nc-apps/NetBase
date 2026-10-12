@@ -1632,7 +1632,15 @@ OC.L10N.register(
         "Open in Files": "باز کردن در فایل‌ها",
         "There is nothing kept of this conversation to save.": "از این گفتگو چیزی برای ذخیره باقی نمانده است.",
         "The conversation could not be saved.": "ذخیرهٔ گفتگو ممکن نشد.",
-        "The earlier conversation had ended, so this one starts afresh.": "گفتگوی قبلی به پایان رسیده بود، پس این گفتگو از نو شروع می‌شود."
+        "The earlier conversation had ended, so this one starts afresh.": "گفتگوی قبلی به پایان رسیده بود، پس این گفتگو از نو شروع می‌شود.",
+        "Add by address": "افزودن با نشانی",
+        "Add a device the scan does not find, by its IP address.": "دستگاهی را که پویش پیدا نمی‌کند با نشانی IP آن اضافه کنید.",
+        "Add a device by address": "افزودن دستگاه با نشانی",
+        "For a device the scan does not find — for example when NetBase runs in a container (Nextcloud AIO, Docker) and sees the LAN only through its bridge.": "برای دستگاهی که پویش پیدا نمی‌کند — مثلاً وقتی NetBase درون یک کانتینر (Nextcloud AIO، Docker) اجرا می‌شود و شبکهٔ محلی را فقط از راه پل می‌بیند.",
+        "IP address": "نشانی IP",
+        "Name (optional)": "نام (اختیاری)",
+        "Add": "افزودن",
+        "Enter an IPv4 address, such as 192.168.1.20.": "یک نشانی IPv4 وارد کنید، مانند 192.168.1.20."
     },
     "nplurals=2; plural=(n > 1);"
 );

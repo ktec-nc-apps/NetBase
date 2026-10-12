@@ -1632,7 +1632,15 @@ OC.L10N.register(
         "Open in Files": "Open in Files",
         "There is nothing kept of this conversation to save.": "There is nothing kept of this conversation to save.",
         "The conversation could not be saved.": "The conversation could not be saved.",
-        "The earlier conversation had ended, so this one starts afresh.": "The earlier conversation had ended, so this one starts afresh."
+        "The earlier conversation had ended, so this one starts afresh.": "The earlier conversation had ended, so this one starts afresh.",
+        "Add by address": "Add by address",
+        "Add a device the scan does not find, by its IP address.": "Add a device the scan does not find, by its IP address.",
+        "Add a device by address": "Add a device by address",
+        "For a device the scan does not find — for example when NetBase runs in a container (Nextcloud AIO, Docker) and sees the LAN only through its bridge.": "For a device the scan does not find — for example when NetBase runs in a container (Nextcloud AIO, Docker) and sees the LAN only through its bridge.",
+        "IP address": "IP address",
+        "Name (optional)": "Name (optional)",
+        "Add": "Add",
+        "Enter an IPv4 address, such as 192.168.1.20.": "Enter an IPv4 address, such as 192.168.1.20."
     },
     "nplurals=2; plural=(n != 1);"
 );

@@ -1632,7 +1632,15 @@ OC.L10N.register(
         "Open in Files": "Mở trong Tệp",
         "There is nothing kept of this conversation to save.": "Không còn gì của cuộc trò chuyện này để lưu.",
         "The conversation could not be saved.": "Không thể lưu cuộc trò chuyện.",
-        "The earlier conversation had ended, so this one starts afresh.": "Cuộc trò chuyện trước đã kết thúc, nên cuộc này bắt đầu lại từ đầu."
+        "The earlier conversation had ended, so this one starts afresh.": "Cuộc trò chuyện trước đã kết thúc, nên cuộc này bắt đầu lại từ đầu.",
+        "Add by address": "Thêm theo địa chỉ",
+        "Add a device the scan does not find, by its IP address.": "Thêm thiết bị mà lần quét không tìm thấy bằng địa chỉ IP của nó.",
+        "Add a device by address": "Thêm thiết bị theo địa chỉ",
+        "For a device the scan does not find — for example when NetBase runs in a container (Nextcloud AIO, Docker) and sees the LAN only through its bridge.": "Dành cho thiết bị mà lần quét không tìm thấy — ví dụ khi NetBase chạy trong container (Nextcloud AIO, Docker) và chỉ thấy mạng LAN qua bridge của nó.",
+        "IP address": "Địa chỉ IP",
+        "Name (optional)": "Tên (không bắt buộc)",
+        "Add": "Thêm",
+        "Enter an IPv4 address, such as 192.168.1.20.": "Nhập địa chỉ IPv4, ví dụ 192.168.1.20."
     },
     "nplurals=1; plural=0;"
 );

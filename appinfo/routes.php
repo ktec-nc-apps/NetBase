@@ -37,6 +37,9 @@ return [
 
 		// device inventory
 		['name' => 'api#devices', 'url' => '/api/devices', 'verb' => 'GET'],
+		// Add one device by its address, for one a scan cannot find (no port
+		// open to probe, or NetBase in a container that sees only its bridge).
+		['name' => 'api#addDevice', 'url' => '/api/devices', 'verb' => 'POST'],
 		['name' => 'api#updateDevice', 'url' => '/api/devices/{id}', 'verb' => 'PATCH'],
 		['name' => 'api#deleteDevice', 'url' => '/api/devices/{id}', 'verb' => 'DELETE'],
 		// Ping one device from the list. The device is named by its id, not by

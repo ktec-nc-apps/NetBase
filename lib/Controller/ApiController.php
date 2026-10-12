@@ -376,6 +376,40 @@ class ApiController extends Controller {
 		}, 'scan');
 	}
 
+	/**
+	 * Add one device by its address.
+	 *
+	 * For a device a scan does not turn up: one with no open port to probe, or
+	 * any device at all when NetBase runs in a container (Nextcloud AIO, Docker)
+	 * whose bridge hides the LAN's neighbour table. Only an address on the
+	 * local network is taken — a private range, or a network this server is
+	 * attached to — the same rule a scan follows. It is then asked once whether
+	 * it answers, so the row starts out online or offline as it really is.
+	 */
+	#[NoAdminRequired]
+	#[UserRateLimit(limit: 60, period: 60)]
+	public function addDevice(string $ip = '', ?string $label = null): JSONResponse {
+		return $this->guard(function () use ($ip, $label) {
+			$ip = trim($ip);
+			if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) === false) {
+				throw new \InvalidArgumentException('Enter an IPv4 address, such as 192.168.1.20.');
+			}
+			if (!$this->discovery->isLocalTarget($ip)) {
+				throw new \InvalidArgumentException(ScanService::NOT_LOCAL);
+			}
+			$here = $this->discovery->onLinkOnly([$ip]) !== []
+				? $this->discovery->alive([$ip]) !== []
+				: $this->discovery->reachBeyond([$ip]) !== [];
+			$device = $this->scanService->upsert($ip, null, ['source' => 'manual', 'present' => $here]);
+			$label = $label !== null ? trim($label) : '';
+			if ($label !== '') {
+				$device->setLabel(mb_substr($label, 0, 255));
+				$device = $this->devices->update($device);
+			}
+			return ['device' => $device->jsonSerialize(), 'online' => $here];
+		}, 'scan');
+	}
+
 	#[NoAdminRequired]
 	public function updateDevice(int $id, ?string $label = null, ?string $tags = null, ?string $notes = null, ?bool $known = null, ?string $dtype = null, ?string $location = null, ?string $room = null, ?string $mount = null): JSONResponse {
 		return $this->guard(function () use ($id, $label, $tags, $notes, $known, $dtype, $location, $room, $mount) {

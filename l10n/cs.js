@@ -1632,7 +1632,15 @@ OC.L10N.register(
         "Open in Files": "Otevřít v Souborech",
         "There is nothing kept of this conversation to save.": "Z této konverzace nezůstalo nic, co by se dalo uložit.",
         "The conversation could not be saved.": "Konverzaci se nepodařilo uložit.",
-        "The earlier conversation had ended, so this one starts afresh.": "Předchozí konverzace už skončila, takže tato začíná znovu."
+        "The earlier conversation had ended, so this one starts afresh.": "Předchozí konverzace už skončila, takže tato začíná znovu.",
+        "Add by address": "Přidat podle adresy",
+        "Add a device the scan does not find, by its IP address.": "Přidat podle IP adresy zařízení, které prohledávání nenajde.",
+        "Add a device by address": "Přidat zařízení podle adresy",
+        "For a device the scan does not find — for example when NetBase runs in a container (Nextcloud AIO, Docker) and sees the LAN only through its bridge.": "Pro zařízení, které prohledávání nenajde – například když NetBase běží v kontejneru (Nextcloud AIO, Docker) a vidí místní síť jen přes svůj most.",
+        "IP address": "IP adresa",
+        "Name (optional)": "Název (volitelné)",
+        "Add": "Přidat",
+        "Enter an IPv4 address, such as 192.168.1.20.": "Zadejte adresu IPv4, například 192.168.1.20."
     },
     "nplurals=4; plural=(n == 1 && n % 1 == 0) ? 0 : (n >= 2 && n <= 4 && n % 1 == 0) ? 1: (n % 1 != 0 ) ? 2 : 3;"
 );

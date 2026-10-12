@@ -1632,7 +1632,15 @@ OC.L10N.register(
         "Open in Files": "파일에서 열기",
         "There is nothing kept of this conversation to save.": "이 대화에는 저장할 기록이 남아 있지 않습니다.",
         "The conversation could not be saved.": "대화를 저장하지 못했습니다.",
-        "The earlier conversation had ended, so this one starts afresh.": "이전 대화가 끝나 있었으므로 새 대화로 시작했습니다."
+        "The earlier conversation had ended, so this one starts afresh.": "이전 대화가 끝나 있었으므로 새 대화로 시작했습니다.",
+        "Add by address": "주소로 추가",
+        "Add a device the scan does not find, by its IP address.": "검색으로 찾지 못한 기기를 IP 주소로 추가합니다.",
+        "Add a device by address": "주소로 기기 추가",
+        "For a device the scan does not find — for example when NetBase runs in a container (Nextcloud AIO, Docker) and sees the LAN only through its bridge.": "검색으로 찾지 못한 기기를 위한 기능입니다. 예를 들어 NetBase가 컨테이너(Nextcloud AIO, Docker) 안에서 실행되어 브리지를 통해서만 LAN을 볼 수 있는 경우입니다.",
+        "IP address": "IP 주소",
+        "Name (optional)": "이름(선택)",
+        "Add": "추가",
+        "Enter an IPv4 address, such as 192.168.1.20.": "192.168.1.20 같은 IPv4 주소를 입력하세요."
     },
     "nplurals=1; plural=0;"
 );

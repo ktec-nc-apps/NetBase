@@ -2,6 +2,31 @@
 
 All notable changes to NetBase are documented here.
 
+## 0.8.2 — 2026-10-12
+
+NetBase in a container on a bridge — Nextcloud AIO, Docker, Podman — now finds the devices on the LAN, and a device can be added by its address.
+
+### Added
+
+- **Devices beyond the server's own network are found.** In a container on a bridge, the LAN is not on the container's own network, so the neighbour (ARP) table NetBase reads held only the other containers and a scan of the LAN found nothing. Such addresses are now checked by whether they accept a connection on the ports devices commonly keep open — web pages, file sharing, NAS consoles, printers, Sonos, Chromecast and smart TVs, AirPlay, cameras. Choose "Network range" and type the LAN's range (for example `192.168.1.0/24`) in "Networks to scan". Across a router there is no MAC address, so no vendor either, and a device with no open port — a phone, for example — is still not found; add it by its address.
+- **Add by address.** A button beside "Refresh devices" adds one device by its IP address, with a name if you like. It is checked once, so it starts out online or offline as it really is. Only addresses on the local network are taken, the same rule a scan follows. Once in the list, its own page, its port scan and ping open from it like any other device.
+
+### Changed
+
+- **Ping a device in a private range** beyond the server's own network, so a device found or added that way can be pinged too.
+
+（日本語）
+コンテナの中（Nextcloud AIO・Docker・Podman のブリッジ接続）で動く NetBase が LAN の機器を見つけられるようになり、アドレスを入れて機器を追加できるようになりました。
+
+### 追加
+
+- **サーバー自身のネットワークの外にある機器も見つけます。** ブリッジ接続のコンテナでは LAN がコンテナ自身のネットワークの外にあるため、NetBase が読む近隣（ARP）表には他のコンテナしか載らず、LAN を調べても 1 台も見つかりませんでした。こうしたアドレスは、機器がよく開けているポート（Web 画面・ファイル共有・NAS の管理画面・プリンター・Sonos・Chromecast やテレビ・AirPlay・カメラ）に接続できるかどうかで確かめるようにしました。「スキャン対象」で「ネットワーク範囲指定」を選び、「調べるネットワーク」に LAN の範囲（例：`192.168.1.0/24`）を入れてください。ルーターの向こうでは MAC アドレスが分からないため、メーカー名も出ません。ポートを一つも開けていない機器（スマートフォンなど）は見つからないので、アドレスで追加してください。
+- **アドレスで追加。** 「機器一覧を更新」の横のボタンから、IP アドレス（と、必要なら名前）を入れて機器を 1 台追加できます。追加のときに一度応答を確かめるので、実際のとおりオンラインかオフラインかで載ります。受け付けるのは、調査と同じくローカルネットワークのアドレスだけです。一覧に載れば、ほかの機器と同じように Web 画面・ポートスキャン・ping を開けます。
+
+### 変更
+
+- **プライベートアドレスの機器にも ping を送れます。** サーバー自身のネットワークの外でも、上のようにして見つけた機器・追加した機器に ping を送れます。
+
 ## 0.8.1 — 2026-10-11
 
 Only the Japanese text was rewritten — the README, the App Store description and the changelog — to read naturally. No feature was added or changed.
