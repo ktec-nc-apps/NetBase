@@ -2,6 +2,35 @@
 
 All notable changes to NetBase are documented here.
 
+## 0.8.3 — 2026-10-13
+
+Wake-on-LAN works where NetBase cannot broadcast on the LAN itself — Nextcloud AIO and other containers, or a server on another subnet — and for devices it has never seen.
+
+### Added
+
+- **Type a MAC address for Wake-on-LAN.** A device that is off answers nothing, and across a router or from inside a container its MAC is never seen. It can now be typed in the device's details, or when adding a device by its address — a device that is off can be added and woken straight away. The Wake on LAN button appears for any device with a MAC, seen or typed.
+- **Choose how the magic packet is sent** (Administration settings → NetBase → Wake-on-LAN): this server sends it to an address and port (the usual broadcast, a subnet's broadcast address, or a relay); a command or script runs on this server; or a command runs on a machine that is always on, through a saved SSH connection. `{mac}`, `{MAC}` and `{ip}` are filled in, and only a checked MAC and IPv4 address are ever put in.
+- **A relay for containers.** `resources/wol-relay.py` runs on the host, takes magic packets on one UDP port and sends them out as a LAN broadcast. It forwards nothing else and needs only Python's standard library. See "Wake-on-LAN" in the README.
+
+### Changed
+
+- **Where the packet goes is the administrator's setting alone.** A request can no longer name its own broadcast address or port.
+- **The icon beside a tool's title** is now the same line icon as the tool's row in the sidebar; it was still the old emoji.
+
+（日本語）
+NetBase 自身が LAN に放送を出せない環境（Nextcloud AIO などのコンテナ、別の網にあるサーバー）でも、また一度も見えたことのない機器でも、Wake-on-LAN を使えるようになりました。
+
+### 追加
+
+- **Wake-on-LAN 用の MAC アドレスを入力できます。** 電源の切れた機器は何も応答せず、ルーターの向こうやコンテナの中からは MAC アドレスも見えません。機器の詳細や、アドレスで機器を追加するときに、MAC アドレスを入力できるようにしました。電源の切れている機器も追加でき、そのまますぐ起動できます。「Wake on LAN」ボタンは、見えた MAC か入力した MAC のある機器すべてに出ます。
+- **マジックパケットの送り方を選べます**（管理者設定 → NetBase → Wake-on-LAN）。このサーバーから指定したアドレスとポートへ送る（ふつうの放送、網の放送アドレス、中継役）、このサーバーでコマンドやスクリプトを実行する、常に動いている機械で保存済みの SSH 接続を使ってコマンドを実行する、の 3 つです。`{mac}`・`{MAC}`・`{ip}` が置き換わり、差し込まれるのは形を確かめた MAC アドレスと IPv4 アドレスだけです。
+- **コンテナ向けの中継役。** `resources/wol-relay.py` はホストで動かし、1 つの UDP ポートで受けたマジックパケットを LAN への放送として送り直します。それ以外は何も通さず、Python の標準ライブラリだけで動きます。使い方は README の「Wake-on-LAN」をご覧ください。
+
+### 変更
+
+- **パケットの送り先は管理者の設定だけで決まります。** 画面からの要求で放送アドレスやポートを指定することはできなくなりました。
+- **ツール名の横のアイコン**を、サイドバーの同じツールと同じ線画のアイコンにしました。古い絵文字のままでした。
+
 ## 0.8.2 — 2026-10-12
 
 NetBase in a container on a bridge — Nextcloud AIO, Docker, Podman — now finds the devices on the LAN, and a device can be added by its address.

@@ -53,6 +53,16 @@
 		});
 	});
 
+	// Only the fields of the chosen way of sending Wake-on-LAN are shown.
+	var wolMethod = document.getElementById('nb-wol-method');
+	function showWol() {
+		root.querySelectorAll('[data-for]').forEach(function (el) {
+			el.hidden = el.dataset.for.split(' ').indexOf(wolMethod.value) < 0;
+		});
+	}
+	wolMethod.addEventListener('change', showWol);
+	showWol();
+
 	document.getElementById('nb-save').addEventListener('click', function () {
 		var levels = {};
 		root.querySelectorAll('.nb-level').forEach(function (select) {
@@ -69,6 +79,10 @@
 					proxyMaxConn: parseInt(document.getElementById('nb-pmc').value, 10) || 0,
 					proxyRetries: parseInt(document.getElementById('nb-pr').value, 10) || 0,
 					proxyRetryMs: parseInt(document.getElementById('nb-prm').value, 10) || 0,
+					wolMethod: document.getElementById('nb-wol-method').value,
+					wolAddress: document.getElementById('nb-wol-address').value,
+					wolPort: parseInt(document.getElementById('nb-wol-port').value, 10) || 9,
+					wolCommand: document.getElementById('nb-wol-command').value,
 				},
 			},
 		};
@@ -80,7 +94,10 @@
 			body: JSON.stringify(body),
 		}).then(function (response) {
 			if (!response.ok) {
-				throw new Error(response.statusText);
+				// A refused value comes back with its reason; say that, not just "Bad Request".
+				return response.json().catch(function () { return {}; }).then(function (body) {
+					throw new Error((body && body.error) || response.statusText);
+				});
 			}
 			return response.json();
 		}).then(function () {

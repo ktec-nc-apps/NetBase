@@ -284,6 +284,14 @@ html.nb-col-resizing, html.nb-col-resizing * { cursor: col-resize !important; -w
 #netbase-root .topbar { flex-wrap: wrap; row-gap: 8px; }
 #netbase-root .topbar .title { display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 10px; row-gap: 2px; flex: 0 1 auto; min-width: min(16em, 100%); }
 #netbase-root .topbar .title .nm { font-weight: 700; font-size: 17px; white-space: nowrap; }
+/* The same line icon as the tool's row in the sidebar, so the two always match. */
+#netbase-root .topbar .title .ic { display: inline-flex; align-self: center; width: 22px; height: 22px; flex: 0 0 22px; }
+#netbase-root .topbar .title .ic svg {
+  width: 22px; height: 22px;
+  fill: none; stroke: currentColor; stroke-width: 1.7;
+  stroke-linecap: round; stroke-linejoin: round;
+}
+#netbase-root .topbar .title .ic svg .solid { fill: currentColor; stroke: none; }
 #netbase-root .topbar .title .desc { flex: 1 1 12em; min-width: 0; color: var(--muted); font-size: 13px; line-height: 1.4; white-space: normal; overflow-wrap: anywhere; }
 #netbase-root .spacer { flex: 1 1 auto; }
 /* When the buttons need more room than the row has (longer words in some languages, the

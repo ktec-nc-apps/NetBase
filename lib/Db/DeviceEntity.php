@@ -39,6 +39,8 @@ use OCP\AppFramework\Db\Entity;
  * @method void setRoom(?string $room)
  * @method string|null getMount()
  * @method void setMount(?string $mount)
+ * @method string|null getWakeMac()
+ * @method void setWakeMac(?string $wakeMac)
  * @method string|null getExtra()
  * @method void setExtra(?string $extra)
  * @method int|null getFirstSeen()
@@ -67,6 +69,8 @@ class DeviceEntity extends Entity implements \JsonSerializable {
 	protected $location = null;
 	protected $room = null;
 	protected $mount = null;
+	/** A MAC typed by hand for Wake-on-LAN, for a device whose own MAC cannot be seen. */
+	protected $wakeMac = null;
 	protected $extra = null;
 	protected $firstSeen = null;
 	protected $lastSeen = null;
@@ -100,6 +104,7 @@ class DeviceEntity extends Entity implements \JsonSerializable {
 			'location' => $this->location,
 			'room' => $this->room,
 			'mount' => $this->mount,
+			'wakeMac' => $this->wakeMac,
 			'extra' => $this->extra ? json_decode($this->extra, true) : null,
 			'firstSeen' => $this->firstSeen,
 			'lastSeen' => $this->lastSeen,

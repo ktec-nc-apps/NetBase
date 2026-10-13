@@ -167,6 +167,27 @@ Each kind of connection names its own collection and its own field assignment: S
 
 The password (or private key, with its passphrase) is kept in RegiBase and sealed with **your own master key** — not with a secret this server holds, so nobody reading the database can open it, this server included. The key is asked for when a connection is first used, held for that browser session only, and stored nowhere: not in these settings, not on disk. A credential is **never sent back to the browser**; the interface is told only that one exists. Saving a connection again without retyping the password keeps the stored one. Protocol conversations shown in the interface have their credential lines masked.
 
+## Wake-on-LAN
+
+A device that is switched off answers nothing, so two things have to be known before it can be woken: its MAC address, and something awake on the same LAN to send the magic packet. NetBase remembers the MAC of every device a scan has seen. For a device it has never seen — one that is off, across a router, or seen from inside a container — type the MAC in the device's details, or when adding it by address. A device that is off can be added too, and woken straight away.
+
+How the packet is sent is set in **Administration settings → NetBase → Wake-on-LAN**:
+
+- **This server sends the packet to an address and port.** `255.255.255.255`, port 9, is the usual broadcast and works where Nextcloud runs on the LAN itself. A subnet's own broadcast address (such as `192.168.1.255`) reaches a LAN the server is attached to through another interface.
+- **Run a command or script on this server.** `{mac}`, `{MAC}` and `{ip}` are filled in — for example `curl` to a router's or Home Assistant's wake-up address.
+- **Run a command on a machine that is always on, through a saved SSH connection** — a NAS or a small server on the LAN with `wakeonlan` or `ether-wake`. The person waking a device picks the connection, and also needs the SSH commands tool.
+
+Only a checked MAC address and IPv4 address are ever put into a command.
+
+**Nextcloud in a container (AIO, Docker, Podman).** A container on a bridge cannot put a broadcast on the LAN: the packet stops at the bridge, though it does reach the host. `resources/wol-relay.py` in this app is a small relay for the host. It takes magic packets on one UDP port (40009 by default) and sends each one out as a LAN broadcast; it forwards nothing else, and it only needs Python's standard library. Run it on the host's own network, for example:
+
+```
+docker run -d --name netbase-wol-relay --network host --restart unless-stopped \
+  -v /path/to/wol-relay.py:/wol-relay.py:ro python:3-alpine python3 /wol-relay.py
+```
+
+Then choose the first way of sending and enter the host's address as the container sees it (the bridge's gateway, such as `172.18.0.1`, or the host's LAN address) and port `40009`. The relay uses only that one UDP port, so it does not get in the way of anything else on the host.
+
 ## Requirements
 
 Nextcloud 30–34 and PHP 8.1 or newer. **Nothing else is required**: device discovery, naming, vendor lookup, DNS, whois, subnet maths, the live throughput graph and the DNS resolver comparison all work on a stock PHP install.
@@ -377,6 +398,27 @@ FTP には PHP 標準の `ext-ftp` を使い、TLS の有無どちらにも対�
 接続先の種類（SSH、SCP、FTP/SFTP、メール）ごとに、保存先のコレクションと項目の割り当てを個別に指定できます。画面の一覧もこの区分に従います。SCP を選ぶと SCP の一覧、FTP と SFTP では共通の一覧、SSH では SSH の一覧が表示されるため、あるプロトコル用に保存したサーバーが、そのプロトコルに対応していない別の機能の候補に出ることはありません。SCP は SSH の認証情報をそのまま使いますが、FTP は通常、別のマシンの別のアカウントなので、同じ一覧からは読み込みません。複数の種類に同じコレクションを指定しても問題ありません（SSH と SCP は通常、同じ一覧です）。専用のコレクションを指定していない種類は、全体用に選んだコレクションを使います。そのため、あえて分けるまでは何も変わりません。
 
 パスワード（または秘密鍵とそのパスフレーズ）は RegiBase に保存し、**ご自身のマスターキー** で暗号化します。このサーバーが持つ鍵で暗号化するのではないため、データベースを読める人でも、このサーバー自身でも、中身を開くことはできません。マスターキーは接続を最初に使うときに入力を求め、**そのブラウザーのセッションの間だけ** 保持し、設定にもディスクにも保存しません。認証情報が **ブラウザーに送り返されることはありません。** 画面に伝わるのは、保存されているかどうかだけです。パスワードを入力し直さずに接続先を保存し直した場合は、保存済みのパスワードがそのまま使われます。画面に表示する通信のやり取りでは、認証情報の行を伏せて表示します。
+
+## Wake-on-LAN
+
+電源の切れた機器は何も応答しません。そのため、起動するには、その機器の MAC アドレスと、同じ LAN で動いていてマジックパケットを送れる機械の 2 つが必要です。NetBase は、スキャンで一度でも見えた機器の MAC アドレスを覚えています。電源が切れている、ルーターの向こうにある、コンテナの中から見ているなどの理由で一度も見えていない機器は、機器の詳細か、アドレスで追加するときに MAC アドレスを入力してください。電源の切れている機器も追加でき、そのまますぐ起動できます。
+
+パケットの送り方は **管理者設定 → NetBase → Wake-on-LAN** で選びます。
+
+- **このサーバーから、指定したアドレスとポートへパケットを送る** ― ふつうの放送は `255.255.255.255` のポート 9 で、Nextcloud が LAN の上で動いていればこれで届きます。サーバーが別のネットワークカードでつながっている LAN には、その網の放送アドレス（`192.168.1.255` など）を使います。
+- **このサーバーでコマンドやスクリプトを実行する** ― `{mac}`・`{MAC}`・`{ip}` が置き換わります。たとえば、ルーターや Home Assistant の起動用アドレスを `curl` で呼び出せます。
+- **常に動いている機械で、保存済みの SSH 接続を使ってコマンドを実行する** ― `wakeonlan` や `ether-wake` が入った、同じ LAN の NAS や小さなサーバーで実行します。接続先は起動する人が選びます。その人には「SSHコマンド」の権限も必要です。
+
+コマンドに差し込まれるのは、形を確かめた MAC アドレスと IPv4 アドレスだけです。
+
+**コンテナで動かしている場合（AIO・Docker・Podman）** ― ブリッジ接続のコンテナからは、LAN に放送を出せません。パケットはブリッジで止まり、ホストまでしか届かないためです。このアプリの `resources/wol-relay.py` は、ホストで動かす小さな中継役です。1 つの UDP ポート（既定は 40009）でマジックパケットを受け取り、LAN への放送として送り直します。それ以外は何も通さず、Python の標準ライブラリだけで動きます。ホストのネットワークで動かしてください。たとえば次のとおりです。
+
+```
+docker run -d --name netbase-wol-relay --network host --restart unless-stopped \
+  -v /path/to/wol-relay.py:/wol-relay.py:ro python:3-alpine python3 /wol-relay.py
+```
+
+そのうえで 1 つ目の送り方を選び、コンテナから見たホストのアドレス（ブリッジのゲートウェイ、たとえば `172.18.0.1`、またはホストの LAN のアドレス）とポート `40009` を入れてください。中継役が使うのはこの UDP ポート 1 つだけなので、ホストのほかのサービスとはぶつかりません。
 
 ## 動作要件
 

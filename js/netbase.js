@@ -631,7 +631,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
       <div class="topbar">
         <!-- On a phone the tool list is a drawer, and this is its handle. -->
         <button class="btn sm menu-btn" :title="t('The list of tools')" :aria-label="t('The list of tools')" @click="menu = !menu">☰</button>
-        <div class="title"><span class="ic">{{ currentTab.icon }}</span><span class="nm">{{ t(currentTab.label) }}</span><span class="desc">{{ t(currentTab.hint) }}</span></div>
+        <div class="title"><span class="ic" v-html="tabIcon(currentTab.id)"></span><span class="nm">{{ t(currentTab.label) }}</span><span class="desc">{{ t(currentTab.hint) }}</span></div>
         <div class="spacer"></div>
         <div class="topbar-actions">
           <!-- What belongs to this tab alone. On a phone it takes a line of its
@@ -2354,6 +2354,11 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
             <input ref="addDevIp" v-model="addDev.ip" placeholder="192.168.1.20" inputmode="decimal" @keyup.enter="addDevice"></label>
           <label class="fl"><span class="fl-label">{{ t('Name (optional)') }}</span>
             <input v-model="addDev.label" @keyup.enter="addDevice"></label>
+          <!-- A device that is off answers nothing and is never found by a scan;
+               with its MAC it can still be woken the moment it is added. -->
+          <label class="fl"><span class="fl-label">{{ t('MAC address for Wake-on-LAN (optional)') }}</span>
+            <input v-model="addDev.mac" class="mono" placeholder="aa:bb:cc:dd:ee:ff" spellcheck="false" autocapitalize="off" @keyup.enter="addDevice"></label>
+          <p class="dim tiny">{{ t('A device that is switched off can be added too. With its MAC address — on its label or in its network settings — you can wake it right away.') }}</p>
           <p v-if="addDev.error" class="empty-hint">⚠ {{ addDev.error }}</p>
         </div>
         <div class="drawer-foot">
@@ -3316,6 +3321,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
             </div>
             <div><span>{{ t('IPv4') }} / {{ t('Netmask') }}</span><code>{{ selected.ip }}<span class="dim" v-if="netmaskFor(selected)"> / {{ netmaskFor(selected) }}</span></code><button class="btn xs ib copy-one" :title="t('Copy this')" :aria-label="t('Copy this')" @click="copyField(t('IPv4'), selected.ip)"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2.2"/><path d="M6 15.5H5.5A2.5 2.5 0 0 1 3 13V5.5A2.5 2.5 0 0 1 5.5 3H13a2.5 2.5 0 0 1 2.5 2.5V6"/></svg></button></div>
             <div><span>{{ t('MAC address') }}</span><code>{{ selected.mac || t('no MAC') }}</code><button v-if="selected.mac" class="btn xs ib copy-one" :title="t('Copy this')" :aria-label="t('Copy this')" @click="copyField(t('MAC address'), selected.mac)"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2.2"/><path d="M6 15.5H5.5A2.5 2.5 0 0 1 3 13V5.5A2.5 2.5 0 0 1 5.5 3H13a2.5 2.5 0 0 1 2.5 2.5V6"/></svg></button></div>
+            <div v-if="selected.wakeMac && selected.wakeMac !== selected.mac"><span>{{ t('MAC for Wake-on-LAN') }}</span><code>{{ selected.wakeMac }}</code><button class="btn xs ib copy-one" :title="t('Copy this')" :aria-label="t('Copy this')" @click="copyField(t('MAC for Wake-on-LAN'), selected.wakeMac)"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2.2"/><path d="M6 15.5H5.5A2.5 2.5 0 0 1 3 13V5.5A2.5 2.5 0 0 1 5.5 3H13a2.5 2.5 0 0 1 2.5 2.5V6"/></svg></button></div>
             <div><span>{{ t('Vendor') }}</span><code>{{ vendorText(selected) }}</code><button class="btn xs ib copy-one" :title="t('Copy this')" :aria-label="t('Copy this')" @click="copyField(t('Vendor'), vendorText(selected))"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2.2"/><path d="M6 15.5H5.5A2.5 2.5 0 0 1 3 13V5.5A2.5 2.5 0 0 1 5.5 3H13a2.5 2.5 0 0 1 2.5 2.5V6"/></svg></button></div>
             <div><span>{{ t('Reported name') }}</span><code>{{ selected.hostname || '—' }}<span class="dim src-tag" v-if="selected.hostname && nameSource(selected)"> · {{ nameSource(selected) }}</span></code><button class="btn xs ib copy-one" :title="t('Copy this')" :aria-label="t('Copy this')" @click="copyField(t('Reported name'), selected.hostname)"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2.2"/><path d="M6 15.5H5.5A2.5 2.5 0 0 1 3 13V5.5A2.5 2.5 0 0 1 5.5 3H13a2.5 2.5 0 0 1 2.5 2.5V6"/></svg></button></div>
             <div v-if="selected.workgroup"><span>{{ t('Workgroup') }}</span><code>{{ selected.workgroup }}</code><button class="btn xs ib copy-one" :title="t('Copy this')" :aria-label="t('Copy this')" @click="copyField(t('Workgroup'), selected.workgroup)"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2.2"/><path d="M6 15.5H5.5A2.5 2.5 0 0 1 3 13V5.5A2.5 2.5 0 0 1 5.5 3H13a2.5 2.5 0 0 1 2.5 2.5V6"/></svg></button></div>
@@ -3360,6 +3366,9 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
               </div>
             </div>
             <label class="fl"><span class="fl-label">{{ t('Notes') }}</span><textarea v-model="editNotes" rows="2"></textarea></label>
+            <label class="fl"><span class="fl-label">{{ t('MAC for Wake-on-LAN') }}</span>
+              <input v-model="editWakeMac" class="mono" :placeholder="selected.mac || 'aa:bb:cc:dd:ee:ff'" spellcheck="false" autocapitalize="off"></label>
+            <p class="dim tiny" v-if="!selected.mac">{{ t('This device\'s own MAC address cannot be seen from here (across a router, or from inside a container). Enter it to wake the device when it is off.') }}</p>
           </template>
           <div class="kv" v-else-if="selected.notes || whereText(selected)">
             <template v-for="f in whereFields" :key="f.key"><div v-if="selected[f.key]"><span>{{ t(f.label) }}</span><code class="wrap">{{ selected[f.key] }}</code></div></template>
@@ -3408,7 +3417,19 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
               </select>
               <button class="btn sm" :disabled="!openPortReady" @click="openTypedPort">🖥 {{ t('Open this port') }}</button>
             </span>
-            <button class="btn sm" v-if="selected.mac && allowed('wol')" @click="wake(selected)">⏻ {{ t('Wake on LAN') }}</button>
+            <!-- Through a machine that is always on: whose, is the reader's own
+                 saved SSH connection, asked for here and remembered. -->
+            <span class="port-open" v-if="(selected.mac || selected.wakeMac) && allowed('wol') && wolMethod === 'ssh'">
+              <template v-if="connLocked">
+                <input v-model="connMaster" type="password" class="mono" autocomplete="new-password" :placeholder="t('RegiBase master key')" :aria-label="t('RegiBase master key')" @keyup.enter="unlockConns()">
+                <button class="btn sm" :disabled="!connMaster || busy.connsetup" @click="unlockConns()">{{ t('Unlock') }}</button>
+              </template>
+              <select v-else v-model="wolConn" :aria-label="t('Send through')" :title="t('The machine that sends the wake-up: a saved SSH connection to something that is always on, on the same network.')">
+                <option value="">{{ t('Send through…') }}</option>
+                <option v-for="c in sshConnections" :key="c.id" :value="String(c.id)">{{ c.name }} — {{ c.username }}@{{ c.host }}</option>
+              </select>
+            </span>
+            <button class="btn sm" v-if="(selected.mac || selected.wakeMac) && allowed('wol')" :disabled="wolBusy || (wolMethod === 'ssh' && !wolConn)" :class="{working: wolBusy}" @click="wake(selected)">⏻ {{ t('Wake on LAN') }}</button>
           </div>
           <!-- What the two searches came back with, for this device. -->
           <div class="deep-result" ref="deepResult" v-if="deep.note || deep.pages.length">
@@ -3617,7 +3638,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         filter: '', onlyOnline: true, sortKey: 'ip', sortDir: 1,
         cardTip: null, cardTipTimer: null,
         deviceView: (function(){try{return localStorage.getItem('netbase.deviceView')==='card'?'card':'list';}catch(e){return 'list';}})(),
-        selected: null, editLabel: '', editNotes: '', editWhere: { location: '', room: '', mount: '' }, whereOwn: { location: false, room: false, mount: false }, whereFields: WHERE_FIELDS, editType: 'unknown', editTypeText: '', customType: CUSTOM_TYPE,
+        selected: null, editLabel: '', editNotes: '', editWakeMac: '', wolConn: '', wolBusy: false, editWhere: { location: '', room: '', mount: '' }, whereOwn: { location: false, room: false, mount: false }, whereFields: WHERE_FIELDS, editType: 'unknown', editTypeText: '', customType: CUSTOM_TYPE,
         shellModal: false, shellStage: 'idle', shellCode: '', shellEmail: '', shellError: '', shellBusy: false,
         busy: {},
         dnsHost: '', dnsWanted: ['A', 'AAAA', 'MX', 'NS', 'TXT'], dnsResult: null,
@@ -3646,7 +3667,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         availShowTaken: true, availShowUnknown: false,
         editReg: false, editRegRows: [],
         arpHelp: false,
-        addDev: { open: false, ip: '', label: '', busy: false, error: '' },
+        addDev: { open: false, ip: '', label: '', mac: '', busy: false, error: '' },
         // NETBASE-STORE-REMOVED: pingHost: '', pingResult: null, traceResult: null,
         // NETBASE-STORE-REMOVED: portHost: '', portList: '', portResult: null,
         tlsHost: '', tlsPort: 443, tlsResult: null, httpResult: null,
@@ -3944,6 +3965,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
       },
       /** SSH's own list. SFTP belongs with FTP, not here. */
       sshConnections() { return this.connections.filter((c) => c.kind === 'ssh'); },
+      wolMethod() { return (this.settings.wol && this.settings.wol.method) || 'broadcast'; },
       /**
        * Whether the saved list is there but unusable.
        *
@@ -5359,7 +5381,13 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         this.selected = d;
         this.editLabel = d.label || '';
         this.editNotes = d.notes || '';
+        this.editWakeMac = d.wakeMac || '';
         this.editWhere = { location: d.location || '', room: d.room || '', mount: d.mount || '' };
+        if ((d.mac || d.wakeMac) && this.allowed('wol') && this.wolMethod === 'ssh') {
+          const last = this.settings.wol && this.settings.wol.connection;
+          if (!this.wolConn && last) this.wolConn = String(last);
+          if (this.allowed('sshexec') && !this.connections.length) this.loadConnections();
+        }
         this.whereOwn = { location: false, room: false, mount: false };
         const pick = this.typePick(d.type);
         this.editType = pick.type;
@@ -5370,7 +5398,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
           const dtype = this.typeToSave(this.editType, this.editTypeText, this.selected.type);
           const r = await api('devices/' + this.selected.id, {
             method: 'PATCH',
-            body: JSON.stringify({ label: this.editLabel, notes: this.editNotes, ...this.editWhere, dtype, known: true }),
+            body: JSON.stringify({ label: this.editLabel, notes: this.editNotes, wakeMac: this.editWakeMac.trim(), ...this.editWhere, dtype, known: true }),
           });
           const i = this.devices.findIndex((d) => d.id === r.device.id);
           if (i >= 0) this.devices.splice(i, 1, r.device);
@@ -5415,8 +5443,25 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
           this.selected = null;
         } catch (e) { this.fail(e); }
       },
+      // Named by the row, so the server picks the MAC (a typed one first) and
+      // sends it the way the administrator set; nothing here says where to.
       async wake(d) {
-        try { await api('tools/wol', { method: 'POST', body: JSON.stringify({ mac: d.mac }) }); this.note(T('Magic packet sent to {mac}', { mac: d.mac })); } catch (e) { this.fail(e); }
+        if (this.wolBusy) return;
+        this.wolBusy = true;
+        try {
+          const body = { id: d.id };
+          if (this.wolMethod === 'ssh') body.connection = parseInt(this.wolConn, 10) || 0;
+          const r = await api('tools/wol', { method: 'POST', body: JSON.stringify(body) });
+          if (this.wolMethod === 'ssh' && this.settings.wol) this.settings.wol.connection = body.connection;
+          if (r && r.sent === false) {
+            const why = r.error ? T(r.error) : T('The wake-up command ended with status {code}.', { code: r.exitStatus });
+            this.fail(new Error(r.output ? why + '\n' + r.output : why));
+          } else if (r && r.method && r.method !== 'broadcast') {
+            this.note(T('Wake-up sent for {mac}', { mac: r.mac }));
+          } else {
+            this.note(T('Magic packet sent to {mac}', { mac: (r && r.mac) || d.wakeMac || d.mac }));
+          }
+        } catch (e) { this.fail(e); } finally { this.wolBusy = false; }
       },
       /**
        * Ping one device from the list.
@@ -5471,7 +5516,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         return best || device;
       },
       openAddDevice() {
-        this.addDev = { open: true, ip: '', label: '', busy: false, error: '' };
+        this.addDev = { open: true, ip: '', label: '', mac: '', busy: false, error: '' };
         this.$nextTick(() => { if (this.$refs.addDevIp) this.$refs.addDevIp.focus(); });
       },
       async addDevice() {
@@ -5480,7 +5525,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         this.addDev.busy = true;
         this.addDev.error = '';
         try {
-          const r = await api('devices', { method: 'POST', body: JSON.stringify({ ip, label: this.addDev.label.trim() }) });
+          const r = await api('devices', { method: 'POST', body: JSON.stringify({ ip, label: this.addDev.label.trim(), mac: this.addDev.mac.trim() }) });
           this.addDev.open = false;
           await this.loadDevices();
           const added = r && r.device ? this.devices.find((x) => x.id === r.device.id) : null;

@@ -83,6 +83,37 @@ declare(strict_types=1);
 		<input type="number" id="nb-prm" min="0" max="5000" step="50" value="<?php p((string)$_['proxyRetryMs']); ?>">
 	</div>
 
+	<h3><?php p($l->t('Wake-on-LAN')); ?></h3>
+	<p class="settings-hint"><?php p($l->t('A device that is switched off answers nothing, so the magic packet has to be sent by something that is awake on the same network. When NetBase runs in a container (Nextcloud AIO, Docker) or on another subnet, its own packet never reaches the LAN: send it through a relay, or let a machine that is always on send it.')); ?></p>
+	<div class="nb-field">
+		<label for="nb-wol-method"><?php p($l->t('How to send it')); ?></label>
+		<select id="nb-wol-method">
+			<option value="broadcast"<?php p($_['wol']['method'] === 'broadcast' ? ' selected' : ''); ?>><?php p($l->t('This server sends the packet to an address and port')); ?></option>
+			<option value="command"<?php p($_['wol']['method'] === 'command' ? ' selected' : ''); ?>><?php p($l->t('Run a command or script on this server')); ?></option>
+			<option value="ssh"<?php p($_['wol']['method'] === 'ssh' ? ' selected' : ''); ?>><?php p($l->t('Run a command on a machine that is always on, through a saved SSH connection')); ?></option>
+		</select>
+	</div>
+	<div class="nb-wol-part" data-for="broadcast">
+		<div class="nb-field nb-narrow">
+			<label for="nb-wol-address"><?php p($l->t('Address')); ?></label>
+			<input type="text" id="nb-wol-address" inputmode="decimal" value="<?php p($_['wol']['address']); ?>" placeholder="255.255.255.255">
+		</div>
+		<div class="nb-field nb-narrow">
+			<label for="nb-wol-port"><?php p($l->t('Port')); ?></label>
+			<input type="number" id="nb-wol-port" min="1" max="65535" value="<?php p((string)$_['wol']['port']); ?>">
+		</div>
+		<p class="settings-hint nb-sub"><?php p($l->t('255.255.255.255 and port 9 are the usual broadcast. A subnet\'s own broadcast address (such as 192.168.1.255) reaches a LAN this server is attached to. For a container, enter the address and port of a relay running on the host — resources/wol-relay.py in this app is one.')); ?></p>
+	</div>
+	<div class="nb-wol-part" data-for="command ssh">
+		<div class="nb-field">
+			<label for="nb-wol-command"><?php p($l->t('Command')); ?></label>
+			<input type="text" id="nb-wol-command" class="nb-mono" value="<?php p($_['wol']['command']); ?>" placeholder="wakeonlan {mac}">
+		</div>
+		<p class="settings-hint nb-sub"><?php p($l->t('{mac} becomes the device\'s MAC address (aa:bb:cc:dd:ee:ff), {MAC} the same in capitals, and {ip} its IPv4 address. Only a checked MAC and address are put in. The command must finish within 20 seconds; a script that needs more lines is a file, and its path is the command.')); ?></p>
+		<p class="settings-hint nb-sub" data-for="command"><?php p($l->t('It runs on this server as the web server\'s user, inside the container if Nextcloud runs in one — for example curl to a router\'s or Home Assistant\'s wake-up address.')); ?></p>
+		<p class="settings-hint nb-sub" data-for="ssh"><?php p($l->t('It runs on the machine the person waking a device chooses from their saved SSH connections — a NAS or a small server on the same LAN, with wakeonlan or ether-wake installed. That person also needs the SSH commands tool.')); ?></p>
+	</div>
+
 	<div class="nb-actions">
 		<button id="nb-save" class="primary"><?php p($l->t('Save')); ?></button>
 		<span id="nb-status" class="nb-status" role="status"></span>

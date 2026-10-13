@@ -31,6 +31,7 @@ use OCA\NetBase\Service\PermissionService;
 use OCA\NetBase\Service\RequirementsService;
 use OCA\NetBase\Service\ScanService;
 use OCA\NetBase\Service\ToolService;
+use OCA\NetBase\Service\WakeService;
 use OCA\NetBase\Service\WhoisAvailabilityService;
 use OCA\NetBase\Http\ProxyResponse;
 use OCP\AppFramework\Http;
@@ -82,6 +83,7 @@ class ApiController extends Controller {
 		private IConfig $config,
 		private LoggerInterface $logger,
 		private WhoisAvailabilityService $avail,
+		private WakeService $wake,
 	) {
 		parent::__construct(Application::APP_ID, $request);
 	}
@@ -388,8 +390,16 @@ class ApiController extends Controller {
 	 */
 	#[NoAdminRequired]
 	#[UserRateLimit(limit: 60, period: 60)]
-	public function addDevice(string $ip = '', ?string $label = null): JSONResponse {
-		return $this->guard(function () use ($ip, $label) {
+	public function addDevice(string $ip = '', ?string $label = null, string $mac = ''): JSONResponse {
+		return $this->guard(function () use ($ip, $label, $mac) {
+			// The MAC for Wake-on-LAN, for a device that is off and so cannot be asked.
+			$wakeMac = null;
+			if (trim($mac) !== '') {
+				$wakeMac = WakeService::normalizeMac($mac);
+				if ($wakeMac === null) {
+					throw new \InvalidArgumentException('Enter a MAC address such as aa:bb:cc:dd:ee:ff, or leave it empty.');
+				}
+			}
 			$ip = trim($ip);
 			if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) === false) {
 				throw new \InvalidArgumentException('Enter an IPv4 address, such as 192.168.1.20.');
@@ -402,8 +412,13 @@ class ApiController extends Controller {
 				: $this->discovery->reachBeyond([$ip]) !== [];
 			$device = $this->scanService->upsert($ip, null, ['source' => 'manual', 'present' => $here]);
 			$label = $label !== null ? trim($label) : '';
-			if ($label !== '') {
-				$device->setLabel(mb_substr($label, 0, 255));
+			if ($label !== '' || $wakeMac !== null) {
+				if ($label !== '') {
+					$device->setLabel(mb_substr($label, 0, 255));
+				}
+				if ($wakeMac !== null) {
+					$device->setWakeMac($wakeMac);
+				}
 				$device = $this->devices->update($device);
 			}
 			return ['device' => $device->jsonSerialize(), 'online' => $here];
@@ -411,8 +426,8 @@ class ApiController extends Controller {
 	}
 
 	#[NoAdminRequired]
-	public function updateDevice(int $id, ?string $label = null, ?string $tags = null, ?string $notes = null, ?bool $known = null, ?string $dtype = null, ?string $location = null, ?string $room = null, ?string $mount = null): JSONResponse {
-		return $this->guard(function () use ($id, $label, $tags, $notes, $known, $dtype, $location, $room, $mount) {
+	public function updateDevice(int $id, ?string $label = null, ?string $tags = null, ?string $notes = null, ?bool $known = null, ?string $dtype = null, ?string $location = null, ?string $room = null, ?string $mount = null, ?string $wakeMac = null): JSONResponse {
+		return $this->guard(function () use ($id, $label, $tags, $notes, $known, $dtype, $location, $room, $mount, $wakeMac) {
 			$device = $this->devices->find($id);
 			if ($device === null) {
 				throw new \InvalidArgumentException('Device not found');
@@ -441,6 +456,14 @@ class ApiController extends Controller {
 			if ($mount !== null) {
 				$mount = $oneLine($mount);
 				$device->setMount($mount !== '' ? mb_substr($mount, 0, 255) : null);
+			}
+			// The MAC for Wake-on-LAN, typed by hand; empty clears it.
+			if ($wakeMac !== null) {
+				$norm = trim($wakeMac) === '' ? null : WakeService::normalizeMac($wakeMac);
+				if (trim($wakeMac) !== '' && $norm === null) {
+					throw new \InvalidArgumentException('Enter a MAC address such as aa:bb:cc:dd:ee:ff, or leave it empty.');
+				}
+				$device->setWakeMac($norm);
 			}
 			if ($known !== null) {
 				$device->setKnown($known);
@@ -618,8 +641,42 @@ class ApiController extends Controller {
 	}
 
 	#[NoAdminRequired]
-	public function wol(string $mac, string $broadcast = '255.255.255.255', int $port = 9): JSONResponse {
-		return $this->guard(fn () => $this->tools->wakeOnLan($mac, $broadcast, $port), 'wol');
+	#[UserRateLimit(limit: 30, period: 60)]
+	/**
+	 * Wake a device, the way the administrator chose (WakeService).
+	 *
+	 * Named by its row id, the device's hand-typed MAC is used when there is
+	 * one and the scan's otherwise; a bare MAC is still taken for a machine
+	 * that is not in the list. Where to send it is the administrator's setting
+	 * alone — the request cannot point the packet anywhere else.
+	 *
+	 * @param int $connection the saved SSH connection, for the ssh method
+	 */
+	public function wol(int $id = 0, string $mac = '', int $connection = 0): JSONResponse {
+		return $this->guard(function () use ($id, $mac, $connection) {
+			$ip = '';
+			if ($id > 0) {
+				$device = $this->devices->find($id);
+				if ($device === null) {
+					throw new \InvalidArgumentException('Device not found');
+				}
+				$mac = (string)($device->getWakeMac() ?: $device->getMac());
+				$ip = (string)$device->getIp();
+				if ($mac === '') {
+					throw new \InvalidArgumentException('This device has no MAC address. Enter it in the device\'s details first.');
+				}
+			}
+			$via = null;
+			if ($this->wake->settings()['method'] === 'ssh') {
+				$this->permissions->require('sshexec');
+				if ($connection <= 0) {
+					throw new \InvalidArgumentException('Choose the saved SSH connection to send Wake-on-LAN through.');
+				}
+				$via = $this->endpoints->get($connection, $this->uid());
+				$this->config->setUserValue($this->uid(), 'netbase', 'wol_connection', (string)$connection);
+			}
+			return $this->wake->send($mac, $ip, $via);
+		}, 'wol');
 	}
 
 	#[NoAdminRequired]
@@ -1554,6 +1611,12 @@ class ApiController extends Controller {
 			'language' => $uid ? $this->storedLanguage($uid) : 'auto',
 			'languages' => $this->availableLanguages(),
 			'theme' => $uid ? $this->config->getUserValue($uid, 'netbase', 'theme', 'auto') : 'auto',
+			// How Wake-on-LAN is sent, and the SSH connection last used for it. The
+			// command itself is the administrator's and stays on the admin page.
+			'wol' => [
+				'method' => $this->wake->settings()['method'],
+				'connection' => (int)($uid ? $this->config->getUserValue($uid, 'netbase', 'wol_connection', '0') : 0),
+			],
 			'lastTargets' => $uid ? $this->config->getUserValue($uid, 'netbase', 'last_targets', '') : '',
 			// Where the file chooser starts when an SSH key is being picked.
 			// Keys tend to live in one folder, and hunting for it every time is
@@ -1695,6 +1758,13 @@ class ApiController extends Controller {
 		}
 		if ($this->permissions->isAdmin() && isset($settings['admin']) && is_array($settings['admin'])) {
 			$admin = $settings['admin'];
+			// Checked before anything is stored, so a mistyped address is refused
+			// with the whole form rather than half of it saved.
+			try {
+				$this->wake->save($admin);
+			} catch (\InvalidArgumentException $e) {
+				return new JSONResponse(['error' => $this->l10n->t($e->getMessage())], Http::STATUS_BAD_REQUEST);
+			}
 			if (isset($admin['levels']) && is_array($admin['levels'])) {
 				$this->permissions->setLevels(array_map('strval', $admin['levels']));
 			}

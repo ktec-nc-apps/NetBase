@@ -10,6 +10,7 @@ use OCA\NetBase\Service\ExecService;
 use OCA\NetBase\Service\OuiService;
 use OCA\NetBase\Service\PermissionService;
 use OCA\NetBase\Service\RequirementsService;
+use OCA\NetBase\Service\WakeService;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\IConfig;
 use OCP\Settings\ISettings;
@@ -23,6 +24,7 @@ class AdminSettings implements ISettings {
 		private OuiService $oui,
 		private RequirementsService $requirements,
 		private IConfig $config,
+		private WakeService $wake,
 	) {
 	}
 
@@ -36,6 +38,7 @@ class AdminSettings implements ISettings {
 			'levels' => $this->permissions->levels(),
 			'groups' => $this->permissions->groups(),
 			'hideEmptyMenu' => $this->permissions->hidesEmptyMenu(),
+			'wol' => $this->wake->settings(),
 			'maxHosts' => (int)$this->config->getAppValue('netbase', 'max_hosts', '65536'),
 			'allowSelf' => $this->config->getAppValue('netbase', 'allow_self_targets', 'no') === 'yes',
 			'proxyMaxConn' => (int)$this->config->getAppValue('netbase', 'proxy_max_conn', '4'),
