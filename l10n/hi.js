@@ -917,7 +917,7 @@ OC.L10N.register(
         "LAN throughput": "LAN थ्रूपुट",
         "Neighbour table": "ARP · पड़ोसी तालिका",
         "Open relay": "ओपन रिले",
-        "Subnet": "Subnet",
+        "Subnet": "सबनेट",
         "Test message": "परीक्षण संदेश",
         "The device answered %d and then stopped sending, so there is no page to show.": "इस उपकरण ने %d उत्तर दिया और फिर भेजना बंद कर दिया, इसलिए दिखाने के लिए कोई पृष्ठ नहीं है।",
         "The device did not accept that user name and password.": "उपकरण ने उस उपयोगकर्ता नाम और पासवर्ड को स्वीकार नहीं किया।",
@@ -1666,7 +1666,14 @@ OC.L10N.register(
         "Unknown way of sending Wake-on-LAN": "Wake-on-LAN भेजने का अज्ञात तरीका",
         "Wake-on-LAN": "Wake-on-LAN",
         "Wake-up sent for {mac}": "{mac} के लिए जगाने का संकेत भेजा गया",
-        "{mac} becomes the device's MAC address (aa:bb:cc:dd:ee:ff), {MAC} the same in capitals, and {ip} its IPv4 address. Only a checked MAC and address are put in. The command must finish within 20 seconds; a script that needs more lines is a file, and its path is the command.": "{mac} डिवाइस के MAC पते (aa:bb:cc:dd:ee:ff) से, {MAC} उसी के बड़े अक्षरों वाले रूप से, और {ip} उसके IPv4 पते से बदल जाता है। केवल जाँचा हुआ MAC और पता ही डाला जाता है। कमांड 20 सेकंड के भीतर पूरी होनी चाहिए; ज़्यादा पंक्तियों वाली स्क्रिप्ट एक फ़ाइल में रखें, और उसका पथ ही कमांड होगा।"
+        "{mac} becomes the device's MAC address (aa:bb:cc:dd:ee:ff), {MAC} the same in capitals, and {ip} its IPv4 address. Only a checked MAC and address are put in. The command must finish within 20 seconds; a script that needs more lines is a file, and its path is the command.": "{mac} डिवाइस के MAC पते (aa:bb:cc:dd:ee:ff) से, {MAC} उसी के बड़े अक्षरों वाले रूप से, और {ip} उसके IPv4 पते से बदल जाता है। केवल जाँचा हुआ MAC और पता ही डाला जाता है। कमांड 20 सेकंड के भीतर पूरी होनी चाहिए; ज़्यादा पंक्तियों वाली स्क्रिप्ट एक फ़ाइल में रखें, और उसका पथ ही कमांड होगा।",
+        "Finish diagnosing": "निदान समाप्त करें",
+        "Diagnose: record what this page does, to find out why it misbehaves": "निदान: यह पेज क्या करता है उसे रिकॉर्ड करें, ताकि पता चले कि यह ठीक से क्यों नहीं चल रहा",
+        "Diagnose": "निदान",
+        "Recording what this page does. Do whatever does not work, then press Finish.": "यह पेज क्या करता है, रिकॉर्ड किया जा रहा है। जो काम नहीं कर रहा वह करें, फिर “समाप्त” दबाएँ।",
+        "Finish": "समाप्त",
+        "What the page did": "पेज ने क्या किया",
+        "This is what the page and this server saw while you used it. It holds no passwords, nothing typed into the page and none of its text — only addresses (with the values after “?” hidden), answers and errors. You can paste it into a report.": "यह वह है जो आपके उपयोग के दौरान पेज और इस सर्वर ने देखा। इसमें कोई पासवर्ड, पेज में टाइप की गई कोई चीज़ और पेज का कोई टेक्स्ट नहीं है — केवल पते (“?” के बाद के मान छिपे हुए), उत्तर और त्रुटियाँ। आप इसे किसी रिपोर्ट में चिपका सकते हैं।"
     },
     "nplurals=2; plural=(n != 1);"
 );

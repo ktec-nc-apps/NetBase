@@ -1665,7 +1665,14 @@
         "Unknown way of sending Wake-on-LAN": "Unbekannte Versandart für Wake-on-LAN",
         "Wake-on-LAN": "Wake-on-LAN",
         "Wake-up sent for {mac}": "Wecksignal für {mac} gesendet",
-        "{mac} becomes the device's MAC address (aa:bb:cc:dd:ee:ff), {MAC} the same in capitals, and {ip} its IPv4 address. Only a checked MAC and address are put in. The command must finish within 20 seconds; a script that needs more lines is a file, and its path is the command.": "{mac} wird zur MAC-Adresse des Geräts (aa:bb:cc:dd:ee:ff), {MAC} zu derselben in Großbuchstaben und {ip} zu seiner IPv4-Adresse. Eingesetzt werden nur eine geprüfte MAC- und IP-Adresse. Der Befehl muss innerhalb von 20 Sekunden enden; ein Skript mit mehr Zeilen gehört in eine Datei, deren Pfad dann der Befehl ist."
+        "{mac} becomes the device's MAC address (aa:bb:cc:dd:ee:ff), {MAC} the same in capitals, and {ip} its IPv4 address. Only a checked MAC and address are put in. The command must finish within 20 seconds; a script that needs more lines is a file, and its path is the command.": "{mac} wird zur MAC-Adresse des Geräts (aa:bb:cc:dd:ee:ff), {MAC} zu derselben in Großbuchstaben und {ip} zu seiner IPv4-Adresse. Eingesetzt werden nur eine geprüfte MAC- und IP-Adresse. Der Befehl muss innerhalb von 20 Sekunden enden; ein Skript mit mehr Zeilen gehört in eine Datei, deren Pfad dann der Befehl ist.",
+        "Finish diagnosing": "Diagnose beenden",
+        "Diagnose: record what this page does, to find out why it misbehaves": "Diagnose: aufzeichnen, was diese Seite tut, um herauszufinden, warum sie nicht richtig funktioniert",
+        "Diagnose": "Diagnose",
+        "Recording what this page does. Do whatever does not work, then press Finish.": "Es wird aufgezeichnet, was diese Seite tut. Führen Sie aus, was nicht funktioniert, und klicken Sie dann auf „Beenden“.",
+        "Finish": "Beenden",
+        "What the page did": "Was die Seite getan hat",
+        "This is what the page and this server saw while you used it. It holds no passwords, nothing typed into the page and none of its text — only addresses (with the values after “?” hidden), answers and errors. You can paste it into a report.": "Das haben die Seite und dieser Server gesehen, während Sie sie benutzt haben. Es enthält keine Passwörter, nichts, was in die Seite eingegeben wurde, und keinen ihrer Texte – nur Adressen (die Werte nach „?“ sind ausgeblendet), Antworten und Fehler. Sie können es in einen Bericht einfügen."
     },
     "pluralForm": "nplurals=2; plural=(n != 1);"
 }

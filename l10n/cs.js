@@ -1666,7 +1666,14 @@ OC.L10N.register(
         "Unknown way of sending Wake-on-LAN": "Neznámý způsob odeslání Wake-on-LAN",
         "Wake-on-LAN": "Wake-on-LAN",
         "Wake-up sent for {mac}": "Probouzecí signál pro {mac} odeslán",
-        "{mac} becomes the device's MAC address (aa:bb:cc:dd:ee:ff), {MAC} the same in capitals, and {ip} its IPv4 address. Only a checked MAC and address are put in. The command must finish within 20 seconds; a script that needs more lines is a file, and its path is the command.": "{mac} se nahradí adresou MAC zařízení (aa:bb:cc:dd:ee:ff), {MAC} toutéž velkými písmeny a {ip} jeho adresou IPv4. Vkládá se jen ověřená adresa MAC a IP. Příkaz musí skončit do 20 sekund; skript s více řádky patří do souboru a příkazem je cesta k němu."
+        "{mac} becomes the device's MAC address (aa:bb:cc:dd:ee:ff), {MAC} the same in capitals, and {ip} its IPv4 address. Only a checked MAC and address are put in. The command must finish within 20 seconds; a script that needs more lines is a file, and its path is the command.": "{mac} se nahradí adresou MAC zařízení (aa:bb:cc:dd:ee:ff), {MAC} toutéž velkými písmeny a {ip} jeho adresou IPv4. Vkládá se jen ověřená adresa MAC a IP. Příkaz musí skončit do 20 sekund; skript s více řádky patří do souboru a příkazem je cesta k němu.",
+        "Finish diagnosing": "Ukončit diagnostiku",
+        "Diagnose: record what this page does, to find out why it misbehaves": "Diagnostika: zaznamenat, co tato stránka dělá, a zjistit, proč nefunguje správně",
+        "Diagnose": "Diagnostika",
+        "Recording what this page does. Do whatever does not work, then press Finish.": "Zaznamenává se, co tato stránka dělá. Proveďte to, co nefunguje, a pak klikněte na Ukončit.",
+        "Finish": "Ukončit",
+        "What the page did": "Co stránka dělala",
+        "This is what the page and this server saw while you used it. It holds no passwords, nothing typed into the page and none of its text — only addresses (with the values after “?” hidden), answers and errors. You can paste it into a report.": "Toto viděla stránka a tento server, zatímco jste ji používali. Neobsahuje žádná hesla, nic, co bylo do stránky zadáno, ani její text — pouze adresy (hodnoty za „?“ jsou skryté), odpovědi a chyby. Můžete to vložit do hlášení."
     },
     "nplurals=4; plural=(n == 1 && n % 1 == 0) ? 0 : (n >= 2 && n <= 4 && n % 1 == 0) ? 1: (n % 1 != 0 ) ? 2 : 3;"
 );

@@ -72,6 +72,7 @@ class ProxyService {
 		private IConfig $config,
 		private IL10N $l,
 		private LoggerInterface $logger,
+		private ?DeviceDiagService $diag = null,
 	) {
 	}
 
@@ -192,6 +193,10 @@ class ProxyService {
 		// A device that asked for a password earlier is answered without asking
 		// the person again.
 		$credentials = $this->recallAuth($base, $userId);
+		// Someone finding out why this device's page misbehaves (the window's
+		// Diagnose button): every request is then noted, without its contents.
+		$diag = $userId !== '' && isset($this->diag) && $this->diag->active($userId, $base);
+		$began = microtime(true);
 
 		$url = $base . '/' . $this->safePath($path);
 		if ($query !== '') {
@@ -380,9 +385,13 @@ class ProxyService {
 			$this->releaseDeviceSlot($slot);
 		}
 		$this->saveCookies($userId, $base, (array)curl_getinfo($curl, CURLINFO_COOKIELIST));
+		$received = (int)curl_getinfo($curl, CURLINFO_SIZE_DOWNLOAD_T);
 		curl_close($curl);
 
 		if ($streaming) {
+			if ($diag) {
+				$this->diagNote($userId, $base, $method, $path, $query, $status, $headers, $received, $began, 'streamed', $try, '');
+			}
 			return ['status' => $status, 'headers' => [], 'body' => '', 'html' => false, 'needsPassword' => false, 'realm' => '', 'streamed' => true];
 		}
 		if ($ok === false && $buffer === '') {
@@ -391,6 +400,9 @@ class ProxyService {
 			$why = $status > 0
 				? $this->l->t('The device answered %d and then stopped sending, so there is no page to show.', [$status])
 				: ($error !== '' ? $error : $this->l->t('The device did not answer'));
+			if ($diag) {
+				$this->diagNote($userId, $base, $method, $path, $query, $status, $headers, $received, $began, 'failed', $try, $why);
+			}
 			throw new \RuntimeException($why);
 		}
 		$body = $buffer;
@@ -414,7 +426,9 @@ class ProxyService {
 				: 'application/octet-stream';
 		}
 		$isHtml = str_contains(strtolower($type), 'html');
+		$how = 'as is';
 		if ($isHtml) {
+			$how = 'rewritten';
 			// Japanese device interfaces are often EUC-JP or Shift_JIS and say so
 			// only in the markup. Anything inserted above that declaration can
 			// push it out of the browser's reach, so it is promoted to the
@@ -425,8 +439,13 @@ class ProxyService {
 			$body = $this->rewriteHtml($body, $base, $prefix, $path, $userId);
 		} elseif (str_contains(strtolower($type), 'css')) {
 			$body = $this->rewriteCss($body, $prefix);
+			$how = 'rewritten';
 		} elseif (preg_match('#(java|ecma)script#i', $type) === 1) {
 			$body = $this->rewriteJs($body);
+			$how = 'rewritten';
+		}
+		if ($diag) {
+			$this->diagNote($userId, $base, $method, $path, $query, $status, $headers + ['content-type' => $type], strlen($buffer), $began, $needsPassword ? 'asked for a password' : $how, $try, $error ?? '');
 		}
 
 		$out = [];
@@ -452,6 +471,63 @@ class ProxyService {
 			'realm' => $this->realm($challenge),
 			'streamed' => false,
 		];
+	}
+
+	/**
+	 * One line of a device window's recording (see DeviceDiagService): what was
+	 * asked, what came back and how, and the device's own headers that NetBase
+	 * keeps from the browser — those are the usual suspects when a page that
+	 * works on the device comes up blank or dead in the window.
+	 *
+	 * @param array<string, string> $headers the device's answer, before filtering
+	 */
+	private function diagNote(string $userId, string $base, string $method, string $path, string $query, int $status, array $headers, int $bytes, float $began, string $how, int $tries, string $error): void {
+		$entry = [
+			'm' => $method,
+			'p' => DeviceDiagService::path($path, $query),
+			's' => $status,
+			'ms' => (int)round((microtime(true) - $began) * 1000),
+			'b' => $bytes,
+			'how' => $how,
+		];
+		$type = strtolower(trim(explode(';', (string)($headers['content-type'] ?? ''))[0]));
+		if ($type !== '') {
+			$entry['ct'] = $type;
+		}
+		if ($tries > 0) {
+			$entry['retries'] = $tries;
+		}
+		if ($error !== '') {
+			$entry['err'] = mb_substr($error, 0, 200);
+		}
+		if (isset($headers['location'])) {
+			$entry['loc'] = DeviceDiagService::location((string)$headers['location'], $base);
+		}
+		if (isset($headers['www-authenticate'])) {
+			$entry['auth'] = strtok((string)$headers['www-authenticate'], ' ') ?: '?';
+		}
+		if (isset($headers['set-cookie'])) {
+			$entry['cookie'] = true;
+		}
+		$held = [];
+		foreach (['x-frame-options', 'content-security-policy', 'strict-transport-security', 'link'] as $name) {
+			if (isset($headers[$name])) {
+				$held[] = $name;
+			}
+		}
+		// Two whose value is itself the explanation of a blank page: a body the
+		// browser is not told is compressed, and a forward it never hears of.
+		if (isset($headers['content-encoding'])) {
+			$held[] = 'content-encoding: ' . mb_substr((string)preg_replace('/[^a-z0-9, -]/i', '', (string)$headers['content-encoding']), 0, 30);
+		}
+		if (isset($headers['refresh'])) {
+			$target = preg_match('/url\s*=\s*[\'"]?([^\'"]+)/i', (string)$headers['refresh'], $m) === 1 ? DeviceDiagService::location(trim($m[1]), $base) : '';
+			$held[] = 'refresh' . ($target !== '' ? ' → ' . $target : '');
+		}
+		if ($held !== []) {
+			$entry['held'] = $held;
+		}
+		$this->diag->record($userId, $base, $entry);
 	}
 
 	/** Enough of the status phrases for the ones a device actually sends. */
@@ -910,6 +986,11 @@ class ProxyService {
 		// from, and Nextcloud's no-referrer left the device turning every page
 		// after the sign-in away. Same-origin keeps it inside this server.
 		$shim = '<meta name="referrer" content="same-origin">' . $this->shim($prefix);
+		// While someone is diagnosing this device, the page also reports what
+		// it does — after the shim, so what it sees is what the page asked for.
+		if ($userId !== '' && isset($this->diag) && $this->diag->active($userId, $base)) {
+			$shim .= $this->recorder($prefix);
+		}
 		// After the character set declaration, so it stays where the browser
 		// looks for it, and before anything the page runs itself.
 		if (preg_match('#<meta[^>]*charset[^>]*>#i', $body, $m, PREG_OFFSET_CAPTURE) === 1) {
@@ -1010,6 +1091,157 @@ class ProxyService {
 		$body = preg_replace('#\b(?:window|document|self)\s*\.\s*location\s*=(?![=>])#', '__nbLoc.href =', $body) ?? $body;
 		$body = preg_replace('#(?<![\w$.])location\s*=(?![=>])#', '__nbLoc.href =', $body) ?? $body;
 		return preg_replace('#\.\s*location\s*=(?![=>])#', '.__nbLoc.href =', $body) ?? $body;
+	}
+
+	/**
+	 * The page's half of a diagnosis: what happened in the window, told to
+	 * NetBase around it (DeviceDiagService keeps the server's half).
+	 *
+	 * It reports errors, files that failed to load, what was clicked and what
+	 * a form or a script sent where — and never the page's text, a field's
+	 * value or a password. Addresses lose their ticket, and the values after
+	 * their "?". Only ever in a page being diagnosed.
+	 */
+	private function recorder(string $prefix): string {
+		$script = <<<'JS'
+(function () {
+	if (window.__nbDiag) { return; }
+	window.__nbDiag = true;
+	var P = __PREFIX__;
+	var ROOT = P.slice(0, P.indexOf('/proxy/') + 7);
+	function opaque(s) {
+		return s.length >= 16 && /^[A-Za-z0-9_\-+.%~]+$/.test(s) && /\d/.test(s) && /[A-Za-z]/.test(s)
+			&& !/\.(s?html?|js|css|cgi|asp|aspx|php|jsp|json|xml|png|gif|jpe?g|svg|ico|woff2?|ttf|txt)$/i.test(s);
+	}
+	function mask(path, search) {
+		path = path.replace(/[^\/;=,&]+/g, function (part) { return opaque(part) ? '…' : part; });
+		var q = '';
+		if (search && search.length > 1) {
+			q = '?' + search.slice(1).split('&').filter(function (kv) { return kv && kv.indexOf('_nb=') !== 0; }).map(function (kv) {
+				var k = kv.split('=')[0];
+				k = opaque(k) ? '…' : k;
+				return kv.indexOf('=') >= 0 ? k + '=*' : k;
+			}).join('&');
+			if (q === '?') { q = ''; }
+		}
+		return path + q;
+	}
+	// The device's own path for an address, as the page means it; a ticket never leaves.
+	function where(u) {
+		try {
+			var a = new URL(String(u), location.href);
+			if (a.protocol === 'javascript:') { return 'javascript:…'; }
+			if (a.origin === location.origin) {
+				if (a.pathname.indexOf(ROOT) === 0) {
+					var rest = a.pathname.slice(ROOT.length), i = rest.indexOf('/');
+					return mask(i < 0 ? '/' : rest.slice(i), a.search);
+				}
+				return mask(a.pathname, a.search);
+			}
+			return a.protocol + '//' + a.host + mask(a.pathname, a.search);
+		} catch (e) { return '?'; }
+	}
+	var top = window.top;
+	function send(kind, data) {
+		data = data || {};
+		data.k = kind;
+		data.t = Date.now();
+		data.at = where(location.href);
+		if (window !== window.__nbTop) { data.frame = true; }
+		try { top.postMessage({ netbase: 'diag', ev: data }, location.origin); } catch (e) { /* nothing to tell */ }
+	}
+	function short(x) { return String(x && x.message ? x.message : x).slice(0, 300); }
+	window.addEventListener('error', function (e) {
+		var t = e.target;
+		if (t && t !== window && t.tagName) {
+			send('load-failed', { tag: t.tagName.toLowerCase(), url: where(t.currentSrc || t.src || t.href || '') });
+			return;
+		}
+		send('error', { msg: short(e.message || ''), src: e.filename ? where(e.filename) : '', line: e.lineno || 0, col: e.colno || 0 });
+	}, true);
+	window.addEventListener('unhandledrejection', function (e) { send('rejection', { msg: short(e.reason) }); });
+	document.addEventListener('securitypolicyviolation', function (e) { send('blocked', { url: where(e.blockedURI || ''), rule: e.violatedDirective || '' }); });
+	var cerr = console.error;
+	console.error = function () {
+		try { send('console', { msg: Array.prototype.map.call(arguments, short).join(' ').slice(0, 300) }); } catch (x) { /* never in the way */ }
+		return cerr.apply(console, arguments);
+	};
+	// What was clicked: the element, never its text.
+	document.addEventListener('click', function (e) {
+		var el = e.target;
+		if (el && el.closest) { el = el.closest('a,button,input,select,label,area,[onclick]') || el; }
+		if (!el || !el.tagName) { return; }
+		var d = { tag: el.tagName.toLowerCase() };
+		if (el.id) { d.id = String(el.id).slice(0, 40); }
+		if (el.getAttribute('name')) { d.name = String(el.getAttribute('name')).slice(0, 40); }
+		if (el.getAttribute('type')) { d.type = String(el.getAttribute('type')).slice(0, 20); }
+		var href = el.getAttribute('href');
+		if (href) { d.href = /^\s*javascript:/i.test(href) ? 'javascript:…' : where(href); }
+		if (el.getAttribute('onclick')) { d.onclick = true; }
+		if (el.getAttribute('target')) { d.target = String(el.getAttribute('target')).slice(0, 30); }
+		if (el.disabled) { d.disabled = true; }
+		setTimeout(function () { d.prevented = e.defaultPrevented; send('click', d); }, 0);
+	}, true);
+	function form(f, by) {
+		send('submit', { method: String(f.getAttribute('method') || 'get').toUpperCase(), url: where(f.getAttribute('action') ? f.action : location.href),
+			fields: f.elements ? f.elements.length : 0, target: String(f.getAttribute('target') || '').slice(0, 30), by: by });
+	}
+	document.addEventListener('submit', function (e) { if (e.target && e.target.tagName) { form(e.target, 'button'); } }, true);
+	var submit = HTMLFormElement.prototype.submit;
+	HTMLFormElement.prototype.submit = function () { try { form(this, 'script'); } catch (x) { /* never in the way */ } return submit.apply(this, arguments); };
+	if (window.fetch) {
+		var fetchWas = window.fetch;
+		window.fetch = function (input, init) {
+			var m = String((init && init.method) || (input && input.method) || 'GET').toUpperCase();
+			var u = where(typeof input === 'string' ? input : (input && input.url) || '');
+			var t0 = Date.now();
+			return fetchWas.apply(this, arguments).then(function (r) {
+				send('fetch', { method: m, url: u, status: r.status, ms: Date.now() - t0 });
+				return r;
+			}, function (err) {
+				send('fetch', { method: m, url: u, status: 0, err: short(err).slice(0, 200), ms: Date.now() - t0 });
+				throw err;
+			});
+		};
+	}
+	var open = XMLHttpRequest.prototype.open, xsend = XMLHttpRequest.prototype.send;
+	XMLHttpRequest.prototype.open = function (m, u) {
+		this.__nbDiag = { method: String(m).toUpperCase(), url: where(u) };
+		return open.apply(this, arguments);
+	};
+	XMLHttpRequest.prototype.send = function () {
+		var x = this, d = x.__nbDiag, t0 = Date.now();
+		if (d) { x.addEventListener('loadend', function () { d.status = x.status; d.ms = Date.now() - t0; send('xhr', d); }); }
+		return xsend.apply(this, arguments);
+	};
+	// How the page came out: its size and shape, not its words.
+	function summary(when) {
+		var b = document.body;
+		var d = { when: when, state: document.readyState, title: String(document.title || '').slice(0, 80),
+			elements: document.getElementsByTagName('*').length, frames: document.querySelectorAll('frame,iframe').length,
+			scripts: document.scripts.length, text: b ? String(b.innerText || '').length : 0,
+			height: b ? b.scrollHeight : 0, shown: b ? !!(b.offsetWidth || b.offsetHeight) : false };
+		var off = [], nodes = document.querySelectorAll('[src],[href],form[action]');
+		for (var i = 0; i < nodes.length && off.length < 8; i++) {
+			var n = nodes[i], v = n.getAttribute('src') || n.getAttribute('href') || n.getAttribute('action') || '';
+			if (/^\s*(https?:)?\/\//i.test(v)) {
+				var a;
+				try { a = new URL(v, location.href); } catch (e) { continue; }
+				if (a.origin !== location.origin) { off.push(n.tagName.toLowerCase() + ' ' + where(v)); }
+			} else if (v.charAt(0) === '/' && v.indexOf(ROOT) !== 0) {
+				off.push(n.tagName.toLowerCase() + ' ' + where(v) + ' (not through the window)');
+			}
+		}
+		if (off.length) { d.outside = off; }
+		send('page', d);
+	}
+	document.addEventListener('DOMContentLoaded', function () { summary('ready'); });
+	window.addEventListener('load', function () { setTimeout(function () { summary('loaded'); }, 400); });
+	window.addEventListener('pagehide', function () { send('leave', {}); });
+	send('open', {});
+})();
+JS;
+		return '<script>' . str_replace('__PREFIX__', json_encode($prefix, JSON_UNESCAPED_SLASHES), $script) . '</script>';
 	}
 
 	/** Sends script-made requests back through the proxy instead of to Nextcloud. */

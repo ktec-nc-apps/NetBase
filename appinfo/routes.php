@@ -10,6 +10,8 @@ return [
 		// in a window; the path mirrors the device's so relative links work
 		['name' => 'api#saveResult', 'url' => '/api/save', 'verb' => 'POST'],
 		['name' => 'api#proxyTicket', 'url' => '/api/proxy/ticket', 'verb' => 'POST'],
+		// A device window's Diagnose button: start, and finish with what was seen.
+		['name' => 'api#deviceDiag', 'url' => '/api/proxy/diag', 'verb' => 'POST'],
 		['name' => 'proxy#open', 'url' => '/proxy/{token}/{path}', 'verb' => 'GET', 'requirements' => ['path' => '.*'], 'defaults' => ['path' => '']],
 		['name' => 'proxy#open', 'url' => '/proxy/{token}/{path}', 'verb' => 'POST', 'postfix' => 'post', 'requirements' => ['path' => '.*'], 'defaults' => ['path' => '']],
 		// A device page may speak any method its own interface uses.

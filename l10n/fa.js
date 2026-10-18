@@ -1666,7 +1666,14 @@ OC.L10N.register(
         "Unknown way of sending Wake-on-LAN": "روش ناشناختهٔ فرستادن Wake-on-LAN",
         "Wake-on-LAN": "Wake-on-LAN",
         "Wake-up sent for {mac}": "علامت بیدارسازی برای {mac} فرستاده شد",
-        "{mac} becomes the device's MAC address (aa:bb:cc:dd:ee:ff), {MAC} the same in capitals, and {ip} its IPv4 address. Only a checked MAC and address are put in. The command must finish within 20 seconds; a script that needs more lines is a file, and its path is the command.": "{mac} با نشانی MAC دستگاه (aa:bb:cc:dd:ee:ff)، {MAC} با همان نشانی با حروف بزرگ، و {ip} با نشانی IPv4 آن جایگزین می‌شود. فقط MAC و نشانیِ بررسی‌شده درج می‌شوند. فرمان باید در 20 ثانیه تمام شود؛ اسکریپتِ چندخطی را در یک پرونده بگذارید و مسیر آن را به‌عنوان فرمان وارد کنید."
+        "{mac} becomes the device's MAC address (aa:bb:cc:dd:ee:ff), {MAC} the same in capitals, and {ip} its IPv4 address. Only a checked MAC and address are put in. The command must finish within 20 seconds; a script that needs more lines is a file, and its path is the command.": "{mac} با نشانی MAC دستگاه (aa:bb:cc:dd:ee:ff)، {MAC} با همان نشانی با حروف بزرگ، و {ip} با نشانی IPv4 آن جایگزین می‌شود. فقط MAC و نشانیِ بررسی‌شده درج می‌شوند. فرمان باید در 20 ثانیه تمام شود؛ اسکریپتِ چندخطی را در یک پرونده بگذارید و مسیر آن را به‌عنوان فرمان وارد کنید.",
+        "Finish diagnosing": "پایان عیب‌یابی",
+        "Diagnose: record what this page does, to find out why it misbehaves": "عیب‌یابی: کارهای این صفحه را ثبت کنید تا بفهمید چرا درست کار نمی‌کند",
+        "Diagnose": "عیب‌یابی",
+        "Recording what this page does. Do whatever does not work, then press Finish.": "در حال ثبت کارهای این صفحه. کاری را که درست کار نمی‌کند انجام دهید، سپس «پایان» را بزنید.",
+        "Finish": "پایان",
+        "What the page did": "کارهایی که صفحه انجام داد",
+        "This is what the page and this server saw while you used it. It holds no passwords, nothing typed into the page and none of its text — only addresses (with the values after “?” hidden), answers and errors. You can paste it into a report.": "این همان چیزی است که صفحه و این سرور هنگام استفادهٔ شما دیدند. هیچ گذرواژه‌ای، هیچ چیزی که در صفحه تایپ شده و هیچ متنی از صفحه در آن نیست — فقط نشانی‌ها (با پنهان شدن مقادیر بعد از «?»)، پاسخ‌ها و خطاها. می‌توانید آن را در یک گزارش بچسبانید."
     },
     "nplurals=2; plural=(n > 1);"
 );

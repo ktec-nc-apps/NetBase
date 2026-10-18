@@ -2,6 +2,33 @@
 
 All notable changes to NetBase are documented here.
 
+## 0.8.4 — 2026-10-18
+
+A Diagnose button for device pages that do not work in the window, Synology's HTTPS port as a link, and a Brazilian Portuguese translation of its own.
+
+### Added
+
+- **Diagnose a device page.** When a device's page comes up blank in its window, or does nothing when clicked, press Diagnose at the top right of the window, do what does not work, and press Finish. NetBase then shows what happened: the requests the server carried for the page and what came back, the device's headers that NetBase does not pass on to the browser, and the page's errors, clicks and form submissions. It holds no passwords, nothing typed into the page and none of its text, and the values after "?" in every address are hidden, so the report can be copied into a bug report as it stands.
+- **Brazilian Portuguese.** pt_BR was a copy of the European Portuguese translation; it is now written the Brazilian way (arquivo, tela, usuário, senha), and NetBase's language setting offers both.
+
+### Fixed
+
+- **Port 5001 opens.** Synology's HTTPS management page on port 5001 was shown greyed out in the device list and could not be opened; 5001 is now one of the common ports, like 5000.
+- **Translations:** words left in English in several languages (Test message, Subnet, the example group names), a Japanese punctuation mark in the Korean text, and two Japanese sentences.
+
+（日本語）
+ウィンドウの中で正しく動かない機器の画面を調べる「診断」ボタンを追加しました。Synology の HTTPS 用ポートも開けるようにし、ブラジル向けポルトガル語を独自の翻訳にしました。
+
+### 追加
+
+- **機器の画面を診断できます。** 機器の画面がウィンドウの中で真っ白になる、押しても反応しないといったときは、ウィンドウ右上の「診断」を押し、うまく動かない操作をしてから「終了」を押してください。サーバーが中継したリクエストとその応答、NetBase がブラウザーに渡さなかった機器のヘッダー、画面で起きたエラー・クリック・フォームの送信を一覧で表示します。パスワード、画面に入力した内容、画面の文章は含まれず、アドレスの「?」より後ろの値も伏せるため、結果をそのまま不具合の報告に貼り付けられます。
+- **ブラジル向けポルトガル語。** pt_BR はポルトガル向けの翻訳をそのまま使っていましたが、ブラジルの言い方（arquivo、tela、usuário、senha）で書き直しました。NetBase の言語設定では両方を選べます。
+
+### 修正
+
+- **5001 番ポートを開けるようにしました。** Synology の HTTPS 用の管理画面（5001 番）は、機器の一覧で灰色になって開けませんでした。5000 番と同じく、よく使うポートとして扱います。
+- **翻訳：** いくつかの言語で英語のまま残っていた語（Test message、Subnet、グループ名の例）、韓国語の文に混じっていた日本語の記号、日本語の 2 つの文を直しました。
+
 ## 0.8.3 — 2026-10-13
 
 Wake-on-LAN works where NetBase cannot broadcast on the LAN itself — Nextcloud AIO and other containers, or a server on another subnet — and for devices it has never seen.

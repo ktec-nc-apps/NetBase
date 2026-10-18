@@ -1666,7 +1666,14 @@ OC.L10N.register(
         "Unknown way of sending Wake-on-LAN": "Forma de envío de Wake-on-LAN desconocida",
         "Wake-on-LAN": "Wake-on-LAN",
         "Wake-up sent for {mac}": "Señal de encendido enviada para {mac}",
-        "{mac} becomes the device's MAC address (aa:bb:cc:dd:ee:ff), {MAC} the same in capitals, and {ip} its IPv4 address. Only a checked MAC and address are put in. The command must finish within 20 seconds; a script that needs more lines is a file, and its path is the command.": "{mac} se sustituye por la dirección MAC del dispositivo (aa:bb:cc:dd:ee:ff), {MAC} por la misma en mayúsculas y {ip} por su dirección IPv4. Solo se insertan una MAC y una dirección comprobadas. El comando debe terminar en 20 segundos; un script de más líneas va en un archivo, y su ruta es el comando."
+        "{mac} becomes the device's MAC address (aa:bb:cc:dd:ee:ff), {MAC} the same in capitals, and {ip} its IPv4 address. Only a checked MAC and address are put in. The command must finish within 20 seconds; a script that needs more lines is a file, and its path is the command.": "{mac} se sustituye por la dirección MAC del dispositivo (aa:bb:cc:dd:ee:ff), {MAC} por la misma en mayúsculas y {ip} por su dirección IPv4. Solo se insertan una MAC y una dirección comprobadas. El comando debe terminar en 20 segundos; un script de más líneas va en un archivo, y su ruta es el comando.",
+        "Finish diagnosing": "Terminar el diagnóstico",
+        "Diagnose: record what this page does, to find out why it misbehaves": "Diagnosticar: registrar lo que hace esta página para averiguar por qué no funciona bien",
+        "Diagnose": "Diagnosticar",
+        "Recording what this page does. Do whatever does not work, then press Finish.": "Registrando lo que hace esta página. Haga lo que no funciona y luego pulse Terminar.",
+        "Finish": "Terminar",
+        "What the page did": "Lo que hizo la página",
+        "This is what the page and this server saw while you used it. It holds no passwords, nothing typed into the page and none of its text — only addresses (with the values after “?” hidden), answers and errors. You can paste it into a report.": "Esto es lo que la página y este servidor vieron mientras la usaba. No contiene contraseñas, nada de lo escrito en la página ni su texto: solo direcciones (con los valores después de «?» ocultos), respuestas y errores. Puede pegarlo en un informe."
     },
     "nplurals=2; plural=(n != 1);"
 );

@@ -1666,7 +1666,14 @@ OC.L10N.register(
         "Unknown way of sending Wake-on-LAN": "Unknown way of sending Wake-on-LAN",
         "Wake-on-LAN": "Wake-on-LAN",
         "Wake-up sent for {mac}": "Wake-up sent for {mac}",
-        "{mac} becomes the device's MAC address (aa:bb:cc:dd:ee:ff), {MAC} the same in capitals, and {ip} its IPv4 address. Only a checked MAC and address are put in. The command must finish within 20 seconds; a script that needs more lines is a file, and its path is the command.": "{mac} becomes the device's MAC address (aa:bb:cc:dd:ee:ff), {MAC} the same in capitals, and {ip} its IPv4 address. Only a checked MAC and address are put in. The command must finish within 20 seconds; a script that needs more lines is a file, and its path is the command."
+        "{mac} becomes the device's MAC address (aa:bb:cc:dd:ee:ff), {MAC} the same in capitals, and {ip} its IPv4 address. Only a checked MAC and address are put in. The command must finish within 20 seconds; a script that needs more lines is a file, and its path is the command.": "{mac} becomes the device's MAC address (aa:bb:cc:dd:ee:ff), {MAC} the same in capitals, and {ip} its IPv4 address. Only a checked MAC and address are put in. The command must finish within 20 seconds; a script that needs more lines is a file, and its path is the command.",
+        "Finish diagnosing": "Finish diagnosing",
+        "Diagnose: record what this page does, to find out why it misbehaves": "Diagnose: record what this page does, to find out why it misbehaves",
+        "Diagnose": "Diagnose",
+        "Recording what this page does. Do whatever does not work, then press Finish.": "Recording what this page does. Do whatever does not work, then press Finish.",
+        "Finish": "Finish",
+        "What the page did": "What the page did",
+        "This is what the page and this server saw while you used it. It holds no passwords, nothing typed into the page and none of its text — only addresses (with the values after “?” hidden), answers and errors. You can paste it into a report.": "This is what the page and this server saw while you used it. It holds no passwords, nothing typed into the page and none of its text — only addresses (with the values after “?” hidden), answers and errors. You can paste it into a report."
     },
     "nplurals=2; plural=(n != 1);"
 );

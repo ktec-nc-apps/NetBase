@@ -18,8 +18,13 @@ use Psr\Log\LoggerInterface;
  * WS-Discovery and SSDP — all plain UDP, all unprivileged.
  */
 class DiscoveryService {
-	/** Ports probed to tell what a device is; kept short so a sweep stays fast. */
-	public const FINGERPRINT_PORTS = [22, 23, 53, 80, 139, 443, 445, 515, 554, 631, 3389, 5000, 8080, 8443, 9100];
+	/**
+	 * Ports probed to tell what a device is; kept short so a sweep stays fast.
+	 * They are also the numbers the device list makes links of. 5000 and 5001
+	 * are a NAS's own console (Synology's HTTP and HTTPS), and a NAS set to
+	 * HTTPS only answers on 5001 alone.
+	 */
+	public const FINGERPRINT_PORTS = [22, 23, 53, 80, 139, 443, 445, 515, 554, 631, 3389, 5000, 5001, 8080, 8443, 9100];
 
 	/**
 	 * The longer list, for when the short one leaves a device unexplained.

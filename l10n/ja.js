@@ -847,7 +847,7 @@ OC.L10N.register(
         "Into networks of": "分割後のプレフィックス",
         "This device is not on the same network as the Nextcloud server.": "この機器はNextcloudサーバーと同一のネットワーク空間に存在していません。",
         "To connect to its address or scan its ports, the Nextcloud server needs an address on the same network as this device.": "この機器のアドレスに接続したりポートスキャンを実行するためには、Nextcloudサーバーにこの機器と同一ネットワーク空間のIPアドレスを追加する必要があります。",
-        "Open a console over SSH or similar and run the following command with administrator privileges.": "以下のコマンドをSSH等でコンソールにアクセスし、管理者権限で実行して下さい。",
+        "Open a console over SSH or similar and run the following command with administrator privileges.": "SSHなどでコンソールを開き、次のコマンドを管理者権限で実行してください。",
         "Note that the setting is erased when the server restarts.": "なお、このコマンドを実行してもサーバーを再起動すると設定は消去されます。",
         "- no name -": "- 名前なし -",
         "SSH key files": "SSH鍵ファイル",
@@ -1260,7 +1260,7 @@ OC.L10N.register(
         "SSH / Telnet": "SSH／Telnet",
         "FTP / SFTP": "FTP／SFTP",
         "SMTP / IMAP / POP3": "SMTP／IMAP／POP3",
-        "Please enter the RegiBase master key.": "RegiBaseのマスターキーを入力して下さい",
+        "Please enter the RegiBase master key.": "RegiBaseのマスターキーを入力してください",
         "This key lasts until you close the browser — this session only.": "このマスターキーはブラウザーを閉じるまで有効です（このセッションのみ有効）",
         "Download to my files": "自分のファイルへ取り込む",
         "Copy the path": "パスをコピー",
@@ -1666,7 +1666,14 @@ OC.L10N.register(
         "Unknown way of sending Wake-on-LAN": "Wake-on-LAN の送り方が正しくありません",
         "Wake-on-LAN": "Wake-on-LAN",
         "Wake-up sent for {mac}": "{mac} の起動を送りました",
-        "{mac} becomes the device's MAC address (aa:bb:cc:dd:ee:ff), {MAC} the same in capitals, and {ip} its IPv4 address. Only a checked MAC and address are put in. The command must finish within 20 seconds; a script that needs more lines is a file, and its path is the command.": "{mac} は機器の MACアドレス（aa:bb:cc:dd:ee:ff）に、{MAC} は同じものの大文字に、{ip} は IPv4 アドレスに置き換わります。差し込まれるのは、形を確かめた MACアドレスとアドレスだけです。コマンドは 20 秒以内に終わる必要があります。何行にもなる処理はスクリプトのファイルにして、そのパスをコマンドとして入れてください。"
+        "{mac} becomes the device's MAC address (aa:bb:cc:dd:ee:ff), {MAC} the same in capitals, and {ip} its IPv4 address. Only a checked MAC and address are put in. The command must finish within 20 seconds; a script that needs more lines is a file, and its path is the command.": "{mac} は機器の MACアドレス（aa:bb:cc:dd:ee:ff）に、{MAC} は同じものの大文字に、{ip} は IPv4 アドレスに置き換わります。差し込まれるのは、形を確かめた MACアドレスとアドレスだけです。コマンドは 20 秒以内に終わる必要があります。何行にもなる処理はスクリプトのファイルにして、そのパスをコマンドとして入れてください。",
+        "Finish diagnosing": "診断を終える",
+        "Diagnose: record what this page does, to find out why it misbehaves": "診断：このページの動きを記録して、うまく動かない原因を調べます",
+        "Diagnose": "診断",
+        "Recording what this page does. Do whatever does not work, then press Finish.": "このページの動きを記録しています。うまく動かない操作をしてから「終了」を押してください。",
+        "Finish": "終了",
+        "What the page did": "診断の結果",
+        "This is what the page and this server saw while you used it. It holds no passwords, nothing typed into the page and none of its text — only addresses (with the values after “?” hidden), answers and errors. You can paste it into a report.": "ページを使っている間に、ページとこのサーバーが見たことです。パスワード、ページに入力した内容、ページの文章は含まれていません。含まれるのはアドレス（「?」の後ろの値は伏せています）、応答、エラーだけです。報告にそのまま貼り付けられます。"
     },
     "nplurals=1; plural=0;"
 );

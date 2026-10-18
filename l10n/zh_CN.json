@@ -291,7 +291,7 @@
         "Administrators and the groups below": "管理员及下列群组",
         "Every signed-in user": "所有已登录用户",
         "Groups (comma separated)": "群组（以逗号分隔）",
-        "it-team, office": "it-team, office",
+        "it-team, office": "信息部, 办公室",
         "Hide NetBase from the app menu for users who may not use any tool": "对无法使用任何工具的用户，在应用菜单中隐藏 NetBase",
         "All admin-only": "全部仅限管理员",
         "All users": "全部用户",
@@ -1665,7 +1665,14 @@
         "Unknown way of sending Wake-on-LAN": "未知的网络唤醒发送方式",
         "Wake-on-LAN": "网络唤醒（Wake-on-LAN）",
         "Wake-up sent for {mac}": "已为 {mac} 发送唤醒",
-        "{mac} becomes the device's MAC address (aa:bb:cc:dd:ee:ff), {MAC} the same in capitals, and {ip} its IPv4 address. Only a checked MAC and address are put in. The command must finish within 20 seconds; a script that needs more lines is a file, and its path is the command.": "{mac} 会替换为设备的 MAC 地址（aa:bb:cc:dd:ee:ff），{MAC} 为其大写形式，{ip} 为其 IPv4 地址。只会填入经过检查的 MAC 地址和 IP 地址。命令必须在 20 秒内结束；需要多行的处理请写成脚本文件，并把该文件的路径作为命令。"
+        "{mac} becomes the device's MAC address (aa:bb:cc:dd:ee:ff), {MAC} the same in capitals, and {ip} its IPv4 address. Only a checked MAC and address are put in. The command must finish within 20 seconds; a script that needs more lines is a file, and its path is the command.": "{mac} 会替换为设备的 MAC 地址（aa:bb:cc:dd:ee:ff），{MAC} 为其大写形式，{ip} 为其 IPv4 地址。只会填入经过检查的 MAC 地址和 IP 地址。命令必须在 20 秒内结束；需要多行的处理请写成脚本文件，并把该文件的路径作为命令。",
+        "Finish diagnosing": "结束诊断",
+        "Diagnose: record what this page does, to find out why it misbehaves": "诊断：记录此页面的行为，以找出它工作不正常的原因",
+        "Diagnose": "诊断",
+        "Recording what this page does. Do whatever does not work, then press Finish.": "正在记录此页面的行为。请执行无法正常工作的操作，然后点击“结束”。",
+        "Finish": "结束",
+        "What the page did": "页面做了什么",
+        "This is what the page and this server saw while you used it. It holds no passwords, nothing typed into the page and none of its text — only addresses (with the values after “?” hidden), answers and errors. You can paste it into a report.": "这是你使用页面期间页面和此服务器看到的内容。其中不含密码、在页面中输入的任何内容和页面的文字——只有地址（“?”后面的值已隐藏）、应答和错误。你可以把它粘贴到报告中。"
     },
     "pluralForm": "nplurals=1; plural=0;"
 }

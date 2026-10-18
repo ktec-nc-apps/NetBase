@@ -1190,6 +1190,39 @@ html.nb-col-resizing, html.nb-col-resizing * { cursor: col-resize !important; -w
 .devwin-help strong { display: block; margin-bottom: 4px; }
 .devwin-help ul { margin: 0 0 12px; padding-left: 1.2em; }
 .devwin-help li { list-style: disc; }
+#netbase-root .devwin-diag-btn.rec, #netbase-root .devwin-diag-btn.rec:hover:not(:disabled) { color: #fff; background: #dc2626; border-color: #dc2626; }
+#netbase-root .devwin-diag-btn.rec svg { stroke: #fff; }
+.devwin-diag {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  background: #fef2f2;
+  color: #7f1d1d;
+  border-bottom: 1px solid #fecaca;
+  font-size: .85em;
+}
+#netbase-root .devwin-diag .dot { width: 9px; height: 9px; border-radius: 50%; background: #dc2626; box-shadow: none; flex: 0 0 auto; animation: nb-diag-blink 1.2s ease-in-out infinite; }
+.devwin-diag .msg { min-width: 0; }
+.devwin-diag .spacer { flex: 1; }
+@keyframes nb-diag-blink { 50% { opacity: .25; } }
+@media (prefers-color-scheme: dark) {
+  #netbase-root:not([data-nbtheme]) .devwin-diag { background: #3b1414; color: #fecaca; border-bottom-color: #7f1d1d; }
+}
+#netbase-root[data-nbtheme="dark"] .devwin-diag { background: #3b1414; color: #fecaca; border-bottom-color: #7f1d1d; }
+.diag-text {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  height: min(52vh, 460px);
+  margin: 8px 0 12px;
+  padding: 10px;
+  font-size: 12px;
+  line-height: 1.5;
+  white-space: pre;
+  overflow: auto;
+  resize: vertical;
+}
 
 /* Copy, download and save say what they are, until the room runs out. */
 .topbar-actions .btn.keep { display: inline-flex; align-items: center; gap: 6px; }
@@ -1273,7 +1306,9 @@ html.nb-col-resizing, html.nb-col-resizing * { cursor: col-resize !important; -w
     border-radius: 0; border-left: 0; border-right: 0; border-bottom: 0;
   }
   #netbase-root .devwin-head { cursor: default; flex-wrap: wrap; gap: 5px; }
-  #netbase-root .devwin-head .nm { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  /* The name gives way first, so the buttons stay on one row: from zero it
+     only takes what they leave, and is cut short with an ellipsis. */
+  #netbase-root .devwin-head .nm { flex: 1 1 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   #netbase-root .devwin-head .addr { flex: 1 1 100%; max-width: 100%; order: 9; }
   #netbase-root .devwin-head .btn.xs { padding: 6px 9px; }
   #netbase-root .devwin-grip { display: none; }

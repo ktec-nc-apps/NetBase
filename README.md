@@ -12,6 +12,8 @@ NetBase turns your Nextcloud into a network console. It finds every device on yo
 
 **What it is for.** Changing a branch router's settings from somewhere else entirely. Reading a printer's toner levels and its tray configuration. Sending new firmware or restoring a saved configuration. Supporting a customer's equipment without a VPN, a jump host or a site visit. Several windows can be open at once, moved and resized, each remembering where it has been.
 
+**When a page does not work.** Some device pages come up blank in the window, or do nothing when clicked. The window's **Diagnose** button (top right) loads the page again from the start and records what happens until **Finish** is pressed: the requests the server carried and what came back, the device's headers that NetBase does not pass on to the browser, and the page's errors, clicks and form submissions. It keeps no passwords, nothing typed into the page and none of its text, and hides the values after "?" in every address, so the report can be pasted into a bug report as it stands.
+
 ### Device discovery and inventory
 
 **How it works.** Nextcloud runs unprivileged, so raw sockets — and therefore ARP scanning in PHP — are not available. NetBase makes the kernel do the work instead: sending a datagram to an on-link address forces the kernel to resolve it, and the result lands in the neighbour table, which is world readable. Names come from the devices themselves over NetBIOS, mDNS, WS-Discovery and SSDP, all plain UDP, and vendors from the bundled IEEE registries — more than 53,000 prefixes, so no MAC address is ever sent anywhere. Open ports are checked at one of five depths, from a short list of fifteen that keeps a sweep quick to every one of the 65,535. NetBase also listens, continuously and in the background, to the announcements devices make to the multicast group: those are carried at the level of the wire, so a device on a different subnet of the same cable — a camera left on its factory address, say — is found even though nothing can route to it and it can never answer a question. The server NetBase runs on is written down too; a machine never asks the network for its own address, so it is never in its own neighbour table. A sweep, and the port scan of a single device, stay on the local network — a private address range, or a network this server is attached to; a public range is refused.
@@ -243,6 +245,8 @@ NetBase は、Nextcloud をネットワーク管理コンソールとして使�
 **仕組み** ― サーバーが機器のページを取得し、ページ内のアドレスをすべて書き換えます。リンク、スタイルシート、スクリプト、フォーム、リダイレクト、meta refresh に加え、ページのスクリプトが実行中に組み立てるアドレスも対象です。これにより、機器の画面全体が、機器のアドレスではなく Nextcloud のアドレスで表示されます。ウィンドウごとに、対象のアドレス・ユーザー・有効期限を記した署名付きのチケットを発行します。機器とのセッションはサーバー側で保持するため、ページを移動してもログイン状態が保たれます。開けるのは、プライベートアドレス、このサーバー自身のアドレス、スキャンで実際に見つかったホストだけです。表示中のページは、ポリシーによってプロキシ自身のパスに固定され、サンドボックスにより自分自身以外のページへは移動できません。
 
 **用途** ― 離れた場所にある拠点のルーターの設定変更、プリンターのトナー残量やトレイ設定の確認、新しいファームウェアの送信や保存済み設定の復元に使えます。VPN や踏み台サーバーを用意しなくても、現地に出向かなくても、お客様の機器をサポートできます。ウィンドウは同時に複数開いて移動やサイズ変更ができ、それぞれが表示していたページを覚えています。
+
+**ページが正しく動かないとき** ― 機器によっては、ウィンドウの中で画面が真っ白になったり、押しても反応しなかったりします。ウィンドウ右上の **「診断」** を押すと、ページを最初から読み込み直し、**「終了」** を押すまでの動きを記録します。記録するのは、サーバーが中継したリクエストとその応答、NetBase がブラウザーに渡さなかった機器のヘッダー、画面で起きたエラー・クリック・フォームの送信です。パスワード、画面に入力した内容、画面の文章は記録せず、アドレスの「?」より後ろの値も伏せるため、結果をそのまま不具合の報告に貼り付けられます。
 
 ### 機器の検出と機器台帳
 

@@ -31,6 +31,7 @@ use OCA\NetBase\Service\PermissionService;
 use OCA\NetBase\Service\RequirementsService;
 use OCA\NetBase\Service\ScanService;
 use OCA\NetBase\Service\ToolService;
+use OCA\NetBase\Service\DeviceDiagService;
 use OCA\NetBase\Service\WakeService;
 use OCA\NetBase\Service\WhoisAvailabilityService;
 use OCA\NetBase\Http\ProxyResponse;
@@ -84,6 +85,7 @@ class ApiController extends Controller {
 		private LoggerInterface $logger,
 		private WhoisAvailabilityService $avail,
 		private WakeService $wake,
+		private DeviceDiagService $diag,
 	) {
 		parent::__construct(Application::APP_ID, $request);
 	}
@@ -1069,6 +1071,29 @@ class ApiController extends Controller {
 		]);
 	}
 
+	/**
+	 * Start or finish recording what a device's window does — its Diagnose
+	 * button. Only the person's own recording of the device, and only for one
+	 * who may open device pages at all. Finishing hands back what the server
+	 * saw and forgets it.
+	 */
+	#[NoAdminRequired]
+	public function deviceDiag(string $base, string $action = 'start') {
+		try {
+			$this->permissions->require('preview');
+			$base = $this->proxy->validateBase($base);
+			$uid = (string)$this->permissions->uid();
+			if ($action === 'start') {
+				$this->diag->start($uid, $base);
+				return new JSONResponse(['ok' => true]);
+			}
+			$data = $this->diag->stop($uid, $base);
+			return new JSONResponse(['ok' => true, 'entries' => $data['entries'] ?? [], 'started' => $data['started'] ?? 0]);
+		} catch (\Throwable $e) {
+			return $this->failure($e);
+		}
+	}
+
 	// ---------------------------------------------------------------- page preview
 
 	/**
@@ -1559,7 +1584,7 @@ class ApiController extends Controller {
 	private function availableLanguages(): array {
 		$names = [
 			'ja' => '日本語', 'en' => 'English', 'zh_CN' => '简体中文', 'es' => 'Español',
-			'fr' => 'Français', 'de' => 'Deutsch', 'ru' => 'Русский', 'pt_PT' => 'Português (Portugal)',
+			'fr' => 'Français', 'de' => 'Deutsch', 'ru' => 'Русский', 'pt_PT' => 'Português (Portugal)', 'pt_BR' => 'Português (Brasil)',
 			'ar' => 'العربية', 'hi' => 'हिन्दी', 'ko' => '한국어', 'it' => 'Italiano',
 			'tr' => 'Türkçe', 'id' => 'Bahasa Indonesia', 'vi' => 'Tiếng Việt', 'th' => 'ไทย',
 			'fa' => 'فارسی', 'pl' => 'Polski', 'uk' => 'Українська', 'cs' => 'Čeština',

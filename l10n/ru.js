@@ -292,7 +292,7 @@ OC.L10N.register(
         "Administrators and the groups below": "Администраторам и указанным ниже группам",
         "Every signed-in user": "Всем вошедшим пользователям",
         "Groups (comma separated)": "Группы (через запятую)",
-        "it-team, office": "it-team, office",
+        "it-team, office": "it-отдел, офис",
         "Hide NetBase from the app menu for users who may not use any tool": "Скрывать NetBase из меню приложений у пользователей, которым не доступен ни один инструмент",
         "All admin-only": "Всё только администраторам",
         "All users": "Всем пользователям",
@@ -917,8 +917,8 @@ OC.L10N.register(
         "LAN throughput": "Пропускная способность локальной сети",
         "Neighbour table": "Таблица соседей",
         "Open relay": "Открытый релей",
-        "Subnet": "Subnet",
-        "Test message": "Test message",
+        "Subnet": "Подсеть",
+        "Test message": "Тестовое письмо",
         "The device answered %d and then stopped sending, so there is no page to show.": "Устройство ответило %d, а затем перестало отправлять данные, поэтому показать страницу нечем.",
         "The device did not accept that user name and password.": "Устройство не приняло это имя пользователя и пароль.",
         "The device did not answer": "Устройство не ответило",
@@ -1666,7 +1666,14 @@ OC.L10N.register(
         "Unknown way of sending Wake-on-LAN": "Неизвестный способ отправки Wake-on-LAN",
         "Wake-on-LAN": "Wake-on-LAN",
         "Wake-up sent for {mac}": "Сигнал пробуждения для {mac} отправлен",
-        "{mac} becomes the device's MAC address (aa:bb:cc:dd:ee:ff), {MAC} the same in capitals, and {ip} its IPv4 address. Only a checked MAC and address are put in. The command must finish within 20 seconds; a script that needs more lines is a file, and its path is the command.": "{mac} заменяется MAC-адресом устройства (aa:bb:cc:dd:ee:ff), {MAC} — им же заглавными буквами, {ip} — его IPv4-адресом. Подставляются только проверенные MAC-адрес и адрес. Команда должна завершиться за 20 секунд; скрипт из нескольких строк оформите файлом и укажите его путь как команду."
+        "{mac} becomes the device's MAC address (aa:bb:cc:dd:ee:ff), {MAC} the same in capitals, and {ip} its IPv4 address. Only a checked MAC and address are put in. The command must finish within 20 seconds; a script that needs more lines is a file, and its path is the command.": "{mac} заменяется MAC-адресом устройства (aa:bb:cc:dd:ee:ff), {MAC} — им же заглавными буквами, {ip} — его IPv4-адресом. Подставляются только проверенные MAC-адрес и адрес. Команда должна завершиться за 20 секунд; скрипт из нескольких строк оформите файлом и укажите его путь как команду.",
+        "Finish diagnosing": "Завершить диагностику",
+        "Diagnose: record what this page does, to find out why it misbehaves": "Диагностика: записать, что делает эта страница, чтобы выяснить, почему она работает неправильно",
+        "Diagnose": "Диагностика",
+        "Recording what this page does. Do whatever does not work, then press Finish.": "Идёт запись того, что делает эта страница. Выполните то, что не работает, затем нажмите «Завершить».",
+        "Finish": "Завершить",
+        "What the page did": "Что делала страница",
+        "This is what the page and this server saw while you used it. It holds no passwords, nothing typed into the page and none of its text — only addresses (with the values after “?” hidden), answers and errors. You can paste it into a report.": "Это то, что видели страница и этот сервер, пока вы ею пользовались. Здесь нет паролей, ничего из введённого на странице и её текста — только адреса (значения после «?» скрыты), ответы и ошибки. Это можно вставить в отчёт."
     },
     "nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);"
 );

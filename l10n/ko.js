@@ -31,9 +31,9 @@ OC.L10N.register(
         "It shares this wire but its address belongs to another network, so nothing here can reach it. Give it an address on this network, or give this server one on its own, to open it.": "같은 선에 연결돼 있지만 주소가 다른 네트워크의 것이라 여기서는 닿지 않습니다. 열려면 이 기기에 이 네트워크의 주소를 주거나, 이 서버에 상대 쪽 주소를 추가하세요.",
         "this server": "이 서버",
         "Wait for an answer": "응답 대기 시간",
-        "{wait} — quick, misses slow devices": "{wait}（빠름・느린 기기를 놓침）",
+        "{wait} — quick, misses slow devices": "{wait}（빠름 · 느린 기기를 놓침）",
         "{wait} — the usual": "{wait}（표준）",
-        "{wait} — finds the slowest, takes longest": "{wait}（가장 확실・가장 오래 걸림）",
+        "{wait} — finds the slowest, takes longest": "{wait}（가장 확실 · 가장 오래 걸림）",
         "Open over HTTP": "HTTP로 열기",
         "Open over HTTPS": "HTTPS로 열기",
         "Open over FTP": "FTP로 열기",
@@ -292,7 +292,7 @@ OC.L10N.register(
         "Administrators and the groups below": "관리자와 아래 그룹",
         "Every signed-in user": "로그인한 모든 사용자",
         "Groups (comma separated)": "그룹(쉼표로 구분)",
-        "it-team, office": "it-team, office",
+        "it-team, office": "IT팀, 사무실",
         "Hide NetBase from the app menu for users who may not use any tool": "도구를 하나도 쓸 수 없는 사용자에게는 앱 메뉴에서 NetBase 숨기기",
         "All admin-only": "전부 관리자 전용",
         "All users": "모든 사용자",
@@ -1666,7 +1666,14 @@ OC.L10N.register(
         "Unknown way of sending Wake-on-LAN": "알 수 없는 Wake-on-LAN 전송 방법",
         "Wake-on-LAN": "Wake-on-LAN",
         "Wake-up sent for {mac}": "{mac}에 깨우기 신호를 보냈습니다",
-        "{mac} becomes the device's MAC address (aa:bb:cc:dd:ee:ff), {MAC} the same in capitals, and {ip} its IPv4 address. Only a checked MAC and address are put in. The command must finish within 20 seconds; a script that needs more lines is a file, and its path is the command.": "{mac}은 기기의 MAC 주소(aa:bb:cc:dd:ee:ff)로, {MAC}은 같은 주소의 대문자로, {ip}는 IPv4 주소로 바뀝니다. 확인을 거친 MAC 주소와 IP 주소만 들어갑니다. 명령은 20초 안에 끝나야 하며, 여러 줄이 필요한 처리는 스크립트 파일로 만들고 그 경로를 명령으로 입력하세요."
+        "{mac} becomes the device's MAC address (aa:bb:cc:dd:ee:ff), {MAC} the same in capitals, and {ip} its IPv4 address. Only a checked MAC and address are put in. The command must finish within 20 seconds; a script that needs more lines is a file, and its path is the command.": "{mac}은 기기의 MAC 주소(aa:bb:cc:dd:ee:ff)로, {MAC}은 같은 주소의 대문자로, {ip}는 IPv4 주소로 바뀝니다. 확인을 거친 MAC 주소와 IP 주소만 들어갑니다. 명령은 20초 안에 끝나야 하며, 여러 줄이 필요한 처리는 스크립트 파일로 만들고 그 경로를 명령으로 입력하세요.",
+        "Finish diagnosing": "진단 끝내기",
+        "Diagnose: record what this page does, to find out why it misbehaves": "진단: 이 페이지가 하는 일을 기록해 제대로 동작하지 않는 이유를 찾습니다",
+        "Diagnose": "진단",
+        "Recording what this page does. Do whatever does not work, then press Finish.": "이 페이지가 하는 일을 기록하는 중입니다. 동작하지 않는 조작을 한 뒤 ‘끝내기’를 누르세요.",
+        "Finish": "끝내기",
+        "What the page did": "페이지가 한 일",
+        "This is what the page and this server saw while you used it. It holds no passwords, nothing typed into the page and none of its text — only addresses (with the values after “?” hidden), answers and errors. You can paste it into a report.": "페이지를 사용하는 동안 페이지와 이 서버가 본 내용입니다. 비밀번호, 페이지에 입력한 내용, 페이지의 글은 들어 있지 않습니다. 주소(“?” 뒤의 값은 가림), 응답, 오류만 들어 있습니다. 보고서에 그대로 붙여 넣을 수 있습니다."
     },
     "nplurals=1; plural=0;"
 );

@@ -28,11 +28,10 @@ class Application extends App implements IBootstrap {
 	/**
 	 * l10n files that carry the same strings as another and so are not offered in the
 	 * language picker: zh (= zh_CN), kept for the browser-language fallback so an account
-	 * in zh_TW or zh_HK gets Chinese rather than English; and pt_BR (= pt_PT): the
-	 * Portuguese is written the European way, and is shipped under pt_BR too so an account
-	 * in Brazilian Portuguese gets Portuguese rather than English.
+	 * in zh_TW or zh_HK gets Chinese rather than English. pt_BR and pt_PT are translations
+	 * of their own (Brazilian and European Portuguese) and are both offered.
 	 */
-	public const SAME_AS = ['zh' => 'zh_CN', 'pt_BR' => 'pt_PT'];
+	public const SAME_AS = ['zh' => 'zh_CN'];
 
 	public function __construct() {
 		parent::__construct(self::APP_ID);

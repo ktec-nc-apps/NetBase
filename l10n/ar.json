@@ -1665,7 +1665,14 @@
         "Unknown way of sending Wake-on-LAN": "طريقة غير معروفة لإرسال Wake-on-LAN",
         "Wake-on-LAN": "Wake-on-LAN",
         "Wake-up sent for {mac}": "أُرسلت إشارة الإيقاظ إلى {mac}",
-        "{mac} becomes the device's MAC address (aa:bb:cc:dd:ee:ff), {MAC} the same in capitals, and {ip} its IPv4 address. Only a checked MAC and address are put in. The command must finish within 20 seconds; a script that needs more lines is a file, and its path is the command.": "يُستبدل {mac} بعنوان MAC للجهاز (aa:bb:cc:dd:ee:ff)، و{MAC} بالعنوان نفسه بأحرف كبيرة، و{ip} بعنوان IPv4 الخاص به. لا يُدرَج إلا عنوان MAC وعنوان IP تم التحقق منهما. يجب أن ينتهي الأمر خلال 20 ثانية؛ والنص البرمجي متعدد الأسطر يوضع في ملف، ويكون مساره هو الأمر."
+        "{mac} becomes the device's MAC address (aa:bb:cc:dd:ee:ff), {MAC} the same in capitals, and {ip} its IPv4 address. Only a checked MAC and address are put in. The command must finish within 20 seconds; a script that needs more lines is a file, and its path is the command.": "يُستبدل {mac} بعنوان MAC للجهاز (aa:bb:cc:dd:ee:ff)، و{MAC} بالعنوان نفسه بأحرف كبيرة، و{ip} بعنوان IPv4 الخاص به. لا يُدرَج إلا عنوان MAC وعنوان IP تم التحقق منهما. يجب أن ينتهي الأمر خلال 20 ثانية؛ والنص البرمجي متعدد الأسطر يوضع في ملف، ويكون مساره هو الأمر.",
+        "Finish diagnosing": "إنهاء التشخيص",
+        "Diagnose: record what this page does, to find out why it misbehaves": "تشخيص: سجّل ما تفعله هذه الصفحة لمعرفة سبب عدم عملها بشكل صحيح",
+        "Diagnose": "تشخيص",
+        "Recording what this page does. Do whatever does not work, then press Finish.": "جارٍ تسجيل ما تفعله هذه الصفحة. نفّذ ما لا يعمل، ثم اضغط «إنهاء».",
+        "Finish": "إنهاء",
+        "What the page did": "ما فعلته الصفحة",
+        "This is what the page and this server saw while you used it. It holds no passwords, nothing typed into the page and none of its text — only addresses (with the values after “?” hidden), answers and errors. You can paste it into a report.": "هذا ما رأته الصفحة وهذا الخادم أثناء استخدامك لها. لا يحتوي على كلمات مرور ولا على أي شيء كُتب في الصفحة ولا على نصها — فقط العناوين (مع إخفاء القيم بعد «?») والاستجابات والأخطاء. يمكنك لصقه في تقرير."
     },
     "pluralForm": "nplurals=6; plural=(n==0 ? 0 : n==1 ? 1 : n==2 ? 2 : n%100>=3 && n%100<=10 ? 3 : n%100>=11 && n%100<=99 ? 4 : 5);"
 }

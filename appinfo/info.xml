@@ -50,7 +50,7 @@ Available in twenty languages, and NetBase can be set to a different language fr
 アクセス権はツールごとに設定します。NetBase は管理者向けのアプリで、ローカルネットワークに関わる機能は、初期設定では管理者だけが使えます。ただし、管理者設定から各ツールを、指定したグループや全ユーザーに公開できます。ネットワークへのアクセス権を渡さずに、whois や DNS など危険のない調査だけをほかのユーザーに使ってもらえます。何も許可されていないユーザーには、アプリメニューに NetBase を表示しません。
 
 20 の言語に対応しています。NetBase だけを Nextcloud 本体とは別の言語に、ユーザーごとに設定することもできます。]]></description>
-	<version>0.8.3</version>
+	<version>0.8.4</version>
 	<licence>agpl</licence>
 	<author>KTEC</author>
 	<namespace>NetBase</namespace>

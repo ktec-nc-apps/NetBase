@@ -916,8 +916,8 @@
         "LAN throughput": "Velocità sulla LAN",
         "Neighbour table": "Tabella dei vicini",
         "Open relay": "Relay aperto",
-        "Subnet": "Subnet",
-        "Test message": "Test message",
+        "Subnet": "Sottorete",
+        "Test message": "Messaggio di prova",
         "The device answered %d and then stopped sending, so there is no page to show.": "Il dispositivo ha risposto %d e poi ha smesso di inviare, quindi non c'è nessuna pagina da mostrare.",
         "The device did not accept that user name and password.": "Il dispositivo non ha accettato quel nome utente e quella password.",
         "The device did not answer": "Il dispositivo non ha risposto",
@@ -1665,7 +1665,14 @@
         "Unknown way of sending Wake-on-LAN": "Modalità di invio del Wake-on-LAN sconosciuta",
         "Wake-on-LAN": "Wake-on-LAN",
         "Wake-up sent for {mac}": "Segnale di accensione inviato per {mac}",
-        "{mac} becomes the device's MAC address (aa:bb:cc:dd:ee:ff), {MAC} the same in capitals, and {ip} its IPv4 address. Only a checked MAC and address are put in. The command must finish within 20 seconds; a script that needs more lines is a file, and its path is the command.": "{mac} diventa l’indirizzo MAC del dispositivo (aa:bb:cc:dd:ee:ff), {MAC} lo stesso in maiuscolo e {ip} il suo indirizzo IPv4. Vengono inseriti solo un MAC e un indirizzo verificati. Il comando deve terminare entro 20 secondi; uno script di più righe va messo in un file, il cui percorso diventa il comando."
+        "{mac} becomes the device's MAC address (aa:bb:cc:dd:ee:ff), {MAC} the same in capitals, and {ip} its IPv4 address. Only a checked MAC and address are put in. The command must finish within 20 seconds; a script that needs more lines is a file, and its path is the command.": "{mac} diventa l’indirizzo MAC del dispositivo (aa:bb:cc:dd:ee:ff), {MAC} lo stesso in maiuscolo e {ip} il suo indirizzo IPv4. Vengono inseriti solo un MAC e un indirizzo verificati. Il comando deve terminare entro 20 secondi; uno script di più righe va messo in un file, il cui percorso diventa il comando.",
+        "Finish diagnosing": "Termina la diagnosi",
+        "Diagnose: record what this page does, to find out why it misbehaves": "Diagnosi: registra ciò che fa questa pagina, per capire perché non funziona bene",
+        "Diagnose": "Diagnosi",
+        "Recording what this page does. Do whatever does not work, then press Finish.": "Registrazione di ciò che fa questa pagina. Esegui ciò che non funziona, poi premi Termina.",
+        "Finish": "Termina",
+        "What the page did": "Cosa ha fatto la pagina",
+        "This is what the page and this server saw while you used it. It holds no passwords, nothing typed into the page and none of its text — only addresses (with the values after “?” hidden), answers and errors. You can paste it into a report.": "Ecco cosa hanno visto la pagina e questo server mentre la usavi. Non contiene password, niente di ciò che è stato digitato nella pagina né i suoi testi: solo indirizzi (con i valori dopo «?» nascosti), risposte ed errori. Puoi incollarlo in una segnalazione."
     },
     "pluralForm": "nplurals=2; plural=(n != 1);"
 }

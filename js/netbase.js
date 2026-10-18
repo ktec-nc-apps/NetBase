@@ -2400,6 +2400,30 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
     <!-- How to give this server a language it does not yet have. The list of
          locales is read from the machine, so this is the only way to add to
          it — and it is done on the server, not from here. -->
+    <!-- What a diagnosis found, ready to copy into a report. -->
+    <!-- Above the device windows (they stack from 3000 up): it is opened from one of them. -->
+    <div v-if="diagView.open" class="drawer-backdrop centred over-dialog" :style="{ zIndex: windowTop + 1 }" @click.self="diagView.open=false">
+      <div class="modal wide">
+        <div class="drawer-head">
+          <span class="ic big">🩺</span>
+          <div>
+            <strong>{{ t('What the page did') }}</strong>
+            <div class="dim">{{ diagView.title }}</div>
+          </div>
+          <span class="spacer"></span>
+          <button class="btn xs ib" :title="t('Close')" :aria-label="t('Close')" @click="diagView.open=false"><svg viewBox="0 0 24 24"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg></button>
+        </div>
+        <div class="drawer-body">
+          <p class="dim">{{ t('This is what the page and this server saw while you used it. It holds no passwords, nothing typed into the page and none of its text — only addresses (with the values after “?” hidden), answers and errors. You can paste it into a report.') }}</p>
+          <textarea class="diag-text mono" readonly :value="diagView.text"></textarea>
+          <div class="row">
+            <button class="btn sm primary" @click="copyText(diagView.text, t('Copied'))">{{ t('Copy') }}</button>
+            <button class="btn sm" @click="diagView.open=false">{{ t('Close') }}</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <div v-if="termLog.open" class="drawer-backdrop centred over-dialog" @click.self="termLog.open=false">
       <div class="modal">
         <div class="drawer-head">
@@ -2719,6 +2743,11 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         <button class="btn xs ib" v-if="!narrow" :title="t('Fill the screen')" :aria-label="t('Fill the screen')" @click.stop="toggleFull(w)">
           <svg viewBox="0 0 24 24"><path d="M14.5 3.5H20.5V9.5"/><path d="M9.5 20.5H3.5V14.5"/><path d="M20.5 3.5L13.5 10.5"/><path d="M3.5 20.5L10.5 13.5"/></svg>
         </button>
+        <!-- Finding out why a device's page misbehaves here: what the page did,
+             and what the server saw, recorded while the person repeats it. -->
+        <button class="btn xs ib devwin-diag-btn" :class="{ rec: w.diag && w.diag.on }" :title="w.diag && w.diag.on ? t('Finish diagnosing') : t('Diagnose: record what this page does, to find out why it misbehaves')" :aria-label="t('Diagnose')" :disabled="w.diag && w.diag.busy" @click.stop="w.diag && w.diag.on ? finishDiag(w) : startDiag(w)">
+          <svg viewBox="0 0 24 24"><path d="M3 12h4l2.5-6 4 12 2.5-6H21"/></svg>
+        </button>
         <button class="btn xs ib" :title="t('What this window can and cannot do')" :aria-label="t('What this window can and cannot do')" @click.stop="w.help = !w.help">
           <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9.2"/><path d="M9.2 9.3a2.9 2.9 0 0 1 5.7.8c0 1.9-2.9 2.4-2.9 4"/><path d="M12 17.4h.01"/></svg>
         </button>
@@ -2741,6 +2770,13 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
           <li>{{ t('Anything needing Java or ActiveX in the browser') }}</li>
         </ul>
         <button class="btn xs" @click.stop="w.help = false">{{ t('Close') }}</button>
+      </div>
+      <div v-if="w.diag && w.diag.on" class="devwin-diag" @mousedown.stop>
+        <span class="dot"></span>
+        <span class="msg">{{ t('Recording what this page does. Do whatever does not work, then press Finish.') }}</span>
+        <span class="spacer"></span>
+        <button class="btn xs primary" :disabled="w.diag.busy" @click.stop="finishDiag(w)">{{ t('Finish') }}</button>
+        <button class="btn xs" :disabled="w.diag.busy" @click.stop="finishDiag(w, false)">{{ t('Cancel') }}</button>
       </div>
       <!-- What used to be here was a sentence explaining the window to someone
            who had already opened it. This is the row of things a person
@@ -3796,6 +3832,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         ],
         // What was kept of past terminals: the list of them, and the one being read.
         termLog: { open: false, loading: false, sessions: [], session: null, steps: [] },
+        diagView: { open: false, title: '', text: '' },
         themeOptions: THEME_OPTIONS,
         adminUrl: (window.OC && OC.generateUrl) ? OC.generateUrl('/settings/admin/netbase') : '/settings/admin/netbase',
         liveOn: false, liveIface: '', liveIfaces: [], liveNow: { rx: 0, tx: 0 }, liveRx: [], liveTx: [],
@@ -5581,7 +5618,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         const w = {
           id: ++this.windowSeq, base, url: '', src: '', error: '', busy: true, full: false, escapes: 0, field: null, zoom: 1, fit: false, shooting: false, toast: null,
           loading: false, loadSecs: 0, loadTimer: null,
-          here: '', trail: [], trailAt: -1, rewinding: false, help: false, z: ++this.windowTop,
+          here: '', trail: [], trailAt: -1, rewinding: false, help: false, diag: null, z: ++this.windowTop,
           title: (device.name || device.ip) + ' · ' + port,
           x: this.narrow ? 0 : Math.max(20, Math.round(window.innerWidth / 2 - 520) + offset),
           y: this.narrow ? 0 : 90 + offset,
@@ -5853,6 +5890,20 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
       },
       onWindowMessage(event) {
         const data = event && event.data;
+        if (data && data.netbase === 'diag' && data.ev && event.origin === location.origin) {
+          // From the page itself or from a frame inside it: the window is the one
+          // whose frame the sender sits in.
+          const frames = [...document.querySelectorAll('.devwin-frame')];
+          let src = event.source, frame = null;
+          for (let i = 0; src && i < 8 && !frame; i++) {
+            frame = frames.find((f) => f.contentWindow === src) || null;
+            if (src === src.parent) break;
+            src = src.parent;
+          }
+          const w = frame && this.windows.find((x) => String(x.id) === frame.getAttribute('data-window'));
+          if (w && w.diag && w.diag.on && w.diag.events.length < 600) w.diag.events.push(data.ev);
+          return;
+        }
         if (!data || (data.netbase !== 'frames' && data.netbase !== 'here')) return;
         const frame = [...document.querySelectorAll('.devwin-frame')].find((f) => f.contentWindow === event.source);
         if (!frame) return;
@@ -6020,7 +6071,96 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         if (has(23) && this.allowed('sshexec')) out.push({ icon: '🖳', label: T('Open a Telnet window'), run: () => this.openTerminal('telnet', device.ip, 23) });
         return out;
       },
-      closeWindow(w) { clearInterval(w.loadTimer); this.windows = this.windows.filter((x) => x.id !== w.id); },
+      closeWindow(w) {
+        if (w.diag && w.diag.on) this.finishDiag(w, false);
+        clearInterval(w.loadTimer);
+        this.windows = this.windows.filter((x) => x.id !== w.id);
+      },
+      /**
+       * Diagnose: the window is loaded again from the start with a recorder in
+       * the page, and the server notes every request it carries for this
+       * device, until the person presses Finish. Neither keeps what was in the
+       * page, typed into it or sent — see DeviceDiagService.
+       */
+      async startDiag(w) {
+        if (!w || (w.diag && w.diag.busy)) return;
+        w.diag = { on: false, busy: true, started: Date.now(), events: [] };
+        try {
+          await api('proxy/diag', { method: 'POST', body: JSON.stringify({ base: w.base, action: 'start' }) });
+          w.diag = { on: true, busy: false, started: Date.now(), events: [] };
+          this.reloadWindow(w);
+        } catch (e) {
+          w.diag = null;
+          this.windowToast(w, e.message || String(e), 'error', 5000);
+        }
+      },
+      async finishDiag(w, show = true) {
+        const d = w && w.diag;
+        if (!d || d.busy) return;
+        d.busy = true;
+        let server;
+        try {
+          server = await api('proxy/diag', { method: 'POST', body: JSON.stringify({ base: w.base, action: 'stop' }) });
+        } catch (e) {
+          server = { entries: [], error: e.message || String(e) };
+        }
+        w.diag = null;
+        if (!show) return;
+        this.diagView = { open: true, title: w.title, text: this.diagText(w, d, server) };
+      },
+      /** The report, in one fixed form (English) so it reads the same to whoever is asked for help. */
+      diagText(w, d, server) {
+        const secs = (ms) => (ms / 1000).toFixed(1).padStart(6) + 's';
+        const size = (b) => b >= 1048576 ? (b / 1048576).toFixed(1) + ' MB' : b >= 1024 ? (b / 1024).toFixed(1) + ' KB' : b + ' B';
+        const lines = [];
+        lines.push('NetBase ' + (this.version || '') + ' — device window diagnosis');
+        lines.push('Device:   ' + w.base);
+        lines.push('Browser:  ' + navigator.userAgent);
+        lines.push('Recorded: ' + new Date(d.started).toISOString().replace('T', ' ').slice(0, 19) + ' UTC, for ' + Math.round((Date.now() - d.started) / 1000) + ' s');
+        const entries = (server && server.entries) || [];
+        lines.push('');
+        lines.push('== Requests the server carried (' + entries.length + ') ==');
+        if (server && server.error) lines.push('  (could not be read: ' + server.error + ')');
+        for (const e of entries) {
+          let line = secs((e.t || 0) * 1000) + '  ' + (e.m || '?') + ' ' + (e.p || '') + '  → ' + (e.s || 'no answer');
+          if (e.ct) line += '  ' + e.ct;
+          line += '  ' + size(e.b || 0) + '  ' + (e.ms || 0) + ' ms  ' + (e.how || '');
+          if (e.retries) line += '  (tried again ' + e.retries + 'x)';
+          lines.push(line);
+          if (e.loc) lines.push('          redirect → ' + e.loc);
+          if (e.auth) lines.push('          asks for a password (' + e.auth + ')');
+          if (e.cookie) lines.push('          sets a cookie (kept by the server)');
+          if (e.held && e.held.length) lines.push('          not passed to the browser: ' + e.held.join(', '));
+          if (e.err) lines.push('          error: ' + e.err);
+        }
+        lines.push('');
+        lines.push('== In the page (' + d.events.length + ') ==');
+        for (const e of d.events) {
+          const where = (e.frame ? 'frame ' : '') + (e.at || '');
+          let text;
+          switch (e.k) {
+            case 'open': text = 'page started'; break;
+            case 'leave': text = 'page left'; break;
+            case 'page': text = (e.when === 'ready' ? 'parsed' : 'loaded') + ': "' + (e.title || '') + '", ' + e.elements + ' elements, ' + e.frames + ' frames, ' + e.scripts + ' scripts, '
+              + e.text + ' characters of text, ' + e.height + ' px high' + (e.shown ? '' : ', not shown') + (e.state !== 'complete' && e.when !== 'ready' ? ', ' + e.state : '');
+              if (e.outside && e.outside.length) text += '\n          aimed outside the window: ' + e.outside.join(' | ');
+              break;
+            case 'error': text = 'script error: ' + e.msg + (e.src ? '  at ' + e.src + ':' + e.line + ':' + e.col : ''); break;
+            case 'rejection': text = 'unhandled promise rejection: ' + e.msg; break;
+            case 'console': text = 'console.error: ' + e.msg; break;
+            case 'load-failed': text = 'failed to load <' + e.tag + '> ' + e.url; break;
+            case 'blocked': text = 'blocked by the window\'s security policy (' + e.rule + '): ' + e.url; break;
+            case 'click': text = 'click <' + e.tag + (e.type ? ' type=' + e.type : '') + (e.id ? ' id=' + e.id : '') + (e.name ? ' name=' + e.name : '') + '>'
+              + (e.href ? ' href=' + e.href : '') + (e.onclick ? ' (onclick)' : '') + (e.target ? ' target=' + e.target : '') + (e.disabled ? ' (disabled)' : '') + (e.prevented ? ' — the page stopped it' : ''); break;
+            case 'submit': text = 'form sent (' + e.by + '): ' + e.method + ' ' + e.url + ', ' + e.fields + ' fields' + (e.target ? ', target=' + e.target : ''); break;
+            case 'fetch': case 'xhr': text = e.k + ' ' + e.method + ' ' + e.url + ' → ' + (e.status || 'failed') + ' (' + e.ms + ' ms)' + (e.err ? ' ' + e.err : ''); break;
+            default: text = e.k;
+          }
+          lines.push(secs((e.t || d.started) - d.started) + '  [' + where + '] ' + text);
+        }
+        if (!entries.length && !d.events.length) lines.push('  Nothing was recorded.');
+        return lines.join('\n');
+      },
 
       // ---- terminal windows: the same frame as a device window, holding a
       // line of text rather than a page ----

@@ -1666,7 +1666,14 @@ OC.L10N.register(
         "Unknown way of sending Wake-on-LAN": "Cara mengirim Wake-on-LAN tidak dikenal",
         "Wake-on-LAN": "Wake-on-LAN",
         "Wake-up sent for {mac}": "Sinyal bangun terkirim untuk {mac}",
-        "{mac} becomes the device's MAC address (aa:bb:cc:dd:ee:ff), {MAC} the same in capitals, and {ip} its IPv4 address. Only a checked MAC and address are put in. The command must finish within 20 seconds; a script that needs more lines is a file, and its path is the command.": "{mac} menjadi alamat MAC perangkat (aa:bb:cc:dd:ee:ff), {MAC} sama tetapi huruf kapital, dan {ip} alamat IPv4-nya. Hanya MAC dan alamat yang sudah diperiksa yang dimasukkan. Perintah harus selesai dalam 20 detik; skrip yang perlu lebih banyak baris dijadikan file, dan path-nya menjadi perintahnya."
+        "{mac} becomes the device's MAC address (aa:bb:cc:dd:ee:ff), {MAC} the same in capitals, and {ip} its IPv4 address. Only a checked MAC and address are put in. The command must finish within 20 seconds; a script that needs more lines is a file, and its path is the command.": "{mac} menjadi alamat MAC perangkat (aa:bb:cc:dd:ee:ff), {MAC} sama tetapi huruf kapital, dan {ip} alamat IPv4-nya. Hanya MAC dan alamat yang sudah diperiksa yang dimasukkan. Perintah harus selesai dalam 20 detik; skrip yang perlu lebih banyak baris dijadikan file, dan path-nya menjadi perintahnya.",
+        "Finish diagnosing": "Selesaikan diagnosis",
+        "Diagnose: record what this page does, to find out why it misbehaves": "Diagnosis: rekam apa yang dilakukan halaman ini untuk mengetahui mengapa halaman tidak berfungsi dengan benar",
+        "Diagnose": "Diagnosis",
+        "Recording what this page does. Do whatever does not work, then press Finish.": "Merekam apa yang dilakukan halaman ini. Lakukan hal yang tidak berfungsi, lalu tekan Selesai.",
+        "Finish": "Selesai",
+        "What the page did": "Apa yang dilakukan halaman",
+        "This is what the page and this server saw while you used it. It holds no passwords, nothing typed into the page and none of its text — only addresses (with the values after “?” hidden), answers and errors. You can paste it into a report.": "Inilah yang dilihat halaman dan server ini selama Anda menggunakannya. Tidak berisi kata sandi, apa pun yang diketik di halaman, maupun teksnya — hanya alamat (nilai setelah “?” disembunyikan), jawaban, dan galat. Anda dapat menempelkannya ke laporan."
     },
     "nplurals=1; plural=0;"
 );

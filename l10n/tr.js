@@ -1666,7 +1666,14 @@ OC.L10N.register(
         "Unknown way of sending Wake-on-LAN": "Bilinmeyen Wake-on-LAN gönderme yöntemi",
         "Wake-on-LAN": "Wake-on-LAN",
         "Wake-up sent for {mac}": "{mac} için uyandırma gönderildi",
-        "{mac} becomes the device's MAC address (aa:bb:cc:dd:ee:ff), {MAC} the same in capitals, and {ip} its IPv4 address. Only a checked MAC and address are put in. The command must finish within 20 seconds; a script that needs more lines is a file, and its path is the command.": "{mac}, cihazın MAC adresiyle (aa:bb:cc:dd:ee:ff), {MAC} aynısının büyük harfli hâliyle, {ip} ise IPv4 adresiyle değiştirilir. Yalnızca denetlenmiş bir MAC ve adres eklenir. Komut 20 saniye içinde bitmelidir; daha çok satır gerektiren bir betik bir dosyaya konur ve komut olarak o dosyanın yolu yazılır."
+        "{mac} becomes the device's MAC address (aa:bb:cc:dd:ee:ff), {MAC} the same in capitals, and {ip} its IPv4 address. Only a checked MAC and address are put in. The command must finish within 20 seconds; a script that needs more lines is a file, and its path is the command.": "{mac}, cihazın MAC adresiyle (aa:bb:cc:dd:ee:ff), {MAC} aynısının büyük harfli hâliyle, {ip} ise IPv4 adresiyle değiştirilir. Yalnızca denetlenmiş bir MAC ve adres eklenir. Komut 20 saniye içinde bitmelidir; daha çok satır gerektiren bir betik bir dosyaya konur ve komut olarak o dosyanın yolu yazılır.",
+        "Finish diagnosing": "Tanılamayı bitir",
+        "Diagnose: record what this page does, to find out why it misbehaves": "Tanıla: neden düzgün çalışmadığını bulmak için bu sayfanın yaptıklarını kaydet",
+        "Diagnose": "Tanıla",
+        "Recording what this page does. Do whatever does not work, then press Finish.": "Bu sayfanın yaptıkları kaydediliyor. Çalışmayan işlemi yapın, ardından Bitir’e basın.",
+        "Finish": "Bitir",
+        "What the page did": "Sayfanın yaptıkları",
+        "This is what the page and this server saw while you used it. It holds no passwords, nothing typed into the page and none of its text — only addresses (with the values after “?” hidden), answers and errors. You can paste it into a report.": "Bu, siz sayfayı kullanırken sayfanın ve bu sunucunun gördükleridir. Parola, sayfaya yazılan hiçbir şey ve sayfanın metni yer almaz — yalnızca adresler (“?” işaretinden sonraki değerler gizlenmiş), yanıtlar ve hatalar. Bir rapora yapıştırabilirsiniz."
     },
     "nplurals=2; plural=(n > 1);"
 );
