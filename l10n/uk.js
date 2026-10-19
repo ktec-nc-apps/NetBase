@@ -1974,7 +1974,25 @@ OC.L10N.register(
         "No certificate presented": "Сертифікат не надано",
         "Wake-on-LAN needs the PHP sockets extension, which is not installed": "Для Wake-on-LAN потрібне розширення PHP sockets, але його не встановлено",
         "Could not open a UDP socket": "Не вдалося відкрити UDP-сокет",
-        "Domain policy, server tests, and reading and sending mail": "Політика домену, перевірка сервера, читання й надсилання пошти"
+        "Domain policy, server tests, and reading and sending mail": "Політика домену, перевірка сервера, читання й надсилання пошти",
+        "SSH windows": "Вікна SSH",
+        "Terminal type (TERM)": "Тип термінала (TERM)",
+        "Character encoding": "Кодування символів",
+        "xterm-256color suits nearly every server. Choose vt100 or another type only for a device that asks for it, and an encoding other than UTF-8 for an older server or device that speaks Shift_JIS, EUC-JP and the like.": "xterm-256color підходить майже для будь-якого сервера. Обирайте vt100 чи інший тип лише для пристрою, який цього вимагає, а кодування, відмінне від UTF-8, — лише для старого сервера чи пристрою, що використовує Shift_JIS, EUC-JP тощо.",
+        "Environment variables sent to the server": "Змінні середовища, що надсилаються на сервер",
+        "One NAME=value to a line, sent when the shell starts, as OpenSSH does with SendEnv. A server takes only the names its AcceptEnv setting allows — usually LANG and LC_* — and ignores the rest.": "По одному NAME=value у рядку; надсилаються під час запуску оболонки, як це робить OpenSSH через SendEnv. Сервер приймає лише імена, дозволені його налаштуванням AcceptEnv (зазвичай LANG і LC_*), а решту ігнорує.",
+        "Keep the connection alive every (seconds)": "Підтримувати з’єднання кожні (секунд)",
+        "0 is off. A small number keeps a router or firewall from dropping a quiet connection.": "0 — вимкнено. Невелике значення не дає маршрутизатору чи брандмауеру розірвати неактивне з’єднання.",
+        "Keyboard and screen": "Клавіатура та екран",
+        "Enter sends": "Enter надсилає",
+        "Backspace sends": "Backspace надсилає",
+        "Lines to scroll back": "Рядків прокручування назад",
+        "Cursor": "Курсор",
+        "Block": "Блок",
+        "Underline": "Підкреслення",
+        "Bar": "Вертикальна риска",
+        "Blinking": "Блимання",
+        "These apply to the shell and to SSH windows opened from now on, not to a window that is already open.": "Застосовується до оболонки та вікон SSH, відкритих відтепер, але не до вже відкритого вікна."
     },
     "nplurals=4; plural=(n % 1 == 0 && n % 10 == 1 && n % 100 != 11 ? 0 : n % 1 == 0 && n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14) ? 1 : n % 1 == 0 && (n % 10 ==0 || (n % 10 >=5 && n % 10 <=9) || (n % 100 >=11 && n % 100 <=14 )) ? 2: 3);"
 );

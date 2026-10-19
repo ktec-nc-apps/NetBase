@@ -1973,7 +1973,25 @@
         "No certificate presented": "Không có chứng chỉ nào được đưa ra",
         "Wake-on-LAN needs the PHP sockets extension, which is not installed": "Wake-on-LAN cần phần mở rộng sockets của PHP, nhưng chưa được cài đặt",
         "Could not open a UDP socket": "Không thể mở socket UDP",
-        "Domain policy, server tests, and reading and sending mail": "Chính sách tên miền, kiểm tra máy chủ, đọc và gửi thư"
+        "Domain policy, server tests, and reading and sending mail": "Chính sách tên miền, kiểm tra máy chủ, đọc và gửi thư",
+        "SSH windows": "Cửa sổ SSH",
+        "Terminal type (TERM)": "Loại thiết bị đầu cuối (TERM)",
+        "Character encoding": "Mã hóa ký tự",
+        "xterm-256color suits nearly every server. Choose vt100 or another type only for a device that asks for it, and an encoding other than UTF-8 for an older server or device that speaks Shift_JIS, EUC-JP and the like.": "xterm-256color phù hợp với hầu hết máy chủ. Chỉ chọn vt100 hoặc loại khác cho thiết bị yêu cầu, và chỉ chọn mã hóa khác UTF-8 cho máy chủ hoặc thiết bị cũ dùng Shift_JIS, EUC-JP và tương tự.",
+        "Environment variables sent to the server": "Biến môi trường gửi tới máy chủ",
+        "One NAME=value to a line, sent when the shell starts, as OpenSSH does with SendEnv. A server takes only the names its AcceptEnv setting allows — usually LANG and LC_* — and ignores the rest.": "Mỗi dòng một NAME=value, gửi khi shell khởi động, giống như OpenSSH làm với SendEnv. Máy chủ chỉ nhận những tên mà thiết lập AcceptEnv cho phép — thường là LANG và LC_* — và bỏ qua phần còn lại.",
+        "Keep the connection alive every (seconds)": "Giữ kết nối mỗi (giây)",
+        "0 is off. A small number keeps a router or firewall from dropping a quiet connection.": "0 là tắt. Một giá trị nhỏ giúp bộ định tuyến hay tường lửa không cắt kết nối đang yên lặng.",
+        "Keyboard and screen": "Bàn phím và màn hình",
+        "Enter sends": "Enter gửi",
+        "Backspace sends": "Backspace gửi",
+        "Lines to scroll back": "Số dòng cuộn lại",
+        "Cursor": "Con trỏ",
+        "Block": "Khối",
+        "Underline": "Gạch dưới",
+        "Bar": "Thanh dọc",
+        "Blinking": "Nhấp nháy",
+        "These apply to the shell and to SSH windows opened from now on, not to a window that is already open.": "Áp dụng cho shell và cửa sổ SSH mở từ bây giờ, không áp dụng cho cửa sổ đang mở."
     },
     "pluralForm": "nplurals=1; plural=0;"
 }

@@ -2787,6 +2787,68 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
               <p class="dim tiny">{{ t('These two are for the shell on this server only. An SSH window takes its language and environment from the machine it reaches.') }}</p>
             </template>
 
+            <!-- After TeraTerm's setup menus: what an SSH window tells the server it
+                 is, what it sends with the shell, and in which encoding it speaks. -->
+            <h4>{{ t('SSH windows') }}</h4>
+            <div class="fl-row">
+              <label class="fl">
+                <span class="fl-label">{{ t('Terminal type (TERM)') }}</span>
+                <input v-model="settings.termType" list="nb-term-types" spellcheck="false" autocomplete="off" class="mono" @change="saveTermSettings()">
+                <datalist id="nb-term-types"><option v-for="ty in (settings.termTypes || [])" :key="ty" :value="ty"></option></datalist>
+              </label>
+              <label class="fl">
+                <span class="fl-label">{{ t('Character encoding') }}</span>
+                <select v-model="settings.termEncoding" @change="saveTermSettings()">
+                  <option v-for="(label, id) in (settings.termEncodings || {})" :key="id" :value="id">{{ label }}</option>
+                </select>
+              </label>
+            </div>
+            <p class="dim tiny">{{ t('xterm-256color suits nearly every server. Choose vt100 or another type only for a device that asks for it, and an encoding other than UTF-8 for an older server or device that speaks Shift_JIS, EUC-JP and the like.') }}</p>
+            <label class="fl">
+              <span class="fl-label">{{ t('Environment variables sent to the server') }}</span>
+              <textarea v-model="settings.termEnv" rows="3" spellcheck="false" autocomplete="off" placeholder="LANG=ja_JP.UTF-8" @change="saveTermSettings()"></textarea>
+            </label>
+            <p class="dim tiny">{{ t('One NAME=value to a line, sent when the shell starts, as OpenSSH does with SendEnv. A server takes only the names its AcceptEnv setting allows — usually LANG and LC_* — and ignores the rest.') }}</p>
+            <label class="fl short">
+              <span class="fl-label">{{ t('Keep the connection alive every (seconds)') }}</span>
+              <input v-model.number="settings.termKeepalive" type="number" min="0" max="600" step="10" @change="saveTermSettings()">
+            </label>
+            <p class="dim tiny">{{ t('0 is off. A small number keeps a router or firewall from dropping a quiet connection.') }}</p>
+
+            <h4>{{ t('Keyboard and screen') }}</h4>
+            <div class="fl-row">
+              <label class="fl">
+                <span class="fl-label">{{ t('Enter sends') }}</span>
+                <select v-model="settings.termNewline" @change="saveTermSettings()">
+                  <option value="cr">CR</option>
+                  <option value="crlf">CR+LF</option>
+                </select>
+              </label>
+              <label class="fl">
+                <span class="fl-label">{{ t('Backspace sends') }}</span>
+                <select v-model="settings.termBackspace" @change="saveTermSettings()">
+                  <option value="del">DEL (^?)</option>
+                  <option value="bs">BS (^H)</option>
+                </select>
+              </label>
+            </div>
+            <div class="fl-row">
+              <label class="fl">
+                <span class="fl-label">{{ t('Lines to scroll back') }}</span>
+                <input v-model.number="settings.termScrollback" type="number" min="100" max="100000" step="1000" @change="saveTermSettings()">
+              </label>
+              <label class="fl">
+                <span class="fl-label">{{ t('Cursor') }}</span>
+                <select v-model="settings.termCursor" @change="saveTermSettings()">
+                  <option value="block">{{ t('Block') }}</option>
+                  <option value="underline">{{ t('Underline') }}</option>
+                  <option value="bar">{{ t('Bar') }}</option>
+                </select>
+              </label>
+              <label class="opt"><input type="checkbox" v-model="settings.termCursorBlink" @change="saveTermSettings()"> {{ t('Blinking') }}</label>
+            </div>
+            <p class="dim tiny">{{ t('These apply to the shell and to SSH windows opened from now on, not to a window that is already open.') }}</p>
+
             <h4>{{ t('Shell log') }}</h4>
             <label class="opt">
               <input type="checkbox" v-model="settings.termLogOn" @change="saveTermLog()">
@@ -4137,7 +4199,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
           // images waiting to go with the next question; whether this AI connection takes images
           images: [], attNote: '', drop: false, imagesOk: false },
         status: { canScan: false, canLookup: false, isAdmin: false, binaries: {}, nmap: { available: false }, ouiEntries: 0, targets: [] },
-        settings: { language: 'auto', theme: 'auto', languages: [], tabOrder: [], keyFolder: '', rootIdleMinutes: 10, termFont: 'system', termFontSize: TERM_SIZE_DEFAULT, shellLang: '', shellEnv: '', shellLocales: [], termLogOn: false, termLogSteps: 5000, termLogDays: 30 },
+        settings: { language: 'auto', theme: 'auto', languages: [], tabOrder: [], keyFolder: '', rootIdleMinutes: 10, termFont: 'system', termFontSize: TERM_SIZE_DEFAULT, shellLang: '', shellEnv: '', shellLocales: [], termLogOn: false, termLogSteps: 5000, termLogDays: 30, termType: 'xterm-256color', termTypes: [], termEnv: '', termEncoding: 'utf-8', termEncodings: {}, termKeepalive: 0, termNewline: 'cr', termBackspace: 'del', termScrollback: 5000, termCursor: 'block', termCursorBlink: true },
         termFonts: TERM_FONTS,
         dragTab: '', overTab: '',
         devices: [], scan: null, scanning: false, advice: null,
@@ -6937,8 +6999,10 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         const term = new window.Terminal({
           fontSize: this.termSize(),
           fontFamily: this.termFontCss(this.settings.termFont),
-          cursorBlink: true,
-          scrollback: 5000,
+          // TeraTerm's window setup: the cursor, and how much is kept to scroll back to.
+          cursorBlink: this.settings.termCursorBlink !== false,
+          cursorStyle: ['block', 'underline', 'bar'].includes(this.settings.termCursor) ? this.settings.termCursor : 'block',
+          scrollback: Math.max(100, Math.min(100000, Number(this.settings.termScrollback) || 5000)),
           theme: dark
             ? { background: '#14161a', foreground: '#e6e6e6', cursor: '#e6e6e6' }
             : { background: '#1b1d21', foreground: '#e6e6e6', cursor: '#e6e6e6' },
@@ -6960,6 +7024,10 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
             }
           }
           if (w.meta) { w.meta = false; data = '\x1b' + data; }
+          // TeraTerm's "New-line, transmit" and the Backspace key: what the
+          // far end expects them to send.
+          if (this.settings.termNewline === 'crlf') data = data.replace(/\r(?!\n)/g, '\r\n');
+          if (this.settings.termBackspace === 'bs') data = data.replace(/\x7f/g, '\x08');
           this.ptyType(w, data);
         });
         term.onResize(({ cols, rows }) => this.ptySize(w, cols, rows));
@@ -7244,6 +7312,20 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         api('settings', {
           method: 'POST',
           body: JSON.stringify({ settings: { termLogOn: this.settings.termLogOn ? '1' : '0', termLogSteps: String(steps), termLogDays: String(days) } }),
+        }).catch((e) => this.fail(e));
+      },
+      /** The terminal settings, TeraTerm's way. Each takes effect in windows opened afterwards. */
+      saveTermSettings() {
+        const st = this.settings;
+        st.termScrollback = Math.max(100, Math.min(100000, Number(st.termScrollback) || 5000));
+        st.termKeepalive = Math.max(0, Math.min(600, Number(st.termKeepalive) || 0));
+        api('settings', {
+          method: 'POST',
+          body: JSON.stringify({ settings: {
+            termType: String(st.termType || 'xterm-256color').trim(), termEncoding: st.termEncoding || 'utf-8', termEnv: st.termEnv || '',
+            termKeepalive: String(st.termKeepalive), termNewline: st.termNewline, termBackspace: st.termBackspace,
+            termScrollback: String(st.termScrollback), termCursor: st.termCursor, termCursorBlink: st.termCursorBlink ? '1' : '0',
+          } }),
         }).catch((e) => this.fail(e));
       },
       async openTermLog() {

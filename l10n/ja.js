@@ -1974,7 +1974,25 @@ OC.L10N.register(
         "No certificate presented": "証明書が提示されませんでした",
         "Wake-on-LAN needs the PHP sockets extension, which is not installed": "Wake-on-LAN には PHP の sockets 拡張機能が必要ですが、インストールされていません",
         "Could not open a UDP socket": "UDP ソケットを開けませんでした",
-        "Domain policy, server tests, and reading and sending mail": "ドメイン設定・サーバー検査・メールの読み書き"
+        "Domain policy, server tests, and reading and sending mail": "ドメイン設定・サーバー検査・メールの読み書き",
+        "SSH windows": "SSH ウィンドウ",
+        "Terminal type (TERM)": "端末の種類（TERM）",
+        "Character encoding": "文字コード",
+        "xterm-256color suits nearly every server. Choose vt100 or another type only for a device that asks for it, and an encoding other than UTF-8 for an older server or device that speaks Shift_JIS, EUC-JP and the like.": "ほとんどのサーバーには xterm-256color が合います。vt100 などほかの種類は、それを求める機器のときだけ選んでください。UTF-8 以外の文字コードは、Shift_JIS や EUC-JP などを使う古いサーバーや機器のときに選びます。",
+        "Environment variables sent to the server": "サーバーへ送る環境変数",
+        "One NAME=value to a line, sent when the shell starts, as OpenSSH does with SendEnv. A server takes only the names its AcceptEnv setting allows — usually LANG and LC_* — and ignores the rest.": "1 行に 1 つ、NAME=値 の形で書きます。OpenSSH の SendEnv と同じく、シェルを始めるときに送ります。サーバーが受け取るのは、AcceptEnv の設定で許した名前（ふつうは LANG と LC_*）だけで、ほかは無視されます。",
+        "Keep the connection alive every (seconds)": "接続を保つ合図の間隔（秒）",
+        "0 is off. A small number keeps a router or firewall from dropping a quiet connection.": "0 で送りません。短めにすると、通信の無い接続をルーターやファイアウォールが切るのを防げます。",
+        "Keyboard and screen": "キーボードと画面",
+        "Enter sends": "Enter で送る改行",
+        "Backspace sends": "Backspace で送る文字",
+        "Lines to scroll back": "スクロールバックの行数",
+        "Cursor": "カーソル",
+        "Block": "ブロック",
+        "Underline": "下線",
+        "Bar": "縦線",
+        "Blinking": "点滅する",
+        "These apply to the shell and to SSH windows opened from now on, not to a window that is already open.": "シェルと SSH のウィンドウを、これから開くときに使います。開いているウィンドウには反映されません。"
     },
     "nplurals=1; plural=0;"
 );

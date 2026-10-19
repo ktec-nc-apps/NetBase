@@ -1973,7 +1973,25 @@
         "No certificate presented": "Tidak ada sertifikat yang diberikan",
         "Wake-on-LAN needs the PHP sockets extension, which is not installed": "Wake-on-LAN memerlukan ekstensi PHP sockets, yang tidak terpasang",
         "Could not open a UDP socket": "Tidak dapat membuka soket UDP",
-        "Domain policy, server tests, and reading and sending mail": "Kebijakan domain, uji server, serta membaca dan mengirim email"
+        "Domain policy, server tests, and reading and sending mail": "Kebijakan domain, uji server, serta membaca dan mengirim email",
+        "SSH windows": "Jendela SSH",
+        "Terminal type (TERM)": "Jenis terminal (TERM)",
+        "Character encoding": "Encoding karakter",
+        "xterm-256color suits nearly every server. Choose vt100 or another type only for a device that asks for it, and an encoding other than UTF-8 for an older server or device that speaks Shift_JIS, EUC-JP and the like.": "xterm-256color cocok untuk hampir semua server. Pilih vt100 atau jenis lain hanya untuk perangkat yang memintanya, dan encoding selain UTF-8 hanya untuk server atau perangkat lama yang memakai Shift_JIS, EUC-JP, dan sejenisnya.",
+        "Environment variables sent to the server": "Variabel lingkungan yang dikirim ke server",
+        "One NAME=value to a line, sent when the shell starts, as OpenSSH does with SendEnv. A server takes only the names its AcceptEnv setting allows — usually LANG and LC_* — and ignores the rest.": "Satu NAME=value per baris, dikirim saat shell dimulai, seperti yang dilakukan OpenSSH dengan SendEnv. Server hanya menerima nama yang diizinkan pengaturan AcceptEnv-nya — biasanya LANG dan LC_* — dan mengabaikan sisanya.",
+        "Keep the connection alive every (seconds)": "Jaga koneksi tetap hidup setiap (detik)",
+        "0 is off. A small number keeps a router or firewall from dropping a quiet connection.": "0 berarti mati. Nilai kecil mencegah router atau firewall memutus koneksi yang diam.",
+        "Keyboard and screen": "Keyboard dan layar",
+        "Enter sends": "Enter mengirim",
+        "Backspace sends": "Backspace mengirim",
+        "Lines to scroll back": "Baris gulir balik",
+        "Cursor": "Kursor",
+        "Block": "Blok",
+        "Underline": "Garis bawah",
+        "Bar": "Garis tegak",
+        "Blinking": "Berkedip",
+        "These apply to the shell and to SSH windows opened from now on, not to a window that is already open.": "Berlaku untuk shell dan jendela SSH yang dibuka mulai sekarang, bukan untuk jendela yang sudah terbuka."
     },
     "pluralForm": "nplurals=1; plural=0;"
 }

@@ -23,6 +23,7 @@ use OCA\NetBase\Service\ProbeService;
 use OCA\NetBase\Service\PtyService;
 use OCA\NetBase\Service\ShellGateService;
 use OCA\NetBase\Service\SshService;
+use OCA\NetBase\Service\TermCodec;
 use OCA\NetBase\Service\TermLogService;
 use OCA\NetBase\Service\TransferService;
 // NETBASE-STORE-REMOVED: use OCA\NetBase\Service\NmapService;
@@ -207,6 +208,42 @@ class ApiController extends Controller {
 			$env[$name] = str_replace(["\0", "\r", "\n"], '', $value);
 		}
 		return $env;
+	}
+
+	/** The terminal types offered first; any other well-formed name may be typed. */
+	private const TERM_TYPES = ['xterm-256color', 'xterm', 'vt100', 'vt220', 'linux', 'screen-256color', 'tmux-256color', 'ansi'];
+
+	/** A terminal type as a server would take it. */
+	private static function termTypeOk(string $type): bool {
+		return preg_match('/^[A-Za-z0-9][A-Za-z0-9._+-]{0,31}$/', $type) === 1;
+	}
+
+	/**
+	 * This person's SSH terminal settings, TeraTerm's way: the terminal type,
+	 * the character encoding and the keep-alive, and the variables sent to the
+	 * server as OpenSSH's SendEnv would (the server takes only the names its
+	 * AcceptEnv lists — LANG and LC_* on Debian and Ubuntu).
+	 *
+	 * @return array{term: string, env: array<string, string>, encoding: string, keepalive: int}
+	 */
+	private function termOptions(string $uid): array {
+		$type = $this->config->getUserValue($uid, 'netbase', 'term_type', 'xterm-256color');
+		$encoding = $this->config->getUserValue($uid, 'netbase', 'term_encoding', 'utf-8');
+		$env = [];
+		foreach (preg_split('/\R/', $this->config->getUserValue($uid, 'netbase', 'term_env', '')) ?: [] as $line) {
+			[$name, $value] = array_pad(explode('=', trim($line), 2), 2, null);
+			$name = trim((string)$name);
+			if ($value === null || preg_match('/^[A-Za-z_][A-Za-z0-9_]{0,63}$/', $name) !== 1) {
+				continue;
+			}
+			$env[$name] = (string)preg_replace('/[\x00-\x1f\x7f]/', '', $value);
+		}
+		return [
+			'term' => self::termTypeOk($type) ? $type : 'xterm-256color',
+			'env' => array_slice($env, 0, 32, true),
+			'encoding' => TermCodec::valid($encoding) ? $encoding : 'utf-8',
+			'keepalive' => max(0, min(600, (int)$this->config->getUserValue($uid, 'netbase', 'term_keepalive', '0'))),
+		];
 	}
 
 	/**
@@ -1335,7 +1372,8 @@ class ApiController extends Controller {
 			// request, rather than as a 500 (review 2026-10-04, low 14).
 			return $this->failure($e);
 		}
-		$response = new ProxyResponse(function (IOutput $output) use ($endpoint, $uid, $session, $cols, $rows): void {
+		$options = $this->termOptions($uid);
+		$response = new ProxyResponse(function (IOutput $output) use ($endpoint, $uid, $session, $cols, $rows, $options): void {
 			// Nextcloud locks the session file for the length of a request.
 			// This one lasts as long as the terminal does, and every keystroke
 			// arrives as a request of its own — so the lock has to go now, or
@@ -1361,7 +1399,7 @@ class ApiController extends Controller {
 				}
 				@flush();
 				return connection_aborted() === 0;
-			});
+			}, $options);
 			// Whatever was still being gathered when the window went — usually
 			// the command that was running — is kept rather than thrown away.
 			$this->termLog->finish($uid, $session);
@@ -1782,6 +1820,20 @@ class ApiController extends Controller {
 			// browser can be relied on to have, and a size in points.
 			'termFont' => $uid ? $this->config->getUserValue($uid, 'netbase', 'term_font', 'system') : 'system',
 			'termFontSize' => (int)($uid ? $this->config->getUserValue($uid, 'netbase', 'term_font_size', '13') : 13),
+			// The rest of the terminal, as TeraTerm sets it up: the type, the
+			// variables and the encoding the server is given, what Enter and
+			// Backspace send, and how the screen behaves.
+			'termType' => $uid ? $this->config->getUserValue($uid, 'netbase', 'term_type', 'xterm-256color') : 'xterm-256color',
+			'termTypes' => self::TERM_TYPES,
+			'termEnv' => $uid ? $this->config->getUserValue($uid, 'netbase', 'term_env', '') : '',
+			'termEncoding' => $uid ? $this->config->getUserValue($uid, 'netbase', 'term_encoding', 'utf-8') : 'utf-8',
+			'termEncodings' => array_map(static fn (array $e): string => $e[1], TermCodec::ENCODINGS),
+			'termKeepalive' => (int)($uid ? $this->config->getUserValue($uid, 'netbase', 'term_keepalive', '0') : 0),
+			'termNewline' => $uid ? $this->config->getUserValue($uid, 'netbase', 'term_newline', 'cr') : 'cr',
+			'termBackspace' => $uid ? $this->config->getUserValue($uid, 'netbase', 'term_backspace', 'del') : 'del',
+			'termScrollback' => (int)($uid ? $this->config->getUserValue($uid, 'netbase', 'term_scrollback', '5000') : 5000),
+			'termCursor' => $uid ? $this->config->getUserValue($uid, 'netbase', 'term_cursor', 'block') : 'block',
+			'termCursorBlink' => $uid ? $this->config->getUserValue($uid, 'netbase', 'term_cursor_blink', '1') === '1' : true,
 			// What a shell starts with: a language the server actually has, and
 			// whatever else this administrator wants set.
 			'shellLang' => $uid ? $this->config->getUserValue($uid, 'netbase', 'shell_lang', '') : '',
@@ -1839,6 +1891,9 @@ class ApiController extends Controller {
 		foreach ([
 			'language' => 'language', 'theme' => 'theme', 'lastTargets' => 'last_targets',
 			'keyFolder' => 'key_folder', 'termFont' => 'term_font', 'termFontSize' => 'term_font_size',
+			'termType' => 'term_type', 'termEncoding' => 'term_encoding', 'termKeepalive' => 'term_keepalive',
+			'termNewline' => 'term_newline', 'termBackspace' => 'term_backspace', 'termScrollback' => 'term_scrollback',
+			'termCursor' => 'term_cursor', 'termCursorBlink' => 'term_cursor_blink',
 			'shellLang' => 'shell_lang',
 			'termLogOn' => 'term_log_on', 'termLogSteps' => 'term_log_steps', 'termLogDays' => 'term_log_days',
 			'rootIdleMinutes' => 'root_idle_minutes',
@@ -1862,6 +1917,30 @@ class ApiController extends Controller {
 			}
 			if ($key === 'termFontSize') {
 				$value = (string)max(9, min(24, (int)$value));
+			}
+			if ($key === 'termType' && !self::termTypeOk($value)) {
+				continue;
+			}
+			if ($key === 'termEncoding' && !TermCodec::valid($value)) {
+				continue;
+			}
+			if ($key === 'termKeepalive') {
+				$value = (string)max(0, min(600, (int)$value));
+			}
+			if ($key === 'termNewline' && !in_array($value, ['cr', 'crlf'], true)) {
+				continue;
+			}
+			if ($key === 'termBackspace' && !in_array($value, ['del', 'bs'], true)) {
+				continue;
+			}
+			if ($key === 'termScrollback') {
+				$value = (string)max(100, min(100000, (int)$value));
+			}
+			if ($key === 'termCursor' && !in_array($value, ['block', 'underline', 'bar'], true)) {
+				continue;
+			}
+			if ($key === 'termCursorBlink') {
+				$value = ($value === '1' || $value === 'true') ? '1' : '0';
 			}
 			// Only a locale this machine has, and only for an administrator:
 			// the shell is theirs alone.
@@ -1941,6 +2020,18 @@ class ApiController extends Controller {
 				}
 			}
 			$this->config->setUserValue($uid, 'netbase', 'shell_env', mb_substr(implode("\n", array_slice($lines, 0, 64)), 0, 8192));
+		}
+		// Variables sent with an SSH shell, one NAME=value to a line, kept as
+		// written so they can be edited back.
+		if (isset($settings['termEnv'])) {
+			$lines = [];
+			foreach (preg_split('/\R/', (string)$settings['termEnv']) ?: [] as $line) {
+				$line = trim(str_replace("\0", '', $line));
+				if ($line !== '') {
+					$lines[] = mb_substr($line, 0, 512);
+				}
+			}
+			$this->config->setUserValue($uid, 'netbase', 'term_env', mb_substr(implode("\n", array_slice($lines, 0, 32)), 0, 4096));
 		}
 		if (isset($settings['trustedDevices']) && is_array($settings['trustedDevices'])) {
 			$trusted = [];

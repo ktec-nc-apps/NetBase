@@ -1973,7 +1973,25 @@
         "No certificate presented": "Nebyl předložen žádný certifikát",
         "Wake-on-LAN needs the PHP sockets extension, which is not installed": "Wake-on-LAN potřebuje rozšíření PHP sockets, které není nainstalováno",
         "Could not open a UDP socket": "Nepodařilo se otevřít soket UDP",
-        "Domain policy, server tests, and reading and sending mail": "Zásady domény, testy serveru, čtení a odesílání pošty"
+        "Domain policy, server tests, and reading and sending mail": "Zásady domény, testy serveru, čtení a odesílání pošty",
+        "SSH windows": "Okna SSH",
+        "Terminal type (TERM)": "Typ terminálu (TERM)",
+        "Character encoding": "Kódování znaků",
+        "xterm-256color suits nearly every server. Choose vt100 or another type only for a device that asks for it, and an encoding other than UTF-8 for an older server or device that speaks Shift_JIS, EUC-JP and the like.": "xterm-256color se hodí téměř pro každý server. Vt100 nebo jiný typ zvolte jen pro zařízení, které ho vyžaduje, a jiné kódování než UTF-8 jen pro starší server nebo zařízení, které používá Shift_JIS, EUC-JP a podobně.",
+        "Environment variables sent to the server": "Proměnné prostředí posílané na server",
+        "One NAME=value to a line, sent when the shell starts, as OpenSSH does with SendEnv. A server takes only the names its AcceptEnv setting allows — usually LANG and LC_* — and ignores the rest.": "Jedno NAME=value na řádek, posílá se při spuštění shellu, stejně jako to dělá OpenSSH přes SendEnv. Server přijme jen názvy, které povoluje jeho nastavení AcceptEnv – obvykle LANG a LC_* –, a ostatní ignoruje.",
+        "Keep the connection alive every (seconds)": "Udržovat spojení každých (sekund)",
+        "0 is off. A small number keeps a router or firewall from dropping a quiet connection.": "0 znamená vypnuto. Malá hodnota brání tomu, aby směrovač nebo firewall ukončil nečinné spojení.",
+        "Keyboard and screen": "Klávesnice a obrazovka",
+        "Enter sends": "Enter posílá",
+        "Backspace sends": "Backspace posílá",
+        "Lines to scroll back": "Řádků pro posun zpět",
+        "Cursor": "Kurzor",
+        "Block": "Blok",
+        "Underline": "Podtržítko",
+        "Bar": "Svislá čára",
+        "Blinking": "Blikající",
+        "These apply to the shell and to SSH windows opened from now on, not to a window that is already open.": "Platí pro shell a okna SSH otevřená od teď, ne pro okno, které už je otevřené."
     },
     "pluralForm": "nplurals=4; plural=(n == 1 && n % 1 == 0) ? 0 : (n >= 2 && n <= 4 && n % 1 == 0) ? 1: (n % 1 != 0 ) ? 2 : 3;"
 }

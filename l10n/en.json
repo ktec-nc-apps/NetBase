@@ -1973,7 +1973,25 @@
         "No certificate presented": "No certificate presented",
         "Wake-on-LAN needs the PHP sockets extension, which is not installed": "Wake-on-LAN needs the PHP sockets extension, which is not installed",
         "Could not open a UDP socket": "Could not open a UDP socket",
-        "Domain policy, server tests, and reading and sending mail": "Domain policy, server tests, and reading and sending mail"
+        "Domain policy, server tests, and reading and sending mail": "Domain policy, server tests, and reading and sending mail",
+        "SSH windows": "SSH windows",
+        "Terminal type (TERM)": "Terminal type (TERM)",
+        "Character encoding": "Character encoding",
+        "xterm-256color suits nearly every server. Choose vt100 or another type only for a device that asks for it, and an encoding other than UTF-8 for an older server or device that speaks Shift_JIS, EUC-JP and the like.": "xterm-256color suits nearly every server. Choose vt100 or another type only for a device that asks for it, and an encoding other than UTF-8 for an older server or device that speaks Shift_JIS, EUC-JP and the like.",
+        "Environment variables sent to the server": "Environment variables sent to the server",
+        "One NAME=value to a line, sent when the shell starts, as OpenSSH does with SendEnv. A server takes only the names its AcceptEnv setting allows — usually LANG and LC_* — and ignores the rest.": "One NAME=value to a line, sent when the shell starts, as OpenSSH does with SendEnv. A server takes only the names its AcceptEnv setting allows — usually LANG and LC_* — and ignores the rest.",
+        "Keep the connection alive every (seconds)": "Keep the connection alive every (seconds)",
+        "0 is off. A small number keeps a router or firewall from dropping a quiet connection.": "0 is off. A small number keeps a router or firewall from dropping a quiet connection.",
+        "Keyboard and screen": "Keyboard and screen",
+        "Enter sends": "Enter sends",
+        "Backspace sends": "Backspace sends",
+        "Lines to scroll back": "Lines to scroll back",
+        "Cursor": "Cursor",
+        "Block": "Block",
+        "Underline": "Underline",
+        "Bar": "Bar",
+        "Blinking": "Blinking",
+        "These apply to the shell and to SSH windows opened from now on, not to a window that is already open.": "These apply to the shell and to SSH windows opened from now on, not to a window that is already open."
     },
     "pluralForm": "nplurals=2; plural=(n != 1);"
 }

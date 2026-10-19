@@ -1973,7 +1973,25 @@
         "No certificate presented": "인증서가 제시되지 않았습니다",
         "Wake-on-LAN needs the PHP sockets extension, which is not installed": "Wake-on-LAN에는 PHP sockets 확장 기능이 필요하지만 설치되어 있지 않습니다",
         "Could not open a UDP socket": "UDP 소켓을 열 수 없습니다",
-        "Domain policy, server tests, and reading and sending mail": "도메인 정책, 서버 점검, 메일 읽기와 보내기"
+        "Domain policy, server tests, and reading and sending mail": "도메인 정책, 서버 점검, 메일 읽기와 보내기",
+        "SSH windows": "SSH 창",
+        "Terminal type (TERM)": "터미널 종류(TERM)",
+        "Character encoding": "문자 인코딩",
+        "xterm-256color suits nearly every server. Choose vt100 or another type only for a device that asks for it, and an encoding other than UTF-8 for an older server or device that speaks Shift_JIS, EUC-JP and the like.": "xterm-256color는 거의 모든 서버에 맞습니다. vt100 등 다른 종류는 장치가 요구할 때만 고르고, UTF-8이 아닌 인코딩은 Shift_JIS, EUC-JP 등을 쓰는 오래된 서버나 장치일 때만 고르세요.",
+        "Environment variables sent to the server": "서버로 보낼 환경 변수",
+        "One NAME=value to a line, sent when the shell starts, as OpenSSH does with SendEnv. A server takes only the names its AcceptEnv setting allows — usually LANG and LC_* — and ignores the rest.": "한 줄에 NAME=value 하나씩. OpenSSH의 SendEnv처럼 셸을 시작할 때 보냅니다. 서버는 AcceptEnv 설정에서 허용한 이름(보통 LANG과 LC_*)만 받고 나머지는 무시합니다.",
+        "Keep the connection alive every (seconds)": "연결 유지 신호 간격(초)",
+        "0 is off. A small number keeps a router or firewall from dropping a quiet connection.": "0이면 보내지 않습니다. 작은 값으로 두면 라우터나 방화벽이 조용한 연결을 끊지 않습니다.",
+        "Keyboard and screen": "키보드와 화면",
+        "Enter sends": "Enter 키로 보낼 값",
+        "Backspace sends": "Backspace 키로 보낼 값",
+        "Lines to scroll back": "스크롤백 줄 수",
+        "Cursor": "커서",
+        "Block": "블록",
+        "Underline": "밑줄",
+        "Bar": "세로 막대",
+        "Blinking": "깜박임",
+        "These apply to the shell and to SSH windows opened from now on, not to a window that is already open.": "앞으로 여는 셸과 SSH 창에 적용되며, 이미 열린 창에는 적용되지 않습니다."
     },
     "pluralForm": "nplurals=1; plural=0;"
 }

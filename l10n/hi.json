@@ -1973,7 +1973,25 @@
         "No certificate presented": "कोई सर्टिफ़िकेट प्रस्तुत नहीं किया गया",
         "Wake-on-LAN needs the PHP sockets extension, which is not installed": "Wake-on-LAN के लिए PHP का sockets एक्सटेंशन चाहिए, जो इंस्टॉल नहीं है",
         "Could not open a UDP socket": "UDP सॉकेट नहीं खोला जा सका",
-        "Domain policy, server tests, and reading and sending mail": "डोमेन नीति, सर्वर परीक्षण, और मेल पढ़ना व भेजना"
+        "Domain policy, server tests, and reading and sending mail": "डोमेन नीति, सर्वर परीक्षण, और मेल पढ़ना व भेजना",
+        "SSH windows": "SSH विंडो",
+        "Terminal type (TERM)": "टर्मिनल प्रकार (TERM)",
+        "Character encoding": "वर्ण एन्कोडिंग",
+        "xterm-256color suits nearly every server. Choose vt100 or another type only for a device that asks for it, and an encoding other than UTF-8 for an older server or device that speaks Shift_JIS, EUC-JP and the like.": "xterm-256color लगभग हर सर्वर के लिए ठीक है। vt100 या कोई दूसरा प्रकार केवल उस डिवाइस के लिए चुनें जो उसे माँगे, और UTF-8 के अलावा कोई एन्कोडिंग केवल उस पुराने सर्वर या डिवाइस के लिए जो Shift_JIS, EUC-JP आदि इस्तेमाल करता हो।",
+        "Environment variables sent to the server": "सर्वर को भेजे जाने वाले पर्यावरण चर",
+        "One NAME=value to a line, sent when the shell starts, as OpenSSH does with SendEnv. A server takes only the names its AcceptEnv setting allows — usually LANG and LC_* — and ignores the rest.": "प्रति पंक्ति एक NAME=value, शेल शुरू होने पर भेजा जाता है, जैसे OpenSSH SendEnv से भेजता है। सर्वर केवल वे नाम लेता है जिनकी अनुमति उसकी AcceptEnv सेटिंग देती है — आमतौर पर LANG और LC_* — और बाकी को अनदेखा करता है।",
+        "Keep the connection alive every (seconds)": "कनेक्शन चालू रखने का अंतराल (सेकंड)",
+        "0 is off. A small number keeps a router or firewall from dropping a quiet connection.": "0 का अर्थ बंद है। छोटा मान राउटर या फ़ायरवॉल को शांत कनेक्शन तोड़ने से रोकता है।",
+        "Keyboard and screen": "कीबोर्ड और स्क्रीन",
+        "Enter sends": "Enter भेजता है",
+        "Backspace sends": "Backspace भेजता है",
+        "Lines to scroll back": "पीछे स्क्रॉल की पंक्तियाँ",
+        "Cursor": "कर्सर",
+        "Block": "ब्लॉक",
+        "Underline": "अंडरलाइन",
+        "Bar": "खड़ी रेखा",
+        "Blinking": "टिमटिमाता हुआ",
+        "These apply to the shell and to SSH windows opened from now on, not to a window that is already open.": "अब से खुलने वाले शेल और SSH विंडो पर लागू होता है, पहले से खुली विंडो पर नहीं।"
     },
     "pluralForm": "nplurals=2; plural=(n != 1);"
 }

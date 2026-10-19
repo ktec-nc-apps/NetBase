@@ -66,7 +66,12 @@ class PtyService {
 	 *
 	 * @param callable(string): bool $emit returns false once the browser is gone
 	 */
-	public function serve(EndpointEntity $endpoint, string $userId, string $session, int $cols, int $rows, callable $emit): void {
+	/**
+	 * @param array{term?: string, env?: array<string, string>, encoding?: string, keepalive?: int} $options
+	 *        the person's terminal settings (TeraTerm's terminal type, kanji
+	 *        code and keep-alive, and the variables OpenSSH would SendEnv)
+	 */
+	public function serve(EndpointEntity $endpoint, string $userId, string $session, int $cols, int $rows, callable $emit, array $options = []): void {
 		$class = ProbeService::ssh2Class();
 		if ($class === null) {
 			$emit("\r\n\033[31m" . $this->l->t('No SSH library is available on this server.') . "\033[0m\r\n");
@@ -81,8 +86,27 @@ class PtyService {
 		// The short slice below belongs to the loop only. Key exchange and
 		// sign-in need room: phpseclib treats a timeout in the middle of one
 		// of those packets as a lost connection and hangs up.
-		$ssh = new $class($host, $port, self::HANDSHAKE);
+		// The bundled phpseclib is the one that can be taught to send variables.
+		$ssh = is_a($class, \OCA\NetBase\Vendor\phpseclib3\Net\SSH2::class, true)
+			? new TermSsh($host, $port, self::HANDSHAKE)
+			: new $class($host, $port, self::HANDSHAKE);
 		$ssh->setWindowSize(max(20, min(500, $cols)), max(5, min(200, $rows)));
+		// The terminal in the browser is xterm.js, with 256 colours. Left at the
+		// library's default the server is told "vt100", so htop and the like
+		// drew in black and white while scripts that print colour codes of their
+		// own did not — colour "sometimes" (forum #61). The local shell already
+		// says xterm-256color, and the person can choose another type.
+		if (method_exists($ssh, 'setTerminal')) {
+			$ssh->setTerminal((string)($options['term'] ?? '') !== '' ? (string)$options['term'] : 'xterm-256color');
+		}
+		if ($ssh instanceof TermSsh && !empty($options['env'])) {
+			$ssh->setEnvironment($options['env']);
+		}
+		$keepalive = (int)($options['keepalive'] ?? 0);
+		if ($keepalive > 0 && method_exists($ssh, 'setKeepAlive')) {
+			$ssh->setKeepAlive($keepalive);
+		}
+		$codec = new TermCodec((string)($options['encoding'] ?? 'utf-8'));
 
 		$credentials = $this->endpoints->credentials($endpoint);
 		$secret = $credentials['key'] !== ''
@@ -117,7 +141,7 @@ class PtyService {
 				$ssh->openShell();
 			}
 			$ssh->setTimeout(self::OPENING);
-			$opening = (string)$ssh->read();
+			$opening = $codec->decode((string)$ssh->read());
 			if ($opening !== '' && !$emit($opening)) {
 				return;
 			}
@@ -128,7 +152,7 @@ class PtyService {
 				}
 				$typed = $this->take($dir . '/in');
 				if ($typed !== '') {
-					$ssh->write($typed);
+					$ssh->write($codec->encode($typed));
 					$quiet = time();
 				}
 				$resize = $this->take($dir . '/size');
@@ -142,6 +166,7 @@ class PtyService {
 				if ($said === false) {
 					break;
 				}
+				$said = $codec->decode($said);
 				if ($said !== '') {
 					$quiet = time();
 					if (!$emit($said)) {

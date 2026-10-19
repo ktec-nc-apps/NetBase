@@ -1974,7 +1974,25 @@ OC.L10N.register(
         "No certificate presented": "Nie przedstawiono certyfikatu",
         "Wake-on-LAN needs the PHP sockets extension, which is not installed": "Wake-on-LAN wymaga rozszerzenia PHP sockets, które nie jest zainstalowane",
         "Could not open a UDP socket": "Nie udało się otworzyć gniazda UDP",
-        "Domain policy, server tests, and reading and sending mail": "Zasady domeny, testy serwera, czytanie i wysyłanie poczty"
+        "Domain policy, server tests, and reading and sending mail": "Zasady domeny, testy serwera, czytanie i wysyłanie poczty",
+        "SSH windows": "Okna SSH",
+        "Terminal type (TERM)": "Typ terminala (TERM)",
+        "Character encoding": "Kodowanie znaków",
+        "xterm-256color suits nearly every server. Choose vt100 or another type only for a device that asks for it, and an encoding other than UTF-8 for an older server or device that speaks Shift_JIS, EUC-JP and the like.": "xterm-256color pasuje do niemal każdego serwera. Wybierz vt100 lub inny typ tylko dla urządzenia, które tego wymaga, a kodowanie inne niż UTF-8 tylko dla starszego serwera lub urządzenia używającego Shift_JIS, EUC-JP i podobnych.",
+        "Environment variables sent to the server": "Zmienne środowiskowe wysyłane do serwera",
+        "One NAME=value to a line, sent when the shell starts, as OpenSSH does with SendEnv. A server takes only the names its AcceptEnv setting allows — usually LANG and LC_* — and ignores the rest.": "Jedno NAME=value na wiersz, wysyłane przy uruchomieniu powłoki, tak jak robi to OpenSSH przez SendEnv. Serwer przyjmuje tylko nazwy dozwolone przez jego ustawienie AcceptEnv — zwykle LANG i LC_* — a resztę pomija.",
+        "Keep the connection alive every (seconds)": "Podtrzymuj połączenie co (sekundy)",
+        "0 is off. A small number keeps a router or firewall from dropping a quiet connection.": "0 wyłącza. Mała wartość chroni bezczynne połączenie przed zerwaniem przez router lub zaporę.",
+        "Keyboard and screen": "Klawiatura i ekran",
+        "Enter sends": "Enter wysyła",
+        "Backspace sends": "Backspace wysyła",
+        "Lines to scroll back": "Wiersze przewijania wstecz",
+        "Cursor": "Kursor",
+        "Block": "Blok",
+        "Underline": "Podkreślenie",
+        "Bar": "Pionowa kreska",
+        "Blinking": "Migający",
+        "These apply to the shell and to SSH windows opened from now on, not to a window that is already open.": "Dotyczy powłoki i okien SSH otwieranych od teraz, nie okna, które jest już otwarte."
     },
     "nplurals=4; plural=(n==1 ? 0 : (n%10>=2 && n%10<=4) && (n%100<12 || n%100>14) ? 1 : n!=1 && (n%10>=0 && n%10<=1) || (n%10>=5 && n%10<=9) || (n%100>=12 && n%100<=14) ? 2 : 3);"
 );

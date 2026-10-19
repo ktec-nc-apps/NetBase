@@ -1974,7 +1974,25 @@ OC.L10N.register(
         "No certificate presented": "هیچ گواهی‌ای ارائه نشد",
         "Wake-on-LAN needs the PHP sockets extension, which is not installed": "Wake-on-LAN به افزونهٔ sockets در PHP نیاز دارد که نصب نشده است",
         "Could not open a UDP socket": "باز کردن سوکت UDP ممکن نشد",
-        "Domain policy, server tests, and reading and sending mail": "سیاست دامنه، آزمون سرور، خواندن و فرستادن رایانامه"
+        "Domain policy, server tests, and reading and sending mail": "سیاست دامنه، آزمون سرور، خواندن و فرستادن رایانامه",
+        "SSH windows": "پنجره‌های SSH",
+        "Terminal type (TERM)": "نوع پایانه (TERM)",
+        "Character encoding": "رمزگذاری نویسه‌ها",
+        "xterm-256color suits nearly every server. Choose vt100 or another type only for a device that asks for it, and an encoding other than UTF-8 for an older server or device that speaks Shift_JIS, EUC-JP and the like.": "xterm-256color برای تقریباً همهٔ سرورها مناسب است. vt100 یا نوع دیگری را فقط برای دستگاهی برگزینید که آن را می‌خواهد، و رمزگذاری‌ای جز UTF-8 را فقط برای سرور یا دستگاه قدیمی که Shift_JIS، EUC-JP و مانند آن‌ها را به کار می‌برد.",
+        "Environment variables sent to the server": "متغیرهای محیطی فرستاده‌شده به سرور",
+        "One NAME=value to a line, sent when the shell starts, as OpenSSH does with SendEnv. A server takes only the names its AcceptEnv setting allows — usually LANG and LC_* — and ignores the rest.": "در هر خط یک NAME=value؛ هنگام آغاز پوسته فرستاده می‌شود، همان‌گونه که OpenSSH با SendEnv می‌فرستد. سرور فقط نام‌هایی را می‌پذیرد که تنظیم AcceptEnv آن اجازه می‌دهد (معمولاً LANG و LC_*) و بقیه را نادیده می‌گیرد.",
+        "Keep the connection alive every (seconds)": "زنده نگه داشتن اتصال هر (ثانیه)",
+        "0 is off. A small number keeps a router or firewall from dropping a quiet connection.": "0 یعنی خاموش. عدد کوچک نمی‌گذارد مسیریاب یا دیوارهٔ آتش اتصال بی‌کار را قطع کند.",
+        "Keyboard and screen": "صفحه‌کلید و صفحه",
+        "Enter sends": "Enter می‌فرستد",
+        "Backspace sends": "Backspace می‌فرستد",
+        "Lines to scroll back": "خطوط پیمایش به عقب",
+        "Cursor": "مکان‌نما",
+        "Block": "بلوک",
+        "Underline": "زیرخط",
+        "Bar": "خط عمودی",
+        "Blinking": "چشمک‌زن",
+        "These apply to the shell and to SSH windows opened from now on, not to a window that is already open.": "برای پوسته و پنجره‌های SSH که از این پس باز می‌شوند به کار می‌رود، نه برای پنجره‌ای که اکنون باز است."
     },
     "nplurals=2; plural=(n > 1);"
 );

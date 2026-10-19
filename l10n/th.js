@@ -1974,7 +1974,25 @@ OC.L10N.register(
         "No certificate presented": "ไม่มีการแสดงใบรับรอง",
         "Wake-on-LAN needs the PHP sockets extension, which is not installed": "Wake-on-LAN ต้องใช้ส่วนขยาย sockets ของ PHP ซึ่งยังไม่ได้ติดตั้ง",
         "Could not open a UDP socket": "ไม่สามารถเปิดซ็อกเก็ต UDP ได้",
-        "Domain policy, server tests, and reading and sending mail": "นโยบายโดเมน การทดสอบเซิร์ฟเวอร์ และการอ่านและส่งอีเมล"
+        "Domain policy, server tests, and reading and sending mail": "นโยบายโดเมน การทดสอบเซิร์ฟเวอร์ และการอ่านและส่งอีเมล",
+        "SSH windows": "หน้าต่าง SSH",
+        "Terminal type (TERM)": "ชนิดเทอร์มินัล (TERM)",
+        "Character encoding": "การเข้ารหัสอักขระ",
+        "xterm-256color suits nearly every server. Choose vt100 or another type only for a device that asks for it, and an encoding other than UTF-8 for an older server or device that speaks Shift_JIS, EUC-JP and the like.": "xterm-256color เหมาะกับเซิร์ฟเวอร์เกือบทุกเครื่อง เลือก vt100 หรือชนิดอื่นเฉพาะเมื่ออุปกรณ์ต้องการ และเลือกการเข้ารหัสอื่นที่ไม่ใช่ UTF-8 เฉพาะเซิร์ฟเวอร์หรืออุปกรณ์รุ่นเก่าที่ใช้ Shift_JIS, EUC-JP และอื่น ๆ",
+        "Environment variables sent to the server": "ตัวแปรสภาพแวดล้อมที่ส่งไปยังเซิร์ฟเวอร์",
+        "One NAME=value to a line, sent when the shell starts, as OpenSSH does with SendEnv. A server takes only the names its AcceptEnv setting allows — usually LANG and LC_* — and ignores the rest.": "บรรทัดละหนึ่ง NAME=value ส่งเมื่อเชลล์เริ่มทำงาน เหมือนที่ OpenSSH ทำด้วย SendEnv เซิร์ฟเวอร์รับเฉพาะชื่อที่การตั้งค่า AcceptEnv อนุญาต (ปกติคือ LANG และ LC_*) และไม่สนใจส่วนที่เหลือ",
+        "Keep the connection alive every (seconds)": "รักษาการเชื่อมต่อทุก ๆ (วินาที)",
+        "0 is off. A small number keeps a router or firewall from dropping a quiet connection.": "0 คือปิด ค่าน้อย ๆ ช่วยไม่ให้เราเตอร์หรือไฟร์วอลล์ตัดการเชื่อมต่อที่เงียบอยู่",
+        "Keyboard and screen": "แป้นพิมพ์และหน้าจอ",
+        "Enter sends": "Enter ส่ง",
+        "Backspace sends": "Backspace ส่ง",
+        "Lines to scroll back": "จำนวนบรรทัดเลื่อนย้อนหลัง",
+        "Cursor": "เคอร์เซอร์",
+        "Block": "บล็อก",
+        "Underline": "ขีดเส้นใต้",
+        "Bar": "แถบแนวตั้ง",
+        "Blinking": "กะพริบ",
+        "These apply to the shell and to SSH windows opened from now on, not to a window that is already open.": "ใช้กับเชลล์และหน้าต่าง SSH ที่เปิดนับจากนี้ ไม่ใช้กับหน้าต่างที่เปิดอยู่แล้ว"
     },
     "nplurals=1; plural=0;"
 );

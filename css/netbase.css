@@ -753,6 +753,10 @@ html.nb-col-resizing, html.nb-col-resizing * { cursor: col-resize !important; -w
 #netbase-root .set-group p.dim { margin: 6px 0 0; font-size: 12.5px; line-height: 1.65; }
 #netbase-root .set-group p.dim + p.dim { margin-top: 4px; }
 #netbase-root .set-group .fl-row { margin-top: 12px; align-items: flex-end; }
+/* A field straight after a line of explanation starts a new item, so it gets the
+   same room as a row of fields does; without it the label read as the end of
+   the note above. */
+#netbase-root .set-group p.dim + .fl { margin-top: 12px; }
 #netbase-root .set-group .opt { margin-top: 2px; }
 /* A setting the administrator changes for the whole server, standing among
    settings that are only the reader's own. Saying which is which costs one

@@ -1974,7 +1974,25 @@ OC.L10N.register(
         "No certificate presented": "Sertifika sunulmadı",
         "Wake-on-LAN needs the PHP sockets extension, which is not installed": "Wake-on-LAN için PHP sockets eklentisi gerekiyor, ancak yüklü değil",
         "Could not open a UDP socket": "UDP soketi açılamadı",
-        "Domain policy, server tests, and reading and sending mail": "Alan adı politikası, sunucu testleri, e-posta okuma ve gönderme"
+        "Domain policy, server tests, and reading and sending mail": "Alan adı politikası, sunucu testleri, e-posta okuma ve gönderme",
+        "SSH windows": "SSH pencereleri",
+        "Terminal type (TERM)": "Terminal türü (TERM)",
+        "Character encoding": "Karakter kodlaması",
+        "xterm-256color suits nearly every server. Choose vt100 or another type only for a device that asks for it, and an encoding other than UTF-8 for an older server or device that speaks Shift_JIS, EUC-JP and the like.": "xterm-256color neredeyse her sunucuya uyar. vt100 veya başka bir türü yalnızca bunu isteyen bir cihaz için, UTF-8 dışında bir kodlamayı da yalnızca Shift_JIS, EUC-JP ve benzerlerini kullanan eski bir sunucu ya da cihaz için seçin.",
+        "Environment variables sent to the server": "Sunucuya gönderilen ortam değişkenleri",
+        "One NAME=value to a line, sent when the shell starts, as OpenSSH does with SendEnv. A server takes only the names its AcceptEnv setting allows — usually LANG and LC_* — and ignores the rest.": "Her satıra bir NAME=value; OpenSSH'nin SendEnv ile yaptığı gibi kabuk başlarken gönderilir. Sunucu yalnızca AcceptEnv ayarının izin verdiği adları (genellikle LANG ve LC_*) kabul eder, gerisini yok sayar.",
+        "Keep the connection alive every (seconds)": "Bağlantıyı canlı tutma aralığı (saniye)",
+        "0 is off. A small number keeps a router or firewall from dropping a quiet connection.": "0 kapalıdır. Küçük bir değer, yönlendiricinin veya güvenlik duvarının sessiz bir bağlantıyı kesmesini önler.",
+        "Keyboard and screen": "Klavye ve ekran",
+        "Enter sends": "Enter gönderir",
+        "Backspace sends": "Backspace gönderir",
+        "Lines to scroll back": "Geri kaydırma satırı",
+        "Cursor": "İmleç",
+        "Block": "Blok",
+        "Underline": "Alt çizgi",
+        "Bar": "Dikey çubuk",
+        "Blinking": "Yanıp sönen",
+        "These apply to the shell and to SSH windows opened from now on, not to a window that is already open.": "Bundan sonra açılan kabuk ve SSH pencereleri için geçerlidir, zaten açık olan bir pencere için değil."
     },
     "nplurals=2; plural=(n > 1);"
 );

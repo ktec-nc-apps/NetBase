@@ -1974,7 +1974,25 @@ OC.L10N.register(
         "No certificate presented": "Сертификат не предъявлен",
         "Wake-on-LAN needs the PHP sockets extension, which is not installed": "Для Wake-on-LAN нужно расширение PHP sockets, но оно не установлено",
         "Could not open a UDP socket": "Не удалось открыть UDP-сокет",
-        "Domain policy, server tests, and reading and sending mail": "Политика домена, проверка сервера, чтение и отправка почты"
+        "Domain policy, server tests, and reading and sending mail": "Политика домена, проверка сервера, чтение и отправка почты",
+        "SSH windows": "Окна SSH",
+        "Terminal type (TERM)": "Тип терминала (TERM)",
+        "Character encoding": "Кодировка символов",
+        "xterm-256color suits nearly every server. Choose vt100 or another type only for a device that asks for it, and an encoding other than UTF-8 for an older server or device that speaks Shift_JIS, EUC-JP and the like.": "xterm-256color подходит почти для любого сервера. Выбирайте vt100 или другой тип только для устройства, которое этого требует, а кодировку, отличную от UTF-8, — только для старого сервера или устройства, использующего Shift_JIS, EUC-JP и подобные.",
+        "Environment variables sent to the server": "Переменные окружения, отправляемые на сервер",
+        "One NAME=value to a line, sent when the shell starts, as OpenSSH does with SendEnv. A server takes only the names its AcceptEnv setting allows — usually LANG and LC_* — and ignores the rest.": "По одному NAME=value в строке; отправляются при запуске оболочки, как это делает OpenSSH через SendEnv. Сервер принимает только имена, разрешённые его настройкой AcceptEnv (обычно LANG и LC_*), а остальные игнорирует.",
+        "Keep the connection alive every (seconds)": "Поддерживать соединение каждые (секунд)",
+        "0 is off. A small number keeps a router or firewall from dropping a quiet connection.": "0 — выключено. Небольшое значение не даёт маршрутизатору или межсетевому экрану разорвать неактивное соединение.",
+        "Keyboard and screen": "Клавиатура и экран",
+        "Enter sends": "Enter отправляет",
+        "Backspace sends": "Backspace отправляет",
+        "Lines to scroll back": "Строк прокрутки назад",
+        "Cursor": "Курсор",
+        "Block": "Блок",
+        "Underline": "Подчёркивание",
+        "Bar": "Вертикальная черта",
+        "Blinking": "Мигающий",
+        "These apply to the shell and to SSH windows opened from now on, not to a window that is already open.": "Применяется к оболочке и окнам SSH, открытым с этого момента, но не к уже открытому окну."
     },
     "nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);"
 );

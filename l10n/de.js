@@ -1974,7 +1974,25 @@ OC.L10N.register(
         "No certificate presented": "Kein Zertifikat vorgelegt",
         "Wake-on-LAN needs the PHP sockets extension, which is not installed": "Wake-on-LAN benötigt die PHP-Erweiterung sockets, die nicht installiert ist",
         "Could not open a UDP socket": "Es konnte kein UDP-Socket geöffnet werden",
-        "Domain policy, server tests, and reading and sending mail": "Domain-Richtlinien, Servertests sowie Mails lesen und senden"
+        "Domain policy, server tests, and reading and sending mail": "Domain-Richtlinien, Servertests sowie Mails lesen und senden",
+        "SSH windows": "SSH-Fenster",
+        "Terminal type (TERM)": "Terminaltyp (TERM)",
+        "Character encoding": "Zeichenkodierung",
+        "xterm-256color suits nearly every server. Choose vt100 or another type only for a device that asks for it, and an encoding other than UTF-8 for an older server or device that speaks Shift_JIS, EUC-JP and the like.": "xterm-256color passt für fast jeden Server. Wählen Sie vt100 oder einen anderen Typ nur für ein Gerät, das danach verlangt, und eine andere Kodierung als UTF-8 für einen älteren Server oder ein Gerät, das Shift_JIS, EUC-JP oder Ähnliches verwendet.",
+        "Environment variables sent to the server": "An den Server gesendete Umgebungsvariablen",
+        "One NAME=value to a line, sent when the shell starts, as OpenSSH does with SendEnv. A server takes only the names its AcceptEnv setting allows — usually LANG and LC_* — and ignores the rest.": "Ein NAME=value je Zeile, gesendet beim Start der Shell, wie es OpenSSH mit SendEnv tut. Ein Server übernimmt nur die Namen, die seine Einstellung AcceptEnv erlaubt – meist LANG und LC_* –, und ignoriert den Rest.",
+        "Keep the connection alive every (seconds)": "Verbindung aktiv halten alle (Sekunden)",
+        "0 is off. A small number keeps a router or firewall from dropping a quiet connection.": "0 heißt aus. Ein kleiner Wert verhindert, dass ein Router oder eine Firewall eine ruhige Verbindung trennt.",
+        "Keyboard and screen": "Tastatur und Bildschirm",
+        "Enter sends": "Enter sendet",
+        "Backspace sends": "Rücktaste sendet",
+        "Lines to scroll back": "Zeilen zum Zurückblättern",
+        "Cursor": "Cursor",
+        "Block": "Block",
+        "Underline": "Unterstrich",
+        "Bar": "Balken",
+        "Blinking": "Blinkend",
+        "These apply to the shell and to SSH windows opened from now on, not to a window that is already open.": "Gilt für Shells und SSH-Fenster, die ab jetzt geöffnet werden, nicht für ein bereits offenes Fenster."
     },
     "nplurals=2; plural=(n != 1);"
 );

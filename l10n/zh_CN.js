@@ -1974,7 +1974,25 @@ OC.L10N.register(
         "No certificate presented": "未提供证书",
         "Wake-on-LAN needs the PHP sockets extension, which is not installed": "Wake-on-LAN 需要 PHP 的 sockets 扩展，但未安装",
         "Could not open a UDP socket": "无法打开 UDP 套接字",
-        "Domain policy, server tests, and reading and sending mail": "域名策略、服务器检测与邮件收发"
+        "Domain policy, server tests, and reading and sending mail": "域名策略、服务器检测与邮件收发",
+        "SSH windows": "SSH 窗口",
+        "Terminal type (TERM)": "终端类型（TERM）",
+        "Character encoding": "字符编码",
+        "xterm-256color suits nearly every server. Choose vt100 or another type only for a device that asks for it, and an encoding other than UTF-8 for an older server or device that speaks Shift_JIS, EUC-JP and the like.": "xterm-256color 几乎适合所有服务器。只有设备明确要求时，才选择 vt100 等其他类型；只有较旧的服务器或设备使用 Shift_JIS、EUC-JP 等时，才选择 UTF-8 以外的编码。",
+        "Environment variables sent to the server": "发送给服务器的环境变量",
+        "One NAME=value to a line, sent when the shell starts, as OpenSSH does with SendEnv. A server takes only the names its AcceptEnv setting allows — usually LANG and LC_* — and ignores the rest.": "每行一个 NAME=value，在启动 Shell 时发送，与 OpenSSH 的 SendEnv 相同。服务器只接受其 AcceptEnv 设置允许的名称（通常为 LANG 和 LC_*），其余会被忽略。",
+        "Keep the connection alive every (seconds)": "保持连接的间隔（秒）",
+        "0 is off. A small number keeps a router or firewall from dropping a quiet connection.": "0 表示关闭。设置较小的值，可以防止路由器或防火墙断开空闲的连接。",
+        "Keyboard and screen": "键盘与屏幕",
+        "Enter sends": "Enter 发送",
+        "Backspace sends": "Backspace 发送",
+        "Lines to scroll back": "回滚行数",
+        "Cursor": "光标",
+        "Block": "方块",
+        "Underline": "下划线",
+        "Bar": "竖线",
+        "Blinking": "闪烁",
+        "These apply to the shell and to SSH windows opened from now on, not to a window that is already open.": "这些设置适用于此后打开的 Shell 和 SSH 窗口，不影响已打开的窗口。"
     },
     "nplurals=1; plural=0;"
 );

@@ -1974,7 +1974,25 @@ OC.L10N.register(
         "No certificate presented": "لم تُقدَّم أي شهادة",
         "Wake-on-LAN needs the PHP sockets extension, which is not installed": "يحتاج Wake-on-LAN إلى امتداد PHP sockets، وهو غير مثبّت",
         "Could not open a UDP socket": "تعذر فتح مقبس UDP",
-        "Domain policy, server tests, and reading and sending mail": "سياسة النطاق، واختبارات الخادم، وقراءة البريد وإرساله"
+        "Domain policy, server tests, and reading and sending mail": "سياسة النطاق، واختبارات الخادم، وقراءة البريد وإرساله",
+        "SSH windows": "نوافذ SSH",
+        "Terminal type (TERM)": "نوع الطرفية (TERM)",
+        "Character encoding": "ترميز الأحرف",
+        "xterm-256color suits nearly every server. Choose vt100 or another type only for a device that asks for it, and an encoding other than UTF-8 for an older server or device that speaks Shift_JIS, EUC-JP and the like.": "يناسب xterm-256color كل الخوادم تقريبًا. اختر vt100 أو نوعًا آخر فقط لجهاز يطلبه، واختر ترميزًا غير UTF-8 فقط لخادم أو جهاز قديم يستخدم Shift_JIS أو EUC-JP أو ما شابه.",
+        "Environment variables sent to the server": "متغيرات البيئة المرسلة إلى الخادم",
+        "One NAME=value to a line, sent when the shell starts, as OpenSSH does with SendEnv. A server takes only the names its AcceptEnv setting allows — usually LANG and LC_* — and ignores the rest.": "سطر واحد لكل NAME=value، يُرسل عند بدء الصدفة كما يفعل OpenSSH مع SendEnv. لا يقبل الخادم إلا الأسماء التي يسمح بها إعداد AcceptEnv لديه — عادةً LANG وLC_* — ويتجاهل الباقي.",
+        "Keep the connection alive every (seconds)": "إبقاء الاتصال نشطًا كل (ثانية)",
+        "0 is off. A small number keeps a router or firewall from dropping a quiet connection.": "0 يعني الإيقاف. القيمة الصغيرة تمنع الموجّه أو الجدار الناري من قطع اتصال خامل.",
+        "Keyboard and screen": "لوحة المفاتيح والشاشة",
+        "Enter sends": "يرسل Enter",
+        "Backspace sends": "يرسل Backspace",
+        "Lines to scroll back": "أسطر التمرير للخلف",
+        "Cursor": "المؤشر",
+        "Block": "كتلة",
+        "Underline": "خط سفلي",
+        "Bar": "شريط عمودي",
+        "Blinking": "وامض",
+        "These apply to the shell and to SSH windows opened from now on, not to a window that is already open.": "ينطبق على الصدفة ونوافذ SSH التي تُفتح من الآن، لا على نافذة مفتوحة بالفعل."
     },
     "nplurals=6; plural=(n==0 ? 0 : n==1 ? 1 : n==2 ? 2 : n%100>=3 && n%100<=10 ? 3 : n%100>=11 && n%100<=99 ? 4 : 5);"
 );

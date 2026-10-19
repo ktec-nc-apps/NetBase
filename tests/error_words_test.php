@@ -80,7 +80,9 @@ namespace {
 	$it = new RecursiveIteratorIterator(new RecursiveDirectoryIterator(__DIR__ . '/../lib', FilesystemIterator::SKIP_DOTS));
 	foreach ($it as $f) {
 		$path = (string)$f;
-		if (!str_ends_with($path, '.php') || str_contains($path, '/Vendor/') || str_ends_with($path, 'NmapService.php')) {
+		// TermSsh repeats phpseclib's own openShell(), and its errors are the
+		// library's: they end a terminal and are logged, never shown.
+		if (!str_ends_with($path, '.php') || str_contains($path, '/Vendor/') || str_ends_with($path, 'NmapService.php') || str_ends_with($path, 'TermSsh.php')) {
 			continue;
 		}
 		preg_match_all("/new \\\\?(?:Runtime|InvalidArgument|Forbidden|WordedRuntime|WordedInvalidArgument)Exception\\(\\s*'((?:[^'\\\\]|\\\\.)*)'\\s*[,)]/", (string)file_get_contents($path), $m);
