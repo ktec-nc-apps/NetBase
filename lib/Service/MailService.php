@@ -637,7 +637,7 @@ class MailService {
 			@fclose($stream);
 			$result['ok'] = true;
 		} catch (\Throwable $e) {
-			$result['error'] = $e->getMessage();
+			$result['error'] = $this->l->said($e);
 		}
 
 		$result['transcript'] = $transcript;
@@ -715,7 +715,7 @@ class MailService {
 					: $this->finding('ok', 'Open relay', $this->l->t('Relaying for a foreign recipient was refused, which is correct.'))],
 			];
 		} catch (\Throwable $e) {
-			return ['host' => $host, 'port' => $port ?: 25, 'openRelay' => null, 'error' => $e->getMessage(), 'transcript' => $transcript, 'findings' => []];
+			return ['host' => $host, 'port' => $port ?: 25, 'openRelay' => null, 'error' => $this->l->said($e), 'transcript' => $transcript, 'findings' => []];
 		}
 	}
 
@@ -770,7 +770,7 @@ class MailService {
 				}
 				$reply = $this->command($stream, 'a3 LOGIN ' . $this->imapQuote($user) . ' ' . $this->imapQuote($pass), 'imap', $transcript, true);
 				if (!preg_match('/^a3 OK/mi', $reply)) {
-					throw new \RuntimeException('Sign-in refused: ' . trim(strtok($reply, "\n")));
+					throw new WordedRuntimeException('Sign-in refused: %s', [trim(strtok($reply, "\n"))]);
 				}
 				$status = $this->command($stream, 'a4 STATUS INBOX (MESSAGES UNSEEN RECENT)', 'imap', $transcript);
 				$list = $this->command($stream, 'a5 LIST "" "%"', 'imap', $transcript);
@@ -803,7 +803,7 @@ class MailService {
 				$reply = $this->command($stream, 'USER ' . $user, 'pop3', $transcript);
 				$reply = $this->command($stream, 'PASS ' . $pass, 'pop3', $transcript, true);
 				if (!str_starts_with(trim($reply), '+OK')) {
-					throw new \RuntimeException('Sign-in refused: ' . trim($reply));
+					throw new WordedRuntimeException('Sign-in refused: %s', [trim($reply)]);
 				}
 				$stat = $this->command($stream, 'STAT', 'pop3', $transcript);
 				$counts = [];
@@ -817,7 +817,7 @@ class MailService {
 			$out['ok'] = true;
 			$out['tls'] = $tlsInfo;
 		} catch (\Throwable $e) {
-			$out['error'] = $e->getMessage();
+			$out['error'] = $this->l->said($e);
 		}
 		$out['transcript'] = $this->redact($transcript);
 		$this->endpoints->touch($endpoint, $out['ok'] ? 'Signed in' : ('Failed: ' . (string)$out['error']));
@@ -840,6 +840,201 @@ class MailService {
 		if (filter_var($to, FILTER_VALIDATE_EMAIL) === false) {
 			throw new \InvalidArgumentException('The recipient is not a valid address');
 		}
+		$from = $this->senderOf($endpoint);
+		try {
+			$sent = $this->smtpDeliver($endpoint, $from, [$to], $this->buildMessage($from, $to, $subject, $body), $timeout);
+			$this->endpoints->touch($endpoint, 'Test message sent to ' . $to);
+			return ['ok' => true, 'to' => $to, 'from' => $from, 'reply' => $sent['reply'], 'transcript' => $sent['transcript'], 'tls' => $sent['tls']];
+		} catch (\Throwable $e) {
+			$this->endpoints->touch($endpoint, 'Send failed: ' . $e->getMessage());
+			return ['ok' => false, 'to' => $to, 'from' => $from, 'error' => $this->l->said($e), 'transcript' => []];
+		}
+	}
+
+	// ------------------------------------------------------------------ writing and filing
+
+	/** The most attached to one message, in bytes. */
+	private const ATTACH_MAX = 26214400;
+
+	/**
+	 * A message written here — new, a reply or a forward — sent through the
+	 * connection's outgoing server.
+	 *
+	 * Attachments come from the reader's Nextcloud files, or, for a forward,
+	 * from the message being forwarded. Where the mailbox is IMAP a copy is
+	 * filed in its Sent folder, as a mail program does, and the message replied
+	 * to or forwarded is marked so. A server that files sent mail by itself
+	 * (Gmail) would then hold two copies, so the copy can be turned off.
+	 *
+	 * @param array<string, mixed> $mail
+	 * @return array<string, mixed>
+	 */
+	public function compose(EndpointEntity $endpoint, string $userId, array $mail, float $timeout = 60.0): array {
+		$to = self::addresses((string)($mail['to'] ?? ''));
+		$cc = self::addresses((string)($mail['cc'] ?? ''));
+		$bcc = self::addresses((string)($mail['bcc'] ?? ''));
+		foreach (array_merge($to, $cc, $bcc) as $a) {
+			if (filter_var($a['address'], FILTER_VALIDATE_EMAIL, FILTER_FLAG_EMAIL_UNICODE) === false) {
+				throw new \InvalidArgumentException($this->l->t('%s is not a mail address.', [$a['address']]));
+			}
+		}
+		if ($to === [] && $cc === [] && $bcc === []) {
+			throw new \InvalidArgumentException($this->l->t('Enter at least one address to send to.'));
+		}
+		$from = $this->senderOf($endpoint);
+		$files = [];
+		$bytes = 0;
+		foreach ((array)($mail['attach'] ?? []) as $a) {
+			$file = $this->attachmentFor($endpoint, $userId, (array)$a, $timeout);
+			$bytes += strlen($file['data']);
+			if ($bytes > self::ATTACH_MAX) {
+				throw new \RuntimeException($this->l->t('The attachments come to more than %s, more than most servers accept in one message.', ['25 MB']));
+			}
+			$files[] = $file;
+		}
+		[$message, $messageId] = $this->buildMail($from, $to, $cc, (string)($mail['subject'] ?? ''), (string)($mail['body'] ?? ''), $files,
+			(string)($mail['inReplyTo'] ?? ''), (string)($mail['references'] ?? ''));
+		$rcpts = array_values(array_unique(array_map(static fn (array $a): string => $a['address'], array_merge($to, $cc, $bcc))));
+		$sent = $this->smtpDeliver($endpoint, $from, $rcpts, $message, $timeout);
+		$this->endpoints->touch($endpoint, 'Sent a message to ' . implode(', ', array_slice($rcpts, 0, 3)));
+		$filed = null;
+		$note = '';
+		if ((string)$endpoint->getKind() === 'imap' && (!empty($mail['saveSent']) || !empty($mail['answered']) || !empty($mail['forwarded']))) {
+			// The message has gone; what follows is filing, and a failure there
+			// must not read as a failure to send.
+			try {
+				[$stream] = $this->signIn($endpoint, $timeout);
+				try {
+					if (!empty($mail['saveSent'])) {
+						$sentBox = self::specialFolder($this->imapFolders($stream), 'sent');
+						if ($sentBox !== null && $this->imapAppend($stream, $sentBox, $message, '(\\Seen)')) {
+							$filed = $sentBox;
+						} else {
+							$note = $this->l->t('Sent, but no Sent folder was found to keep a copy in.');
+						}
+					}
+					foreach (['answered' => '\\Answered', 'forwarded' => '$Forwarded'] as $key => $flag) {
+						$which = (array)($mail[$key] ?? []);
+						if (isset($which['folder'], $which['ref']) && preg_match('/^uid:(\d+)$/', (string)$which['ref'], $m)) {
+							$this->imapSelect($stream, (string)$which['folder']);
+							$this->imapExchange($stream, 'f1', 'UID STORE ' . $m[1] . ' +FLAGS.SILENT (' . $flag . ')');
+						}
+					}
+					$this->imapExchange($stream, 'f9', 'LOGOUT');
+				} finally {
+					@fclose($stream);
+				}
+			} catch (\Throwable $e) {
+				$note = $this->l->t('Sent, but the copy could not be filed: %s', [$this->l->said($e)]);
+			}
+		}
+		return ['ok' => true, 'to' => $rcpts, 'from' => $from, 'messageId' => $messageId, 'savedTo' => $filed, 'note' => $note, 'reply' => $sent['reply']];
+	}
+
+	/**
+	 * Mark, file or delete messages: read and unread, flagged and not, moved to
+	 * another folder, or deleted. In IMAP a deleted message goes to the Trash
+	 * folder where there is one, and only from there (or where there is none)
+	 * is it removed for good. In POP3 deleting removes it from the server.
+	 *
+	 * @param list<string> $refs
+	 * @return array<string, mixed>
+	 */
+	public function mailAction(EndpointEntity $endpoint, string $action, string $folder, array $refs, string $target = '', float $timeout = 30.0): array {
+		[$stream, $kind] = $this->signIn($endpoint, $timeout);
+		try {
+			if ($kind === 'pop3') {
+				if ($action !== 'delete') {
+					throw new \InvalidArgumentException($this->l->t('A POP3 mailbox has no folders or marks; messages can only be read and deleted.'));
+				}
+				$uidl = $this->popMap($stream, 'UIDL');
+				$done = 0;
+				foreach ($refs as $ref) {
+					if (!preg_match('/^pop:(\d+):(.*)$/', $ref, $m) || ($m[2] !== '' && ($uidl[(int)$m[1]] ?? null) !== $m[2])) {
+						continue;
+					}
+					if (str_starts_with(trim($this->popLine($stream, 'DELE ' . (int)$m[1])), '+OK')) {
+						$done++;
+					}
+				}
+				// The deletions take effect only when the session ends properly.
+				$this->popLine($stream, 'QUIT');
+				return ['done' => $done, 'permanent' => true];
+			}
+			$uids = [];
+			foreach ($refs as $ref) {
+				if (preg_match('/^uid:(\d+)$/', $ref, $m)) {
+					$uids[] = $m[1];
+				}
+			}
+			if ($uids === []) {
+				throw new \InvalidArgumentException('Unknown message');
+			}
+			$set = implode(',', $uids);
+			$caps = $this->imapCapabilities(implode("\n", array_map(static fn (array $u): string => $u[0], $this->imapExchange($stream, 'c1', 'CAPABILITY')[1])));
+			$folders = $this->imapFolders($stream);
+			$this->imapSelect($stream, $folder !== '' ? $folder : 'INBOX');
+			$store = function (string $how) use ($stream, $set): void {
+				[$status] = $this->imapExchange($stream, 's1', 'UID STORE ' . $set . ' ' . $how);
+				if (!preg_match('/^s1 OK/i', $status)) {
+					throw new \RuntimeException($this->l->t('The server refused: %s', [$status]));
+				}
+			};
+			$move = function (string $to) use ($stream, $set, $caps, $store): void {
+				if (in_array('MOVE', $caps, true)) {
+					[$status] = $this->imapExchange($stream, 'm1', 'UID MOVE ' . $set . ' ' . $this->imapQuote($to));
+					if (!preg_match('/^m1 OK/i', $status)) {
+						throw new \RuntimeException($this->l->t('The server refused: %s', [$status]));
+					}
+					return;
+				}
+				[$status] = $this->imapExchange($stream, 'm2', 'UID COPY ' . $set . ' ' . $this->imapQuote($to));
+				if (!preg_match('/^m2 OK/i', $status)) {
+					throw new \RuntimeException($this->l->t('The server refused: %s', [$status]));
+				}
+				$store('+FLAGS.SILENT (\\Deleted)');
+				// Only these messages are removed: a plain EXPUNGE would also remove
+				// any other message another program had marked for deletion.
+				if (in_array('UIDPLUS', $caps, true)) {
+					$this->imapExchange($stream, 'm3', 'UID EXPUNGE ' . $set);
+				}
+			};
+			$out = ['done' => count($uids)];
+			switch ($action) {
+				case 'seen': $store('+FLAGS.SILENT (\\Seen)'); break;
+				case 'unseen': $store('-FLAGS.SILENT (\\Seen)'); break;
+				case 'flag': $store('+FLAGS.SILENT (\\Flagged)'); break;
+				case 'unflag': $store('-FLAGS.SILENT (\\Flagged)'); break;
+				case 'move':
+					if ($target === '' || !in_array($target, array_column($folders, 'name'), true)) {
+						throw new \InvalidArgumentException($this->l->t('Choose a folder to move to.'));
+					}
+					$move($target);
+					$out['movedTo'] = $target;
+					break;
+				case 'delete':
+					$trash = self::specialFolder($folders, 'trash');
+					if ($trash !== null && strcasecmp($trash, $folder !== '' ? $folder : 'INBOX') !== 0) {
+						$move($trash);
+						$out['movedTo'] = $trash;
+						break;
+					}
+					$store('+FLAGS.SILENT (\\Deleted)');
+					$this->imapExchange($stream, 'e1', in_array('UIDPLUS', $caps, true) ? 'UID EXPUNGE ' . $set : 'EXPUNGE');
+					$out['permanent'] = true;
+					break;
+				default:
+					throw new \InvalidArgumentException('Unknown action');
+			}
+			$this->imapExchange($stream, 'z9', 'LOGOUT');
+			return $out;
+		} finally {
+			@fclose($stream);
+		}
+	}
+
+	/** The address mail is sent from, as send() has always worked it out. */
+	private function senderOf(EndpointEntity $endpoint): string {
 		$from = (string)$this->endpoints->option($endpoint, 'from', '');
 		if ($from === '' || filter_var($from, FILTER_VALIDATE_EMAIL) === false) {
 			$from = (string)$endpoint->getUsername();
@@ -847,7 +1042,163 @@ class MailService {
 		if (filter_var($from, FILTER_VALIDATE_EMAIL) === false) {
 			throw new \InvalidArgumentException('This connection has no valid sender address. Set one in the connection settings.');
 		}
+		return $from;
+	}
 
+	/**
+	 * One attachment for a message being written.
+	 *
+	 * @param array<string, mixed> $a
+	 * @return array{name: string, type: string, data: string}
+	 */
+	private function attachmentFor(EndpointEntity $endpoint, string $userId, array $a, float $timeout): array {
+		if (($a['kind'] ?? '') === 'original') {
+			return $this->attachment($endpoint, (string)($a['folder'] ?? ''), (string)($a['ref'] ?? ''), (int)($a['index'] ?? 0), $timeout);
+		}
+		$path = trim(str_replace(["\0", "\r", "\n"], '', (string)($a['path'] ?? '')), '/');
+		try {
+			$node = \OCP\Server::get(\OCP\Files\IRootFolder::class)->getUserFolder($userId)->get($path);
+		} catch (\Throwable $e) {
+			$node = null;
+		}
+		if (!$node instanceof \OCP\Files\File || $path === '') {
+			throw new \RuntimeException($this->l->t('%s is no longer there.', [basename($path)]));
+		}
+		if ($node->getSize() > self::ATTACH_MAX) {
+			throw new \RuntimeException($this->l->t('The attachments come to more than %s, more than most servers accept in one message.', ['25 MB']));
+		}
+		return ['name' => $node->getName(), 'type' => $node->getMimetype() ?: 'application/octet-stream', 'data' => $node->getContent()];
+	}
+
+	/**
+	 * Addresses as people type them and headers carry them: "Name <a@b>",
+	 * "\"Sato, Taro\" <a@b>" or a bare a@b, separated by commas or semicolons.
+	 *
+	 * @return list<array{name: string, address: string}>
+	 */
+	public static function addresses(string $list): array {
+		$out = [];
+		$parts = [];
+		$cur = '';
+		$quoted = false;
+		$angle = false;
+		for ($i = 0, $n = strlen($list); $i < $n; $i++) {
+			$ch = $list[$i];
+			if ($ch === '"' && ($i === 0 || $list[$i - 1] !== '\\')) {
+				$quoted = !$quoted;
+			} elseif (!$quoted && $ch === '<') {
+				$angle = true;
+			} elseif (!$quoted && $ch === '>') {
+				$angle = false;
+			} elseif (!$quoted && !$angle && ($ch === ',' || $ch === ';' || $ch === "\n")) {
+				$parts[] = $cur;
+				$cur = '';
+				continue;
+			}
+			$cur .= $ch;
+		}
+		$parts[] = $cur;
+		foreach ($parts as $p) {
+			$p = trim($p);
+			if ($p === '' || preg_match('/^[^<@]*:\s*$/', $p)) {
+				continue; // empty, or a group's name ("undisclosed-recipients:")
+			}
+			if (preg_match('/^(.*)<([^<>]+)>\s*$/s', $p, $m)) {
+				$name = trim($m[1]);
+				if (strlen($name) >= 2 && $name[0] === '"' && str_ends_with($name, '"')) {
+					$name = stripcslashes(substr($name, 1, -1));
+				}
+				$out[] = ['name' => $name, 'address' => trim($m[2])];
+			} else {
+				$out[] = ['name' => '', 'address' => trim($p, " \t<>")];
+			}
+		}
+		return $out;
+	}
+
+	/** One address for a header, its name encoded when it is not plain ASCII. */
+	private static function headerAddress(array $a): string {
+		$name = trim((string)$a['name']);
+		if ($name === '') {
+			return '<' . $a['address'] . '>';
+		}
+		if (preg_match('/[^\x20-\x7E]/', $name)) {
+			$name = mb_encode_mimeheader($name, 'UTF-8', 'B', "\r\n");
+		} elseif (preg_match('/[(),.:;<>@\[\]"\\\\]/', $name)) {
+			$name = '"' . addcslashes($name, '"\\') . '"';
+		}
+		return $name . ' <' . $a['address'] . '>';
+	}
+
+	/**
+	 * The message as it is sent: plain UTF-8 text, and the attachments if any.
+	 *
+	 * @param list<array{name: string, address: string}> $to
+	 * @param list<array{name: string, address: string}> $cc
+	 * @param list<array{name: string, type: string, data: string}> $files
+	 * @return array{0: string, 1: string} the message and its Message-ID
+	 */
+	private function buildMail(string $from, array $to, array $cc, string $subject, string $body, array $files, string $inReplyTo, string $references): array {
+		$domain = substr(strrchr($from, '@') ?: '@localhost', 1);
+		$messageId = '<' . bin2hex(random_bytes(12)) . '@' . $domain . '>';
+		$clean = static fn (string $v): string => trim(str_replace(["\r", "\n"], ' ', $v));
+		$headers = [
+			'Date: ' . date('r'),
+			'From: <' . $from . '>',
+		];
+		if ($to !== []) {
+			$headers[] = 'To: ' . implode(',' . self::CRLF . ' ', array_map([self::class, 'headerAddress'], $to));
+		}
+		if ($cc !== []) {
+			$headers[] = 'Cc: ' . implode(',' . self::CRLF . ' ', array_map([self::class, 'headerAddress'], $cc));
+		}
+		$subject = $clean($subject);
+		$headers[] = 'Subject: ' . ($subject === '' ? '' : (preg_match('/[^\x20-\x7E]/', $subject) ? mb_encode_mimeheader($subject, 'UTF-8', 'B', self::CRLF) : $subject));
+		$headers[] = 'Message-ID: ' . $messageId;
+		if (preg_match('/^<[^<>\s]+>$/', $clean($inReplyTo))) {
+			$headers[] = 'In-Reply-To: ' . $clean($inReplyTo);
+			$refs = trim($clean($references) . ' ' . $clean($inReplyTo));
+			$headers[] = 'References: ' . implode(self::CRLF . ' ', array_slice(preg_split('/\s+/', $refs) ?: [], -20));
+		}
+		$headers[] = 'MIME-Version: 1.0';
+		$headers[] = 'X-Mailer: NetBase for Nextcloud';
+		$text = str_replace(["\r\n", "\r"], "\n", $body);
+		$text = str_replace("\n", self::CRLF, $text);
+		$textPart = 'Content-Type: text/plain; charset=UTF-8' . self::CRLF . 'Content-Transfer-Encoding: base64' . self::CRLF . self::CRLF
+			. chunk_split(base64_encode($text), 76, self::CRLF);
+		if ($files === []) {
+			return [implode(self::CRLF, $headers) . self::CRLF . $textPart, $messageId];
+		}
+		$boundary = '=_netbase_' . bin2hex(random_bytes(12));
+		$headers[] = 'Content-Type: multipart/mixed; boundary="' . $boundary . '"';
+		$out = implode(self::CRLF, $headers) . self::CRLF . self::CRLF . 'This is a message in MIME format.' . self::CRLF
+			. '--' . $boundary . self::CRLF . $textPart;
+		foreach ($files as $f) {
+			$name = str_replace(['"', "\r", "\n", '\\'], '', (string)$f['name']);
+			$type = preg_match('#^[\w.+-]+/[\w.+-]+$#', (string)$f['type']) ? (string)$f['type'] : 'application/octet-stream';
+			// RFC 2231 for programs that read it, and an encoded word for the
+			// many (older Outlook among them) that only read the plain form.
+			$legacy = preg_match('/[^\x20-\x7E]/', $name) ? mb_encode_mimeheader($name, 'UTF-8', 'B', '') : $name;
+			$out .= '--' . $boundary . self::CRLF
+				. 'Content-Type: ' . $type . '; name="' . $legacy . '"' . self::CRLF
+				. 'Content-Disposition: attachment; filename="' . $legacy . '";' . self::CRLF . ' filename*=UTF-8\'\'' . rawurlencode($name) . self::CRLF
+				. 'Content-Transfer-Encoding: base64' . self::CRLF . self::CRLF
+				. chunk_split(base64_encode((string)$f['data']), 76, self::CRLF);
+		}
+		return [$out . '--' . $boundary . '--' . self::CRLF, $messageId];
+	}
+
+	/**
+	 * Hand a finished message to the connection's outgoing server.
+	 *
+	 * @param list<string> $rcpts
+	 * @return array{reply: string, transcript: list<string>, tls: mixed}
+	 */
+	private function smtpDeliver(EndpointEntity $endpoint, string $from, array $rcpts, string $message, float $timeout): array {
+		$kind = (string)$endpoint->getKind();
+		if (!in_array($kind, ['smtp', 'imap', 'pop3'], true)) {
+			throw new \InvalidArgumentException('Not an SMTP connection');
+		}
 		// checked again where it is used: a connection may have been saved before the fence (review X3)
 		$host = \OCP\Server::get(ToolService::class)->reach((string)$endpoint->getHost());
 		$port = (int)$endpoint->getPort() ?: 587;
@@ -860,14 +1211,15 @@ class MailService {
 			$mode = (string)$this->endpoints->option($endpoint, 'sendMode', 'starttls');
 			$sendHost = trim((string)$this->endpoints->option($endpoint, 'sendHost', ''));
 			if ($sendHost !== '') {
-				$host = $sendHost;
+				$host = \OCP\Server::get(ToolService::class)->reach($sendHost);
 			}
 			$sendPort = (int)$this->endpoints->option($endpoint, 'sendPort', 0);
 			$port = $sendPort > 0 ? $sendPort : $this->defaultPort('smtp', $mode);
 		}
 		$transcript = [];
+		$tlsInfo = null;
+		$stream = $this->connect($host, $port, $mode === 'tls', $timeout, $tlsInfo);
 		try {
-			$stream = $this->connect($host, $port, $mode === 'tls', $timeout, $tlsInfo);
 			$this->readReply($stream, 'smtp', $transcript);
 			$helo = $this->heloName();
 			$reply = $this->command($stream, 'EHLO ' . $helo, 'smtp', $transcript);
@@ -885,23 +1237,639 @@ class MailService {
 				$this->smtpAuth($stream, $caps, (string)$endpoint->getUsername(), $this->endpoints->secret($endpoint), $transcript);
 			}
 			$this->expect($this->command($stream, 'MAIL FROM:<' . $from . '>', 'smtp', $transcript), '2');
-			$this->expect($this->command($stream, 'RCPT TO:<' . $to . '>', 'smtp', $transcript), '2');
+			foreach ($rcpts as $r) {
+				$this->expect($this->command($stream, 'RCPT TO:<' . $r . '>', 'smtp', $transcript), '2', $this->l->t('The server would not take mail for %s', [$r]));
+			}
 			$this->expect($this->command($stream, 'DATA', 'smtp', $transcript), '3');
-
-			$message = $this->buildMessage($from, $to, $subject, $body);
 			// Dot-stuffing: a line that is a single dot would end the message.
-			$escaped = preg_replace('/^\./m', '..', $message);
-			@fwrite($stream, $escaped . self::CRLF . '.' . self::CRLF);
+			@fwrite($stream, preg_replace('/^\./m', '..', $message) . self::CRLF . '.' . self::CRLF);
 			$final = $this->readReply($stream, 'smtp', $transcript);
 			$this->expect($final, '2');
 			$this->command($stream, 'QUIT', 'smtp', $transcript);
+			return ['reply' => trim($final), 'transcript' => $this->redact($transcript), 'tls' => $tlsInfo];
+		} finally {
 			@fclose($stream);
-			$this->endpoints->touch($endpoint, 'Test message sent to ' . $to);
-			return ['ok' => true, 'to' => $to, 'from' => $from, 'reply' => trim($final), 'transcript' => $this->redact($transcript), 'tls' => $tlsInfo];
-		} catch (\Throwable $e) {
-			$this->endpoints->touch($endpoint, 'Send failed: ' . $e->getMessage());
-			return ['ok' => false, 'to' => $to, 'from' => $from, 'error' => $e->getMessage(), 'transcript' => $this->redact($transcript)];
 		}
+	}
+
+	/** Open a folder to change things in it; the number of messages. */
+	private function imapSelect($stream, string $folder): int {
+		[$status, $untagged] = $this->imapExchange($stream, 'r2', 'SELECT ' . $this->imapQuote($folder));
+		if (!preg_match('/^r2 OK/i', $status)) {
+			throw new \RuntimeException($this->l->t('The folder %s could not be opened.', [$folder]));
+		}
+		foreach ($untagged as [$text]) {
+			if (preg_match('/^\* (\d+) EXISTS/i', $text, $m)) {
+				return (int)$m[1];
+			}
+		}
+		return 0;
+	}
+
+	/** Put a whole message into a folder (a copy of what was sent). */
+	private function imapAppend($stream, string $folder, string $message, string $flags): bool {
+		@fwrite($stream, 'p1 APPEND ' . $this->imapQuote($folder) . ' ' . $flags . ' {' . strlen($message) . '}' . self::CRLF);
+		$line = @fgets($stream, 65536);
+		if ($line === false || !str_starts_with($line, '+')) {
+			return false;
+		}
+		@fwrite($stream, $message . self::CRLF);
+		while (($line = @fgets($stream, 65536)) !== false) {
+			if (str_starts_with($line, 'p1 ')) {
+				return (bool)preg_match('/^p1 OK/i', $line);
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * The folder a mailbox uses for sent mail, or the trash: the one the server
+	 * names so (SPECIAL-USE), or else one whose name says it.
+	 *
+	 * @param list<array{name: string, label: string, use?: string}> $folders
+	 */
+	public static function specialFolder(array $folders, string $use): ?string {
+		foreach ($folders as $f) {
+			if (($f['use'] ?? '') === $use) {
+				return $f['name'];
+			}
+		}
+		$names = [
+			'sent' => '/^(?:inbox[.\/])?(?:sent|sent items|sent messages|sent mail|送信済み|送信済みアイテム|送信済みメール|送信箱)$/iu',
+			'trash' => '/^(?:inbox[.\/])?(?:trash|deleted|deleted items|deleted messages|bin|ゴミ箱|ごみ箱|削除済み|削除済みアイテム)$/iu',
+		][$use] ?? null;
+		if ($names === null) {
+			return null;
+		}
+		foreach ($folders as $f) {
+			if (preg_match($names, $f['label']) || preg_match($names, $f['name'])) {
+				return $f['name'];
+			}
+		}
+		return null;
+	}
+
+	// ------------------------------------------------------------------ reading
+
+	/** The largest message opened for reading, in bytes. */
+	private const READ_MAX = 26214400;
+
+	/**
+	 * The newest messages in a mailbox, the way a mail program lists them.
+	 *
+	 * Reading changes nothing: IMAP opens the folder read-only (EXAMINE) and
+	 * fetches with BODY.PEEK, so nothing is marked as read; POP3 never deletes.
+	 *
+	 * @return array<string, mixed>
+	 */
+	public function messages(EndpointEntity $endpoint, string $folder = '', int $offset = 0, int $limit = 50, float $timeout = 20.0, string $search = ''): array {
+		$limit = max(1, min(200, $limit));
+		$offset = max(0, $offset);
+		[$stream, $kind] = $this->signIn($endpoint, $timeout);
+		try {
+			if ($kind === 'imap') {
+				$folders = $this->imapFolders($stream);
+				$folder = $folder !== '' ? $folder : 'INBOX';
+				$total = $this->imapExamine($stream, $folder);
+				$messages = [];
+				$items = ' (UID FLAGS RFC822.SIZE INTERNALDATE BODY.PEEK[HEADER.FIELDS (FROM TO CC SUBJECT DATE CONTENT-TYPE)])';
+				$fetch = null;
+				if (trim($search) !== '') {
+					// Searching: the server finds the messages (subject, sender or
+					// recipient), and the newest of them are listed as usual.
+					$caps = $this->imapCapabilities(implode("\n", array_map(static fn (array $u): string => $u[0], $this->imapExchange($stream, 'c1', 'CAPABILITY')[1])));
+					$uids = $this->imapSearch($stream, $caps, $search);
+					rsort($uids, SORT_NUMERIC);
+					$total = count($uids);
+					$page = array_slice($uids, $offset, $limit);
+					if ($page !== []) {
+						$fetch = 'UID FETCH ' . implode(',', $page) . $items;
+					}
+				} elseif ($total - $offset >= 1) {
+					$end = $total - $offset;
+					$fetch = 'FETCH ' . max(1, $end - $limit + 1) . ':' . $end . $items;
+				}
+				if ($fetch !== null) {
+					[$status, $untagged] = $this->imapExchange($stream, 'r3', $fetch);
+					if (!preg_match('/^r3 OK/i', $status)) {
+						throw new \RuntimeException($this->l->t('The server refused to list the messages: %s', [$status]));
+					}
+					foreach ($untagged as [$text, $literals]) {
+						if (!preg_match('/^\* (\d+) FETCH /i', $text, $m)) {
+							continue;
+						}
+						$headers = MimeMessage::headers($literals[0] ?? '');
+						$flags = preg_match('/FLAGS \(([^)]*)\)/i', $text, $f) ? strtolower($f[1]) : '';
+						$messages[] = $this->summary($headers, [
+							'ref' => preg_match('/UID (\d+)/i', $text, $u) ? 'uid:' . $u[1] : 'seq:' . $m[1],
+							'n' => (int)$m[1],
+							'size' => preg_match('/RFC822\.SIZE (\d+)/i', $text, $sz) ? (int)$sz[1] : null,
+							'seen' => str_contains($flags, '\\seen'),
+							'flagged' => str_contains($flags, '\\flagged'),
+							'answered' => str_contains($flags, '\\answered'),
+							'forwarded' => str_contains($flags, '$forwarded'),
+							'arrived' => preg_match('/INTERNALDATE "([^"]+)"/i', $text, $d) ? $this->mailDate($d[1]) : null,
+						]);
+					}
+				}
+				usort($messages, static fn (array $a, array $b): int => $b['n'] <=> $a['n']);
+				$this->imapExchange($stream, 'r9', 'LOGOUT');
+				return ['kind' => 'imap', 'folders' => $folders, 'folder' => $folder, 'total' => $total, 'offset' => $offset, 'messages' => $messages, 'search' => trim($search)];
+			}
+			$total = $this->popCount($stream);
+			$uidl = $this->popMap($stream, 'UIDL');
+			$sizes = $this->popMap($stream, 'LIST');
+			$messages = [];
+			for ($n = $total - $offset; $n >= 1 && $n > $total - $offset - $limit; $n--) {
+				$headers = MimeMessage::headers((string)$this->popMulti($stream, 'TOP ' . $n . ' 0', 1048576));
+				$messages[] = $this->summary($headers, [
+					'ref' => 'pop:' . $n . ':' . ($uidl[$n] ?? ''), 'n' => $n,
+					'size' => isset($sizes[$n]) ? (int)$sizes[$n] : null, 'seen' => null, 'flagged' => false, 'answered' => false, 'arrived' => null,
+				]);
+			}
+			$this->popLine($stream, 'QUIT');
+			return ['kind' => 'pop3', 'folders' => [], 'folder' => '', 'total' => $total, 'offset' => $offset, 'messages' => $messages];
+		} finally {
+			@fclose($stream);
+		}
+	}
+
+	/**
+	 * One message, ready to read: headers, the text and the HTML, the attachments.
+	 *
+	 * The HTML is shown in a sandboxed frame in the browser, with no scripts
+	 * and nothing fetched from the internet — a picture loaded from the sender's
+	 * server tells the sender the message was opened. Pictures carried inside
+	 * the message (cid:) are put in place.
+	 *
+	 * @return array<string, mixed>
+	 */
+	public function message(EndpointEntity $endpoint, string $folder, string $ref, float $timeout = 30.0, bool $markSeen = false): array {
+		$raw = $this->fetchRaw($endpoint, $folder, $ref, $timeout, $markSeen);
+		$mail = MimeMessage::parse($raw);
+		$h = $mail['headers'];
+		$html = $mail['html'];
+		$blocked = false;
+		if ($html !== null) {
+			$budget = 8388608;
+			$html = (string)preg_replace_callback('/cid:([^"\'\s)>]+)/i', static function (array $m) use ($mail, &$budget): string {
+				$part = $mail['inline'][rawurldecode($m[1])] ?? null;
+				if ($part === null || strlen($part['data']) > $budget) {
+					return 'about:blank';
+				}
+				$budget -= strlen($part['data']);
+				return 'data:' . $part['type'] . ';base64,' . base64_encode($part['data']);
+			}, $html);
+			$blocked = (bool)preg_match('/<img[^>]+src\s*=\s*["\']?https?:/i', $html) || (bool)preg_match('/url\(\s*["\']?https?:/i', $html);
+		}
+		$all = [];
+		foreach ($h as $name => $values) {
+			foreach ($values as $v) {
+				$all[] = [$name, MimeMessage::decodeHeader($v)];
+			}
+		}
+		return [
+			'ref' => $ref,
+			'subject' => MimeMessage::decodeHeader(MimeMessage::first($h, 'subject')),
+			'from' => MimeMessage::decodeHeader(MimeMessage::first($h, 'from')),
+			'to' => MimeMessage::decodeHeader(implode(', ', $h['to'] ?? [])),
+			'cc' => MimeMessage::decodeHeader(implode(', ', $h['cc'] ?? [])),
+			'replyTo' => MimeMessage::decodeHeader(MimeMessage::first($h, 'reply-to')),
+			'date' => $this->mailDate(MimeMessage::first($h, 'date')),
+			'dateText' => MimeMessage::first($h, 'date'),
+			'messageId' => MimeMessage::first($h, 'message-id'),
+			'references' => trim(str_replace(["\r", "\n"], ' ', MimeMessage::first($h, 'references'))),
+			// The addresses one by one, for reply and reply-all: parsed before
+			// their names are decoded, so a comma inside a name stays inside it.
+			'fromList' => $this->addressList($h, 'from'),
+			'toList' => $this->addressList($h, 'to'),
+			'ccList' => $this->addressList($h, 'cc'),
+			'replyToList' => $this->addressList($h, 'reply-to'),
+			'quote' => ($mail['text'] ?? '') !== '' ? (string)$mail['text'] : ($html !== null ? MimeMessage::htmlToText((string)$mail['html']) : ''),
+			'seen' => $markSeen ? true : null,
+			'me' => (function () use ($endpoint): string { try { return $this->senderOf($endpoint); } catch (\Throwable $e) { return (string)$endpoint->getUsername(); } })(),
+			'size' => strlen($raw),
+			'text' => $mail['text'] ?? '',
+			'html' => $html,
+			'remoteImages' => $blocked,
+			'attachments' => $mail['attachments'],
+			'headers' => array_slice($all, 0, 300),
+		];
+	}
+
+	/**
+	 * One attachment's bytes, for saving into the reader's files.
+	 *
+	 * @return array{name: string, type: string, data: string}
+	 */
+	public function attachment(EndpointEntity $endpoint, string $folder, string $ref, int $index, float $timeout = 30.0): array {
+		$mail = MimeMessage::parse($this->fetchRaw($endpoint, $folder, $ref, $timeout), $index);
+		if ($mail['wanted'] === null) {
+			throw new \RuntimeException($this->l->t('That attachment is no longer in the message.'));
+		}
+		return $mail['wanted'];
+	}
+
+	/** The message as it is stored, by the reference the list gave. */
+	private function fetchRaw(EndpointEntity $endpoint, string $folder, string $ref, float $timeout, bool $markSeen = false): string {
+		[$stream, $kind] = $this->signIn($endpoint, $timeout);
+		try {
+			if ($kind === 'imap') {
+				if (!preg_match('/^(uid|seq):(\d+)$/', $ref, $m)) {
+					throw new \InvalidArgumentException('Unknown message');
+				}
+				// Opened the way a mail program opens it — marked as read — only
+				// when that is asked for; otherwise read-only, changing nothing.
+				$markSeen ? $this->imapSelect($stream, $folder !== '' ? $folder : 'INBOX') : $this->imapExamine($stream, $folder !== '' ? $folder : 'INBOX');
+				$prefix = $m[1] === 'uid' ? 'UID ' : '';
+				[, $untagged] = $this->imapExchange($stream, 'r4', $prefix . 'FETCH ' . $m[2] . ' (RFC822.SIZE)');
+				$size = null;
+				foreach ($untagged as [$text]) {
+					if (preg_match('/RFC822\.SIZE (\d+)/i', $text, $s)) {
+						$size = (int)$s[1];
+					}
+				}
+				if ($size === null) {
+					throw new \RuntimeException($this->l->t('That message is no longer in the mailbox.'));
+				}
+				$this->refuseLarge($size);
+				[$status, $untagged] = $this->imapExchange($stream, 'r5', $prefix . 'FETCH ' . $m[2] . ($markSeen ? ' (BODY[])' : ' (BODY.PEEK[])'));
+				$raw = null;
+				foreach ($untagged as [$text, $literals]) {
+					if (preg_match('/ FETCH /i', $text) && isset($literals[0])) {
+						$raw = $literals[0];
+					}
+				}
+				$this->imapExchange($stream, 'r9', 'LOGOUT');
+				if ($raw === null) {
+					throw new \RuntimeException($this->l->t('The server refused to hand over the message: %s', [$status]));
+				}
+				return $raw;
+			}
+			if (!preg_match('/^pop:(\d+):(.*)$/', $ref, $m)) {
+				throw new \InvalidArgumentException('Unknown message');
+			}
+			$n = (int)$m[1];
+			// The number of a POP3 message moves when an earlier one is deleted;
+			// its UIDL does not. A number that now names another message is refused.
+			if ($m[2] !== '') {
+				$uidl = $this->popMap($stream, 'UIDL');
+				if (($uidl[$n] ?? null) !== $m[2]) {
+					throw new \RuntimeException($this->l->t('That message is no longer in the mailbox.'));
+				}
+			}
+			$sizes = $this->popMap($stream, 'LIST');
+			$this->refuseLarge((int)($sizes[$n] ?? 0));
+			// TOP with more lines than any message has hands over the whole
+			// message. RETR would too, but many servers (Dovecot among them)
+			// take a RETR as "this has been read" and mark it so for IMAP — and
+			// reading here is to change nothing. Only a server without TOP gets RETR.
+			$raw = $this->popMulti($stream, 'TOP ' . $n . ' 999999999', self::READ_MAX + 1048576)
+				?? (string)$this->popMulti($stream, 'RETR ' . $n, self::READ_MAX + 1048576);
+			$this->popLine($stream, 'QUIT');
+			return $raw;
+		} finally {
+			@fclose($stream);
+		}
+	}
+
+	/**
+	 * A Date header as a time.
+	 *
+	 * The day of the week is dropped first: strtotime() reads "Fri, 17 Oct"
+	 * as "the Friday on or after 17 October", so a sender whose weekday is
+	 * wrong — it happens — had the message dated up to six days late. A
+	 * trailing comment such as "(JST)" is dropped too.
+	 */
+	private function mailDate(string $value): ?int {
+		$value = trim((string)preg_replace(['/^\s*[A-Za-z]{3,9},\s*/', '/\([^)]*\)\s*$/'], '', $value));
+		if ($value === '') {
+			return null;
+		}
+		$t = strtotime($value);
+		return $t === false ? null : $t;
+	}
+
+	private function refuseLarge(int $size): void {
+		if ($size > self::READ_MAX) {
+			throw new \RuntimeException($this->l->t('This message is %s. Only messages up to 25 MB are opened here.', [number_format($size / 1048576, 1) . ' MB']));
+		}
+	}
+
+	/** @param array<string, list<string>> $headers @return array<string, mixed> */
+	private function summary(array $headers, array $extra): array {
+		$type = strtolower(MimeMessage::first($headers, 'content-type'));
+		return $extra + [
+			'from' => MimeMessage::decodeHeader(MimeMessage::first($headers, 'from')),
+			'to' => MimeMessage::decodeHeader(MimeMessage::first($headers, 'to')),
+			'subject' => MimeMessage::decodeHeader(MimeMessage::first($headers, 'subject')),
+			'date' => $this->mailDate(MimeMessage::first($headers, 'date')),
+			// A good guess, not a promise: multipart/mixed is how attachments arrive.
+			'attachment' => str_contains($type, 'multipart/mixed'),
+		];
+	}
+
+	/**
+	 * Sign in the way login() does, and hand back the open connection.
+	 *
+	 * @return array{0: resource, 1: string}
+	 */
+	private function signIn(EndpointEntity $endpoint, float $timeout): array {
+		$kind = (string)$endpoint->getKind();
+		if (!in_array($kind, ['imap', 'pop3'], true)) {
+			throw new \InvalidArgumentException($this->l->t('Only an IMAP or POP3 connection has a mailbox to read.'));
+		}
+		$host = \OCP\Server::get(ToolService::class)->reach((string)$endpoint->getHost());
+		$port = (int)$endpoint->getPort() ?: $this->defaultPort($kind, 'tls');
+		$mode = (string)$this->endpoints->option($endpoint, 'mode', 'tls');
+		$user = (string)$endpoint->getUsername();
+		$pass = $this->endpoints->secret($endpoint);
+		$transcript = [];
+		$stream = $this->connect($host, $port, $mode === 'tls', $timeout, $tlsInfo);
+		try {
+			$this->readReply($stream, $kind, $transcript);
+			if ($kind === 'imap') {
+				if ($mode === 'starttls') {
+					$reply = $this->command($stream, 'a1 CAPABILITY', 'imap', $transcript);
+					if (in_array('STARTTLS', $this->imapCapabilities($reply), true)) {
+						$this->command($stream, 'a2 STARTTLS', 'imap', $transcript);
+						$tlsInfo = $this->enableCrypto($stream, $host);
+					}
+				}
+				if ($mode === 'starttls' && $tlsInfo === null) {
+					throw new \RuntimeException('STARTTLS was not established, so the password would be sent in the clear — stopped. Use TLS, or a port that offers STARTTLS.');
+				}
+				$reply = $this->command($stream, 'a3 LOGIN ' . $this->imapQuote($user) . ' ' . $this->imapQuote($pass), 'imap', $transcript, true);
+				if (!preg_match('/^a3 OK/mi', $reply)) {
+					throw new WordedRuntimeException('Sign-in refused: %s', [trim((string)strtok($reply, "\n"))]);
+				}
+			} else {
+				if ($mode === 'starttls') {
+					$reply = $this->command($stream, 'CAPA', 'pop3', $transcript, false, true);
+					if (str_contains($reply, 'STLS')) {
+						$this->command($stream, 'STLS', 'pop3', $transcript);
+						$tlsInfo = $this->enableCrypto($stream, $host);
+					}
+				}
+				if ($mode === 'starttls' && $tlsInfo === null) {
+					throw new \RuntimeException('STARTTLS was not established, so the password would be sent in the clear — stopped. Use TLS, or a port that offers STARTTLS.');
+				}
+				$this->command($stream, 'USER ' . $user, 'pop3', $transcript);
+				$reply = $this->command($stream, 'PASS ' . $pass, 'pop3', $transcript, true);
+				if (!str_starts_with(trim($reply), '+OK')) {
+					throw new WordedRuntimeException('Sign-in refused: %s', [trim($reply)]);
+				}
+			}
+		} catch (\Throwable $e) {
+			@fclose($stream);
+			throw $e;
+		}
+		$this->endpoints->touch($endpoint, 'Read the mailbox');
+		return [$stream, $kind];
+	}
+
+	/** @return list<array{name: string, label: string}> */
+	private function imapFolders($stream): array {
+		[, $untagged] = $this->imapExchange($stream, 'r1', 'LIST "" "*"');
+		$out = [];
+		foreach ($untagged as [$text, $literals]) {
+			if (!preg_match('/^\* LIST \(([^)]*)\) (?:NIL|"(?:[^"\\\\]|\\\\.)*"|\S+) (.*)$/is', $text, $m)) {
+				continue;
+			}
+			if (stripos($m[1], '\\noselect') !== false || stripos($m[1], '\\nonexistent') !== false) {
+				continue;
+			}
+			$name = trim($m[2]);
+			if (str_contains($name, "\0")) {
+				$name = (string)($literals[0] ?? '');
+			} elseif (strlen($name) >= 2 && $name[0] === '"') {
+				$name = stripcslashes(substr($name, 1, -1));
+			}
+			if ($name === '') {
+				continue;
+			}
+			$label = @mb_convert_encoding($name, 'UTF-8', 'UTF7-IMAP');
+			$use = '';
+			foreach (['sent', 'trash', 'drafts', 'junk', 'archive'] as $u) {
+				if (stripos($m[1], '\\' . $u) !== false) {
+					$use = $u;
+				}
+			}
+			$out[] = ['name' => $name, 'label' => is_string($label) && $label !== '' ? $label : $name, 'use' => $use];
+			if (count($out) >= 500) {
+				break;
+			}
+		}
+		usort($out, static fn (array $a, array $b): int => (strcasecmp($a['name'], 'INBOX') === 0 ? -1 : 0) - (strcasecmp($b['name'], 'INBOX') === 0 ? -1 : 0) ?: strcasecmp($a['label'], $b['label']));
+		return $out;
+	}
+
+	/** Open a folder read-only; the number of messages in it. */
+	private function imapExamine($stream, string $folder): int {
+		[$status, $untagged] = $this->imapExchange($stream, 'r2', 'EXAMINE ' . $this->imapQuote($folder));
+		if (!preg_match('/^r2 OK/i', $status)) {
+			throw new \RuntimeException($this->l->t('The folder %s could not be opened.', [$folder]));
+		}
+		foreach ($untagged as [$text]) {
+			if (preg_match('/^\* (\d+) EXISTS/i', $text, $m)) {
+				return (int)$m[1];
+			}
+		}
+		return 0;
+	}
+
+	/**
+	 * One IMAP command and everything said in reply, literals included.
+	 *
+	 * The line reader the probes use cannot carry a message: a FETCH answer
+	 * holds the message as a literal — "{4321}" and then exactly that many
+	 * bytes — which may contain anything, lines that look like the end of the
+	 * reply among them. Here each literal is read by its count and kept apart;
+	 * the line it belongs to keeps a NUL where it was.
+	 *
+	 * @return array{0: string, 1: list<array{0: string, 1: list<string>}>} the tagged status line, and each untagged reply with its literals
+	 */
+	private function imapExchange($stream, string $tag, string $command): array {
+		@fwrite($stream, $tag . ' ' . $command . self::CRLF);
+		return $this->imapRead($stream, $tag);
+	}
+
+	/**
+	 * The reply to a command already sent, up to its tagged status line.
+	 *
+	 * @return array{0: string, 1: list<array{0: string, 1: list<string>}>}
+	 */
+	private function imapRead($stream, string $tag): array {
+		$untagged = [];
+		$budget = self::READ_MAX + 4194304;
+		while (true) {
+			$line = @fgets($stream, 65536);
+			if ($line === false) {
+				$meta = stream_get_meta_data($stream);
+				throw new \RuntimeException(!empty($meta['timed_out']) ? 'The server did not answer in time' : 'The server closed the connection');
+			}
+			$text = rtrim($line, "\r\n");
+			if (str_starts_with($text, $tag . ' ')) {
+				return [$text, $untagged];
+			}
+			$literals = [];
+			while (preg_match('/\{(\d+)\}$/', $text, $m)) {
+				$n = (int)$m[1];
+				if ($n > $budget) {
+					throw new \RuntimeException('The server sent more than this tool will read');
+				}
+				$budget -= $n;
+				$literals[] = $this->readExactly($stream, $n);
+				$text = substr($text, 0, -strlen($m[0])) . "\0";
+				$more = @fgets($stream, 65536);
+				if ($more === false) {
+					throw new \RuntimeException('The server closed the connection');
+				}
+				$text .= rtrim($more, "\r\n");
+			}
+			$untagged[] = [$text, $literals];
+		}
+	}
+
+	/** @param resource $stream */
+	private function readExactly($stream, int $n): string {
+		$data = '';
+		while (strlen($data) < $n) {
+			$chunk = @fread($stream, min(262144, $n - strlen($data)));
+			if ($chunk === false || $chunk === '') {
+				$meta = stream_get_meta_data($stream);
+				if (!empty($meta['timed_out']) || feof($stream)) {
+					throw new \RuntimeException('The server stopped in the middle of a message');
+				}
+				continue;
+			}
+			$data .= $chunk;
+		}
+		return $data;
+	}
+
+	/** A POP3 command answered on one line. */
+	private function popLine($stream, string $command): string {
+		@fwrite($stream, $command . self::CRLF);
+		$line = @fgets($stream, 8192);
+		return $line === false ? '' : rtrim($line, "\r\n");
+	}
+
+	private function popCount($stream): int {
+		$reply = $this->popLine($stream, 'STAT');
+		if (!preg_match('/^\+OK\s+(\d+)/', $reply, $m)) {
+			throw new WordedRuntimeException('The server did not say how many messages there are: %s', [$reply]);
+		}
+		return (int)$m[1];
+	}
+
+	/** UIDL or LIST as number => value; an empty map where the server does not offer it. @return array<int, string> */
+	private function popMap($stream, string $command): array {
+		$body = $this->popMulti($stream, $command, 16777216);
+		$out = [];
+		if ($body === null) {
+			return $out;
+		}
+		foreach (explode("\n", $body) as $line) {
+			if (preg_match('/^(\d+)\s+(\S+)/', trim($line), $m)) {
+				$out[(int)$m[1]] = $m[2];
+			}
+		}
+		return $out;
+	}
+
+	/**
+	 * A POP3 command answered with many lines, ending on a lone dot.
+	 *
+	 * A line of the message that starts with a dot is sent with a second one
+	 * in front (RFC 1939 §3); that dot is taken off again here.
+	 *
+	 * @return ?string the lines after the +OK, or null for -ERR
+	 */
+	private function popMulti($stream, string $command, int $max): ?string {
+		$first = $this->popLine($stream, $command);
+		if (!str_starts_with($first, '+OK')) {
+			if ($first === '') {
+				throw new \RuntimeException('The server closed the connection');
+			}
+			return null;
+		}
+		$out = [];
+		$size = 0;
+		while (true) {
+			$line = @fgets($stream, 65536);
+			if ($line === false) {
+				throw new \RuntimeException('The server stopped in the middle of a message');
+			}
+			$text = rtrim($line, "\r\n");
+			if ($text === '.') {
+				break;
+			}
+			if (str_starts_with($text, '..')) {
+				$text = substr($text, 1);
+			}
+			$size += strlen($text) + 2;
+			if ($size > $max) {
+				throw new \RuntimeException('The server sent more than this tool will read');
+			}
+			$out[] = $text;
+		}
+		return implode("\r\n", $out);
+	}
+
+	/** @return list<array{name: string, address: string}> */
+	private function addressList(array $headers, string $name): array {
+		$out = [];
+		foreach (self::addresses(implode(', ', $headers[$name] ?? [])) as $a) {
+			$out[] = ['name' => MimeMessage::decodeHeader($a['name']), 'address' => $a['address']];
+		}
+		return $out;
+	}
+
+	/**
+	 * The UIDs of the messages in the open folder whose subject, sender or
+	 * recipient holds the words. Words that are not plain ASCII are sent as
+	 * UTF-8 literals, which is how IMAP carries them.
+	 *
+	 * @param list<string> $caps
+	 * @return list<int>
+	 */
+	private function imapSearch($stream, array $caps, string $term): array {
+		$term = trim(str_replace(["\r", "\n", "\0"], ' ', $term));
+		if (!preg_match('/[^\x20-\x7E]/', $term)) {
+			$q = $this->imapQuote($term);
+			[$status, $untagged] = $this->imapExchange($stream, 'q1', 'UID SEARCH OR OR SUBJECT ' . $q . ' FROM ' . $q . ' TO ' . $q);
+		} else {
+			$plus = in_array('LITERAL+', $caps, true);
+			$lit = '{' . strlen($term) . ($plus ? '+' : '') . '}' . self::CRLF;
+			@fwrite($stream, 'q1 UID SEARCH CHARSET UTF-8 OR OR SUBJECT ');
+			foreach ([' FROM ', ' TO ', ''] as $next) {
+				@fwrite($stream, $lit);
+				if (!$plus) {
+					$go = @fgets($stream, 65536);
+					if ($go === false || !str_starts_with($go, '+')) {
+						throw new \RuntimeException($this->l->t('The server refused to search: %s', [trim((string)$go)]));
+					}
+				}
+				@fwrite($stream, $term . $next);
+			}
+			@fwrite($stream, self::CRLF);
+			[$status, $untagged] = $this->imapRead($stream, 'q1');
+		}
+		if (!preg_match('/^q1 OK/i', $status)) {
+			throw new \RuntimeException($this->l->t('The server refused to search: %s', [$status]));
+		}
+		$uids = [];
+		foreach ($untagged as [$text]) {
+			if (preg_match('/^\* SEARCH\s*(.*)$/i', $text, $m)) {
+				foreach (preg_split('/\s+/', trim($m[1])) ?: [] as $u) {
+					if (ctype_digit($u)) {
+						$uids[] = (int)$u;
+					}
+				}
+			}
+		}
+		return $uids;
 	}
 
 	private function buildMessage(string $from, string $to, string $subject, string $body): string {
@@ -955,7 +1923,9 @@ class MailService {
 		$scheme = $implicitTls ? 'ssl://' : 'tcp://';
 		$stream = @stream_socket_client($scheme . $target . ':' . $port, $errno, $errstr, $timeout, STREAM_CLIENT_CONNECT, $context);
 		if ($stream === false) {
-			throw new \RuntimeException($errstr !== '' ? $errstr : 'Could not connect to ' . $host . ':' . $port);
+			throw $errstr !== ''
+				? new WordedRuntimeException('Could not connect to %1$s:%2$s (%3$s)', [$host, (string)$port, $errstr])
+				: new WordedRuntimeException('Could not connect to %1$s:%2$s', [$host, (string)$port]);
 		}
 		stream_set_timeout($stream, (int)$timeout);
 		$tlsInfo = $implicitTls ? $this->describeTls($stream, $host) : null;
@@ -1123,13 +2093,13 @@ class MailService {
 			$this->expect($this->command($stream, base64_encode($pass), 'smtp', $transcript, true), '2', 'Authentication failed');
 			return;
 		}
-		throw new \RuntimeException('Only ' . implode(', ', $offered) . ' offered; NetBase can use PLAIN or LOGIN');
+		throw new WordedRuntimeException('Only %s offered; NetBase can use PLAIN or LOGIN', [implode(', ', $offered)]);
 	}
 
 	private function expect(string $reply, string $prefix, string $message = 'Unexpected reply'): void {
 		$first = trim(strtok($reply, "\n") ?: '');
 		if (!str_starts_with($first, $prefix)) {
-			throw new \RuntimeException($message . ': ' . $first);
+			throw new WordedRuntimeException($message . ': %s', [$first]);
 		}
 	}
 

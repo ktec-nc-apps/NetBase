@@ -56,6 +56,19 @@ class ScpSession {
 		$this->onProgress = $tick;
 	}
 
+	/** A progress report that also sets the idle clock back, passing the count on. */
+	private function alive(?callable $report): callable {
+		$scp = $this->scp;
+		return static function (int $n) use ($scp, $report): void {
+			if (method_exists($scp, 'setTimeout')) {
+				$scp->setTimeout(self::IDLE);
+			}
+			if ($report !== null) {
+				$report($n);
+			}
+		};
+	}
+
 	/**
 	 * The prompt sudo is told to print.
 	 *
@@ -67,18 +80,47 @@ class ScpSession {
 	private const SUDO_PROMPT = 'netbase-sudo-password:';
 
 	/**
+	 * How long a transfer may go without a byte moving, in seconds.
+	 *
+	 * phpseclib's timeout covers a whole SCP copy, not a pause in one: a copy
+	 * that took longer than it — a few hundred MB on an ordinary line — was cut
+	 * off after every byte had arrived and reported as a failure. Each report of
+	 * progress sets the clock back, so the limit is on silence, not on size.
+	 */
+	private const IDLE = 30;
+
+	/**
 	 * @param \OCA\NetBase\Vendor\phpseclib3\Net\SCP|\phpseclib3\Net\SCP|\phpseclib\Net\SCP $scp an SSH connection that can also copy files
 	 * @param string $sudoPassword the password for one request, or '' for no elevation.
 	 *                              It is held in this object for the length of the
 	 *                              request and written nowhere: not to the command
 	 *                              line, not to a file, not to the database.
 	 */
-	public function __construct(private object $scp, private string $sudoPassword = '') {
+	public function __construct(private object $scp, private string $sudoPassword = '', private string $sudoUser = '') {
+		// A password given with no account named is the old request, "act as
+		// root". An account named with no password is a server where sudo asks
+		// for none (NOPASSWD, or signing in as root to act as www-data).
+		if ($this->sudoUser === '' && $this->sudoPassword !== '') {
+			$this->sudoUser = 'root';
+		}
+		if ($this->sudoUser !== '' && !self::validUser($this->sudoUser)) {
+			throw new \InvalidArgumentException('That is not an account name.');
+		}
 	}
 
-	/** Whether commands are being run as root. */
+	/** An account name sudo can be handed: letters, digits, dot, dash and underscore, not starting with a dash. */
+	public static function validUser(string $name): bool {
+		return (bool)preg_match('/^[A-Za-z0-9_][A-Za-z0-9._-]{0,63}$/', $name);
+	}
+
+	/** Whether commands are being run as another account through sudo. */
 	public function elevated(): bool {
-		return $this->sudoPassword !== '';
+		return $this->sudoUser !== '';
+	}
+
+	/** The account commands are run as, or '' when they run as the one signed in. */
+	public function actingAs(): string {
+		return $this->sudoUser;
 	}
 
 	/** The server's own greeting, for the "does this work?" button. */
@@ -92,6 +134,27 @@ class ScpSession {
 	public function pwd(): string {
 		$out = trim($this->run('pwd'));
 		return $out !== '' ? $out : '/';
+	}
+
+	/**
+	 * The home folder of the account acting, or '' when it has none to go to
+	 * (nobody's is /nonexistent).
+	 *
+	 * sudo leaves the shell in the folder the account signed in started in, so
+	 * pwd as www-data answers with the signed-in account's home, not /var/www.
+	 * The home is looked up in the account database, and entered as that
+	 * account, so what comes back is a folder it can actually open.
+	 */
+	public function home(): string {
+		$who = $this->sudoUser;
+		$command = $who === ''
+			? 'cd && pwd'
+			: 'h=$(getent passwd ' . escapeshellarg($who) . ' 2>/dev/null | cut -d: -f6); '
+				. '[ -n "$h" ] || h=$(awk -F: -v u=' . escapeshellarg($who) . ' \'$1 == u { print $6 }\' /etc/passwd 2>/dev/null); '
+				. '[ -n "$h" ] && cd "$h" 2>/dev/null && pwd';
+		$lines = preg_split('/\r?\n/', trim($this->run($command))) ?: [];
+		$home = trim((string)end($lines));
+		return str_starts_with($home, '/') ? $home : '';
 	}
 
 	/**
@@ -128,8 +191,9 @@ class ScpSession {
 			$stampText = $m[6] !== '' ? $m[6] : $m[7];
 			$name = $m[8];
 			// A symbolic link is written "name -> target"; the name is ours.
+			$target = null;
 			if ($m[1] === 'l' && str_contains($name, ' -> ')) {
-				$name = explode(' -> ', $name, 2)[0];
+				[$name, $target] = explode(' -> ', $name, 2);
 			}
 			if ($name === '.' || $name === '..') {
 				continue;
@@ -137,7 +201,8 @@ class ScpSession {
 			$stamp = trim($stampText);
 			$entries[$name] = [
 				// 2 is what phpseclib calls a directory; 1 is an ordinary file.
-				'type' => $m[1] === 'd' ? 2 : 1,
+				'type' => $m[1] === 'd' ? 2 : ($m[1] === 'l' ? 3 : 1),
+				'target' => $target,
 				'size' => (int)$m[5],
 				'mtime' => ctype_digit($stamp) ? (int)$stamp : (int)strtotime($stamp),
 				'permissions' => $this->modeBits($m[1] . $m[2]),
@@ -162,10 +227,11 @@ class ScpSession {
 	 * signature matches SFTP's so the caller's loop is unchanged.
 	 */
 	public function get(string $path, bool|string $local = false, int $offset = 0, int $length = -1): string|false {
-		// Not elevated, and it cannot be: the copy itself is carried over the
-		// command's own input and output, which is exactly where sudo would want
-		// to ask for a password. Reading a root-only file is refused by the far
-		// end rather than quietly returning nothing.
+		// The copy itself is carried over the command's own input and output,
+		// which is exactly where sudo would want to ask for a password, so it
+		// cannot run under sudo. Acting as another account, the file is first
+		// copied by that account into a folder only this sign-in can empty, and
+		// fetched from there (getAs).
 		$copy = $this->fetched[$path] ?? null;
 		if ($copy === null) {
 			$copy = tempnam(sys_get_temp_dir(), 'netbase-scp-');
@@ -184,7 +250,9 @@ class ScpSession {
 				}
 			};
 			try {
-				$ok = @$this->scp->get($path, $copy, $report);
+				$ok = $this->sudoUser === ''
+					? @$this->scp->get($path, $copy, $this->alive($report))
+					: $this->getAs($path, $copy, $report);
 			} catch (\Throwable $e) {
 				@unlink($copy);
 				throw $e;
@@ -211,7 +279,18 @@ class ScpSession {
 	 */
 	public function put(string $path, mixed $source, int $mode = self::SOURCE_CALLBACK): bool {
 		if ($mode !== self::SOURCE_CALLBACK || !is_callable($source)) {
-			return (bool)@$this->scp->put($path, (string)$source, $this->sourceString());
+			if ($this->sudoUser === '') {
+				return (bool)@$this->scp->put($path, (string)$source, $this->sourceString());
+			}
+			$text = (string)$source;
+			$source = static function (int $length) use (&$text): ?string {
+				if ($text === '') {
+					return null;
+				}
+				$chunk = substr($text, 0, $length);
+				$text = (string)substr($text, $length);
+				return $chunk;
+			};
 		}
 		$staging = tempnam(sys_get_temp_dir(), 'netbase-scp-');
 		if ($staging === false) {
@@ -245,7 +324,9 @@ class ScpSession {
 			}
 		};
 		try {
-			$ok = (bool)@$this->scp->put($path, $staging, $this->sourceLocalFile(), $report);
+			$ok = $this->sudoUser === ''
+				? (bool)@$this->scp->put($path, $staging, $this->sourceLocalFile(), $this->alive($report))
+				: $this->putAs($path, $staging, $report);
 		} catch (\Throwable $e) {
 			@unlink($staging);
 			throw $e;
@@ -312,6 +393,98 @@ class ScpSession {
 		}
 	}
 
+	// ------------------------------------------------- as another account
+
+	/**
+	 * A folder on the far end for one file to pass through.
+	 *
+	 * It is made by the account that signed in, so that account can always
+	 * empty it again, whatever the file inside belongs to. Others may enter it
+	 * but not list it, and the file is given a random name: the account acting
+	 * through sudo can put a file there or take one out, nobody else can find
+	 * it. 733 lets that account write into it; 711 is enough for it to read.
+	 */
+	public function stage(string $mode): string {
+		$out = @$this->scp->exec('d=$(mktemp -d "${TMPDIR:-/tmp}/netbase.XXXXXXXX") && chmod ' . $mode . ' "$d" && echo "$d"');
+		$dir = trim(str_replace("\r", '', (string)$out));
+		if ($dir === '' || $dir[0] !== '/' || str_contains($dir, "\n")) {
+			throw new \RuntimeException('Could not make a temporary folder on the server.');
+		}
+		return $dir;
+	}
+
+	public function unstage(string $dir): void {
+		@$this->scp->exec('rm -rf -- ' . escapeshellarg($dir));
+	}
+
+	/** A whole file into a file on this server, as whichever account is acting. */
+	public function fetchTo(string $remote, string $local, bool $asSelf = false, ?callable $report = null): bool {
+		return $this->sudoUser === '' || $asSelf
+			? @$this->scp->get($remote, $local, $this->alive($report)) !== false
+			: $this->getAs($remote, $local, $report);
+	}
+
+	/** A file on this server out to the far end, as whichever account is acting. */
+	public function sendFile(string $local, string $remote, ?callable $report = null): bool {
+		return $this->sudoUser === ''
+			? (bool)@$this->scp->put($remote, $local, $this->sourceLocalFile(), $this->alive($report))
+			: $this->putAs($remote, $local, $report);
+	}
+
+	/** Send what a stream gives, as the account signed in (the speed test). */
+	public function sendStream($stream, string $remote, ?callable $report = null): bool {
+		// A stream is read only when the mode is not SOURCE_STRING: with that
+		// mode phpseclib's SCP takes substr() of the stream itself.
+		return (bool)@$this->scp->put($remote, $stream, $this->sourceLocalFile(), $this->alive($report));
+	}
+
+	/** Fetch into a stream, as the account signed in (the speed test). */
+	public function fetchStream(string $remote, $stream, ?callable $report = null): bool {
+		return @$this->scp->get($remote, $stream, $this->alive($report)) !== false;
+	}
+
+	/** One command, unelevated, as the account that signed in. */
+	public function runAsSelf(string $command): string {
+		$out = @$this->scp->exec($command);
+		return is_string($out) ? $out : '';
+	}
+
+	/** Fetch a file the chosen account can read and the signed-in one may not. */
+	private function getAs(string $path, string $local, ?callable $report): bool {
+		$dir = $this->stage('733');
+		$copy = $dir . '/' . bin2hex(random_bytes(16));
+		try {
+			if (!$this->did('cp -- ' . escapeshellarg($path) . ' ' . escapeshellarg($copy) . ' && chmod 0644 ' . escapeshellarg($copy))) {
+				return false;
+			}
+			return @$this->scp->get($copy, $local, $this->alive($report)) !== false;
+		} finally {
+			$this->unstage($dir);
+		}
+	}
+
+	/**
+	 * Write a file as the chosen account.
+	 *
+	 * The bytes go to the staging folder first, as the signed-in account, and
+	 * the chosen account then writes them over the target with cat. Writing
+	 * into the file rather than replacing it keeps an existing file's owner and
+	 * permissions: config.php edited as root stays www-data's.
+	 */
+	private function putAs(string $path, string $staging, ?callable $report): bool {
+		$dir = $this->stage('711');
+		$copy = $dir . '/' . bin2hex(random_bytes(16));
+		try {
+			if (!@$this->scp->put($copy, $staging, $this->sourceLocalFile(), $this->alive($report))) {
+				return false;
+			}
+			@$this->scp->exec('chmod 0644 -- ' . escapeshellarg($copy));
+			return $this->did('cat -- ' . escapeshellarg($copy) . ' > ' . escapeshellarg($path));
+		} finally {
+			$this->unstage($dir);
+		}
+	}
+
 	// ---------------------------------------------------------------- inside
 
 	/**
@@ -322,8 +495,8 @@ class ScpSession {
 	 * asks for it — never placed on the command line, where every other user of
 	 * that machine could read it out of the process list.
 	 */
-	private function run(string $command): string {
-		if ($this->sudoPassword === '') {
+	public function run(string $command): string {
+		if ($this->sudoUser === '') {
 			$out = @$this->scp->exec($command);
 			return is_string($out) ? $out : '';
 		}
@@ -331,19 +504,24 @@ class ScpSession {
 	}
 
 	/**
-	 * One command as root.
+	 * One command as the chosen account.
 	 *
 	 * A terminal is opened for the length of the command because sudo will only
 	 * read a password from one. What comes back has sudo's prompt taken off the
 	 * front, so the caller sees the command's own output and nothing else.
 	 *
-	 * A wrong password is not retried. sudo asks three times by default, and
-	 * answering twice more with the same wrong password would only make the
-	 * reader wait for the same refusal.
+	 * sudo does not always ask. Where it is set up to need no password, or the
+	 * account signed in is root, the command simply runs: what arrives before
+	 * any prompt is then the whole reply. Writing the password into a channel
+	 * that had already closed lost that reply and showed every folder as empty.
+	 *
+	 * A wrong password is not retried. sudo asks three times by default; the
+	 * second prompt is the sign of a refusal, and the command is broken off
+	 * there rather than left waiting for an answer that will not come.
 	 */
 	private function runElevated(string $command): string {
 		if (!method_exists($this->scp, 'enablePTY')) {
-			throw new \RuntimeException('This server\'s SSH library cannot run a command as root.');
+			throw new \RuntimeException('This server\'s SSH library cannot run a command as another account.');
 		}
 		try {
 			$this->scp->enablePTY();
@@ -353,10 +531,21 @@ class ScpSession {
 			// then run the half after "||" unelevated. The failure was silent: an
 			// empty reply that read as "this directory is empty".
 			@$this->scp->exec('sudo -S -p ' . escapeshellarg(self::SUDO_PROMPT)
-				. ' sh -c ' . escapeshellarg($command) . ' 2>&1');
-			@$this->scp->read(self::SUDO_PROMPT);
-			@$this->scp->write($this->sudoPassword . "\n");
-			$out = (string)@$this->scp->read();
+				. ' -u ' . escapeshellarg($this->sudoUser)
+				. ' -- sh -c ' . escapeshellarg($command) . ' 2>&1');
+			$out = (string)@$this->scp->read(self::SUDO_PROMPT);
+			if (str_contains($out, self::SUDO_PROMPT)) {
+				if ($this->sudoPassword === '') {
+					$this->breakOff();
+					throw new \RuntimeException('This server asks for the sudo password.');
+				}
+				@$this->scp->write($this->sudoPassword . "\n");
+				$out = (string)@$this->scp->read(self::SUDO_PROMPT);
+				if (str_contains($out, self::SUDO_PROMPT)) {
+					$this->breakOff();
+					throw new \RuntimeException('That sudo password was not accepted by the server.');
+				}
+			}
 		} finally {
 			if (method_exists($this->scp, 'disablePTY')) {
 				@$this->scp->disablePTY();
@@ -365,13 +554,27 @@ class ScpSession {
 		$out = str_replace(self::SUDO_PROMPT, '', $out);
 		// A terminal echoes a blank line after the password is typed.
 		$out = (string)preg_replace('/\A\s*\r?\n/', '', $out);
+		// The terminal also turns every line ending into \r\n.
+		$out = str_replace("\r\n", "\n", $out);
 		if (preg_match('/Sorry, try again|incorrect password|authentication failure/i', $out)) {
 			throw new \RuntimeException('That sudo password was not accepted by the server.');
 		}
-		if (preg_match('/is not in the sudoers file|not allowed to execute/i', $out)) {
-			throw new \RuntimeException('That account is not allowed to use sudo on this server.');
+		if (preg_match('/is not in the sudoers file|not allowed to execute|unknown user|no passwd entry/i', $out)) {
+			throw new \RuntimeException($this->sudoUser === 'root'
+				? 'That account is not allowed to use sudo on this server.'
+				: 'This account may not act as that user on this server, or there is no such user.');
 		}
 		return $out;
+	}
+
+	/** Stop sudo that is still waiting for a password, and let the channel close. */
+	private function breakOff(): void {
+		try {
+			@$this->scp->write("\x03");
+			@$this->scp->read();
+		} catch (\Throwable $e) {
+			// The channel may already be gone, which is what was wanted.
+		}
 	}
 
 	/**
@@ -382,9 +585,9 @@ class ScpSession {
 	 * one belongs to the terminal, not to the command. Believing it there would
 	 * report every failed delete as a success.
 	 */
-	private function did(string $command): bool {
+	public function did(string $command): bool {
 		$out = $this->run($command . ' && echo netbase-ok');
-		if ($this->sudoPassword !== '') {
+		if ($this->sudoUser !== '') {
 			return str_contains($out, 'netbase-ok');
 		}
 		// The exit status is the honest answer where the server reports one;

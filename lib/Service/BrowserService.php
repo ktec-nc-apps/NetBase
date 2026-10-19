@@ -27,6 +27,7 @@ class BrowserService {
 		private ToolService $tools,
 		private ITempManager $tempManager,
 		private LoggerInterface $logger,
+		private L10nService $l,
 	) {
 	}
 
@@ -63,7 +64,7 @@ class BrowserService {
 
 		$dir = $this->tempManager->getTemporaryFolder('netbase-shot');
 		if ($dir === false) {
-			return ['ok' => false, 'image' => '', 'seconds' => 0.0, 'url' => $url, 'error' => 'No writable temporary directory', 'width' => $width, 'height' => $height];
+			return ['ok' => false, 'image' => '', 'seconds' => 0.0, 'url' => $url, 'error' => $this->l->t('No writable temporary directory'), 'width' => $width, 'height' => $height];
 		}
 		$shot = rtrim($dir, '/') . '/page.png';
 		$profile = rtrim($dir, '/') . '/profile';
@@ -113,7 +114,7 @@ class BrowserService {
 
 		if ($image === '') {
 			$this->logger->info('NetBase: page render produced no image', ['url' => $url, 'stderr' => mb_substr($result['stderr'], -400)]);
-			return ['ok' => false, 'image' => '', 'seconds' => $seconds, 'url' => $url, 'error' => 'The page could not be rendered. It may not have answered in time.', 'width' => $width, 'height' => $height];
+			return ['ok' => false, 'image' => '', 'seconds' => $seconds, 'url' => $url, 'error' => $this->l->t('The page could not be rendered. It may not have answered in time.'), 'width' => $width, 'height' => $height];
 		}
 		return ['ok' => true, 'image' => $image, 'seconds' => $seconds, 'url' => $url, 'error' => null, 'width' => $width, 'height' => $height];
 	}

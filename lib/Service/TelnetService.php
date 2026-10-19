@@ -95,7 +95,7 @@ class TelnetService {
 		} catch (\Throwable $e) {
 			@fclose($stream);
 			$this->logger->warning('NetBase telnet: ' . $e->getMessage(), ['app' => 'netbase']);
-			return $this->failed($host, $port, $e->getMessage());
+			return $this->failed($host, $port, L10nService::wordsOf($this->l, $e));
 		}
 	}
 

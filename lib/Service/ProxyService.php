@@ -221,6 +221,13 @@ class ProxyService {
 			// Redirects are rewritten and handed back to the browser instead,
 			// so the window's address bar keeps up with where it is.
 			CURLOPT_FOLLOWLOCATION => false,
+			// A compressed body is unpacked here. The Content-Encoding header is
+			// not passed on (DROP_HEADERS), so a body left packed reached the
+			// browser as bytes it took for script: a Check Point appliance serves
+			// its init.js.gz with "Content-Encoding: gzip" whatever it is asked,
+			// and its login page was blank with "SyntaxError: Invalid or
+			// unexpected token" (customer site, 2026-10-19).
+			CURLOPT_ENCODING => '',
 			// An empty file name starts the cookie engine without one: a device's
 			// session cookie has no expiry, and those are never written to a
 			// cookie file — the sign-in would be forgotten between one page and
@@ -1359,8 +1366,9 @@ JS;
 			var mark = u.search(/[?#]/);
 			var rel = u;
 			if (mark >= 0) { tail = u.slice(mark); rel = u.slice(0, mark); }
-			var here = window.__nbPath().replace(/^\/+|\/+$/g, '').split('/');
+			var here = window.__nbPath().replace(/^\/+/, '').split('/');
 			here.pop();
+			here = here.filter(function (s) { return s !== ''; });
 			rel.split('/').forEach(function (step) {
 				if (step === '' || step === '.') { return; }
 				if (step === '..') { here.pop(); return; }
@@ -1400,7 +1408,14 @@ JS;
 			.replace(/(\bstyle\s*=\s*)(["'])([^"']*)\2/gi, function (all, head, q, css) {
 				return head + q + fixCss(css) + q;
 			})
-			.replace(/(\b(?:src|href|action|data|poster)\s*=\s*["'])\/(?!\/)/gi, '$1' + P + '/')
+			// Through fix(), which leaves an address that is already under the
+			// proxy alone: this server rewrites the strings of an inline script on
+			// the way out ("src='../index.js'" became "/apps/netbase/proxy/…/index.js"),
+			// and adding the prefix again here made a LinkStation NAS ask for
+			// /apps/netbase/proxy/…/apps/netbase/proxy/…/index.js (404).
+			.replace(/(\b(?:src|href|action|data|poster)\s*=\s*["'])(\/(?!\/)[^"'>]*)/gi, function (all, head, u) {
+				return head + fix(u);
+			})
 			// A camera's login page writes its own <script src="../script/…">
 			// with document.write, and that climb eats the ticket exactly as it
 			// would in the markup. Same treatment, same clamp.
@@ -1629,6 +1644,23 @@ JS;
 		tell();
 	}
 	setTimeout(tell, 1500);
+	// A slow device can take seconds to answer a click (a printer here takes
+	// seven), and until it does the old page stays exactly as it was, so the
+	// click looked as if it had done nothing (forum, NetBase thread #58). NetBase
+	// is told that the next page is on its way, and again when a page is here,
+	// from a frame of a frameset as well as from the window's own page.
+	function busy(state) {
+		try {
+			var r = windowRoot();
+			if (r.parent && r.parent !== r) { r.parent.postMessage({ netbase: 'busy', state: state }, location.origin); }
+		} catch (e) {}
+	}
+	window.addEventListener('beforeunload', function () { busy('loading'); });
+	if (document.readyState === 'complete') {
+		busy('loaded');
+	} else {
+		window.addEventListener('load', function () { busy('loaded'); });
+	}
 })();
 JS;
 		$script = str_replace('__PREFIX__', json_encode($prefix, JSON_UNESCAPED_SLASHES), $script);
@@ -1651,9 +1683,13 @@ JS;
 		if ($rel === '' || str_contains($rel, '..') === false) {
 			return null;
 		}
-		// The directory the page sits in.
-		$here = explode('/', trim($path, '/'));
+		// The directory the page sits in: what is left when the last segment, the
+		// page's own name, is taken off. A page at "/a/b/" is the directory b
+		// itself (its name is empty); trimming the slash first took b off too, so
+		// "../x" from "/a/b/" went to "/x" instead of "/a/x".
+		$here = explode('/', ltrim($path, '/'));
 		array_pop($here);
+		$here = array_values(array_filter($here, static fn (string $s): bool => $s !== ''));
 		foreach (explode('/', $rel) as $step) {
 			if ($step === '' || $step === '.') {
 				continue;

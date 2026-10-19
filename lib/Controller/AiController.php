@@ -6,6 +6,7 @@ namespace OCA\NetBase\Controller;
 
 use OCA\NetBase\AppInfo\Application;
 use OCA\NetBase\Service\AiService;
+use OCA\NetBase\Service\L10nService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -24,6 +25,7 @@ class AiController extends Controller {
 		private AiService $ai,
 		private IUserSession $userSession,
 		private IConfig $config,
+		private L10nService $l,
 	) {
 		parent::__construct(Application::APP_ID, $request);
 	}
@@ -107,7 +109,7 @@ class AiController extends Controller {
 	/** Administrators only (no NoAdminRequired). */
 	public function saveAdmin(): JSONResponse {
 		if (!$this->ai->hubPresent()) {
-			return new JSONResponse(['error' => 'AI-Hub is not installed'], Http::STATUS_CONFLICT);
+			return new JSONResponse(['error' => $this->l->t('AI-Hub is not installed')], Http::STATUS_CONFLICT);
 		}
 		return new JSONResponse($this->ai->saveSettings([
 			'enabled' => $this->request->getParam('enabled'),

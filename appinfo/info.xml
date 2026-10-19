@@ -17,8 +17,8 @@ What each part is for:
 - Whois and free-domain search — look up any domain or address (IANA referrals, no whois binary), or check a name across a whole range of endings at once to find one that is still free
 - Wake-on-LAN — wake a device by its MAC address
 - TLS and HTTP — certificate, chain and expiry, accepted TLS versions, redirect chain, security headers
-- Mail — SPF, DKIM, DMARC, MTA-STS, DANE and blocklists, plus SMTP/IMAP/POP3 server tests, an open-relay test and a real test message
-- FTP and SFTP — browse a remote server and move files to and from your Nextcloud folders
+- Mail — SPF, DKIM, DMARC, MTA-STS, DANE and blocklists, SMTP/IMAP/POP3 server tests and an open-relay test, plus a basic mail program: read, search, reply, forward and send with attachments from your Nextcloud files
+- FTP, SFTP and SCP — browse a remote server and move files to and from your Nextcloud folders; copy, move, compress and extract (ZIP, tar.gz, 7z and more), convert text encodings and line endings, resume transfers, and act as another account through sudo
 - SSH and Telnet — a credential-free probe, and commands or a full terminal on a saved connection
 - Benchmarks — internet speed, LAN throughput over iperf3, resolver comparison, HTTP timing
 - Every result can be copied, downloaded or saved straight into your own Nextcloud files
@@ -26,7 +26,7 @@ What each part is for:
 
 Access is per tool. NetBase is an administrator's app, and everything that touches the local network defaults to administrators — but each tool can be opened to named groups or to everyone from Administration settings, so an instance can lend out whois, DNS and the other harmless lookups without lending out the network. Where an account is allowed nothing, NetBase leaves itself out of that account's app menu.
 
-Available in twenty languages, and NetBase can be set to a different language from the rest of Nextcloud, per account.]]></description>
+Available in twenty-one languages, and NetBase can be set to a different language from the rest of Nextcloud, per account.]]></description>
 	<description lang="ja"><![CDATA[NetBase は、Nextcloud をネットワーク管理コンソールとして使えるようにするアプリです。LAN 上の機器をすべて検出し、各機器の設定画面を Nextcloud の中から開けます。日常的に使う調査ツールも同じ画面にまとめています。
 
 中心となる機能は「機器ウィンドウ」です。サーバーが機器の Web 管理画面を取得し、その中のアドレスをすべて書き換えて表示するため、Nextcloud にアクセスできる場所であればどこからでも、ルーター、スイッチ、プリンター、NAS にログインして設定を変更できます。VPN も踏み台サーバーも、現地への訪問も必要ありません。ファームウェアの送信、設定の復元、バックアップの取得もできます。ウィンドウは複数同時に開けます。
@@ -40,8 +40,8 @@ Available in twenty languages, and NetBase can be set to a different language fr
 - whois・空きドメイン検索 ― ドメインや IP アドレスの調査（IANA からの紹介をたどるため whois コマンドは不要）と、1 つの名前を多数のトップレベルドメインで一度に調べて、まだ空いているドメインを探す検索
 - Wake-on-LAN ― MAC アドレスを指定して機器を起動
 - TLS・HTTP ― 証明書とそのチェーン・有効期限、受け付ける TLS バージョン、リダイレクトの経路、セキュリティヘッダー
-- メール ― SPF・DKIM・DMARC・MTA-STS・DANE・ブロックリストの確認、SMTP/IMAP/POP3 サーバーのテスト、オープンリレーのテスト、実際のテストメールの送信
-- FTP・SFTP ― リモートサーバーの閲覧と、Nextcloud のフォルダーとの間のファイルのやり取り
+- メール ― SPF・DKIM・DMARC・MTA-STS・DANE・ブロックリストの確認、SMTP/IMAP/POP3 サーバーのテスト、オープンリレーのテストに加え、基本的なメールソフトとしての読み書き（検索、返信、転送、Nextcloud のファイルの添付）
+- FTP・SFTP・SCP ― リモートサーバーの閲覧と、Nextcloud のフォルダーとの間のファイルのやり取り。コピー、移動、圧縮と展開（ZIP・tar.gz・7z など）、文字コードと改行コードの変換、転送の再開、sudo を使った別のアカウントとしての操作
 - SSH・Telnet ― 認証情報なしでの調査と、保存済みの接続先でのコマンド実行やターミナル
 - ベンチマーク ― インターネットの速度、iperf3 による LAN のスループット、リゾルバの比較、HTTP の時間の内訳
 - どの結果も、コピー、ダウンロード、ご自身の Nextcloud のファイルへの直接保存が可能
@@ -49,8 +49,8 @@ Available in twenty languages, and NetBase can be set to a different language fr
 
 アクセス権はツールごとに設定します。NetBase は管理者向けのアプリで、ローカルネットワークに関わる機能は、初期設定では管理者だけが使えます。ただし、管理者設定から各ツールを、指定したグループや全ユーザーに公開できます。ネットワークへのアクセス権を渡さずに、whois や DNS など危険のない調査だけをほかのユーザーに使ってもらえます。何も許可されていないユーザーには、アプリメニューに NetBase を表示しません。
 
-20 の言語に対応しています。NetBase だけを Nextcloud 本体とは別の言語に、ユーザーごとに設定することもできます。]]></description>
-	<version>0.8.4</version>
+21 の言語に対応しています。NetBase だけを Nextcloud 本体とは別の言語に、ユーザーごとに設定することもできます。]]></description>
+	<version>0.9.0</version>
 	<licence>agpl</licence>
 	<author>KTEC</author>
 	<namespace>NetBase</namespace>

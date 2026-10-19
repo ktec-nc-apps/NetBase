@@ -95,7 +95,7 @@ class PtyService {
 				return;
 			}
 		} catch (\Throwable $e) {
-			$emit("\r\n\033[31m" . $e->getMessage() . "\033[0m\r\n");
+			$emit("\r\n\033[31m" . $this->l->said($e) . "\033[0m\r\n");
 			return;
 		}
 

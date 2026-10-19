@@ -107,7 +107,7 @@ class ProbeService {
 			$out['algorithms'] = $this->readKexInit($stream);
 			$out['ok'] = true;
 		} catch (\Throwable $e) {
-			$out['error'] = $e->getMessage();
+			$out['error'] = $this->l->said($e);
 		} finally {
 			@fclose($stream);
 		}
@@ -366,7 +366,7 @@ class ProbeService {
 		$received = microtime(true);
 		@fclose($socket);
 		if (!is_string($response) || strlen($response) < 48) {
-			return ['host' => $host, 'ok' => false, 'error' => 'No answer from the time server'];
+			return ['host' => $host, 'ok' => false, 'error' => $this->l->t('No answer from the time server')];
 		}
 
 		$fields = unpack('C4head/Nroot_delay/Nroot_dispersion/a4ref_id/Nref_ts/Nref_frac/Norig_ts/Norig_frac/Nrecv_ts/Nrecv_frac/Ntx_ts/Ntx_frac', $response);

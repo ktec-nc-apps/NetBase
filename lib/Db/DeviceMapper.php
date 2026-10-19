@@ -142,6 +142,22 @@ class DeviceMapper extends QBMapper {
 		}
 	}
 
+	/**
+	 * Mark these devices offline before a fresh sweep records what answers:
+	 * the ones inside what the sweep looks at, and no others.
+	 *
+	 * @param list<int> $ids
+	 */
+	public function markOffline(array $ids): void {
+		foreach (array_chunk($ids, 500) as $chunk) {
+			$qb = $this->db->getQueryBuilder();
+			$qb->update($this->getTableName())
+				->set('online', $qb->createNamedParameter(false, IQueryBuilder::PARAM_BOOL))
+				->where($qb->expr()->in('id', $qb->createNamedParameter($chunk, IQueryBuilder::PARAM_INT_ARRAY)));
+			$qb->executeStatement();
+		}
+	}
+
 	/** Mark every device as offline before a fresh sweep records what answers. */
 	public function markAllOffline(): void {
 		$qb = $this->db->getQueryBuilder();

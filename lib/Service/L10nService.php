@@ -44,4 +44,38 @@ class L10nService {
 	public function t(string $text, array $parameters = []): string {
 		return $this->get()->t($text, $parameters);
 	}
+
+	/** An error's message in the reader's own language (see wordsOf). */
+	public function said(\Throwable $e): string {
+		return self::wordsOf($this->get(), $e);
+	}
+
+	/**
+	 * An error's message, translated.
+	 *
+	 * Errors are raised deep in the services as plain English, the source
+	 * language of everything else in NetBase too, and translated where they
+	 * leave for the screen. A message with no translation comes back as it was
+	 * written: the server's own reply, an operating system's error.
+	 */
+	public static function wordsOf(IL10N $l, \Throwable $e): string {
+		$message = $e->getMessage();
+		if ($message === '') {
+			return $message;
+		}
+		// A sentence with values in it is looked up without them, and each value
+		// is looked up too: a label such as "Mail accounts" is a sentence of its
+		// own, while a host or a server's reply simply comes back unchanged.
+		if ($e instanceof Worded) {
+			$args = array_map(static fn ($a) => is_string($a) && $a !== '' ? $l->t(str_replace('%', '%%', $a)) : $a, $e->args());
+			return $l->t($e->text(), $args);
+		}
+		// Nextcloud runs every translated string through vsprintf, even when no
+		// parameters were given. A message that already carries a value — a path,
+		// a host, a percentage — can therefore contain a stray "%" that vsprintf
+		// would choke on. Doubling it makes vsprintf hand back the single "%" it
+		// started with, and the plain messages this is really here for contain no
+		// "%" at all, so their lookup is unaffected.
+		return $l->t(str_replace('%', '%%', $message));
+	}
 }

@@ -695,7 +695,7 @@ class ToolService {
 
 		$cert = $params['options']['ssl']['peer_certificate'] ?? null;
 		if ($cert === null) {
-			return ['host' => $host, 'port' => $port, 'ok' => false, 'error' => 'No certificate presented'];
+			return ['host' => $host, 'port' => $port, 'ok' => false, 'error' => $this->l->t('No certificate presented')];
 		}
 		$parsed = openssl_x509_parse($cert) ?: [];
 		$sans = [];
@@ -879,11 +879,11 @@ class ToolService {
 		if (!$this->discovery->hasSockets()) {
 			// A magic packet goes to a broadcast address, and SO_BROADCAST can
 			// only be set through ext-sockets.
-			return ['sent' => false, 'error' => 'Wake-on-LAN needs the PHP sockets extension, which is not installed'];
+			return ['sent' => false, 'error' => $this->l->t('Wake-on-LAN needs the PHP sockets extension, which is not installed')];
 		}
 		$sock = @socket_create(AF_INET, SOCK_DGRAM, SOL_UDP);
 		if ($sock === false) {
-			return ['sent' => false, 'error' => 'Could not open a UDP socket'];
+			return ['sent' => false, 'error' => $this->l->t('Could not open a UDP socket')];
 		}
 		@socket_set_option($sock, SOL_SOCKET, SO_BROADCAST, 1);
 		$sent = @socket_sendto($sock, $packet, strlen($packet), 0, $broadcast, max(1, min(65535, $port)));
@@ -1135,7 +1135,7 @@ class ToolService {
 				continue;
 			}
 			if (filter_var($entry, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) === false) {
-				throw new \InvalidArgumentException('Not an IPv4 address: ' . $entry);
+				throw new WordedInvalidArgumentException('Not an IPv4 address: %s', [$entry]);
 			}
 			$ranges[] = [ip2long($entry), ip2long($entry)];
 		}

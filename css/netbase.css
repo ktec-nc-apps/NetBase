@@ -501,7 +501,10 @@ html.nb-col-resizing, html.nb-col-resizing * { cursor: col-resize !important; -w
 #netbase-root .chips label { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); }
 #netbase-root .tool-row { display: flex; gap: 10px; align-items: center; margin-bottom: 8px; }
 #netbase-root .tool-row .narrow { max-width: 260px; }
-#netbase-root .tool-row .tiny { max-width: 96px; }
+/* .tiny means two things: a narrow box (input, select) and small print (a span).
+   Only the box is narrowed. Small print held to 96px broke Japanese, which may
+   wrap after any character, every five or six characters. */
+#netbase-root .tool-row :is(input, select).tiny { max-width: 96px; }
 /* NETBASE-STORE-REMOVED: #netbase-root .nmap-host { border-top: 1px solid var(--border); padding-top: 12px; margin-top: 12px; } */
 #netbase-root .nh-head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; flex-wrap: wrap; }
 
@@ -820,7 +823,26 @@ html.nb-col-resizing, html.nb-col-resizing * { cursor: col-resize !important; -w
 #netbase-root .opt { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); margin-top: 8px; }
 #netbase-root .tool-row .short { max-width: 220px; }
 #netbase-root .tool-row .grow { flex: 1 1 auto; }
+/* An address line: the address and the sign-in as two groups, which wrap as
+   wholes. The address box is as wide as an address, not as wide as the card. */
+#netbase-root .tool-row.sign-line { flex-wrap: wrap; }
+#netbase-root .sign-line .grp { display: flex; gap: 10px; align-items: center; min-width: 0; }
+#netbase-root .sign-line .grp-addr { flex: 1 1 17em; max-width: 46em; flex-wrap: wrap; }
+#netbase-root .sign-line .grp-addr .host { flex: 1 1 8em; min-width: 0; }
+#netbase-root .sign-line .grp-addr select.tiny { flex: 0 0 6.5em; }
+#netbase-root .sign-line .grp-addr input.tiny { flex: 0 0 5.5em; }
+#netbase-root .tool-row.sign-line .grp-addr select.tiny.wide { flex: 0 0 auto; width: auto; max-width: none; }
+#netbase-root .sign-line .grp-cred { flex: 0 1 auto; flex-wrap: wrap; max-width: 100%; }
+#netbase-root .sign-line .grp-cred .short { flex: 0 1 9.5em; width: 9.5em; min-width: 7em; }
+#netbase-root .sign-line .grp-cred select.tiny { flex: 0 0 auto; width: auto; }
+#netbase-root .tool-row.sign-line .grp-cred select.tiny { max-width: none; }
+#netbase-root .sign-line > .btn { flex: none; }
 #netbase-root .fl-row { display: flex; gap: 12px; }
+/* The change-user row: the password keeps room to be read; the buttons go
+   to the next line when the pane is narrow. */
+#netbase-root .fl-row.sudo-row { flex-wrap: wrap; align-items: center; }
+#netbase-root .fl-row.sudo-row input.short { flex: 0 0 9em; width: 9em; min-width: 0; }
+#netbase-root .fl-row.sudo-row input.grow { flex: 1 1 12em; min-width: 12em; }
 #netbase-root .fl-row .fl.short { flex: 0 0 110px; }
 #netbase-root .note-line { margin: 10px 0 0; font-size: 13px; color: var(--ok); }
 #netbase-root .tiny { font-size: 12px; }
@@ -947,6 +969,7 @@ html.nb-col-resizing, html.nb-col-resizing * { cursor: col-resize !important; -w
      beneath it and none of its items can be pressed at all. */
   z-index: 4001;
   position: fixed; min-width: 240px; margin: 0; padding: 6px 0; list-style: none;
+  max-height: calc(100vh - 16px); overflow-y: auto; overscroll-behavior: contain;
   background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
   box-shadow: 0 12px 32px rgba(0,0,0,.22);
 }
@@ -969,6 +992,7 @@ html.nb-col-resizing, html.nb-col-resizing * { cursor: col-resize !important; -w
 .nb-ctx-back { position: fixed; inset: 0; z-index: 4100; }
 #netbase-root .nb-ctxmenu {
   position: fixed; z-index: 4101; min-width: 220px; max-width: min(320px, calc(100vw - 16px)); padding: 5px;
+  max-height: calc(100vh - 16px); overflow-y: auto; overscroll-behavior: contain;
   background: var(--surface); color: var(--text); border: 1px solid var(--border);
   border-radius: 11px; box-shadow: var(--shadow); font-size: 13.5px;
 }
@@ -1363,7 +1387,7 @@ html.nb-col-resizing, html.nb-col-resizing * { cursor: col-resize !important; -w
   #netbase-root .scan-row { align-items: stretch; }
   #netbase-root .fl.narrow, #netbase-root .tool-row .narrow, #netbase-root .tool-row .short,
   #netbase-root .tool-row .pick, #netbase-root .bench-head select.narrow { max-width: none; }
-  #netbase-root .tool-row .tiny { max-width: 7em; }
+  #netbase-root .tool-row :is(input, select).tiny { max-width: 7em; }
   #netbase-root .fl-row .fl.short { flex: 0 0 6.5em; }
   #netbase-root .scan-row > .btn, #netbase-root .tool-row > .btn { flex: 1 1 auto; }
 
@@ -1698,3 +1722,65 @@ html.nb-col-resizing, html.nb-col-resizing * { cursor: col-resize !important; -w
   #netbase-root:not([data-nbtheme]) .card-tip { background: #22304d; border-color: #3d5280; box-shadow: 0 10px 28px rgba(0,0,0,.55); }
 }
 #netbase-root[data-nbtheme="dark"] .card-tip { background: #22304d; border-color: #3d5280; box-shadow: 0 10px 28px rgba(0,0,0,.55); }
+
+/* ---- reading a mailbox: the list beside the open message, like a mail program */
+#netbase-root .mail-reader { border: 1px solid var(--border); border-radius: 12px; padding: 10px 12px; margin: 8px 0 18px; }
+#netbase-root .mail-panes { display: grid; grid-template-columns: minmax(220px, 34%) minmax(0, 1fr); gap: 12px; min-height: 420px; }
+#netbase-root .mail-list { overflow-y: auto; max-height: 600px; border-right: 1px solid var(--border); padding-right: 8px; }
+#netbase-root .mail-row { padding: 8px 10px; border-radius: 8px; cursor: pointer; border-bottom: 1px solid var(--border); }
+#netbase-root .mail-row:hover { background: color-mix(in srgb, var(--primary) 6%, transparent); }
+#netbase-root .mail-row.open { background: color-mix(in srgb, var(--primary) 14%, transparent); }
+#netbase-root .mail-row.unread .mail-from, #netbase-root .mail-row.unread .mail-subj { font-weight: 700; }
+#netbase-root .mail-top { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
+#netbase-root .mail-from, #netbase-root .mail-subj { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+#netbase-root .mail-subj { font-size: 13px; color: var(--muted); }
+#netbase-root .mail-view { min-width: 0; overflow: auto; max-height: 600px; }
+#netbase-root .mail-subject { margin: 0 0 8px; font-size: 17px; }
+#netbase-root .mail-atts { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
+#netbase-root .mail-att { border: 1px solid var(--border); border-radius: 8px; padding: 4px 8px; display: inline-flex; gap: 6px; align-items: center; }
+#netbase-root .mail-view .seg { margin: 6px 0 8px; }
+#netbase-root .mail-html { width: 100%; height: 480px; border: 1px solid var(--border); border-radius: 8px; background: #fff; }
+#netbase-root .mail-text { white-space: pre-wrap; overflow-wrap: anywhere; font-family: inherit; font-size: 14px; margin: 0; }
+#netbase-root .mail-headers td.wrap { overflow-wrap: anywhere; }
+@media (max-width: 760px) {
+  #netbase-root .mail-panes { grid-template-columns: 1fr; }
+  #netbase-root .mail-list { border-right: 0; max-height: 320px; padding-right: 0; }
+}
+
+/* ---- file transfer: filter boxes, compare tags, bookmarks, search results, keyboard focus */
+#netbase-root .path-bar .pane-filter { flex: 0 1 9em; min-width: 6em; }
+#netbase-root .cmp-tag { margin-left: 6px; font-size: 11px; padding: 1px 6px; border-radius: 6px; border: 1px solid var(--border); color: var(--muted); white-space: nowrap; }
+#netbase-root .bookmark-menu { min-width: 260px; max-width: 420px; }
+#netbase-root .bookmark-row { display: flex; align-items: center; gap: 4px; }
+#netbase-root .bookmark-row .row-menu-item { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#netbase-root .search-hit { cursor: pointer; }
+#netbase-root .search-hit:hover { background: color-mix(in srgb, var(--primary) 6%, transparent); }
+#netbase-root .pane-body:focus-visible { outline: 2px solid color-mix(in srgb, var(--primary) 45%, transparent); outline-offset: -2px; }
+
+/* The encoding and line-ending dialog of file transfer. */
+#netbase-root .text-conv-files td { vertical-align: top; }
+#netbase-root .text-conv-preview { max-height: 7.5em; overflow: auto; white-space: pre; font-size: 12.5px; margin: 8px 0 2px; }
+#netbase-root .text-conv-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(13em, 1fr)); gap: 10px 14px; margin: 12px 0; }
+#netbase-root .text-conv-grid label { display: flex; flex-direction: column; gap: 4px; }
+#netbase-root .text-conv-grid select { width: 100%; max-width: none; }
+#netbase-root .text-conv-lost { border: 1px solid var(--warn, #c78a00); border-radius: 10px; padding: 8px 12px; margin-top: 10px; }
+#netbase-root .text-conv-lost ul { margin: 4px 0 8px 1.2em; }
+#netbase-root .warn-text { color: var(--warn, #b26b00); }
+
+/* The mail program: marks in the list, the actions over an open message, writing one. */
+#netbase-root .mail-mark { margin-inline-end: 4px; color: var(--primary); font-size: 12px; }
+#netbase-root .mail-search { flex: 1 1 14em; min-width: 9em; max-width: 26em; }
+#netbase-root .mail-actions { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 8px; }
+#netbase-root .mail-actions select.short { width: auto; max-width: 14em; }
+#netbase-root .modal.compose { width: min(860px, calc(100vw - 32px)); max-width: none; }
+#netbase-root .compose-grid { display: grid; grid-template-columns: max-content 1fr; gap: 8px 10px; align-items: center; margin-bottom: 10px; }
+#netbase-root .compose-grid > label { color: var(--muted); font-size: 13px; }
+#netbase-root .compose-grid input { width: 100%; max-width: none; }
+#netbase-root .compose-body { width: 100%; min-height: 16em; font-family: var(--mono, monospace); font-size: 13.5px; line-height: 1.5; resize: vertical; }
+#netbase-root .compose-atts { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 8px 0; }
+
+/* A port is typed, not stepped: without the spin buttons a five-digit port
+   (10022, 2525) fits the narrow field instead of showing as "1…". */
+#netbase-root .sign-line input[type=number] { appearance: textfield; -moz-appearance: textfield; }
+#netbase-root .sign-line input[type=number]::-webkit-inner-spin-button,
+#netbase-root .sign-line input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }

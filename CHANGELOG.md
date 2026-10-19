@@ -2,32 +2,74 @@
 
 All notable changes to NetBase are documented here.
 
-## 0.8.4 — 2026-10-18
+## 0.9.0 — 2026-10-19
 
-A Diagnose button for device pages that do not work in the window, Synology's HTTPS port as a link, and a Brazilian Portuguese translation of its own.
+File transfer becomes a full file manager, the mail page becomes a basic mail client, and a device page that does not work in its window can now be diagnosed.
 
 ### Added
 
+- **File transfer**
+  - Right-click a row for what can be done with it: copy, move, compress, extract, convert, change permissions, copy its address. Several rows can be chosen at once with Ctrl and Shift.
+  - **Compress and extract** ZIP, tar, tar.gz, tar.bz2, tar.xz, tar.zst, 7z, gz, bz2, xz and zst, and extract RAR. NetBase checks which tools the server has, and a format it cannot make there is shown greyed out with the reason. Where there is no shell (FTP, or an SFTP-only account), ZIP, tar, tar.gz and tar.bz2 are made and opened on the Nextcloud server instead.
+  - **Convert the text encoding, line endings and BOM** of a file: UTF-8, UTF-16, Shift_JIS, EUC-JP, ISO-2022-JP, GB18030, Big5, EUC-KR, Windows-1252 and others. The current encoding is detected, characters the new one cannot hold are named before anything is written, and the result is saved under a new name unless you choose to overwrite.
+  - **When a name is already taken:** overwrite, overwrite if newer, overwrite if the size differs, resume, keep both, or skip — for this file only or for all the rest.
+  - Resume an interrupted transfer, retry a failed one, keep each file's date and time, and limit the speed in either direction.
+  - Filter the list (* and ? work), search the server, compare the two sides, browse both sides together, keep bookmarks for each connection, and use the keyboard (Del, F2, F5, Enter, Backspace, Ctrl+A, arrows). New folder, rename and delete work on the Nextcloud side too.
+  - **Change user:** act as any account on the server through sudo — root, www-data or another — including servers where sudo asks for no password. Switching opens that account's home folder, and stopping goes back to where you were. The password is used for the request only and is kept nowhere.
+- **Mail server connection** (the Mail page): read mail over IMAP or POP3, with folders, search, read and unread, flags, move and delete (to the trash first). Write new messages, reply, reply to all and forward, with attachments from your Nextcloud files and Cc and Bcc; a copy is filed in Sent. Opening a message marks it as read unless that is turned off, and reading over POP3 leaves it unread on the server.
+- **Transfer speed to a saved connection** (Benchmarks): send and receive from 1 MB to 1 TB to a saved SFTP, SCP or FTP server and see the real throughput, with a stop button and a check for free space first.
 - **Diagnose a device page.** When a device's page comes up blank in its window, or does nothing when clicked, press Diagnose at the top right of the window, do what does not work, and press Finish. NetBase then shows what happened: the requests the server carried for the page and what came back, the device's headers that NetBase does not pass on to the browser, and the page's errors, clicks and form submissions. It holds no passwords, nothing typed into the page and none of its text, and the values after "?" in every address are hidden, so the report can be copied into a bug report as it stands.
+- **Device windows say what they are doing:** "loading" after a click inside the page, for devices that take seconds to answer, and a note when a device answers with an empty page, instead of a blank window.
 - **Brazilian Portuguese.** pt_BR was a copy of the European Portuguese translation; it is now written the Brazilian way (arquivo, tela, usuário, senha), and NetBase's language setting offers both.
 
 ### Fixed
 
+- **Scanning one network no longer marks the others offline.** A scan set every device offline and brought back only those that answered, so scanning one LAN turned the devices on another LAN offline. Now only devices inside the range being scanned are affected.
+- **Ports no longer disappear.** A scan replaced a device's ports with what it found that time. Now only the ports actually tried are updated, and a scan in which nothing answered keeps what was known.
 - **Port 5001 opens.** Synology's HTTPS management page on port 5001 was shown greyed out in the device list and could not be opened; 5001 is now one of the common ports, like 5000.
-- **Translations:** words left in English in several languages (Test message, Subnet, the example group names), a Japanese punctuation mark in the Korean text, and two Japanese sentences.
+- **Device windows:** a page whose scripts are sent compressed now loads instead of staying blank; addresses that a page's own scripts write are no longer rewritten twice; and a device that moves to another port of its own (http to https on 4444, for example) no longer counts as leaving the window.
+- **Saved connections open with a newer RegiBase master key.** RegiBase 0.20.0 and later make the master key with more rounds, which NetBase did not read, so the key was refused.
+- **Long transfers and commands over SCP** no longer fail after 30 seconds: the time limit now counts only silence.
+- **Folders showed as empty** when sudo asked for no password.
+- **Error messages from the server** are shown in your language; some were always in English.
+- **The error bar** goes away when you do the next thing, instead of staying until it is closed.
+- **Right-click menus** fit in the window instead of being cut off at the bottom.
+- A typed-in mail account keeps its outgoing server and port; port fields show numbers of four digits or more in full; connection fields no longer run past the edge at phone width.
+- **Translations:** words left in English in several languages (Test message, Subnet, the example group names), a Japanese punctuation mark in the Korean text, and Japanese terms corrected after a review (the whole network, well-known ports, high ports and others).
 
 （日本語）
-ウィンドウの中で正しく動かない機器の画面を調べる「診断」ボタンを追加しました。Synology の HTTPS 用ポートも開けるようにし、ブラジル向けポルトガル語を独自の翻訳にしました。
+ファイル転送を本格的なファイル管理の機能にし、メールの画面では基本的なメールソフトとして読み書きできるようにしました。ウィンドウの中で正しく動かない機器の画面を調べる「診断」ボタンも追加しました。
 
 ### 追加
 
+- **ファイル転送**
+  - 行を右クリックすると、コピー、移動、圧縮、展開、変換、権限の変更、アドレスのコピーができます。Ctrl や Shift を押しながら選ぶと、複数の行をまとめて扱えます。
+  - **圧縮と展開**：ZIP、tar、tar.gz、tar.bz2、tar.xz、tar.zst、7z、gz、bz2、xz、zst の圧縮と展開、RAR の展開に対応しました。接続先にどの道具が入っているかを調べ、作れない形式は理由を添えて灰色で表示します。シェルが使えない接続先（FTP や SFTP 専用のアカウント）では、ZIP、tar、tar.gz、tar.bz2 を Nextcloud のサーバー側で作成・展開します。
+  - **文字コード・改行コード・BOM の変換**：UTF-8、UTF-16、Shift_JIS、EUC-JP、ISO-2022-JP、GB18030、Big5、EUC-KR、Windows-1252 などに対応しています。今の文字コードを自動で判定し、変換先で表せない文字があるときは、書き込む前にその文字をお知らせします。変換した結果は、上書きを選ばない限り別の名前で保存します。
+  - **同じ名前のファイルがあるとき**：上書き、新しければ上書き、サイズが違えば上書き、続きから、両方残す、飛ばす、から選べます。このファイルだけにするか、残りすべてに当てはめるかも選べます。
+  - 中断した転送の再開、失敗した転送のやり直し、更新日時の保持、送信・受信それぞれの速度の上限を設定できます。
+  - 一覧の絞り込み（* と ? が使えます）、サーバー内の検索、左右の比較、左右を連動させた移動（同期ブラウズ）、接続先ごとのブックマーク、キーボード操作（Del、F2、F5、Enter、Backspace、Ctrl+A、矢印キー）に対応しました。Nextcloud 側でも、新しいフォルダーの作成、名前の変更、削除ができます。
+  - **ユーザーの変更**：sudo を使って、root や www-data など、接続先のどのアカウントとしても操作できます。sudo にパスワードが要らないサーバーにも対応しています。切り替えるとそのアカウントのホームフォルダーを開き、やめると元のフォルダーに戻ります。パスワードはその操作にだけ使い、どこにも保存しません。
+- **メールサーバー接続**（メールの画面）：IMAP と POP3 でメールを読めるようにしました。フォルダー、検索、既読・未読、フラグ、移動、削除（まずごみ箱へ）に対応しています。新しいメールの作成、返信、全員に返信、転送もでき、Nextcloud のファイルの添付、Cc と Bcc が使えます。送ったメールは「送信済み」に保存します。開いたメールは既読になります（設定で変えられます）。POP3 で読んだメールは、サーバー上では未読のまま残ります。
+- **保存済みの接続先への転送速度**（ベンチマーク）：保存済みの SFTP・SCP・FTP サーバーとの間で 1MB〜1TB のデータを送受信し、実際の速度を測ります。途中で止めることができ、始める前に空き容量も確かめます。
 - **機器の画面を診断できます。** 機器の画面がウィンドウの中で真っ白になる、押しても反応しないといったときは、ウィンドウ右上の「診断」を押し、うまく動かない操作をしてから「終了」を押してください。サーバーが中継したリクエストとその応答、NetBase がブラウザーに渡さなかった機器のヘッダー、画面で起きたエラー・クリック・フォームの送信を一覧で表示します。パスワード、画面に入力した内容、画面の文章は含まれず、アドレスの「?」より後ろの値も伏せるため、結果をそのまま不具合の報告に貼り付けられます。
+- **機器のウィンドウが状況を伝えるようにしました。** 応答に数秒かかる機器のために、画面の中を押した後は「読み込み中」と表示します。機器が中身の無いページを返したときは、真っ白のままにせず、そのことをお知らせします。
 - **ブラジル向けポルトガル語。** pt_BR はポルトガル向けの翻訳をそのまま使っていましたが、ブラジルの言い方（arquivo、tela、usuário、senha）で書き直しました。NetBase の言語設定では両方を選べます。
 
 ### 修正
 
+- **1 つのネットワークをスキャンしても、ほかのネットワークの機器がオフラインにならないようにしました。** これまでは、スキャンのたびにすべての機器をいったんオフラインにし、応答した機器だけを戻していたため、1 つの LAN を調べると別の LAN の機器がオフラインになっていました。今は、調べる範囲の中の機器だけが対象です。
+- **ポートが消えないようにしました。** これまでは、スキャンのたびにポートの一覧をその回に見つかったものに置き換えていました。今は、実際に調べたポートだけを更新し、何も応答しなかったときは、分かっているポートをそのまま残します。
 - **5001 番ポートを開けるようにしました。** Synology の HTTPS 用の管理画面（5001 番）は、機器の一覧で灰色になって開けませんでした。5000 番と同じく、よく使うポートとして扱います。
-- **翻訳：** いくつかの言語で英語のまま残っていた語（Test message、Subnet、グループ名の例）、韓国語の文に混じっていた日本語の記号、日本語の 2 つの文を直しました。
+- **機器のウィンドウ**：スクリプトを圧縮して送る機器の画面が、真っ白にならずに表示されるようにしました。画面のスクリプトが書き出すアドレスを二重に書き換えないようにしました。機器が自分の別のポートへ移ったとき（http から 4444 番の https へなど）に、ウィンドウの外へ出たと判断しないようにしました。
+- **新しい RegiBase のマスターキーで、保存済みの接続先が開けるようにしました。** RegiBase 0.20.0 以降はマスターキーを作るときの計算の回数を増やしていますが、NetBase がそれを読んでいなかったため、キーが正しくないと判断されていました。
+- **SCP での時間のかかる転送やコマンドが、30 秒で失敗しないようにしました。** 時間の制限は、通信が途絶えた時間だけを数えます。
+- sudo にパスワードが要らないサーバーで、フォルダーの中身が空に見える不具合を直しました。
+- **サーバーからのエラーメッセージを、お使いの言語で表示するようにしました。** 一部は常に英語で表示されていました。
+- **エラーの表示**は、閉じるまで残らず、次の操作をすると消えるようにしました。
+- **右クリックのメニュー**が、下の方で切れずにウィンドウの中に収まるようにしました。
+- 手入力したメールアカウントの送信サーバーとポートが保存されない不具合、ポート番号の欄で 4 桁以上の数字が切れる不具合、スマートフォンの幅で接続先の入力欄がはみ出す不具合を直しました。
+- **翻訳：** いくつかの言語で英語のまま残っていた語（Test message、Subnet、グループ名の例）、韓国語の文に混じっていた日本語の記号を直しました。日本語は点検の結果を受けて用語を見直しました（「ネットワーク全体」「ウェルノウンポート」「ハイポート」など）。
 
 ## 0.8.3 — 2026-10-13
 

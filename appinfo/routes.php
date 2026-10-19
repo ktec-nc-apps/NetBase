@@ -103,6 +103,7 @@ return [
 
 		// the user's own Nextcloud files, for the picker
 		['name' => 'api#nextcloudFiles', 'url' => '/api/nc-files', 'verb' => 'GET'],
+		['name' => 'api#ncFilesOp', 'url' => '/api/nc-files/op', 'verb' => 'POST'],
 
 		// file transfer
 		// Listing and reading go by POST like the rest: the one-off connection's
@@ -113,6 +114,8 @@ return [
 		['name' => 'api#filesDownload', 'url' => '/api/files/download', 'verb' => 'POST'],
 		['name' => 'api#filesUpload', 'url' => '/api/files/upload', 'verb' => 'POST'],
 		['name' => 'api#filesManage', 'url' => '/api/files/manage', 'verb' => 'POST'],
+		['name' => 'api#filesOp', 'url' => '/api/files/op', 'verb' => 'POST'],
+		['name' => 'api#benchTransfer', 'url' => '/api/bench/transfer', 'verb' => 'POST'],
 		// A transfer, reported while it runs, so the browser can draw a bar
 		// rather than a spinner that says nothing.
 		['name' => 'api#filesTransfer', 'url' => '/api/files/transfer', 'verb' => 'POST'],
@@ -128,6 +131,11 @@ return [
 		['name' => 'api#mailRelayTest', 'url' => '/api/mail/relay', 'verb' => 'POST'],
 		['name' => 'api#mailSend', 'url' => '/api/mail/send', 'verb' => 'POST'],
 		['name' => 'api#mailLogin', 'url' => '/api/mail/login', 'verb' => 'POST'],
+		['name' => 'api#mailMessages', 'url' => '/api/mail/messages', 'verb' => 'POST'],
+		['name' => 'api#mailMessage', 'url' => '/api/mail/message', 'verb' => 'POST'],
+		['name' => 'api#mailAttachment', 'url' => '/api/mail/attachment', 'verb' => 'POST'],
+		['name' => 'api#mailCompose', 'url' => '/api/mail/compose', 'verb' => 'POST'],
+		['name' => 'api#mailAction', 'url' => '/api/mail/action', 'verb' => 'POST'],
 
 		// device web page preview
 		['name' => 'api#preview', 'url' => '/api/preview', 'verb' => 'GET'],

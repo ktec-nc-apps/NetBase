@@ -111,17 +111,7 @@ class ApiController extends Controller {
 	 * it was written, which is the old behaviour.
 	 */
 	private function say(\Throwable $e): string {
-		$message = $e->getMessage();
-		if ($message === '') {
-			return $message;
-		}
-		// Nextcloud runs every translated string through vsprintf, even when no
-		// parameters were given. A message that already carries a value — a path,
-		// a host, a percentage — can therefore contain a stray "%" that vsprintf
-		// would choke on. Doubling it makes vsprintf hand back the single "%" it
-		// started with, and the plain messages this is really here for contain no
-		// "%" at all, so their lookup is unaffected.
-		return $this->l10n->t(str_replace('%', '%%', $message));
+		return $this->l10n->said($e);
 	}
 
 	/**
@@ -872,8 +862,8 @@ class ApiController extends Controller {
 	 *                              RegiBase, not on disk — so it has to be given
 	 *                              again next time. That is the point of it.
 	 */
-	public function filesList(int $id = 0, string $path = '', array $connection = [], string $sudoPassword = '', string $prefer = ''): JSONResponse {
-		return $this->guard(fn () => $this->transfer->listDirectory($this->endpointFor($id, $connection), $path, $sudoPassword, $prefer), 'files');
+	public function filesList(int $id = 0, string $path = '', array $connection = [], string $sudoPassword = '', string $prefer = '', string $sudoUser = ''): JSONResponse {
+		return $this->guard(fn () => $this->transfer->actAs($sudoUser)->listDirectory($this->endpointFor($id, $connection), $path, $sudoPassword, $prefer), 'files');
 	}
 
 	#[NoAdminRequired]
@@ -882,9 +872,10 @@ class ApiController extends Controller {
 	 * @param bool $folder the row is a folder: bring it back as one ZIP file
 	 *                     rather than refusing, which is what it did before.
 	 */
-	public function filesDownload(string $path, int $id = 0, string $target = 'NetBase', array $connection = [], string $prefer = '', bool $folder = false, string $sudoPassword = ''): JSONResponse {
-		return $this->guard(function () use ($id, $connection, $path, $target, $prefer, $folder, $sudoPassword) {
+	public function filesDownload(string $path, int $id = 0, string $target = 'NetBase', array $connection = [], string $prefer = '', bool $folder = false, string $sudoPassword = '', string $sudoUser = ''): JSONResponse {
+		return $this->guard(function () use ($id, $connection, $path, $target, $prefer, $folder, $sudoPassword, $sudoUser) {
 			$endpoint = $this->endpointFor($id, $connection);
+			$this->transfer->actAs($sudoUser);
 			return $folder
 				? $this->transfer->downloadFolder($endpoint, $this->uid(), $path, $target, $prefer, $sudoPassword)
 				: $this->transfer->download($endpoint, $this->uid(), $path, $target, $prefer);
@@ -909,12 +900,12 @@ class ApiController extends Controller {
 	public function filesTransfer(
 		string $direction = 'down', int $id = 0, string $remote = '', string $local = '',
 		string $target = 'NetBase', array $connection = [], string $prefer = '', string $sudoPassword = '',
-		bool $folder = false,
+		bool $folder = false, string $sudoUser = '', string $onExists = '', bool $keepTime = false, int $rate = 0,
 	): Response {
 		if (!$this->permissions->can('files')) {
 			return new JSONResponse(['error' => $this->l10n->t('Not allowed')], Http::STATUS_FORBIDDEN);
 		}
-		$response = new ProxyResponse(function (IOutput $output) use ($direction, $id, $remote, $local, $target, $connection, $prefer, $sudoPassword, $folder): void {
+		$response = new ProxyResponse(function (IOutput $output) use ($direction, $id, $remote, $local, $target, $connection, $prefer, $sudoPassword, $folder, $sudoUser, $onExists, $keepTime, $rate): void {
 			// The session lock would be held for the whole transfer, which stops
 			// every other request from this browser until it finishes.
 			$this->session->close();
@@ -934,11 +925,15 @@ class ApiController extends Controller {
 			};
 			try {
 				$endpoint = $this->endpointFor($id, $connection);
+				$this->transfer->actAs($sudoUser);
 				if ($folder && $direction === 'up') {
-					$this->transfer->uploadFolder($endpoint, $this->uid(), $local, $remote, $emit, $prefer, $sudoPassword);
+					$this->transfer->uploadFolder($endpoint, $this->uid(), $local, $remote, $emit, $prefer, $sudoPassword, [
+						'onExists' => $onExists !== '' ? $onExists : 'ask', 'keepTime' => $keepTime, 'rate' => $rate,
+					]);
 				} else {
 					$this->transfer->transferStream($endpoint, $this->uid(), [
 						'direction' => $direction, 'remote' => $remote, 'local' => $local, 'target' => $target,
+						'onExists' => $onExists !== '' ? $onExists : 'ask', 'keepTime' => $keepTime, 'rate' => $rate,
 					], $emit, $prefer, $sudoPassword);
 				}
 			} catch (\Throwable $e) {
@@ -956,8 +951,8 @@ class ApiController extends Controller {
 	/** A file's contents, as text, for a window to show and edit. */
 	#[NoAdminRequired]
 	#[UserRateLimit(limit: 120, period: 60)]
-	public function filesText(string $path, int $id = 0, array $connection = [], string $prefer = '', string $sudoPassword = ''): JSONResponse {
-		return $this->guard(fn () => $this->transfer->readText($this->endpointFor($id, $connection), $path, $prefer, $sudoPassword), 'files');
+	public function filesText(string $path, int $id = 0, array $connection = [], string $prefer = '', string $sudoPassword = '', string $sudoUser = ''): JSONResponse {
+		return $this->guard(fn () => $this->transfer->actAs($sudoUser)->readText($this->endpointFor($id, $connection), $path, $prefer, $sudoPassword), 'files');
 	}
 
 	/** Edited text, put back the way it came. */
@@ -965,9 +960,9 @@ class ApiController extends Controller {
 	#[UserRateLimit(limit: 60, period: 60)]
 	public function filesSaveText(
 		string $path, string $text, int $id = 0, string $encoding = 'UTF-8', string $newline = 'lf',
-		array $connection = [], string $prefer = '', string $sudoPassword = '',
+		array $connection = [], string $prefer = '', string $sudoPassword = '', string $sudoUser = '',
 	): JSONResponse {
-		return $this->guard(fn () => $this->transfer->writeText(
+		return $this->guard(fn () => $this->transfer->actAs($sudoUser)->writeText(
 			$this->endpointFor($id, $connection), $path, $text, $encoding, $newline, $prefer, $sudoPassword
 		), 'files');
 	}
@@ -975,10 +970,105 @@ class ApiController extends Controller {
 	#[NoAdminRequired]
 	#[UserRateLimit(limit: 60, period: 60)]
 	/** @param string $sudoPassword as filesList(): for this request only, stored nowhere. */
-	public function filesManage(string $action, string $path, int $id = 0, string $extra = '', array $connection = [], string $sudoPassword = '', string $prefer = ''): JSONResponse {
-		return $this->guard(fn () => $this->transfer->manage($this->endpointFor($id, $connection), $action, $path, $extra, $sudoPassword, $prefer), 'files');
+	public function filesManage(string $action, string $path, int $id = 0, string $extra = '', array $connection = [], string $sudoPassword = '', string $prefer = '', string $sudoUser = ''): JSONResponse {
+		return $this->guard(fn () => $this->transfer->actAs($sudoUser)->manage($this->endpointFor($id, $connection), $action, $path, $extra, $sudoPassword, $prefer), 'files');
 	}
 
+	/**
+	 * Copy, move, compress, change permissions recursively, make an empty file,
+	 * search, or look entries up — streamed like a transfer, because copying or
+	 * compressing a large folder can take longer than a request may stay silent.
+	 *
+	 * @param list<string> $paths
+	 */
+	#[NoAdminRequired]
+	#[UserRateLimit(limit: 120, period: 60)]
+	public function filesOp(
+		string $action, array $paths = [], int $id = 0, array $connection = [], string $prefer = '',
+		string $sudoPassword = '', string $sudoUser = '', string $dest = '', string $name = '', string $format = 'zip',
+		string $where = 'server', string $onExists = 'ask', string $mode = '', string $recurse = '', string $path = '', string $pattern = '',
+		string $encFrom = 'auto', string $encTo = 'keep', string $newline = 'keep', string $bom = 'keep', bool $allowLoss = false,
+		string $output = 'copy', string $into = 'folder',
+	): Response {
+		if (!$this->permissions->can('files')) {
+			return new JSONResponse(['error' => $this->l10n->t('Not allowed')], Http::STATUS_FORBIDDEN);
+		}
+		$op = compact('action', 'paths', 'dest', 'name', 'format', 'where', 'onExists', 'mode', 'recurse', 'path', 'pattern',
+			'encFrom', 'encTo', 'newline', 'bom', 'allowLoss', 'output', 'into');
+		$response = new ProxyResponse(function (IOutput $output) use ($op, $id, $connection, $prefer, $sudoPassword, $sudoUser): void {
+			$this->session->close();
+			while (ob_get_level() > 0) {
+				@ob_end_flush();
+			}
+			@ini_set('zlib.output_compression', '0');
+			@set_time_limit(0);
+			ignore_user_abort(true);
+			$emit = static function (array $line): bool {
+				echo json_encode($line, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) . "\n";
+				@flush();
+				return connection_aborted() === 0;
+			};
+			try {
+				$this->transfer->actAs($sudoUser)->operate($this->endpointFor($id, $connection), $this->uid(), $op, $emit, $prefer, $sudoPassword);
+			} catch (\Throwable $e) {
+				$emit(['stage' => 'error', 'message' => $this->shown($e)]);
+			}
+		});
+		$response->addHeader('Content-Type', 'application/x-ndjson');
+		$response->addHeader('Cache-Control', 'no-store');
+		$response->addHeader('X-Accel-Buffering', 'no');
+		return $response;
+	}
+
+
+	/**
+	 * How fast files move to and from a saved file-transfer connection,
+	 * streamed so a large test file on a slow line does not look hung.
+	 */
+	#[NoAdminRequired]
+	#[UserRateLimit(limit: 20, period: 60)]
+	public function benchTransfer(int $id, int $megabytes = 10, string $folder = '', string $prefer = ''): Response {
+		if (!$this->permissions->can('files') || !$this->permissions->can('bench')) {
+			return new JSONResponse(['error' => $this->l10n->t('Not allowed')], Http::STATUS_FORBIDDEN);
+		}
+		$response = new ProxyResponse(function (IOutput $output) use ($id, $megabytes, $folder, $prefer): void {
+			$this->session->close();
+			while (ob_get_level() > 0) {
+				@ob_end_flush();
+			}
+			@ini_set('zlib.output_compression', '0');
+			@set_time_limit(0);
+			ignore_user_abort(true);
+			$emit = static function (array $line): bool {
+				echo json_encode($line, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) . "\n";
+				@flush();
+				return connection_aborted() === 0;
+			};
+			try {
+				$this->transfer->speedTest($this->endpointFor($id, []), $megabytes, $folder, $emit, $prefer);
+			} catch (\Throwable $e) {
+				$emit(['stage' => 'error', 'message' => $this->shown($e)]);
+			}
+		});
+		$response->addHeader('Content-Type', 'application/x-ndjson');
+		$response->addHeader('Cache-Control', 'no-store');
+		$response->addHeader('X-Accel-Buffering', 'no');
+		return $response;
+	}
+
+	/** New folder, rename or delete on the reader's own side of the file transfer screen. */
+	#[NoAdminRequired]
+	#[UserRateLimit(limit: 120, period: 60)]
+	public function ncFilesOp(string $action, string $path = '', string $name = '', array $paths = [],
+		string $encFrom = 'auto', string $encTo = 'keep', string $newline = 'keep', string $bom = 'keep', bool $allowLoss = false, string $output = 'copy'): JSONResponse {
+		if ($action === 'inspect' || $action === 'convert') {
+			// Gathered out here: an arrow function sees only the variables it names,
+			// and compact() names them in strings, so inside it they would be missing.
+			$op = compact('encFrom', 'encTo', 'newline', 'bom', 'allowLoss', 'output');
+			return $this->guard(fn () => $this->transfer->localText($this->uid(), $action, array_map('strval', $paths), $op), 'files');
+		}
+		return $this->guard(fn () => $this->transfer->localOp($this->uid(), $action, $path, $name), 'files');
+	}
 
 	/** The user's own Nextcloud files, for choosing a key, a source or a target. */
 	#[NoAdminRequired]
@@ -1018,6 +1108,47 @@ class ApiController extends Controller {
 	#[UserRateLimit(limit: 30, period: 60)]
 	public function mailLogin(int $id = 0, array $connection = []): JSONResponse {
 		return $this->guard(fn () => $this->mail->login($this->endpointFor($id, $connection)), 'mail');
+	}
+
+	/** The newest messages in a mailbox, saved or just typed in. Reading changes nothing there. */
+	#[NoAdminRequired]
+	#[UserRateLimit(limit: 60, period: 60)]
+	public function mailMessages(int $id = 0, array $connection = [], string $folder = '', int $offset = 0, int $limit = 50, string $search = ''): JSONResponse {
+		return $this->guard(fn () => $this->mail->messages($this->endpointFor($id, $connection), $folder, $offset, $limit, 20.0, $search), 'mail');
+	}
+
+	/** One message, to read. */
+	#[NoAdminRequired]
+	#[UserRateLimit(limit: 120, period: 60)]
+	public function mailMessage(string $ref, int $id = 0, array $connection = [], string $folder = '', bool $markSeen = false): JSONResponse {
+		return $this->guard(fn () => $this->mail->message($this->endpointFor($id, $connection), $folder, $ref, 30.0, $markSeen), 'mail');
+	}
+
+	/** A message written here — new, a reply or a forward — sent, and filed in Sent. */
+	#[NoAdminRequired]
+	#[UserRateLimit(limit: 30, period: 300)]
+	public function mailCompose(int $id = 0, array $connection = [], string $to = '', string $cc = '', string $bcc = '', string $subject = '',
+		string $body = '', string $inReplyTo = '', string $references = '', array $attach = [], bool $saveSent = true,
+		array $answered = [], array $forwarded = []): JSONResponse {
+		$mail = compact('to', 'cc', 'bcc', 'subject', 'body', 'inReplyTo', 'references', 'attach', 'saveSent', 'answered', 'forwarded');
+		return $this->guard(fn () => $this->mail->compose($this->endpointFor($id, $connection), $this->uid(), $mail), 'mail');
+	}
+
+	/** Mark, move or delete messages in a mailbox. */
+	#[NoAdminRequired]
+	#[UserRateLimit(limit: 120, period: 60)]
+	public function mailAction(string $action, array $refs = [], int $id = 0, array $connection = [], string $folder = '', string $target = ''): JSONResponse {
+		return $this->guard(fn () => $this->mail->mailAction($this->endpointFor($id, $connection), $action, $folder, array_map('strval', $refs), $target), 'mail');
+	}
+
+	/** One attachment, put into the reader's own Nextcloud files. */
+	#[NoAdminRequired]
+	#[UserRateLimit(limit: 60, period: 60)]
+	public function mailAttachment(string $ref, int $part, int $id = 0, array $connection = [], string $folder = '', string $target = 'NetBase'): JSONResponse {
+		return $this->guard(function () use ($ref, $part, $id, $connection, $folder, $target) {
+			$file = $this->mail->attachment($this->endpointFor($id, $connection), $folder, $ref, $part);
+			return $this->transfer->saveToFiles($this->uid(), $target !== '' ? $target : 'NetBase', $file['name'], $file['data']);
+		}, 'mail');
 	}
 
 	#[NoAdminRequired]
@@ -1672,6 +1803,14 @@ class ApiController extends Controller {
 			// because the cost of it lapsing is one password and the cost of it
 			// lasting is somebody else's root shell.
 			'rootIdleMinutes' => (int)($uid ? $this->config->getUserValue($uid, 'netbase', 'root_idle_minutes', '10') : 10),
+			// File transfer: keep the original's time on the copy, and hold each
+			// direction to a speed (KB/s, 0 for none) — FileZilla's two settings.
+			'filesKeepTime' => $uid && $this->config->getUserValue($uid, 'netbase', 'files_keep_time', '0') === '1',
+			'filesLimitDown' => (int)($uid ? $this->config->getUserValue($uid, 'netbase', 'files_limit_down', '0') : 0),
+			'filesLimitUp' => (int)($uid ? $this->config->getUserValue($uid, 'netbase', 'files_limit_up', '0') : 0),
+			// Places on each connection the reader keeps going back to, with the
+			// Nextcloud folder that goes with each. Keyed by connection.
+			'fileBookmarks' => $uid ? ((json_decode($this->config->getUserValue($uid, 'netbase', 'file_bookmarks', '{}'), true) ?: new \stdClass())) : new \stdClass(),
 			// The order the tools are listed in, as this person arranged them.
 			'tabOrder' => $uid ? array_values(array_filter(explode(',', $this->config->getUserValue($uid, 'netbase', 'tab_order', '')))) : [],
 			// Devices whose own page this person has agreed to show in full.
@@ -1703,6 +1842,7 @@ class ApiController extends Controller {
 			'shellLang' => 'shell_lang',
 			'termLogOn' => 'term_log_on', 'termLogSteps' => 'term_log_steps', 'termLogDays' => 'term_log_days',
 			'rootIdleMinutes' => 'root_idle_minutes',
+			'filesKeepTime' => 'files_keep_time', 'filesLimitDown' => 'files_limit_down', 'filesLimitUp' => 'files_limit_up',
 		] as $key => $stored) {
 			if (!isset($settings[$key])) {
 				continue;
@@ -1745,7 +1885,38 @@ class ApiController extends Controller {
 				$n = (int)$value;
 				$value = (string)($n <= 0 ? 0 : max(1, min(120, $n)));
 			}
+			if ($key === 'filesKeepTime') {
+				$value = ($value === '1' || $value === 'true') ? '1' : '0';
+			}
+			if ($key === 'filesLimitDown' || $key === 'filesLimitUp') {
+				$value = (string)max(0, min(10485760, (int)$value));
+			}
 			$this->config->setUserValue($uid, 'netbase', $stored, $value);
+		}
+		if (isset($settings['fileBookmarks']) && is_array($settings['fileBookmarks'])) {
+			// Kept as given, within bounds: a hundred connections, fifty places each,
+			// and nothing but the three strings a place has.
+			$kept = [];
+			foreach (array_slice($settings['fileBookmarks'], 0, 100, true) as $conn => $list) {
+				if (!is_array($list) || !is_string($conn) || strlen($conn) > 300) {
+					continue;
+				}
+				$places = [];
+				foreach (array_slice($list, 0, 50) as $b) {
+					if (!is_array($b) || !is_string($b['remote'] ?? null)) {
+						continue;
+					}
+					$places[] = [
+						'name' => mb_substr((string)($b['name'] ?? ''), 0, 120),
+						'remote' => mb_substr((string)$b['remote'], 0, 1024),
+						'local' => mb_substr((string)($b['local'] ?? ''), 0, 1024),
+					];
+				}
+				if ($places !== []) {
+					$kept[$conn] = $places;
+				}
+			}
+			$this->config->setUserValue($uid, 'netbase', 'file_bookmarks', (string)json_encode($kept, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
 		}
 		if (isset($settings['tabOrder']) && is_array($settings['tabOrder'])) {
 			// Only real tools, each once. A tool left out simply keeps its place
@@ -1788,7 +1959,7 @@ class ApiController extends Controller {
 			try {
 				$this->wake->save($admin);
 			} catch (\InvalidArgumentException $e) {
-				return new JSONResponse(['error' => $this->l10n->t($e->getMessage())], Http::STATUS_BAD_REQUEST);
+				return new JSONResponse(['error' => $this->l10n->said($e)], Http::STATUS_BAD_REQUEST);
 			}
 			if (isset($admin['levels']) && is_array($admin['levels'])) {
 				$this->permissions->setLevels(array_map('strval', $admin['levels']));

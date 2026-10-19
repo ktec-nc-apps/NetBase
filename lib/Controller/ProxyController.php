@@ -137,9 +137,9 @@ class ProxyController extends Controller {
 			});
 			$result = null;
 		} catch (\InvalidArgumentException $e) {
-			return $this->problem($e->getMessage(), Http::STATUS_BAD_REQUEST);
+			return $this->problem($this->l->said($e), Http::STATUS_BAD_REQUEST);
 		} catch (\RuntimeException $e) {
-			return $this->problem($e->getMessage(), Http::STATUS_FORBIDDEN);
+			return $this->problem($this->l->said($e), Http::STATUS_FORBIDDEN);
 		} catch (\Throwable $e) {
 			$this->logger->warning('NetBase proxy: ' . $e->getMessage(), ['exception' => $e, 'app' => 'netbase']);
 			return $this->problem($this->shown($e), Http::STATUS_BAD_GATEWAY);
@@ -196,7 +196,7 @@ class ProxyController extends Controller {
 	 */
 	private function shown(\Throwable $e): string {
 		return ($e instanceof \RuntimeException || $e instanceof \InvalidArgumentException)
-			? $e->getMessage()
+			? $this->l->said($e)
 			: $this->l->t('Something went wrong on the server. The details are in the Nextcloud log.');
 	}
 

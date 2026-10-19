@@ -62,6 +62,7 @@ class MlabService {
 
 	public function __construct(
 		private LoggerInterface $logger,
+		private L10nService $l,
 	) {
 	}
 
@@ -183,7 +184,7 @@ class MlabService {
 		$empty = ['bytes' => 0, 'seconds' => 0.0, 'mbps' => 0.0, 'server' => $server, 'remote' => null];
 		$url = (string)($server[$direction === 'upload' ? 'upload' : 'download'] ?? '');
 		if ($url === '') {
-			return $empty + ['error' => 'That measurement server offers no ' . $direction];
+			return $empty + ['error' => $direction === 'upload' ? $this->l->t('That measurement server offers no upload test') : $this->l->t('That measurement server offers no download test')];
 		}
 		$stream = $this->open($url, $error);
 		if ($stream === null) {

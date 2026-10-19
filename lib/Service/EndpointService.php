@@ -340,9 +340,9 @@ class EndpointService {
 		// in plain text. Say so plainly instead of quietly doing it.
 		foreach (self::SLOTS as $slot => $meta) {
 			if ($meta['secret'] && isset($clean[$slot]) && !$fields[$clean[$slot]]['secret']) {
-				throw new \InvalidArgumentException(
-					'The field chosen for "' . $meta['label'] . '" is not a secret field in RegiBase. '
-					. 'Mark it secret there first, or choose another field.'
+				throw new WordedInvalidArgumentException(
+					'The field chosen for "%s" is not a secret field in RegiBase. Mark it secret there first, or choose another field.',
+					[$meta['label']]
 				);
 			}
 		}
@@ -508,12 +508,10 @@ class EndpointService {
 		if ($this->collectionGone($userId, $group)) {
 			// Not the same as never having chosen one. Saying "choose one" to
 			// somebody who did would send them looking for their own mistake.
-			throw new \RuntimeException('The RegiBase collection kept for '
-				. self::GROUPS[$group]['label']
-				. ' connections is gone — it was deleted in RegiBase. Choose another one, or make a new one.');
+			throw new WordedRuntimeException('The RegiBase collection kept for %s connections is gone — it was deleted in RegiBase. Choose another one, or make a new one.', [self::GROUPS[$group]['label']]);
 		}
 		if (!$this->ready($userId, $group)) {
-			throw new \RuntimeException('Choose a RegiBase collection for ' . self::GROUPS[$group]['label'] . ' connections first.');
+			throw new WordedRuntimeException('Choose a RegiBase collection for %s connections first.', [self::GROUPS[$group]['label']]);
 		}
 		$host = $this->tools->reach((string)($data['host'] ?? ''));
 		$port = (int)($data['port'] ?? 0);
@@ -592,7 +590,7 @@ class EndpointService {
 		try {
 			$node = $this->rootFolder->getUserFolder($userId)->get(ltrim($path, '/'));
 		} catch (NotFoundException) {
-			throw new \InvalidArgumentException('No such file in your Nextcloud files: ' . $path);
+			throw new WordedInvalidArgumentException('No such file in your Nextcloud files: %s', [$path]);
 		}
 		if (!$node instanceof File) {
 			throw new \InvalidArgumentException('That is a folder, not a key. Open it and choose the key file inside — the one with no .pub at the end.');
@@ -642,7 +640,19 @@ class EndpointService {
 		$port = (int)($data['port'] ?? 0);
 		$entity->setPort($port > 0 && $port < 65536 ? $port : self::KINDS[$kind]['port']);
 		$entity->setUsername(mb_substr(trim((string)($data['username'] ?? '')), 0, 255));
-		$entity->setOptions((string)json_encode($this->optionsFrom($kind, $data), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
+		$options = $this->optionsFrom($kind, $data);
+		// The outgoing server of a mailbox typed in on the spot. A saved one keeps
+		// these as fields of their own; one typed in used to lose them, and sent
+		// through the incoming host on the default port instead.
+		$sendHost = trim((string)($data['sendHost'] ?? ''));
+		if ($sendHost !== '') {
+			$options['sendHost'] = $this->tools->reach(mb_substr($sendHost, 0, 255));
+		}
+		$sendPort = (int)($data['sendPort'] ?? 0);
+		if ($sendPort > 0 && $sendPort < 65536) {
+			$options['sendPort'] = $sendPort;
+		}
+		$entity->setOptions((string)json_encode($options, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
 
 		$key = (string)($data['privateKey'] ?? '');
 		$keyPath = trim((string)($data['privateKeyPath'] ?? ''));

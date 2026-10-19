@@ -222,7 +222,7 @@ class DnsService {
 		foreach (array_slice($servers, 0, 6) as $server) {
 			$address = $this->resolverAddress($server);
 			if ($address === null) {
-				$results[] = ['server' => $server, 'address' => null, 'allowed' => null, 'records' => 0, 'error' => 'Could not resolve'];
+				$results[] = ['server' => $server, 'address' => null, 'allowed' => null, 'records' => 0, 'error' => $this->l->t('Could not resolve')];
 				continue;
 			}
 			$outcome = $this->axfr($address, $zone, $timeout);

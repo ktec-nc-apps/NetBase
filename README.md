@@ -56,13 +56,15 @@ NetBase turns your Nextcloud into a network console. It finds every device on yo
 
 **How it works.** SMTP, IMAP and POP3 are spoken directly over stream sockets, so `ext-imap` — which no longer ships with current PHP — is neither needed nor used. The DNS side reads MX, SPF, DKIM, DMARC, MTA-STS (fetching the policy file), TLS-RPT, BIMI and DANE, and checks each MX address against seven public blocklists.
 
-**What it is for.** Working out why mail is not arriving. Checking a migration before and after. Proving the anti-spoofing records are right, and that the server is not an open relay.
+The same page reads and sends mail on a saved account or one typed in: folders, search, read and unread, flags, move, delete, and new messages, replies and forwards with attachments from your Nextcloud files.
+
+**What it is for.** Working out why mail is not arriving. Checking a migration before and after. Proving the anti-spoofing records are right, and that the server is not an open relay. Reading and answering a mailbox on a server you look after, without setting up a mail program.
 
 ### FTP, SFTP and SCP
 
-**How it works.** SFTP and SCP use the phpseclib 3 copy NetBase carries with it — Nextcloud ships only phpseclib 2, which cannot read a modern private key; FTP uses PHP's own extension, with or without TLS. Transfers stream through a file handle in both directions, so a large file never lands in PHP's memory. A saved SSH connection can be browsed here as it stands: it is the same machine, account and key, so NetBase opens it over SFTP, or over SCP for a server that offers a shell but no SFTP subsystem. Over SCP, **Act as root** puts the listing and the file actions through `sudo` on the far end; the password is asked for on the spot, used for that one request, and kept nowhere — not in the settings, not in RegiBase, not on disk — so reloading the page asks again. Downloading and uploading are not covered by it: SCP carries the file over the same input the password would go into, so those two stay unelevated rather than appearing to work and returning nothing. Connection details live in RegiBase, sealed with your own master key, and a connection can also be typed in on the spot.
+**How it works.** SFTP and SCP use the phpseclib 3 copy NetBase carries with it — Nextcloud ships only phpseclib 2, which cannot read a modern private key; FTP uses PHP's own extension, with or without TLS. Transfers stream through a file handle in both directions, so a large file never lands in PHP's memory. A saved SSH connection can be browsed here as it stands: it is the same machine, account and key, so NetBase opens it over SFTP, or over SCP for a server that offers a shell but no SFTP subsystem. **Change user** acts as another account on the far end — root, www-data or any other — through `sudo`, over SCP, and opens that account's home folder; stopping goes back to where you were. The password is asked for on the spot, used for that one request, and kept nowhere — not in the settings, not in RegiBase, not on disk — so reloading the page asks again. A server where sudo asks for no password needs none here either. Connection details live in RegiBase, sealed with your own master key, and a connection can also be typed in on the spot.
 
-**What it is for.** Pushing a configuration file to a device or a server. Collecting logs. Moving files between a remote server and your own Nextcloud folders without a laptop in the middle.
+**What it is for.** Pushing a configuration file to a device or a server. Collecting logs. Unpacking an archive on the server, or fixing a file saved in the wrong encoding. Moving files between a remote server and your own Nextcloud folders without a laptop in the middle.
 
 ### SSH and Telnet
 
@@ -108,6 +110,7 @@ NetBase turns your Nextcloud into a network console. It finds every device on yo
 | **LAN throughput** | The real speed of the local link, in both directions, with a per-second graph and the retransmit count | `iperf3` here and on one other machine |
 | **DNS resolver comparison** | Median, average and jitter for every resolver, including the one this server uses, with the fastest marked | nothing |
 | **Where the time goes** | One HTTP request broken into DNS, TCP, TLS, server think-time and transfer | `ext-curl` |
+| **Transfer speed to a saved connection** | The real send and receive speed to a saved SFTP, SCP or FTP server, with 1 MB to 1 TB of data | a saved connection |
 
 Two of these deserve a note.
 
@@ -123,7 +126,7 @@ Three views, in the order you actually need them.
 
 **Server test** talks to one server and reports what it offers: the greeting, the capability list, whether STARTTLS is there and what the certificate looks like once it is, the negotiated protocol and cipher, and the sign-in mechanisms. One-click presets cover ports 25, 587, 465, 993, 143 and 995. The full conversation is kept and shown on request, with credentials masked. Two extras sit under it: an **open-relay test** — a foreign sender and a foreign recipient offered to the server, stopping before anything is sent — and a **blocklist lookup** for any address.
 
-**Send and receive** proves the thing people actually care about. Pick a saved SMTP connection and send a real test message; pick a saved IMAP or POP3 account and sign in to see the message and unread counts and the folder list.
+**Send and receive** proves the thing people actually care about, and works as a basic mail program. Pick a saved SMTP connection and send a real test message; pick a saved IMAP or POP3 account, or type one in, to see the folders and the messages. A message can be searched for and opened — HTML is shown without scripts and without fetching outside images, and attachments can be saved to your Nextcloud files — marked read or unread, flagged, moved, or deleted, to the trash first. New messages, replies, replies to all and forwards can be written, with Cc, Bcc and attachments from your Nextcloud files, and a copy is filed in Sent. Opening a message marks it as read unless that is turned off; reading over POP3 leaves it unread on the server.
 
 Every protocol here is spoken directly over a stream socket. `ext-imap` is neither needed nor used, which matters because it no longer ships with current PHP.
 
@@ -141,9 +144,15 @@ Two halves, deliberately separate.
 
 ## Files: FTP, SFTP and SCP
 
-Choose a saved connection and browse it: directories, sizes, timestamps and permissions, with a path bar you can type into. Files move both ways — **to my files** copies a remote file into a folder of your Nextcloud files, and the upload field sends one of your Nextcloud files to the folder you are looking at. Folders can be created, renamed and deleted.
+Choose a saved connection, or type one in, and browse it: directories, sizes, timestamps, permissions and owners, with a path bar you can type into. Your Nextcloud files are on the left and the server on the right; choose rows and press **Send** or **Receive**, or drag them from one side to the other. Right-click a row for the rest: open, download, rename, copy or move it on the server, compress or extract it, convert its text, change its permissions (and, for a folder, those of the files or the folders inside), its owner or its group, set its time to now, or copy its path or URL.
 
-Transfers stream through a file handle in both directions, so a large file never lands in PHP's memory, and a download never overwrites: `report.csv` becomes `report (2).csv`.
+When a name is already taken, you are asked what to do: overwrite, overwrite if newer, overwrite if the size differs, resume, keep both, or skip — for that file or for all the rest. An interrupted transfer can be resumed and a failed one retried, file times can be kept, and each direction can be given a speed limit. The list can be filtered (`*` and `?` work) and the server searched; the two sides can be compared and browsed together; each connection keeps its own bookmarks; and the keyboard works (Del, F2, F5, Enter, Backspace, Ctrl+A and the arrows).
+
+**Compressing and extracting** uses the tools the server has — zip, tar, gzip, bzip2, xz, zstd, 7-Zip, unrar — and offers ZIP, tar, tar.gz, tar.bz2, tar.xz, tar.zst, 7z, gz, bz2, xz and zst, and RAR for extracting. A format the server cannot handle is shown greyed out, with the reason. Where there is no shell (FTP, or an SFTP-only account), ZIP, tar, tar.gz and tar.bz2 are made and opened on the Nextcloud server instead. An archive is extracted into a new folder unless you choose otherwise, and extracting in place keeps what is already there unless you choose to overwrite.
+
+**Converting text** detects the current encoding — UTF-8, UTF-16, Shift_JIS, EUC-JP, ISO-2022-JP, GB18030, Big5, EUC-KR, Windows-1252, ISO-8859-1, Windows-1251 or KOI8-R — and changes the encoding, the line endings and the BOM. A character the new encoding cannot hold is named before anything is written, and the result is saved under a new name unless you choose to overwrite. It handles files of up to 32 MB.
+
+Transfers stream through a file handle in both directions, so a large file never lands in PHP's memory.
 
 FTP uses PHP's own `ext-ftp`, with or without TLS. SFTP and SCP use the phpseclib 3 copy NetBase carries with it, so nothing extra is installed, and both sign in with either a password or a private key — see **Saved connections** for where the key goes. SCP is there for the server that offers SSH without the SFTP subsystem: it has no directory listing of its own, so NetBase reads one over the shell and presents it exactly as SFTP's.
 
@@ -290,13 +299,15 @@ NetBase は、Nextcloud をネットワーク管理コンソールとして使�
 
 **仕組み** ― SMTP・IMAP・POP3 はストリームソケットで直接やり取りするため、現在の PHP には同梱されなくなった `ext-imap` は必要なく、使用もしていません。DNS 側では MX・SPF・DKIM・DMARC・MTA-STS（ポリシーファイルの取得を含む）・TLS-RPT・BIMI・DANE を読み取り、各 MX のアドレスを 7 つの公開ブロックリストと照合します。
 
-**用途** ― メールが届かない原因を調べられます。サーバー移行の前後の確認にも使えます。なりすまし対策のレコードが正しいこと、サーバーがオープンリレー（第三者中継）になっていないことを確認できます。
+同じ画面で、保存済みのアカウントやその場で入力したアカウントのメールを読み書きできます。フォルダー、検索、既読・未読、フラグ、移動、削除のほか、新しいメールの作成、返信、転送もでき、Nextcloud のファイルを添付できます。
+
+**用途** ― メールが届かない原因を調べられます。サーバー移行の前後の確認にも使えます。なりすまし対策のレコードが正しいこと、サーバーがオープンリレー（第三者中継）になっていないことを確認できます。管理しているサーバーのメールボックスを、メールソフトを設定せずに読んで返信することもできます。
 
 ### FTP・SFTP・SCP
 
-**仕組み** ― SFTP と SCP には、NetBase に同梱している phpseclib 3 を使います（Nextcloud 本体に含まれるのは phpseclib 2 だけで、最近の形式の秘密鍵を読み込めないためです）。FTP には PHP 標準の拡張機能を使い、TLS の有無どちらにも対応します。転送はどちらの方向もファイルハンドルを通して少しずつ流すため、大きなファイルでも PHP のメモリに丸ごと読み込むことはありません。**保存済みの SSH 接続先は、そのままここで開けます。** 接続先のマシン・アカウント・鍵が同じなので、NetBase は SFTP で接続し、シェルは使えても SFTP サブシステムが無いサーバーには SCP で接続します。SCP では **root として操作する** を使うと、一覧表示とファイル操作を接続先の `sudo` 経由で実行します。パスワードはその場で入力を求め、その 1 回のリクエストにだけ使い、**どこにも保存しません**（設定にも RegiBase にもディスクにも残りません）。そのため、ページを再読み込みすると、再度入力を求めます。**ダウンロードとアップロードは対象外です。** SCP はファイルの中身を、パスワードを入力するのと同じ経路で送るため、この 2 つは root 権限を使わずに実行します。動いたように見えて実際には何も返さない、という状態にはしません。接続情報は RegiBase に、ご自身のマスターキーで暗号化して保存します。接続先をその場で入力して接続することもできます。
+**仕組み** ― SFTP と SCP には、NetBase に同梱している phpseclib 3 を使います（Nextcloud 本体に含まれるのは phpseclib 2 だけで、最近の形式の秘密鍵を読み込めないためです）。FTP には PHP 標準の拡張機能を使い、TLS の有無どちらにも対応します。転送はどちらの方向もファイルハンドルを通して少しずつ流すため、大きなファイルでも PHP のメモリに丸ごと読み込むことはありません。**保存済みの SSH 接続先は、そのままここで開けます。** 接続先のマシン・アカウント・鍵が同じなので、NetBase は SFTP で接続し、シェルは使えても SFTP サブシステムが無いサーバーには SCP で接続します。**ユーザーを変更する** を使うと、接続先の `sudo` を通して、root や www-data など別のアカウントとして操作できます（SCP で接続します）。切り替えるとそのアカウントのホームフォルダーを開き、やめると元のフォルダーに戻ります。パスワードはその場で入力を求め、その 1 回のリクエストにだけ使い、**どこにも保存しません**（設定にも RegiBase にもディスクにも残りません）。そのため、ページを再読み込みすると、再度入力を求めます。sudo にパスワードが要らないサーバーでは、ここでも入力は不要です。接続情報は RegiBase に、ご自身のマスターキーで暗号化して保存します。接続先をその場で入力して接続することもできます。
 
-**用途** ― 機器やサーバーへの設定ファイルの配布、ログの回収に使えます。手元のパソコンを経由せずに、リモートサーバーとご自身の Nextcloud のフォルダーとの間でファイルをやり取りできます。
+**用途** ― 機器やサーバーへの設定ファイルの配布、ログの回収に使えます。サーバー上での圧縮ファイルの展開や、文字コードを間違えて保存したファイルの修正にも使えます。手元のパソコンを経由せずに、リモートサーバーとご自身の Nextcloud のフォルダーとの間でファイルをやり取りできます。
 
 ### SSH・Telnet
 
@@ -342,6 +353,7 @@ NetBase は、Nextcloud をネットワーク管理コンソールとして使�
 | **LANスループット** | ローカル回線の実際の速度を双方向で計測。1 秒ごとのグラフと再送回数も表示 | このサーバーともう 1 台のマシンの `iperf3` |
 | **DNSリゾルバ比較** | 各リゾルバの中央値・平均・ジッター。このサーバーが使っているリゾルバも含めて比較し、最も速いものに印を付けます | なし |
 | **時間の内訳** | 1 回の HTTP リクエストを、DNS・TCP・TLS・サーバーの処理時間・転送に分けて表示 | `ext-curl` |
+| **保存済みの接続先への転送速度** | 保存済みの SFTP・SCP・FTP サーバーとの間で 1MB〜1TB のデータを送受信し、実際の速度を計測 | 保存済みの接続先 |
 
 このうち 2 つについて補足します。
 
@@ -357,7 +369,7 @@ NetBase は、Nextcloud をネットワーク管理コンソールとして使�
 
 **サーバー検査** では、1 台のサーバーに実際に接続し、サーバーが提供している内容を表示します。表示するのは、グリーティング、対応機能の一覧、STARTTLS に対応しているかどうかと TLS に切り替えた後の証明書、実際に使われたプロトコルと暗号方式、認証方式です。ポート 25・587・465・993・143・995 は、プリセットからワンクリックで選べます。通信の全文も記録しており、必要なときに表示できます（認証情報は伏せて表示します）。その下には、追加の機能が 2 つあります。**オープンリレー検査**（外部の送信者と外部の宛先をサーバーに提示し、実際に送信する前に止めます）と、任意のアドレスの **ブロックリスト照会** です。
 
-**送受信テスト** では、利用者が本当に知りたいことを確かめられます。保存済みの SMTP 接続先を選んで実際にテストメールを送信したり、保存済みの IMAP／POP3 アカウントにサインインして、メールの件数・未読数・フォルダー一覧を確認したりできます。
+**メールの送受信** では、利用者が本当に知りたいことを確かめられ、基本的なメールソフトとしても使えます。保存済みの SMTP 接続先を選んで実際にテストメールを送信できます。保存済みの IMAP／POP3 アカウント、またはその場で入力したアカウントを選ぶと、フォルダーとメールの一覧を表示します。メールの検索と表示（HTML のメールは、スクリプトを動かさず、外部の画像も読み込まずに表示します。添付ファイルは Nextcloud のファイルに保存できます）、既読・未読の切り替え、フラグ、移動、削除（まずごみ箱へ移します）ができます。新しいメールの作成、返信、全員に返信、転送もでき、Cc、Bcc、Nextcloud のファイルの添付が使えます。送ったメールは「送信済み」に保存します。開いたメールは既読になります（設定で変えられます）。POP3 で読んだメールは、サーバー上では未読のまま残ります。
 
 ここで使うプロトコルは、すべてストリームソケットで直接やり取りしています。`ext-imap` は必要なく、使用もしていません。現在の PHP には `ext-imap` が同梱されなくなったため、この点は重要です。
 
@@ -375,9 +387,15 @@ NetBase は、Nextcloud をネットワーク管理コンソールとして使�
 
 ## ファイル: FTP・SFTP・SCP
 
-保存済みの接続先を選ぶと、そのサーバーの中を閲覧できます。ディレクトリ、サイズ、更新日時、パーミッションを表示し、パス欄に直接入力して移動することもできます。ファイルは双方向にやり取りできます。**自分のファイルへ** でリモートのファイルを Nextcloud のフォルダーにコピーし、アップロード欄からは Nextcloud のファイルを、今表示しているフォルダーへ送れます。フォルダーの作成、名前の変更、削除もできます。
+保存済みの接続先を選ぶか、その場で入力すると、そのサーバーの中を閲覧できます。ディレクトリ、サイズ、更新日時、パーミッション、所有者を表示し、パス欄に直接入力して移動することもできます。左側がご自身の Nextcloud のファイル、右側がサーバーです。行を選んで **送信** か **受信** を押すか、反対側へドラッグすると転送します。そのほかの操作は、行を右クリックすると選べます。開く、ダウンロード、名前の変更、サーバー上でのコピーと移動、圧縮と展開、文字コードの変換、パーミッションの変更（フォルダーでは、中のファイルだけ・フォルダーだけにも当てはめられます）、所有者とグループの変更、日時を今にする、パスや URL のコピーです。
 
-転送はどちらの方向もファイルハンドルを通して少しずつ流すため、大きなファイルでも PHP のメモリに丸ごと読み込むことはありません。また、ダウンロードで既存のファイルを上書きすることはなく、`report.csv` は `report (2).csv` として保存されます。
+同じ名前のファイルがあるときは、どうするかを尋ねます。上書き、新しければ上書き、サイズが違えば上書き、続きから、両方残す、飛ばす、から選べ、そのファイルだけにするか、残りすべてに当てはめるかも選べます。中断した転送の再開、失敗した転送のやり直し、更新日時の保持、送信・受信それぞれの速度の上限にも対応しています。一覧の絞り込み（`*` と `?` が使えます）とサーバー内の検索、左右の比較、左右を連動させた移動（同期ブラウズ）、接続先ごとのブックマーク、キーボード操作（Del、F2、F5、Enter、Backspace、Ctrl+A、矢印キー）も使えます。
+
+**圧縮と展開** には、サーバーに入っている道具（zip、tar、gzip、bzip2、xz、zstd、7-Zip、unrar）を使い、ZIP、tar、tar.gz、tar.bz2、tar.xz、tar.zst、7z、gz、bz2、xz、zst と、展開だけですが RAR に対応しています。サーバーで扱えない形式は、理由を添えて灰色で表示します。シェルが使えない接続先（FTP や SFTP 専用のアカウント）では、ZIP、tar、tar.gz、tar.bz2 を Nextcloud のサーバー側で作成・展開します。展開先は、指定しない限り新しいフォルダーです。その場に展開するときも、上書きを選ばない限り、すでにあるファイルはそのまま残します。
+
+**文字コードの変換** では、今の文字コード（UTF-8、UTF-16、Shift_JIS、EUC-JP、ISO-2022-JP、GB18030、Big5、EUC-KR、Windows-1252、ISO-8859-1、Windows-1251、KOI8-R）を自動で判定し、文字コード・改行コード・BOM を変換します。変換先で表せない文字があるときは、書き込む前にその文字をお知らせします。結果は、上書きを選ばない限り別の名前で保存します。32MB までのファイルに対応しています。
+
+転送はどちらの方向もファイルハンドルを通して少しずつ流すため、大きなファイルでも PHP のメモリに丸ごと読み込むことはありません。
 
 FTP には PHP 標準の `ext-ftp` を使い、TLS の有無どちらにも対応します。SFTP と SCP には NetBase に同梱の phpseclib 3 を使うため、追加のインストールは必要ありません。どちらもパスワードと秘密鍵のどちらでもサインインできます（鍵の指定方法は **保存済みの接続先** を参照してください）。SCP は、SSH は使えても SFTP サブシステムが無いサーバー向けです。SCP にはディレクトリ一覧を取得する機能が無いため、NetBase がシェル経由で一覧を読み取り、SFTP とまったく同じ形で表示します。**保存済みの SSH 接続先も、そのままここで開けます。**
 

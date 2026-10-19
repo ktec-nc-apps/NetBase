@@ -125,7 +125,7 @@ class ScanService {
 		if (empty($normalised['arpOnly'])) {
 			$maxHosts = (int)$this->config->getAppValue('netbase', 'max_hosts', '65536');
 			if ($total > $maxHosts) {
-				throw new \InvalidArgumentException('Scan target exceeds the configured limit of ' . $maxHosts . ' addresses');
+				throw new WordedInvalidArgumentException('Scan target exceeds the configured limit of %s addresses', [(string)$maxHosts]);
 			}
 		}
 		$scan = new ScanEntity();
@@ -145,7 +145,12 @@ class ScanService {
 		$scan->setStarted(time());
 		$scan->setUpdated(time());
 
-		$this->devices->markAllOffline();
+		// Only the devices inside what this scan looks at are set back to offline
+		// until they answer. Setting every device offline — as it used to — meant
+		// that re-scanning one LAN marked every device of another LAN offline,
+		// though nothing there had been looked at (reported on the forum, #59:
+		// two LANs, .20 and .40, each going offline when the other was scanned).
+		$this->devices->markOffline(self::idsWithin($this->devices->findAll(100000), $plan));
 		// What can only be heard, and was heard lately, is still here. It has
 		// no way of answering a scan, so a scan cannot say otherwise.
 		$this->devices->keepRecentlyHeard(time() - self::HEARD_FOR);
@@ -588,6 +593,7 @@ class ScanService {
 		}
 
 		$at = (int)($queue['portAt'] ?? 0);
+		$tested = array_flip($ports);
 		$slice = array_slice($ports, $at, $window);
 		$open = $this->discovery->tcpSweep($batch, $slice, $wait);
 		$at += count($slice);
@@ -608,7 +614,7 @@ class ScanService {
 				$retry = $this->discovery->tcpSweep([$ip], $ports, $wait * 1.8);
 				$found = $retry[$ip] ?? [];
 			}
-			$this->upsert($ip, null, ['ports' => $found]);
+			$this->upsert($ip, null, ['ports' => $found, 'portsTested' => $tested]);
 			unset($queue['open'][$ip]);
 		}
 
@@ -888,7 +894,10 @@ class ScanService {
 			$device->setInterface((string)$update['interface']);
 		}
 		if (isset($update['ports']) && is_array($update['ports'])) {
-			$device->setPorts($update['ports'] === [] ? null : implode(',', $update['ports']));
+			$ports = isset($update['portsTested']) && is_array($update['portsTested'])
+				? self::mergePorts($device->getPorts(), $update['ports'], $update['portsTested'])
+				: $update['ports'];
+			$device->setPorts($ports === [] ? null : implode(',', $ports));
 		}
 		// A port a device announced is one to add to what is already known,
 		// never the whole list. A scan speaks for every port it tried and may
@@ -1328,6 +1337,82 @@ class ScanService {
 	/** @return list<array> */
 	private function devicesJson(): array {
 		return array_map(static fn (DeviceEntity $d) => $d->jsonSerialize(), $this->devices->findAll());
+	}
+
+	/**
+	 * A device's ports after a sweep, from what it had and what answered.
+	 *
+	 * The sweep decides only the ports it tried: one run with the short list
+	 * after a detailed one used to wipe every port outside the short list.
+	 * And a sweep in which nothing answered at all changes nothing — a
+	 * container still starting after a restart, a device busy for a moment —
+	 * rather than forgetting everything it offers (forum #59: "sometimes the
+	 * ports disappear", mostly after the container was restarted).
+	 *
+	 * @param list<int> $found
+	 * @param array<int, mixed> $tested the ports tried, as keys
+	 * @return list<int>
+	 */
+	public static function mergePorts(?string $before, array $found, array $tested): array {
+		$had = [];
+		foreach (explode(',', (string)$before) as $p) {
+			if (ctype_digit(trim($p))) {
+				$had[] = (int)trim($p);
+			}
+		}
+		if ($found === []) {
+			return $had;
+		}
+		$kept = array_filter($had, static fn (int $p): bool => !isset($tested[$p]));
+		$out = array_values(array_unique(array_merge($kept, array_map('intval', $found))));
+		sort($out);
+		return $out;
+	}
+
+	/**
+	 * The devices whose address lies inside the scan's targets.
+	 *
+	 * @param iterable<object> $devices rows with getId() and getIp()
+	 * @param list<array{target: string, size: int}> $plan
+	 * @return list<int>
+	 */
+	public static function idsWithin(iterable $devices, array $plan): array {
+		$ids = [];
+		foreach ($devices as $device) {
+			$ip = (string)$device->getIp();
+			if ($ip !== '' && self::inPlan($plan, $ip)) {
+				$ids[] = (int)$device->getId();
+			}
+		}
+		return $ids;
+	}
+
+	/** Whether an IPv4 address is one of the targets (an address or a CIDR range). */
+	public static function inPlan(array $plan, string $ip): bool {
+		$addr = ip2long($ip);
+		if ($addr === false) {
+			return false;
+		}
+		foreach ($plan as $entry) {
+			$target = (string)($entry['target'] ?? '');
+			if (!str_contains($target, '/')) {
+				if ($target === $ip) {
+					return true;
+				}
+				continue;
+			}
+			[$net, $bits] = explode('/', $target, 2);
+			$base = ip2long($net);
+			$bits = (int)$bits;
+			if ($base === false || $bits < 0 || $bits > 32) {
+				continue;
+			}
+			$mask = $bits === 0 ? 0 : (-1 << (32 - $bits)) & 0xFFFFFFFF;
+			if (($addr & $mask) === ($base & $mask)) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	private function planSize(string $target): int {

@@ -28,6 +28,9 @@ $session = (new ReflectionClass(ScpSession::class))->newInstanceWithoutConstruct
 $sudo = new ReflectionProperty(ScpSession::class, 'sudoPassword');
 $sudo->setAccessible(true);
 $sudo->setValue($session, '');
+$as = new ReflectionProperty(ScpSession::class, 'sudoUser');
+$as->setAccessible(true);
+$as->setValue($session, '');
 
 /** Reach a private method by name. */
 $call = static function (string $name, ...$args) use ($session) {

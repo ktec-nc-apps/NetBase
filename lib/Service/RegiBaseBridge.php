@@ -81,7 +81,7 @@ class RegiBaseBridge {
 		if ($salt === '' || $verifier === '' || $password === '') {
 			return false;
 		}
-		$key = $this->derive($password, $salt);
+		$key = $this->derive($password, $salt, $this->rounds($userId));
 		if ($this->decryptWith($key, $verifier) !== self::VERIFIER_PLAINTEXT) {
 			return false;
 		}
@@ -446,8 +446,22 @@ class RegiBaseBridge {
 	}
 
 	/** RegiBase's key derivation, matched exactly. */
-	private function derive(string $password, string $saltB64): string {
-		return hash_pbkdf2('sha256', $password, (string)base64_decode($saltB64, true), 250000, 32, true);
+	private function derive(string $password, string $saltB64, int $rounds): string {
+		return hash_pbkdf2('sha256', $password, (string)base64_decode($saltB64, true), $rounds, 32, true);
+	}
+
+	/**
+	 * How many PBKDF2 rounds made this user's key.
+	 *
+	 * RegiBase keeps the count per user since its 0.20.0: a master key set or
+	 * changed since then is made with 600,000 rounds, an older one with 250,000
+	 * (and no stored count). Deriving with 250,000 alone turned every newer key
+	 * away as wrong, so saved connections could not be opened at all. The limits
+	 * are RegiBase's own (Kdf::valid).
+	 */
+	private function rounds(string $userId): int {
+		$stored = (string)$this->config->getUserValue($userId, self::APP, 'enc_kdf_iter', '');
+		return ctype_digit($stored) && (int)$stored >= 100000 && (int)$stored <= 10000000 ? (int)$stored : 250000;
 	}
 
 	/** The key held for this session, or null when none has been given. */

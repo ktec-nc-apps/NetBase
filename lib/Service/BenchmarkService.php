@@ -727,7 +727,7 @@ class BenchmarkService {
 	public function iperf(string $host, int $port = 5201, int $seconds = 10, bool $reverse = false, int $streams = 1): array {
 		$host = $this->validateTarget($host);
 		if (!$this->iperfAvailable()) {
-			return ['available' => false, 'error' => 'iperf3 is not installed on this server'];
+			return ['available' => false, 'error' => $this->l->t('iperf3 is not installed on this server')];
 		}
 		$args = [
 			'-c', $host,

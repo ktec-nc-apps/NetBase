@@ -15,6 +15,22 @@
   /** Where this tab keeps the token of its conversation with the AI (sessionStorage). */
   const AI_CONV_KEY = 'netbase.ai.conversation';
   let rootProxy = null;
+  // The events that start a task inside the app; onRootAction listens for them.
+  const ROOT_ACTIONS = ['click', 'dblclick', 'keydown', 'change', 'drop'];
+  // The archive formats file transfer knows (ArchiveFormats on the server):
+  // what a name ending says it is, and how each is called and spelt.
+  const ARCHIVE_ENDINGS = [['.tar.gz', 'tgz'], ['.tgz', 'tgz'], ['.tar.bz2', 'tbz2'], ['.tbz2', 'tbz2'], ['.tbz', 'tbz2'],
+    ['.tar.xz', 'txz'], ['.txz', 'txz'], ['.tar.zst', 'tzst'], ['.tzst', 'tzst'], ['.tar', 'tar'], ['.zip', 'zip'],
+    ['.7z', '7z'], ['.rar', 'rar'], ['.gz', 'gz'], ['.bz2', 'bz2'], ['.xz', 'xz'], ['.zst', 'zst']];
+  const ARCHIVE_FORMATS = [
+    ['zip', 'ZIP', '.zip'], ['tgz', 'tar.gz', '.tar.gz'], ['tbz2', 'tar.bz2', '.tar.bz2'], ['txz', 'tar.xz', '.tar.xz'],
+    ['tzst', 'tar.zst', '.tar.zst'], ['tar', 'tar', '.tar'], ['7z', '7z', '.7z'],
+    ['gz', 'gzip (.gz)', '.gz'], ['bz2', 'bzip2 (.bz2)', '.bz2'], ['xz', 'xz (.xz)', '.xz'], ['zst', 'zstd (.zst)', '.zst'],
+  ];
+  const ARCHIVE_SINGLE = ['gz', 'bz2', 'xz', 'zst'];
+  // The encodings a text file can be converted between (TextConvert on the server).
+  const TEXT_ENCODINGS = ['UTF-8', 'UTF-16LE', 'UTF-16BE', 'Shift_JIS', 'EUC-JP', 'ISO-2022-JP', 'GB18030', 'Big5', 'EUC-KR',
+    'Windows-1252', 'ISO-8859-1', 'Windows-1251', 'KOI8-R'];
 
   function i18nSubst(s, vars) {
     return vars ? String(s).replace(/\{(\w+)\}/g, (m, k) => (vars[k] != null ? vars[k] : m)) : s;
@@ -1229,6 +1245,48 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
             </div>
           </div>
 
+          <!-- The line as far as a server saved under File transfer: a test file
+               of random data goes there and comes back, so the figure is what
+               a transfer in NetBase would actually see, sign-in included. -->
+          <div class="card" v-if="allowed('files')">
+            <div class="bench-head"><h3>{{ t('Transfer speed to a saved connection') }}</h3></div>
+            <p class="dim tiny">{{ t('Sends a test file of random data to a server saved under File transfer, fetches it back, checks that it came back intact, and removes it.') }}</p>
+            <template v-if="connLocked">
+              <p class="note-line">{{ t('Please enter the RegiBase master key.') }}</p>
+              <div class="fl-row">
+                <input v-model="connMaster" type="password" class="grow mono" autocomplete="new-password" :placeholder="t('RegiBase master key')" @keyup.enter="unlockConns()">
+                <button class="btn sm" :disabled="!connMaster || busy.connsetup" @click="unlockConns()">{{ t('Unlock') }}</button>
+              </div>
+            </template>
+            <p class="dim" v-else-if="!xferConns.length">{{ t('No saved connections yet. Save one under File transfer first.') }}</p>
+            <div class="tool-row" v-else>
+              <select v-model.number="xferId" class="grow">
+                <option :value="0">{{ t('Not chosen yet') }}</option>
+                <option v-for="c in xferConns" :key="c.id" :value="c.id">{{ c.name }} — {{ c.kind.toUpperCase() }} {{ c.host }}</option>
+              </select>
+              <select v-model.number="xferMb" class="tiny">
+                <option :value="1">1 MB</option><option :value="10">10 MB</option><option :value="100">100 MB</option>
+                <option :value="1024">1 GB</option><option :value="10240">10 GB</option><option :value="102400">100 GB</option><option :value="1048576">1 TB</option>
+              </select>
+              <input v-model="xferFolder" class="short mono" :placeholder="t('Folder (empty: /tmp)')" :title="t('Where the test file is written for a moment. Empty means /tmp, or the home folder over FTP.')">
+              <button class="btn primary" v-if="!busy.xfer" :disabled="!xferId" @click="runXferSpeed">{{ t('Run') }}</button>
+              <button class="btn danger" v-else @click="stopXferSpeed">⏹ {{ t('Force stop') }}</button>
+            </div>
+            <p class="dim tiny" v-if="xferConns.length && !connLocked && xferMb >= 1024">{{ t('The server needs {size} free in that folder while the test runs, and nothing is kept on this server.', {size: fmtBytes(xferMb * 1048576)}) }}</p>
+            <p class="dim tiny" v-if="busy.xfer">⏳ {{ xferLive || t('Measuring…') }}</p>
+            <p class="dim tiny" v-if="xferResult && xferResult.stopped">{{ t('Stopped. NetBase removes the test file from the server.') }}</p>
+            <div class="bench-results" v-if="xferResult && !xferResult.error && !xferResult.stopped">
+              <div class="big"><span class="lbl">{{ t('Sent') }}</span><span class="num">{{ xferResult.up.mbps }}</span><span class="unit">Mbps</span></div>
+              <div class="big"><span class="lbl">{{ t('Received') }}</span><span class="num">{{ xferResult.down.mbps }}</span><span class="unit">Mbps</span></div>
+              <div class="big"><span class="lbl">{{ t('Sign-in') }}</span><span class="num">{{ xferResult.signInMs }}</span><span class="unit">ms</span></div>
+            </div>
+            <p class="dim tiny" v-if="xferResult && !xferResult.error && !xferResult.stopped">
+              {{ t('{size} over {protocol}: sent in {up} s, received in {down} s.', {size: fmtBytes(xferResult.bytes), protocol: String(xferResult.protocol || '').toUpperCase(), up: xferResult.up.seconds, down: xferResult.down.seconds}) }}
+              {{ xferResult.intact ? t('The file came back intact.') : t('The file that came back is not the same as the one sent.') }}
+            </p>
+            <p class="hint danger" v-if="xferResult && xferResult.error">⚠ {{ xferResult.error }}</p>
+          </div>
+
           <div class="card">
             <div class="bench-head">
               <h3>{{ t('DNS resolver comparison') }}</h3>
@@ -1555,7 +1613,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
                  password. So it is chosen once, on one card, and both halves
                  are tested from there. -->
             <div class="card tool-card">
-              <h3>{{ t('Send and receive test') }}</h3>
+              <h3>{{ t('Send and receive') }}</h3>
               <p class="dim">{{ t('One mail account, both directions: sign in to the mailbox, and send a real message through the same account.') }}</p>
               <div class="tool-row">
                 <div class="seg">
@@ -1586,32 +1644,40 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
 
               <template v-if="acctMode === 'type'">
                 <p class="dim tiny">{{ t('Where this address is read') }}</p>
-                <div class="tool-row">
-                  <select v-model="mailAdhoc.kind" class="tiny" @change="mailKindChanged">
-                    <option value="imap">IMAP</option>
-                    <option value="pop3">POP3</option>
-                    <option value="smtp">{{ t('SMTP only (no mailbox)') }}</option>
-                  </select>
-                  <input v-model="mailAdhoc.host" class="grow" placeholder="imap.example.com">
-                  <input v-model.number="mailAdhoc.port" type="number" class="tiny" min="1" max="65535">
-                  <select v-model="mailAdhoc.mode" class="tiny">
-                    <option value="tls">SSL/TLS</option>
-                    <option value="starttls">STARTTLS</option>
-                    <option value="none">{{ t('No encryption') }}</option>
-                  </select>
-                  <input v-model="mailAdhoc.username" class="short" :placeholder="t('User name')" autocomplete="off">
-                  <input v-model="mailAdhoc.secret" type="password" class="short" :placeholder="t('Password')" autocomplete="new-password">
+                <div class="tool-row sign-line">
+                  <span class="grp grp-addr">
+                    <select v-model="mailAdhoc.kind" class="tiny wide" @change="mailKindChanged">
+                      <option value="imap">IMAP</option>
+                      <option value="pop3">POP3</option>
+                      <option value="smtp">{{ t('SMTP only (no mailbox)') }}</option>
+                    </select>
+                    <input v-model="mailAdhoc.host" class="host" placeholder="imap.example.com">
+                    <input v-model.number="mailAdhoc.port" type="number" class="tiny" min="1" max="65535">
+                    <select v-model="mailAdhoc.mode" class="tiny wide">
+                      <option value="tls">SSL/TLS</option>
+                      <option value="starttls">STARTTLS</option>
+                      <option value="none">{{ t('No encryption') }}</option>
+                    </select>
+                  </span>
+                  <span class="grp grp-cred">
+                    <input v-model="mailAdhoc.username" class="short" :placeholder="t('User name')" autocomplete="off">
+                    <input v-model="mailAdhoc.secret" type="password" class="short" :placeholder="t('Password')" autocomplete="new-password">
+                  </span>
                 </div>
                 <p class="dim tiny" v-if="mailAdhoc.kind !== 'smtp'">{{ t('Where it sends from — the same user name and password') }}</p>
-                <div class="tool-row" v-if="mailAdhoc.kind !== 'smtp'">
-                  <input v-model="mailAdhoc.sendHost" class="grow" placeholder="smtp.example.com">
-                  <input v-model.number="mailAdhoc.sendPort" type="number" class="tiny" min="1" max="65535">
-                  <select v-model="mailAdhoc.sendMode" class="tiny">
-                    <option value="starttls">STARTTLS</option>
-                    <option value="tls">SSL/TLS</option>
-                    <option value="none">{{ t('No encryption') }}</option>
-                  </select>
-                  <input v-model="mailAdhoc.from" class="short" :placeholder="t('Sender address')">
+                <div class="tool-row sign-line" v-if="mailAdhoc.kind !== 'smtp'">
+                  <span class="grp grp-addr">
+                    <input v-model="mailAdhoc.sendHost" class="host" placeholder="smtp.example.com">
+                    <input v-model.number="mailAdhoc.sendPort" type="number" class="tiny" min="1" max="65535">
+                    <select v-model="mailAdhoc.sendMode" class="tiny wide">
+                      <option value="starttls">STARTTLS</option>
+                      <option value="tls">SSL/TLS</option>
+                      <option value="none">{{ t('No encryption') }}</option>
+                    </select>
+                  </span>
+                  <span class="grp grp-cred">
+                    <input v-model="mailAdhoc.from" class="short" :placeholder="t('Sender address')">
+                  </span>
                   <button class="btn sm" @click="saveMailAdhoc()">{{ t('Save to the list') }}</button>
                 </div>
                 <div class="tool-row" v-else>
@@ -1623,6 +1689,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
               <h3>{{ t('Receive') }}</h3>
               <div class="tool-row">
                 <button class="btn" :disabled="busy.mailbox || !mailCanReceive || (acctMode === 'saved' ? !mailAccountId : !mailAdhoc.host)" :class="{working: busy.mailbox}" @click="runMailbox">{{ t('Sign in to the mailbox') }}</button>
+                <button class="btn primary" :disabled="busy.mailread || !mailCanReceive || (acctMode === 'saved' ? !mailAccountId : !mailAdhoc.host)" :class="{working: busy.mailread}" @click="loadMail(0)">📬 {{ t('Read the mail') }}</button>
                 <span class="dim tiny" v-if="!mailCanReceive">{{ t('An SMTP-only connection has no mailbox to read.') }}</span>
               </div>
               <div v-if="mailboxResult" class="kv">
@@ -1630,6 +1697,83 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
                 <div v-if="mailboxResult.details && mailboxResult.details.inbox"><span>{{ t('Inbox') }}</span><code>{{ t('{n} messages', {n: mailboxResult.details.inbox.messages}) }} · {{ t('{n} unread', {n: mailboxResult.details.inbox.unseen}) }}</code></div>
                 <div v-if="mailboxResult.details && mailboxResult.details.mailbox"><span>{{ t('Mailbox') }}</span><code>{{ t('{n} messages', {n: mailboxResult.details.mailbox.messages}) }}</code></div>
                 <div v-if="mailboxResult.details && mailboxResult.details.folders"><span>{{ t('Folders') }}</span><code class="wrap">{{ mailboxResult.details.folders.join(', ') }}</code></div>
+              </div>
+
+              <!-- The mailbox as a mail program shows it: folders, the newest
+                   messages, and one opened beside them. Reading changes nothing
+                   on the server — no message is marked as read or deleted. -->
+              <div class="mail-reader" v-if="mailList">
+                <div class="tool-row">
+                  <select v-if="mailList.kind === 'imap' && mailList.folders.length" v-model="mailFolder" class="short" @change="mailSearch = ''; loadMail(0)">
+                    <option v-for="f in mailList.folders" :key="f.name" :value="f.name">{{ f.label }}</option>
+                  </select>
+                  <span class="dim tiny">{{ mailList.search ? t('Found: {n}', {n: mailList.total}) : t('{n} messages', {n: mailList.total}) }}</span>
+                  <input v-if="mailList.kind === 'imap'" v-model="mailSearch" class="mail-search" type="search" :placeholder="t('Search subject, sender or recipient')" @keyup.enter="loadMail(0)" @search="loadMail(0)">
+                  <span class="spacer"></span>
+                  <button class="btn sm primary" @click="openCompose('new')">✉️ {{ t('New message') }}</button>
+                  <button class="btn sm" :disabled="busy.mailread" @click="loadMail(0)">⟳ {{ t('Refresh') }}</button>
+                  <button class="btn sm" @click="mailList = null; mailOpen = null">{{ t('Close') }}</button>
+                </div>
+                <div class="tool-row">
+                  <label class="inline-check" v-if="mailList.kind === 'imap'"><input type="checkbox" v-model="mailMarkSeen" @change="saveMailMarkSeen"> {{ t('Mark a message as read when it is opened') }}</label>
+                  <span class="dim tiny" v-if="mailList.kind === 'imap' && !mailMarkSeen">{{ t('Reading here does not mark anything as read.') }}</span>
+                  <span class="dim tiny" v-if="mailList.kind !== 'imap'">{{ t('Reading here does not delete anything from the server.') }}</span>
+                </div>
+                <div class="mail-panes">
+                  <div class="mail-list">
+                    <div v-for="m in mailList.messages" :key="m.ref" class="mail-row"
+                         :class="{unread: m.seen === false, open: mailOpen && mailOpen.ref === m.ref}" @click="openMail(m)">
+                      <div class="mail-top"><span class="mail-from">{{ mailName(m.from) }}</span><span class="dim tiny">{{ mailWhen(m.date || m.arrived) }}</span></div>
+                      <div class="mail-subj"><span v-if="m.flagged" class="mail-mark" :title="t('Flagged')">★</span><span v-if="m.answered" class="mail-mark" :title="t('Replied')">↩</span><span v-if="m.forwarded" class="mail-mark" :title="t('Forwarded')">➡</span>{{ m.attachment ? '📎 ' : '' }}{{ m.subject || t('(no subject)') }}</div>
+                    </div>
+                    <p class="empty-hint" v-if="!mailList.messages.length">{{ t('This folder is empty.') }}</p>
+                    <button class="btn sm" v-if="mailList.offset + mailList.messages.length < mailList.total" :disabled="busy.mailread" @click="loadMail(mailList.offset + mailList.messages.length, true)">{{ t('Older messages') }}</button>
+                  </div>
+                  <div class="mail-view">
+                    <p class="dim tiny" v-if="busy.mailopen">⏳ {{ t('Opening…') }}</p>
+                    <template v-else-if="mailOpen">
+                      <div class="mail-actions">
+                        <button class="btn sm" @click="openCompose('reply')">↩ {{ t('Reply to sender') }}</button>
+                        <button class="btn sm" @click="openCompose('all')">↩↩ {{ t('Reply to all') }}</button>
+                        <button class="btn sm" @click="openCompose('forward')">➡ {{ t('Forward') }}</button>
+                        <button class="btn sm danger" :disabled="busy.mailact" @click="mailAct('delete')">🗑 {{ t('Delete') }}</button>
+                        <template v-if="mailList.kind === 'imap'">
+                          <button class="btn sm" :disabled="busy.mailact" @click="mailAct(mailRow && mailRow.seen ? 'unseen' : 'seen')">{{ mailRow && mailRow.seen ? t('Mark as unread') : t('Mark as read') }}</button>
+                          <button class="btn sm" :disabled="busy.mailact" @click="mailAct(mailRow && mailRow.flagged ? 'unflag' : 'flag')">{{ mailRow && mailRow.flagged ? '☆ ' + t('Remove the flag') : '★ ' + t('Flag') }}</button>
+                          <select v-model="mailMoveTo" class="short" :aria-label="t('Move to…')">
+                            <option value="">{{ t('Move to…') }}</option>
+                            <option v-for="f in mailList.folders" :key="f.name" :value="f.name" :disabled="f.name === mailFolder">{{ f.label }}</option>
+                          </select>
+                          <button class="btn sm" :disabled="busy.mailact || !mailMoveTo" @click="mailAct('move', mailMoveTo)">{{ t('Move') }}</button>
+                        </template>
+                      </div>
+                      <h4 class="mail-subject">{{ mailOpen.subject || t('(no subject)') }}</h4>
+                      <div class="kv">
+                        <div><span>{{ t('From') }}</span><code class="wrap">{{ mailOpen.from }}</code></div>
+                        <div><span>{{ t('To') }}</span><code class="wrap">{{ mailOpen.to }}</code></div>
+                        <div v-if="mailOpen.cc"><span>Cc</span><code class="wrap">{{ mailOpen.cc }}</code></div>
+                        <div v-if="mailOpen.replyTo"><span>{{ t('Reply to') }}</span><code class="wrap">{{ mailOpen.replyTo }}</code></div>
+                        <div><span>{{ t('Date') }}</span><code>{{ mailOpen.date ? new Date(mailOpen.date * 1000).toLocaleString() : mailOpen.dateText }}</code></div>
+                      </div>
+                      <div class="mail-atts" v-if="mailOpen.attachments.length">
+                        <span v-for="a in mailOpen.attachments" :key="a.index" class="mail-att">
+                          📎 {{ a.name }} <span class="dim tiny">{{ fmtBytes(a.size) }}</span>
+                          <button class="btn xs" :disabled="busy.mailatt" @click="saveMailAttachment(a)">{{ t('Save to Nextcloud') }}</button>
+                        </span>
+                      </div>
+                      <div class="seg">
+                        <button class="seg-btn" v-if="mailOpen.html" :class="{active: mailShow === 'html'}" @click="mailShow = 'html'">HTML</button>
+                        <button class="seg-btn" :class="{active: mailShow === 'text'}" @click="mailShow = 'text'">{{ t('Text') }}</button>
+                        <button class="seg-btn" :class="{active: mailShow === 'headers'}" @click="mailShow = 'headers'">{{ t('All headers') }}</button>
+                      </div>
+                      <p class="dim tiny" v-if="mailShow === 'html' && mailOpen.remoteImages">{{ t('Pictures on the internet are not loaded, so the sender cannot tell that the message was opened.') }}</p>
+                      <iframe v-if="mailShow === 'html' && mailOpen.html" class="mail-html" sandbox="allow-popups allow-popups-to-escape-sandbox" referrerpolicy="no-referrer" :srcdoc="mailFrame(mailOpen.html)" :title="mailOpen.subject"></iframe>
+                      <pre v-else-if="mailShow === 'text'" class="mail-text">{{ mailOpen.text }}</pre>
+                      <table v-else class="grid compact mail-headers"><tbody><tr v-for="(h, i) in mailOpen.headers" :key="i"><td class="mono">{{ h[0] }}</td><td class="wrap">{{ h[1] }}</td></tr></tbody></table>
+                    </template>
+                    <p v-else class="empty-hint">{{ t('Choose a message to read it.') }}</p>
+                  </div>
+                </div>
               </div>
 
               <h3>{{ t('Send') }}</h3>
@@ -1718,18 +1862,40 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
                   <option v-for="o in g.items" :key="o.value" :value="o.value">{{ o.text }}</option>
                 </optgroup>
               </select>
+              <button class="btn primary" :disabled="busy.browse || !filesHostNow" :class="{working: busy.browse}" @click="filesConnect">{{ t('Connect') }}</button>
             </div>
             <p class="dim tiny" v-if="filesMode === 'saved' && !connLocked && !fileConnections.length && !hostChoices.length">{{ t('No saved connections yet — enter the address by hand instead.') }}</p>
 
-            <div class="tool-row" v-if="filesMode === 'type'">
-              <select v-model="filesKind" class="tiny" @change="filesKindPicked">
-                <option value="sftp">SFTP</option>
-                <option value="scp" v-if="connCaps.scp">SCP</option>
-                <option value="ftp">FTP</option>
-              </select>
-              <input v-model="adhoc.host" class="grow" placeholder="server.example.com" @keyup.enter="quickConnect">
-              <input v-model.number="adhoc.port" type="number" class="tiny" min="1" max="65535">
-              <input v-model="adhoc.username" class="short" :placeholder="t('User name')" autocomplete="off">
+            <!-- The address and the sign-in on one line, Connect at its end; the
+                 start folder and saving on the line under it. The same order as
+                 the SSH page, so the two read alike. -->
+            <div class="tool-row sign-line" v-if="filesMode === 'type'">
+              <span class="grp grp-addr">
+                <select v-model="filesKind" class="tiny" @change="filesKindPicked">
+                  <option value="sftp">SFTP</option>
+                  <option value="scp" v-if="connCaps.scp">SCP</option>
+                  <option value="ftp">FTP</option>
+                </select>
+                <input v-model="adhoc.host" class="host" placeholder="server.example.com" @keyup.enter="quickConnect">
+                <input v-model.number="adhoc.port" type="number" class="tiny" min="1" max="65535">
+              </span>
+              <span class="grp grp-cred">
+                <input v-model="adhoc.username" class="short" :placeholder="t('User name')" autocomplete="off">
+                <select v-model="adhoc.authType" class="tiny" v-if="adhoc.kind!=='ftp'">
+                  <option value="password">{{ t('Password') }}</option>
+                  <option value="key">{{ t('Private key') }}</option>
+                </select>
+                <select v-model="adhoc.mode" class="tiny" v-if="adhoc.kind==='ftp'">
+                  <option value="none">{{ t('No encryption') }}</option>
+                  <option value="tls">SSL/TLS</option>
+                </select>
+                <template v-if="adhoc.authType==='key' && adhoc.kind!=='ftp'">
+                  <input v-model="adhoc.privateKeyPath" class="short mono" :placeholder="t('Key file in your Nextcloud files')">
+                  <button class="btn sm" @click="pickFile(t('Choose a key file'), (p) => { adhoc.privateKeyPath = p; }, false, settings.keyFolder)">📂 {{ t('Browse…') }}</button>
+                </template>
+                <input v-else v-model="adhoc.secret" type="password" class="short" :placeholder="t('Password')" autocomplete="new-password" @keyup.enter="quickConnect">
+              </span>
+              <button class="btn primary" :disabled="busy.browse || !filesHostNow" :class="{working: busy.browse}" @click="filesConnect">{{ t('Connect') }}</button>
             </div>
             <div class="tool-row" v-else-if="filesSaved">
               <strong class="mono">{{ filesSaved.kind.toUpperCase() }} {{ filesSaved.username || t('anonymous') }}@{{ filesSaved.host }}:{{ filesSaved.port }}</strong>
@@ -1737,27 +1903,11 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
             </div>
 
             <div class="tool-row" v-if="filesMode === 'type'">
-              <select v-model="adhoc.authType" class="tiny" v-if="adhoc.kind!=='ftp'">
-                <option value="password">{{ t('Password') }}</option>
-                <option value="key">{{ t('Private key') }}</option>
-              </select>
-              <select v-model="adhoc.mode" class="tiny" v-if="adhoc.kind==='ftp'">
-                <option value="none">{{ t('No encryption') }}</option>
-                <option value="tls">SSL/TLS</option>
-              </select>
-              <template v-if="adhoc.authType==='key' && adhoc.kind!=='ftp'">
-                <input v-model="adhoc.privateKeyPath" class="grow mono" :placeholder="t('Key file in your Nextcloud files')">
-                <button class="btn sm" @click="pickFile(t('Choose a key file'), (p) => { adhoc.privateKeyPath = p; }, false, settings.keyFolder)">📂 {{ t('Browse…') }}</button>
-              </template>
-              <input v-else v-model="adhoc.secret" type="password" class="short" :placeholder="t('Password')" autocomplete="new-password">
               <input v-model="adhoc.path" class="short mono" :placeholder="t('Start folder (optional)')">
               <button class="btn sm" :disabled="!adhoc.host" @click="saveAdhoc">{{ t('Save to the list') }}</button>
             </div>
             <p class="dim tiny" v-if="filesMode === 'type' && adhoc.kind==='ftp' && !adhoc.username">{{ t('Leave the user name blank to sign in anonymously.') }}</p>
 
-            <div class="tool-row">
-              <button class="btn primary" :disabled="busy.browse || !filesHostNow" :class="{working: busy.browse}" @click="filesConnect">{{ t('Connect') }}</button>
-            </div>
             <p class="dim" v-if="!connCaps.sftp && !connCaps.ftp && !connCaps.scp">{{ t('Neither FTP, SFTP nor SCP is available on this server.') }}</p>
           </div>
 
@@ -1776,12 +1926,14 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
                 <span class="spacer"></span>
                 <button class="btn xs" :disabled="!localData || localData.parent === null" @click="browseLocal(localData ? localData.parent : '')">↑ {{ t('Up') }}</button>
                 <button class="btn xs" @click="browseLocal(localPath)">⟳ {{ t('Refresh') }}</button>
+                <button class="btn xs" @click="localNewFolder()">{{ t('New folder') }}</button>
               </div>
               <div class="path-bar">
                 <input v-model="localPath" class="mono" :placeholder="t('Your Nextcloud files')" @keyup.enter="browseLocal(localPath)">
                 <button class="btn xs" @click="browseLocal(localPath)">{{ t('Go') }}</button>
+                <input v-model="localFilter" class="pane-filter" :placeholder="t('Filter')" :title="t('Shows only names that contain this; * and ? work as wildcards.')">
               </div>
-              <div class="pane-body"
+              <div class="pane-body" tabindex="0" @keydown="paneKey('local', $event)"
                    @dragover.prevent="$event.dataTransfer.dropEffect = 'copy'"
                    @drop.prevent="dropOnLocal">
                 <table class="grid compact files-grid">
@@ -1801,8 +1953,9 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
                         draggable="true"
                         @dragstart="startFileDrag('local', e, $event)"
                         @click="pickRow('local', e, $event)"
-                        @dblclick="e.directory ? browseLocal(e.path) : null">
-                      <td><span class="nm">{{ e.directory ? '📁' : '📄' }} {{ e.name }}</span></td>
+                        @dblclick="e.directory ? browseLocal(e.path) : null"
+                        @contextmenu.prevent="openLocalMenu(e, $event)">
+                      <td><span class="nm">{{ e.directory ? '📁' : '📄' }} {{ e.name }}</span><span class="cmp-tag" v-if="compareTag('local', e)">{{ compareTag('local', e) }}</span></td>
                       <td class="mono dim">{{ e.directory ? '' : fmtBytes(e.size) }}</td>
                       <td class="dim">{{ e.modified ? ago(e.modified) : '' }}</td>
                     </tr>
@@ -1823,33 +1976,43 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
                 <strong class="mono">{{ filesSaved ? filesSaved.host : adhoc.host }}</strong>
                 <span class="dim tiny">{{ (filesSaved ? filesSaved.kind : adhoc.kind).toUpperCase() }}</span>
                 <span class="spacer"></span>
-                <label class="inline-check" v-if="canElevate" :title="t('Runs the listing and the file actions through sudo on the far end. The password is used for that one request and kept nowhere.')">
-                  <input type="checkbox" v-model="asRoot" @change="rootToggled()"> {{ t('Act as root') }}
+                <label class="inline-check" v-if="canElevate" :title="t('Runs the listing and the file actions through sudo on the far end, as the user you choose. The password is used for each request and kept nowhere.')">
+                  <input type="checkbox" v-model="asRoot" @change="rootToggled()"> {{ t('Change user') }}
                 </label>
                 <button class="btn xs" :disabled="!filesData || !filesData.parent" @click="browse(filesData ? filesData.parent : '')">↑ {{ t('Up') }}</button>
                 <button class="btn xs" @click="browse(filesData ? filesData.path : filesPath)">⟳ {{ t('Refresh') }}</button>
                 <button class="btn xs" @click="fileAction('mkdir')">{{ t('New folder') }}</button>
-                <button class="btn xs" v-if="adhocActive" @click="disconnect">{{ t('Disconnect') }}</button>
+                <button class="btn xs" @click="newRemoteFile()">{{ t('New file') }}</button>
+                <button class="btn xs" @click="openSearch()">🔍 {{ t('Search') }}</button>
+                <button class="btn xs" @click="openBookmarks($event)">★ {{ t('Bookmarks') }}</button>
+                <button class="btn xs" @click="disconnect">{{ t('Disconnect') }}</button>
               </div>
               <div class="path-bar">
                 <input v-model="filesPath" class="mono" @keyup.enter="browse(filesPath)">
                 <button class="btn xs" @click="browse(filesPath)">{{ t('Go') }}</button>
+                <input v-model="remoteFilter" class="pane-filter" :placeholder="t('Filter')" :title="t('Shows only names that contain this; * and ? work as wildcards.')">
               </div>
-              <p class="note-line" v-if="asRoot && !sudoPassword">
-                {{ t('Enter the sudo password for this server. It is used for this one request and is never stored — you will be asked again next time.') }}
+              <!-- Acting as another user is sudo -u: root, or the account a web
+                   site runs as (www-data and its kin), or any other. The password
+                   asked for is the one sudo asks, that of the account signed in;
+                   where sudo asks for none it is left empty. -->
+              <p class="note-line" v-if="asRoot && !sudoOn">
+                {{ t('Choose the user to act as, and enter the sudo password of the account you signed in with. Leave it empty where sudo asks for none. It is never stored.') }}
               </p>
-              <div class="fl-row" v-if="asRoot && !sudoPassword">
+              <div class="fl-row sudo-row" v-if="asRoot && !sudoOn">
+                <input v-model="sudoUser" class="short mono" list="nb-sudo-users" autocomplete="off" :placeholder="t('User')" :aria-label="t('User')">
+                <datalist id="nb-sudo-users"><option v-for="u in sudoUserChoices" :key="u" :value="u"></option></datalist>
                 <input v-model="sudoDraft" type="password" class="grow mono" autocomplete="new-password"
                        :placeholder="t('sudo password')" @keyup.enter="useSudo()">
-                <button class="btn sm" :disabled="!sudoDraft" @click="useSudo()">{{ t('Use it') }}</button>
+                <button class="btn sm" :disabled="!validSudoUser" @click="useSudo()">{{ t('Switch to this user') }}</button>
                 <button class="btn sm" @click="asRoot = false; sudoDraft = ''">{{ t('Cancel') }}</button>
               </div>
-              <p class="hint root-on" v-if="asRoot && sudoPassword">
-                🔓 {{ t('Acting as root. The password is held only while this page stays open.') }}
+              <p class="hint root-on" v-if="asRoot && sudoOn">
+                🔓 {{ t('Acting as {user}. The password is held only while this page stays open.', {user: sudoUser}) }}
                 <span class="dim tiny" v-if="rootLeft">{{ t('Given up in {n} min with nothing touched.', {n: rootLeft}) }}</span>
-                <button class="btn sm danger" @click="forgetSudo()">{{ t('Give up root now') }}</button>
+                <button class="btn sm danger" @click="forgetSudo()">{{ t('Stop acting as {user}', {user: sudoUser}) }}</button>
               </p>
-              <div class="pane-body"
+              <div class="pane-body" tabindex="0" @keydown="paneKey('remote', $event)"
                    @dragover.prevent="$event.dataTransfer.dropEffect = 'copy'"
                    @drop.prevent="dropOnRemote">
                 <table class="grid compact files-grid">
@@ -1873,7 +2036,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
                         @click="pickRow('remote', e, $event)"
                         @dblclick="openEntry(e)"
                         @contextmenu.prevent="openFileMenu(e, $event)">
-                      <td><span class="nm">{{ e.directory ? '📁' : '📄' }} {{ e.name }}</span></td>
+                      <td><span class="nm" :title="e.link && e.target ? e.name + ' → ' + e.target : null">{{ e.directory ? '📁' : '📄' }}{{ e.link ? '🔗' : '' }} {{ e.name }}</span><span class="cmp-tag" v-if="compareTag('remote', e)">{{ compareTag('remote', e) }}</span></td>
                       <td class="mono dim">{{ e.directory ? '' : fmtBytes(e.size) }}</td>
                       <td class="dim">{{ e.modified ? ago(e.modified) : '' }}</td>
                       <td class="mono dim tiny">{{ e.permissions }}</td>
@@ -1897,8 +2060,20 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
               <input v-model="filesTarget" class="short mono" :placeholder="t('Nextcloud folder for downloads')">
               <button class="btn sm" @click="pickFile('Choose a folder for downloads', (p) => { filesTarget = p; browseLocal(p); }, true)">📂 {{ t('Browse…') }}</button>
               <label class="inline-check"><input type="checkbox" v-model="showHidden"> {{ t('Show hidden files') }}</label>
-              <span class="spacer"></span>
+              <label class="inline-check" :title="t('Marks what is only on one side, newer, or a different size.')"><input type="checkbox" v-model="compare"> {{ t('Compare the two sides') }}</label>
+              <label class="inline-check" :title="t('Opening a folder on one side opens the folder of the same name on the other.')"><input type="checkbox" v-model="syncBrowse" @change="syncToggled"> {{ t('Synchronized browsing') }}</label>
+              <label class="inline-check" :title="t('Give each copy the date and time of its original, instead of the time it was copied.')"><input type="checkbox" v-model="settings.filesKeepTime" @change="saveFilesOptions"> {{ t('Keep file times') }}</label>
+            </div>
+            <!-- A line of its own: beside four check boxes it was squeezed into a
+                 column a few words wide (English, 245 px at 1600). -->
+            <div class="tool-row">
               <span class="dim tiny">{{ t('Double-click a folder to open it. Right-click a row for what can be done with it. Drag between the panes to transfer.') }}</span>
+            </div>
+            <div class="tool-row">
+              <span class="dim">{{ t('Speed limit') }}</span>
+              <label class="inline-check">⤓ <input type="number" min="0" class="tiny" v-model.number="settings.filesLimitDown" @change="saveFilesOptions"> KB/s</label>
+              <label class="inline-check">⤒ <input type="number" min="0" class="tiny" v-model.number="settings.filesLimitUp" @change="saveFilesOptions"> KB/s</label>
+              <span class="dim tiny">{{ t('0 means no limit.') }}</span>
             </div>
           </div>
 
@@ -1912,6 +2087,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
               <span class="dim tiny" v-if="queueSummary && queueSummary.waiting">{{ t('{n} waiting', {n: queueSummary.waiting}) }}</span>
               <span class="spacer"></span>
               <button class="btn sm danger" v-if="queue.length" @click="stopQueue">{{ t('Stop') }}</button>
+              <button class="btn sm" v-if="queueDone.some((j) => j.state === 'failed' || j.state === 'stopped')" @click="retryJobs(queueDone.filter((j) => j.state === 'failed' || j.state === 'stopped'))">↻ {{ t('Retry the failed ones') }}</button>
               <button class="btn sm" v-if="queueDone.length" @click="clearQueueDone">{{ t('Clear finished') }}</button>
             </div>
             <div class="job" v-for="j in queue" :key="j.id">
@@ -1926,7 +2102,9 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
               <span class="nm mono">{{ j.name }}</span>
               <span class="dim tiny" v-if="j.state === 'failed'">{{ j.error }}</span>
               <span class="dim tiny" v-else-if="j.state === 'stopped'">{{ t('Stopped') }}</span>
-              <span class="dim tiny" v-else>{{ fmtBytes(j.done) }}</span>
+              <span class="dim tiny" v-else-if="j.skipped">{{ t('Skipped') }}</span>
+              <span class="dim tiny" v-else>{{ fmtBytes(j.done) }}{{ j.resumedAt ? ' · ' + t('resumed from {size}', {size: fmtBytes(j.resumedAt)}) : '' }}</span>
+              <button class="btn xs" v-if="j.state === 'failed' || j.state === 'stopped'" @click="retryJobs([j])">↻ {{ t('Retry') }}</button>
             </div>
           </div>
         </section>
@@ -1991,52 +2169,50 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
                   <option v-for="o in g.items" :key="o.value" :value="o.value">{{ o.text }}</option>
                 </optgroup>
               </select>
+              <button class="btn primary" v-if="allowed('sshexec')" :disabled="busy.term || !sshHostNow || !sshReadyToOpen" :class="{working: busy.term}" @click="openConsoleHere">🖳 {{ t('Open a console') }}</button>
             </div>
             <p class="dim tiny" v-if="sshMode === 'saved' && !connLocked && !sshConnections.length && !hostChoices.length">{{ t('No saved connections yet — enter the address by hand instead.') }}</p>
 
-            <div class="tool-row" v-if="sshMode === 'type'">
-              <select v-model="sshAdhoc.kind" class="tiny" @change="sshKindChanged()">
-                <option value="ssh">SSH</option>
-                <option value="telnet">Telnet</option>
-              </select>
-              <input v-model="sshAdhoc.host" class="grow" :placeholder="t('Host name or IP address')" @keyup.enter="runSsh">
-              <input v-model.number="sshAdhoc.port" type="number" class="tiny" min="1" max="65535">
-              <template v-if="allowed('sshexec') && sshAdhoc.kind !== 'telnet'">
+            <!-- The address and the sign-in on one line, with the button that
+                 uses them at its end. The groups wrap as wholes on a narrow
+                 screen; the address box no longer stretches across the card
+                 and pushes the password onto a line of its own. -->
+            <div class="tool-row sign-line" v-if="sshMode === 'type'">
+              <span class="grp grp-addr">
+                <select v-model="sshAdhoc.kind" class="tiny" @change="sshKindChanged()">
+                  <option value="ssh">SSH</option>
+                  <option value="telnet">Telnet</option>
+                </select>
+                <input v-model="sshAdhoc.host" class="host" :placeholder="t('Host name or IP address')" @keyup.enter="runSsh">
+                <input v-model.number="sshAdhoc.port" type="number" class="tiny" min="1" max="65535">
+              </span>
+              <span class="grp grp-cred" v-if="allowed('sshexec') && sshAdhoc.kind !== 'telnet'">
                 <input v-model="sshAdhoc.username" class="short" :placeholder="t('User name')" autocomplete="off">
                 <select v-model="sshAdhoc.authType" class="tiny">
                   <option value="password">{{ t('Password') }}</option>
                   <option value="key">{{ t('Private key') }}</option>
                 </select>
-              </template>
+                <template v-if="sshAdhoc.authType === 'key'">
+                  <input v-model="sshAdhoc.privateKeyPath" class="short mono" :placeholder="t('Key file in your Nextcloud files')">
+                  <button class="btn sm" @click="pickFile(t('Choose a key file'), (path) => { sshAdhoc.privateKeyPath = path; }, false, settings.keyFolder)">📂 {{ t('Browse…') }}</button>
+                  <input v-model="sshAdhoc.passphrase" type="password" class="short" :placeholder="t('Key passphrase (if any)')" autocomplete="new-password">
+                </template>
+                <input v-else v-model="sshAdhoc.secret" type="password" class="short" :placeholder="t('Password')" autocomplete="new-password">
+              </span>
+              <button class="btn primary" v-if="allowed('sshexec')" :disabled="busy.term || !sshHostNow || !sshReadyToOpen" :class="{working: busy.term}" @click="openConsoleHere">🖳 {{ t('Open a console') }}</button>
             </div>
             <div class="tool-row" v-else-if="sshSaved">
               <strong class="mono">{{ sshSaved.kind.toUpperCase() }} {{ sshSaved.username }}@{{ sshSaved.host }}:{{ sshSaved.port || 22 }}</strong>
               <span class="dim tiny">{{ t('Signs in with the password or key kept for it.') }}</span>
             </div>
 
-            <div class="tool-row" v-if="sshMode === 'type' && allowed('sshexec') && sshAdhoc.kind !== 'telnet'">
-              <template v-if="sshAdhoc.authType === 'key'">
-                <input v-model="sshAdhoc.privateKeyPath" class="grow mono" :placeholder="t('Key file in your Nextcloud files')">
-                <button class="btn sm" @click="pickFile(t('Choose a key file'), (path) => { sshAdhoc.privateKeyPath = path; }, false, settings.keyFolder)">📂 {{ t('Browse…') }}</button>
-                <input v-model="sshAdhoc.passphrase" type="password" class="short" :placeholder="t('Key passphrase (if any)')" autocomplete="new-password">
-              </template>
-              <input v-else v-model="sshAdhoc.secret" type="password" class="short" :placeholder="t('Password')" autocomplete="new-password">
-              <button class="btn sm" :disabled="!sshAdhoc.host" @click="saveSshAdhoc">{{ t('Save to the list') }}</button>
-            </div>
-
             <p class="dim tiny" v-if="sshMode === 'type' && sshAdhoc.kind === 'telnet'">{{ t('Telnet asks who you are inside the window, and carries everything in the clear.') }}</p>
 
             <!-- Looking costs nothing and needs no account; signing in does. -->
             <div class="tool-row">
-              <button class="btn primary" :disabled="busy.ssh || !sshHostNow" :class="{working: busy.ssh}" @click="runSsh">{{ t('Inspect SSH') }}</button>
+              <button class="btn" :class="{primary: !allowed('sshexec'), working: busy.ssh}" :disabled="busy.ssh || !sshHostNow" @click="runSsh">{{ t('Inspect SSH') }}</button>
               <button class="btn" :disabled="busy.telnet || !sshHostNow" :class="{working: busy.telnet}" @click="runTelnet">{{ t('Try Telnet') }}</button>
-              <!-- SSH signs in before it shows anything, so it needs a user name.
-                   Leaving that out sent the request anyway and the server
-                   answered "could not sign in as " — a refusal with nobody
-                   named in it, eighty-two bytes of red text that is easy to
-                   miss in a terminal that has just opened. A saved connection
-                   carries its own user, and Telnet asks inside the window. -->
-              <button class="btn" v-if="allowed('sshexec')" :disabled="busy.term || !sshHostNow || !sshReadyToOpen" :class="{working: busy.term}" @click="openConsoleHere">🖳 {{ t('Open a console') }}</button>
+              <button class="btn sm" v-if="sshMode === 'type' && allowed('sshexec')" :disabled="!sshAdhoc.host" @click="saveSshAdhoc">{{ t('Save to the list') }}</button>
             </div>
             <label class="opt"><input type="checkbox" v-model="sshAuthMethods"> {{ t('Also ask which sign-in methods are accepted (leaves one failed attempt in the server log)') }}</label>
 
@@ -2860,29 +3036,335 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
     <!-- What can be done with the file under the pointer. -->
     <div v-if="fileMenu.open" class="row-menu-veil" @click="fileMenu.open = false" @contextmenu.prevent="fileMenu.open = false"></div>
     <div v-if="fileMenu.open" class="row-menu" :style="{ left: fileMenu.x + 'px', top: fileMenu.y + 'px' }" @click.stop>
-      <div class="row-menu-head">{{ fileMenu.entry.directory ? '📁' : '📄' }} {{ fileMenu.entry.name }}</div>
-      <button class="row-menu-item" v-if="fileMenu.entry.directory" @click="runFileMenu('open')">{{ t('Open') }}</button>
-      <!-- A text file opens in a window of its own, beside the listing rather
-           than instead of it, so it can be read against what is on the other
-           side. Anything larger than a megabyte is refused by the server with
-           a reason rather than filling the window with rubbish. -->
-      <button class="row-menu-item" v-if="!fileMenu.entry.directory" @click="runFileMenu('view')">📄 {{ t('Open in a window') }}</button>
-      <button class="row-menu-item" @click="runFileMenu('download')">⤓ {{ fileMenu.entry.directory ? t('Download as ZIP') : t('Download file') }}</button>
-      <button class="row-menu-item" @click="runFileMenu('copyPath')">{{ t('Copy the path') }}</button>
+      <div class="row-menu-head" v-if="fileMenuMany">🗂️ {{ t('{n} chosen', {n: fileMenu.rows.length}) }}</div>
+      <div class="row-menu-head" v-else>{{ fileMenu.entry.directory ? '📁' : '📄' }} {{ fileMenu.entry.name }}</div>
+      <template v-if="!fileMenuMany">
+        <button class="row-menu-item" v-if="fileMenu.entry.directory" @click="runFileMenu('open')">{{ t('Open') }}</button>
+        <!-- A text file opens in a window of its own, beside the listing rather
+             than instead of it, so it can be read against what is on the other
+             side. Anything larger than a megabyte is refused by the server with
+             a reason rather than filling the window with rubbish. -->
+        <button class="row-menu-item" v-if="!fileMenu.entry.directory" @click="runFileMenu('view')">📄 {{ t('Open in a window') }}</button>
+      </template>
+      <button class="row-menu-item" @click="runFileMenu('download')">⤓ {{ fileMenuMany ? t('Download') : (fileMenu.entry.directory ? t('Download as ZIP') : t('Download file')) }}</button>
+      <template v-if="!fileMenuMany">
+        <button class="row-menu-item" @click="runFileMenu('copyPath')">{{ t('Copy the path') }}</button>
+        <button class="row-menu-item" @click="runFileMenu('copyUrl')">{{ t('Copy the URL') }}</button>
+      </template>
       <div class="row-menu-rule"></div>
-      <button class="row-menu-item" @click="runFileMenu('rename')">{{ t('Rename') }}</button>
+      <button class="row-menu-item" @click="runFileMenu('copyTo')">{{ t('Copy to…') }}</button>
+      <button class="row-menu-item" @click="runFileMenu('moveTo')">{{ t('Move to…') }}</button>
+      <button class="row-menu-item" @click="runFileMenu('compress')">🗜️ {{ t('Compress…') }}</button>
+      <button class="row-menu-item" v-if="!fileMenuMany && !fileMenu.entry.directory && archiveOf(fileMenu.entry.name)" @click="runFileMenu('extract')">📦 {{ t('Extract…') }}</button>
+      <button class="row-menu-item" v-if="fileMenu.rows.every((r) => !r.directory)" @click="runFileMenu('textconv')">🔤 {{ t('Encoding and line endings…') }}</button>
+      <div class="row-menu-rule"></div>
+      <button class="row-menu-item" v-if="!fileMenuMany" @click="runFileMenu('rename')">{{ t('Rename') }}</button>
       <button class="row-menu-item" @click="runFileMenu('chmod')">{{ t('Change permissions') }}</button>
       <!-- The timestamp is yours to set on your own files, so it is always
            offered. The owner and the group are not: every server refuses those
            to an ordinary account, and showing them would be offering something
            that cannot work. -->
-      <button class="row-menu-item" @click="runFileMenu('touch')">{{ t('Set the time to now') }}</button>
-      <template v-if="asRoot && sudoPassword">
+      <button class="row-menu-item" v-if="!fileMenuMany" @click="runFileMenu('touch')">{{ t('Set the time to now') }}</button>
+      <template v-if="sudoOn">
         <button class="row-menu-item" @click="runFileMenu('chown')">{{ t('Change owner') }}</button>
         <button class="row-menu-item" @click="runFileMenu('chgrp')">{{ t('Change group') }}</button>
       </template>
       <div class="row-menu-rule"></div>
       <button class="row-menu-item" @click="runFileMenu('delete')">{{ t('Delete') }}</button>
+    </div>
+
+    <!-- Copy, move, compress and permissions: what is to be done, and where. -->
+    <div v-if="fileOp.open" class="drawer-backdrop centred">
+      <div class="modal narrow">
+        <div class="drawer-head">
+          <span class="ic big">{{ {copy: '📋', move: '➡️', compress: '🗜️', extract: '📦', chmod: '🔒'}[fileOp.kind] }}</span>
+          <div><strong>{{ fileOpTitle }}</strong><div class="dim mono">{{ fileOp.rows.length === 1 ? fileOp.rows[0].name : t('{n} chosen', {n: fileOp.rows.length}) }}</div></div>
+        </div>
+        <div class="drawer-body">
+          <template v-if="fileOp.kind === 'copy' || fileOp.kind === 'move'">
+            <p class="dim">{{ t('Folder on the server') }}</p>
+            <div class="fl-row">
+              <input v-model="fileOp.dest" class="grow mono" @keyup.enter="confirmFileOp()">
+              <button class="btn sm" @click="pickRemoteFolder(fileOp.dest, (p) => { fileOp.dest = p; })">📂 {{ t('Browse…') }}</button>
+            </div>
+          </template>
+          <template v-if="fileOp.kind === 'compress'">
+            <p class="dim">{{ t('Format') }}</p>
+            <!-- Every format is listed; the ones this server cannot make are
+                 there but greyed, with the reason, so it is clear they exist. -->
+            <select v-model="fileOp.format" class="grow">
+              <option v-for="f in archiveChoices" :key="f.id" :value="f.id" :disabled="!!f.why">{{ f.label }}{{ f.why ? ' — ' + f.why : '' }}</option>
+            </select>
+            <p class="dim tiny" v-if="fileOp.archLoading">⏳ {{ t('Looking at what this server can make…') }}</p>
+            <p class="dim">{{ t('File name') }}</p>
+            <div class="fl-row">
+              <input v-model="fileOp.name" class="grow mono">
+              <span class="mono dim">{{ archiveExt(fileOp.format) }}</span>
+            </div>
+            <p class="dim">{{ t('Where to save it') }}</p>
+            <label class="inline-check block"><input type="radio" value="server" v-model="fileOp.where"> {{ t('A folder on this server') }}</label>
+            <label class="inline-check block"><input type="radio" value="nextcloud" v-model="fileOp.where"> {{ t('A folder in your Nextcloud files') }}</label>
+            <div class="fl-row" v-if="fileOp.where === 'server'">
+              <input v-model="fileOp.dest" class="grow mono">
+              <button class="btn sm" @click="pickRemoteFolder(fileOp.dest, (p) => { fileOp.dest = p; })">📂 {{ t('Browse…') }}</button>
+            </div>
+            <div class="fl-row" v-else>
+              <input v-model="fileOp.ncDest" class="grow mono">
+              <button class="btn sm" @click="pickFile('Choose a folder', (p) => { fileOp.ncDest = p; }, true)">📂 {{ t('Browse…') }}</button>
+            </div>
+          </template>
+          <template v-if="fileOp.kind === 'extract'">
+            <p class="dim">{{ t('Where to put what is inside') }}</p>
+            <div class="fl-row">
+              <input v-model="fileOp.dest" class="grow mono" @keyup.enter="confirmFileOp()">
+              <button class="btn sm" @click="pickRemoteFolder(fileOp.dest, (p) => { fileOp.dest = p; })">📂 {{ t('Browse…') }}</button>
+            </div>
+            <template v-if="!archiveSingle(fileOp.rows[0].name)">
+              <label class="inline-check block"><input type="radio" value="folder" v-model="fileOp.into"> {{ t('Into a new folder, {name}', {name: archiveStem(fileOp.rows[0].name)}) }}</label>
+              <label class="inline-check block"><input type="radio" value="here" v-model="fileOp.into"> {{ t('Straight into that folder') }}</label>
+              <div class="seg" v-if="fileOp.into === 'here'">
+                <button class="seg-btn" :class="{active: fileOp.onExists === 'skip'}" @click="fileOp.onExists = 'skip'">{{ t('Keep files already there') }}</button>
+                <button class="seg-btn" :class="{active: fileOp.onExists === 'overwrite'}" @click="fileOp.onExists = 'overwrite'">{{ t('Overwrite them') }}</button>
+              </div>
+            </template>
+            <p v-else class="dim tiny">{{ t('This holds one file, which comes out as {name}.', {name: archiveStem(fileOp.rows[0].name)}) }}</p>
+            <p class="dim tiny" v-if="fileOp.archLoading">⏳ {{ t('Looking at what this server can open…') }}</p>
+            <p class="hint warn-text" v-else-if="extractBlocked">{{ extractBlocked }}</p>
+          </template>
+          <template v-if="fileOp.kind === 'chmod'">
+            <table class="grid compact perm-grid">
+              <thead><tr><th></th><th>{{ t('Read') }}</th><th>{{ t('Write') }}</th><th>{{ t('Execute') }}</th></tr></thead>
+              <tbody>
+                <tr v-for="(who, i) in [t('Owner'), t('Group'), t('Others')]" :key="i">
+                  <td>{{ who }}</td>
+                  <td v-for="bit in [4, 2, 1]" :key="bit"><input type="checkbox" :checked="opBit(i, bit)" @change="setOpBit(i, bit, $event.target.checked)"></td>
+                </tr>
+              </tbody>
+            </table>
+            <div class="fl-row">
+              <span class="dim" style="white-space: nowrap; flex: none">{{ t('As a number') }}</span>
+              <input v-model="fileOp.mode" class="short mono" maxlength="4" @keyup.enter="confirmFileOp()">
+            </div>
+            <template v-if="fileOp.rows.some((r) => r.directory)">
+              <label class="inline-check block"><input type="checkbox" v-model="fileOp.recurse"> {{ t('Apply to everything inside the folders too') }}</label>
+              <div class="seg" v-if="fileOp.recurse">
+                <button class="seg-btn" :class="{active: fileOp.applyTo === 'all'}" @click="fileOp.applyTo = 'all'">{{ t('Files and folders') }}</button>
+                <button class="seg-btn" :class="{active: fileOp.applyTo === 'files'}" @click="fileOp.applyTo = 'files'">{{ t('Files only') }}</button>
+                <button class="seg-btn" :class="{active: fileOp.applyTo === 'dirs'}" @click="fileOp.applyTo = 'dirs'">{{ t('Folders only') }}</button>
+              </div>
+            </template>
+          </template>
+          <p v-if="fileOp.busy" class="dim tiny">⏳ {{ fileOp.progress || t('Working…') }}</p>
+        </div>
+        <div class="drawer-foot">
+          <span class="spacer"></span>
+          <button class="btn sm" :disabled="fileOp.busy" @click="fileOp.open = false">{{ t('Cancel') }}</button>
+          <button class="btn primary" :disabled="fileOp.busy" @click="confirmFileOp()">{{ fileOpConfirm }}</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Writing a message: new, a reply or a forward. It goes out through the
+         account's outgoing server; an IMAP account files a copy in Sent. -->
+    <div v-if="compose.open" class="drawer-backdrop centred">
+      <div class="modal wide compose">
+        <div class="drawer-head">
+          <span class="ic big">✉️</span>
+          <div><strong>{{ {new: t('New message'), reply: t('Reply to sender'), all: t('Reply to all'), forward: t('Forward')}[compose.mode] }}</strong><div class="dim mono">{{ t('From') }}: {{ composeFrom }}</div></div>
+        </div>
+        <div class="drawer-body">
+          <div class="compose-grid">
+            <label for="nb-compose-to">{{ t('To') }}</label>
+            <div class="fl-row"><input id="nb-compose-to" v-model="compose.to" class="grow" :placeholder="t('name@example.com, another@example.com')">
+              <button class="btn xs" v-if="!compose.showCc" @click="compose.showCc = true">Cc / Bcc</button></div>
+            <template v-if="compose.showCc">
+              <label for="nb-compose-cc">Cc</label><input id="nb-compose-cc" v-model="compose.cc">
+              <label for="nb-compose-bcc">Bcc</label><input id="nb-compose-bcc" v-model="compose.bcc">
+            </template>
+            <label for="nb-compose-subject">{{ t('Mail subject') }}</label><input id="nb-compose-subject" v-model="compose.subject">
+          </div>
+          <textarea v-model="compose.body" class="compose-body" rows="14"></textarea>
+          <div class="compose-atts">
+            <span v-for="(a, i) in compose.attach" :key="i" class="mail-att">📎 {{ a.name }} <span class="dim tiny" v-if="a.size">{{ fmtBytes(a.size) }}</span>
+              <button class="btn xs ib" :title="t('Remove')" :aria-label="t('Remove')" @click="compose.attach.splice(i, 1)">✕</button></span>
+            <button class="btn xs" @click="attachFromNextcloud">📎 {{ t('Attach a file from Nextcloud') }}</button>
+          </div>
+          <label class="inline-check" v-if="mailList && mailList.kind === 'imap'"><input type="checkbox" v-model="compose.saveSent"> {{ t('Keep a copy in the Sent folder') }}</label>
+          <p class="dim tiny" v-if="mailList && mailList.kind === 'imap' && !compose.saveSent">{{ t('Some servers, Gmail among them, keep sent mail by themselves; there a copy here would be a second one.') }}</p>
+        </div>
+        <div class="drawer-foot">
+          <span class="spacer"></span>
+          <button class="btn sm" :disabled="compose.busy" @click="compose.open = false">{{ t('Cancel') }}</button>
+          <button class="btn primary" :disabled="compose.busy || !(compose.to.trim() || compose.cc.trim() || compose.bcc.trim())" :class="{working: compose.busy}" @click="sendCompose">{{ compose.busy ? t('Sending…') : t('Send') }}</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- A text file's encoding, line endings and BOM: what they are now, read
+         from the file, and what they should be. The first lines are shown as
+         read, so a wrong guess is seen before anything is written. -->
+    <div v-if="textConv.open" class="drawer-backdrop centred">
+      <div class="modal">
+        <div class="drawer-head">
+          <span class="ic big">🔤</span>
+          <div><strong>{{ t('Encoding and line endings') }}</strong><div class="dim mono">{{ textConv.rows.length === 1 ? textConv.rows[0].name : t('{n} chosen', {n: textConv.rows.length}) }}</div></div>
+        </div>
+        <div class="drawer-body">
+          <p v-if="textConv.loading" class="dim">⏳ {{ t('Reading the files…') }}</p>
+          <table v-else class="grid compact text-conv-files">
+            <thead><tr><th>{{ t('Name') }}</th><th>{{ t('Encoding') }}</th><th>{{ t('Line endings') }}</th><th>BOM</th></tr></thead>
+            <tbody>
+              <tr v-for="f in textConv.files" :key="f.path">
+                <td class="mono wrap">{{ f.name }}</td>
+                <td v-if="f.error" colspan="3" class="dim">{{ f.error }}</td>
+                <td v-else-if="f.binary" colspan="3" class="dim">{{ t('Not a text file') }}</td>
+                <template v-else>
+                  <td>{{ encodingLabel(f.encoding) }}<span v-if="f.guessed" class="dim tiny"> ({{ t('guessed') }})</span></td>
+                  <td>{{ newlineLabel(f.newline) }}</td>
+                  <td>{{ f.bom ? t('yes') : t('no') }}</td>
+                </template>
+              </tr>
+            </tbody>
+          </table>
+          <template v-if="textConvPreview">
+            <pre class="raw text-conv-preview">{{ textConvPreview }}</pre>
+            <p class="dim tiny">{{ t('The first lines, read that way. If they look garbled, choose under "Read as" the encoding the file is really in.') }}</p>
+          </template>
+          <div class="text-conv-grid">
+            <label><span class="dim">{{ t('Read as') }}</span>
+              <select v-model="textConv.from" @change="inspectTextConv()">
+                <option value="auto">{{ t('Work it out') }}</option>
+                <option v-for="e in textEncodings" :key="e" :value="e">{{ encodingLabel(e) }}</option>
+              </select></label>
+            <label><span class="dim">{{ t('Write as') }}</span>
+              <select v-model="textConv.to">
+                <option value="keep">{{ t('Keep as it is') }}</option>
+                <option v-for="e in textEncodings" :key="e" :value="e">{{ encodingLabel(e) }}</option>
+              </select></label>
+            <label><span class="dim">{{ t('Line endings') }}</span>
+              <select v-model="textConv.newline">
+                <option value="keep">{{ t('Keep as they are') }}</option>
+                <option value="lf">LF (Linux, macOS)</option>
+                <option value="crlf">CRLF (Windows)</option>
+                <option value="cr">CR</option>
+              </select></label>
+            <label><span class="dim">BOM</span>
+              <select v-model="textConv.bom">
+                <option value="keep">{{ t('Keep as it is') }}</option>
+                <option value="add">{{ t('Add a BOM') }}</option>
+                <option value="remove">{{ t('Remove the BOM') }}</option>
+              </select></label>
+          </div>
+          <p class="dim tiny" v-if="textConv.bom === 'add' && textConv.to !== 'keep' && !/^UTF/.test(textConv.to)">{{ t('Only UTF-8 and UTF-16 have a BOM; for {enc} it is left out.', {enc: textConv.to}) }}</p>
+          <label class="inline-check block"><input type="radio" value="copy" v-model="textConv.output"> {{ t('Save as a new file beside it (the original stays as it is)') }}</label>
+          <label class="inline-check block"><input type="radio" value="overwrite" v-model="textConv.output"> {{ t('Overwrite the file') }}</label>
+          <div v-if="textConv.lost.length" class="text-conv-lost">
+            <p>{{ t('These have characters {enc} cannot hold, so they were not changed:', {enc: textConv.to}) }}</p>
+            <ul><li v-for="x in textConv.lost" :key="x.path"><span class="mono">{{ x.name }}</span>: <span class="mono">{{ x.chars.join(' ') }}</span></li></ul>
+            <button class="btn sm" :disabled="textConv.busy" @click="runTextConv(true)">{{ t('Convert them anyway, writing "?" for those characters') }}</button>
+          </div>
+          <p v-if="textConv.busy" class="dim tiny">⏳ {{ textConv.progress || t('Working…') }}</p>
+        </div>
+        <div class="drawer-foot">
+          <span class="spacer"></span>
+          <button class="btn sm" :disabled="textConv.busy" @click="textConv.open = false">{{ t('Close') }}</button>
+          <button class="btn primary" :disabled="textConv.busy || textConv.loading || !textConvChanges" @click="runTextConv(false)">{{ t('Convert') }}</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- A name that is already taken where something is going. Nothing has
+         been done yet; the choice is made once for all of them. -->
+    <div v-if="clash.open" class="drawer-backdrop centred topmost">
+      <div class="modal narrow">
+        <div class="drawer-head">
+          <span class="ic big">⚠️</span>
+          <div><strong>{{ t('The name is already taken') }}</strong><div class="dim">{{ t('{n} of them have a name that is already there.', {n: clash.items.length}) }}</div></div>
+        </div>
+        <div class="drawer-body">
+          <table class="grid compact">
+            <thead><tr><th>{{ t('Name') }}</th><th>{{ t('Already there') }}</th><th>{{ t('This one') }}</th></tr></thead>
+            <tbody>
+              <tr v-for="c in clash.items.slice(0, 8)" :key="c.path">
+                <td class="mono">{{ c.directory ? '📁' : '📄' }} {{ c.name }}</td>
+                <td class="dim tiny">{{ clashSide(c.size, c.modified) }}</td>
+                <td class="dim tiny">{{ clashSide(c.sourceSize, c.sourceModified) }}</td>
+              </tr>
+            </tbody>
+          </table>
+          <p v-if="clash.items.length > 8" class="dim tiny">{{ t('and {n} more', {n: clash.items.length - 8}) }}</p>
+          <label v-for="c in clash.choices" :key="c" class="inline-check block"><input type="radio" :value="c" v-model="clash.choice"> {{ clashLabel(c) }}</label>
+          <p class="dim tiny" v-if="clash.choice === 'overwrite' && clash.items.some((c) => c.directory)">{{ t('A folder is merged into the one already there.') }}</p>
+          <label class="inline-check block" v-if="clash.offerAll"><input type="checkbox" v-model="clash.all"> {{ t('Use this for the rest of the transfers in the queue') }}</label>
+          <p class="dim tiny" v-else>{{ t('The choice applies to all of them.') }}</p>
+        </div>
+        <div class="drawer-foot">
+          <span class="spacer"></span>
+          <button class="btn sm" @click="clashClose(null)">{{ t('Cancel') }}</button>
+          <button class="btn primary" @click="clashClose(clash.choice)">{{ t('Continue') }}</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- The reader's own side: what can be done to a Nextcloud file here. -->
+    <div v-if="localMenu.open" class="row-menu-veil" @click="localMenu.open = false" @contextmenu.prevent="localMenu.open = false"></div>
+    <div v-if="localMenu.open" class="row-menu" :style="{ left: localMenu.x + 'px', top: localMenu.y + 'px' }" @click.stop>
+      <div class="row-menu-head" v-if="localMenu.rows.length > 1">🗂️ {{ t('{n} chosen', {n: localMenu.rows.length}) }}</div>
+      <div class="row-menu-head" v-else>{{ localMenu.entry.directory ? '📁' : '📄' }} {{ localMenu.entry.name }}</div>
+      <button class="row-menu-item" v-if="localMenu.rows.length <= 1 && localMenu.entry.directory" @click="runLocalMenu('open')">{{ t('Open') }}</button>
+      <button class="row-menu-item" @click="runLocalMenu('send')">⤒ {{ t('Send') }}</button>
+      <div class="row-menu-rule"></div>
+      <button class="row-menu-item" v-if="localMenu.rows.every((r) => !r.directory)" @click="runLocalMenu('textconv')">🔤 {{ t('Encoding and line endings…') }}</button>
+      <div class="row-menu-rule"></div>
+      <button class="row-menu-item" v-if="localMenu.rows.length <= 1" @click="runLocalMenu('rename')">{{ t('Rename') }}</button>
+      <button class="row-menu-item" @click="runLocalMenu('delete')">{{ t('Delete') }}</button>
+    </div>
+
+    <!-- Bookmarks: a place on this server, with the Nextcloud folder that goes with it. -->
+    <div v-if="bookmarkMenu.open" class="row-menu-veil" @click="bookmarkMenu.open = false"></div>
+    <div v-if="bookmarkMenu.open" class="row-menu bookmark-menu" :style="{ left: bookmarkMenu.x + 'px', top: bookmarkMenu.y + 'px' }" @click.stop>
+      <div class="row-menu-head">★ {{ t('Bookmarks') }}</div>
+      <div v-for="(b, i) in currentBookmarks" :key="i" class="bookmark-row">
+        <button class="row-menu-item" @click="goBookmark(b)" :title="b.remote + (b.local ? '  ⇄  ' + b.local : '')">{{ b.name || b.remote }}</button>
+        <button class="btn xs ib" :title="t('Remove')" :aria-label="t('Remove')" @click="removeBookmark(i)">✕</button>
+      </div>
+      <p class="dim tiny" v-if="!currentBookmarks.length" style="padding: 4px 10px">{{ t('No bookmarks yet.') }}</p>
+      <div class="row-menu-rule"></div>
+      <button class="row-menu-item" @click="addBookmark()">＋ {{ t('Add this folder') }}</button>
+    </div>
+
+    <!-- Searching the server, from the folder that is open. -->
+    <div v-if="searchBox.open" class="drawer-backdrop centred">
+      <div class="modal">
+        <div class="drawer-head">
+          <span class="ic big">🔍</span>
+          <div><strong>{{ t('Search on the server') }}</strong><div class="dim mono">{{ searchBox.path }}</div></div>
+          <span class="spacer"></span>
+          <button class="btn xs ib" :title="t('Close')" :aria-label="t('Close')" @click="closeSearch()"><svg viewBox="0 0 24 24"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg></button>
+        </div>
+        <div class="drawer-body">
+          <div class="fl-row">
+            <input ref="searchInput" v-model="searchBox.pattern" class="grow mono" :placeholder="t('Name, or a pattern such as *.conf')" @keyup.enter="runSearch()">
+            <button class="btn primary" :disabled="searchBox.busy || !searchBox.pattern.trim()" @click="runSearch()">{{ t('Search') }}</button>
+          </div>
+          <p class="dim tiny">{{ t('Looks in this folder and every folder under it. Letter case is ignored.') }}</p>
+          <p class="dim tiny" v-if="searchBox.busy">⏳ {{ t('Searching…') }} <button class="btn xs" @click="stopSearch()">{{ t('Stop') }}</button></p>
+          <table class="grid compact" v-if="searchBox.results.length">
+            <tbody>
+              <tr v-for="r in searchBox.results" :key="r.path" class="search-hit" @click="goSearchHit(r)">
+                <td><span class="nm mono">{{ r.directory ? '📁' : '📄' }} {{ r.path }}</span></td>
+              </tr>
+            </tbody>
+          </table>
+          <p class="dim tiny" v-if="searchBox.done && !searchBox.results.length">{{ t('Nothing was found.') }}</p>
+          <p class="dim tiny" v-if="searchBox.more">{{ t('Only the first {n} are shown. Narrow the search to see the rest.', {n: searchBox.results.length}) }}</p>
+        </div>
+        <div class="drawer-foot">
+          <span class="dim tiny">{{ t('Click a result to open its folder.') }}</span>
+          <span class="spacer"></span>
+          <button class="btn sm" @click="closeSearch()">{{ t('Close') }}</button>
+        </div>
+      </div>
     </div>
 
     <!-- ============ ping one device from the list ============ -->
@@ -3073,14 +3555,14 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
       <div class="modal">
         <div class="drawer-head">
           <span class="ic big">📂</span>
-          <div><strong>{{ t(picker.title) }}</strong><div class="dim tiny">{{ t('Your Nextcloud files') }}</div></div>
+          <div><strong>{{ t(picker.title) }}</strong><div class="dim tiny">{{ picker.remote ? t('On the server') : t('Your Nextcloud files') }}</div></div>
           <span class="spacer"></span>
           <button class="btn xs ib" :title="t('Close')" :aria-label="t('Close')" @click="picker.open=false"><svg viewBox="0 0 24 24"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg></button>
         </div>
         <div class="drawer-body">
           <div class="path-bar">
-            <button class="btn xs" :disabled="picker.path===''" @click="pickerOpen(picker.parent || '')">↑ {{ t('Up') }}</button>
-            <span class="mono dim">/{{ picker.path }}</span>
+            <button class="btn xs" :disabled="picker.remote ? !picker.parent : picker.path===''" @click="pickerOpen(picker.parent || '')">↑ {{ t('Up') }}</button>
+            <span class="mono dim">{{ picker.remote ? picker.path : '/' + picker.path }}</span>
           </div>
           <table class="grid compact">
             <tbody>
@@ -3755,13 +4237,26 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         },
         sendTo: '', sendSubject: '', sendBody: '', sendResult: null,
         mailboxResult: null,
+        mailList: null, mailFolder: '', mailOpen: null, mailShow: 'text', mailSearch: '', mailMoveTo: '',
+        mailMarkSeen: (() => { try { return localStorage.getItem('netbase.mailMarkSeen') !== '0'; } catch (e) { return true; } })(),
+        compose: { open: false, mode: 'new', to: '', cc: '', bcc: '', showCc: false, subject: '', body: '', attach: [], saveSent: true, inReplyTo: '', references: '', answered: null, forwarded: null, busy: false },
         // file transfer
         // Typed in, or chosen from the list — the same choice the SSH screen
         // offers, in the same order and with the same default.
         filesMode: 'type', filesPick: '',
         // The row under the pointer, and what the list is sorted by.
         filePicked: '', fileSort: { by: 'name', desc: false },
-        fileMenu: { open: false, x: 0, y: 0, entry: {} },
+        fileMenu: { open: false, x: 0, y: 0, entry: {}, rows: [] },
+        fileOp: { open: false, kind: '', rows: [], paths: [], dest: '', ncDest: '', where: 'server', format: 'zip', name: '', mode: '644', recurse: false, applyTo: 'all', busy: false, progress: '', into: 'folder', onExists: 'skip', archLoading: false },
+        archInfo: null,
+        textConv: { open: false, side: 'remote', rows: [], paths: [], files: [], loading: false, from: 'auto', to: 'UTF-8', newline: 'keep', bom: 'keep', output: 'copy', busy: false, progress: '', lost: [] },
+        clash: { open: false, items: [], choices: [], choice: '', offerAll: false, all: false },
+        queuePolicy: '',
+        clashSettle: null,
+        localFilter: '', remoteFilter: '', compare: false, syncBrowse: false, syncBase: null, syncing: false,
+        localMenu: { open: false, x: 0, y: 0, entry: {}, rows: [] },
+        bookmarkMenu: { open: false, x: 0, y: 0 },
+        searchBox: { open: false, path: '', pattern: '', busy: false, done: false, results: [], more: false, stop: null },
         // Asking for a name, a number or a plain yes. The browser's own
         // prompt() and confirm() stop the page dead in an embedded window and
         // cannot be driven by a test, so the question is asked in the page.
@@ -3797,7 +4292,8 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         // as long as the page is open and goes nowhere else: not to
         // localStorage, not to the settings, not to RegiBase. Reloading the
         // page asks again, which is the whole point of it.
-        asRoot: false, sudoDraft: '', sudoPassword: '',
+        asRoot: false, sudoDraft: '', sudoPassword: '', sudoUser: 'root', sudoOn: false, sudoFrom: '',
+        sudoUserChoices: ['root', 'www-data', 'nginx', 'apache', 'http', 'nobody'],
         // When the page was last touched while acting as root, and how many
         // minutes are left before it is given up.
         rootTouched: 0, rootLeft: 0, rootTimer: null,
@@ -3840,6 +4336,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         speedSize: 25, speedUpload: true, speedVia: 'auto', speedResult: null,
         // What the measurement has said so far, as it says it.
         speedLive: { running: false, phase: '', down: [], up: [] },
+        xferId: 0, xferMb: 10, xferFolder: '', xferResult: null, xferLive: '', xferStop: null,
         iperfHost: '', iperfPort: 5201, iperfSeconds: 10, iperfReverse: false, iperfResult: null,
         dnsBench: null, timingUrl: '', timingResult: null,
         // NETBASE-STORE-REMOVED: pathResult: null,
@@ -4000,6 +4497,8 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         if (this.filesKind === 'scp' && !kinds.includes('ssh')) kinds.push('ssh');
         return this.connections.filter((c) => kinds.includes(c.kind));
       },
+      /** Every saved connection that can carry a file, for the transfer speed test. */
+      xferConns() { return this.connections.filter((c) => ['ftp', 'sftp', 'ssh', 'scp'].includes(c.kind)); },
       /** SSH's own list. SFTP belongs with FTP, not here. */
       sshConnections() { return this.connections.filter((c) => c.kind === 'ssh'); },
       wolMethod() { return (this.settings.wol && this.settings.wol.method) || 'broadcast'; },
@@ -4024,9 +4523,20 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
        */
       /** The reader's own files, sorted and filtered the same way as the server's. */
       sortedLocal() {
+        const match = this.nameMatcher(this.localFilter);
         const rows = ((this.localData && this.localData.entries) || [])
-          .filter((e) => this.showHidden || !String(e.name).startsWith('.'));
+          .filter((e) => (this.showHidden || !String(e.name).startsWith('.')) && match(e.name));
         return this.sortRows(rows.slice(), this.localSort);
+      },
+      /** Each side's rows by name, for comparing the two. */
+      localByName() { return Object.fromEntries(((this.localData && this.localData.entries) || []).map((e) => [e.name, e])); },
+      remoteByName() { return Object.fromEntries(((this.filesData && this.filesData.entries) || []).map((e) => [e.name, e])); },
+      /** This connection's bookmarks. */
+      currentBookmarks() { return ((this.settings.fileBookmarks || {})[this.bookmarkKey]) || []; },
+      bookmarkKey() {
+        if (this.filesConn) return 'c' + this.filesConn;
+        const a = this.adhoc;
+        return (this.filesKind || a.kind) + ':' + (a.username || '') + '@' + a.host + ':' + (a.port || '');
       },
       /** How many rows are picked on each side, for the buttons to read. */
       localCount() { return Object.keys(this.localPicked).length; },
@@ -4039,8 +4549,9 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         return { now, waiting, done: this.queueDone.length };
       },
       sortedFiles() {
+        const match = this.nameMatcher(this.remoteFilter);
         const rows = ((this.filesData && this.filesData.entries) || [])
-          .filter((e) => this.showHidden || !String(e.name).startsWith('.'));
+          .filter((e) => (this.showHidden || !String(e.name).startsWith('.')) && match(e.name));
         const by = this.fileSort.by;
         const dir = this.fileSort.desc ? -1 : 1;
         rows.sort((a, b) => {
@@ -4114,7 +4625,52 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
       canElevate() {
         if (!this.connCaps.elevate) return false;
         const kind = this.filesConn ? (this.connById(this.filesConn) || {}).kind : this.adhoc.kind;
-        return kind === 'scp' || kind === 'ssh';
+        // SFTP too: the server opens it over SCP, the same account and key, for this.
+        return kind === 'scp' || kind === 'ssh' || kind === 'sftp';
+      },
+      /** An account name sudo can be handed, checked again on the server. */
+      validSudoUser() { return /^[A-Za-z0-9_][A-Za-z0-9._-]{0,63}$/.test(String(this.sudoUser || '').trim()); },
+      fileMenuMany() { return (this.fileMenu.rows || []).length > 1; },
+      /** The formats for the compress dialog: all of them, the unusable ones with why. */
+      archiveChoices() {
+        const formats = this.archInfo && this.archInfo.formats;
+        const rows = this.fileOp.rows || [];
+        const oneFile = rows.length === 1 && !rows[0].directory;
+        return ARCHIVE_FORMATS.map(([id, label]) => {
+          let why = '';
+          if (ARCHIVE_SINGLE.includes(id) && !oneFile) why = T('one file only');
+          else if (formats && formats[id] && !formats[id].make) why = T('not on this server');
+          return { id, label, why };
+        });
+      },
+      /** Why the chosen archive cannot be opened on this server, or ''. */
+      extractBlocked() {
+        if (this.fileOp.kind !== 'extract' || !this.fileOp.rows.length) return '';
+        const id = this.archiveOf(this.fileOp.rows[0].name);
+        const formats = this.archInfo && this.archInfo.formats;
+        if (!id || !formats || !formats[id] || formats[id].open) return '';
+        return T('This server has no tool that opens {ext} files, and NetBase cannot open them itself.', { ext: (formats[id] && formats[id].ext) || id });
+      },
+      textEncodings() { return TEXT_ENCODINGS; },
+      /** The open message's row in the list, which carries its marks. */
+      mailRow() { return this.mailOpen && this.mailList ? this.mailList.messages.find((m) => m.ref === this.mailOpen.ref) || null : null; },
+      composeFrom() { return (this.mailOpen && this.mailOpen.me) || this.mailMe || ''; },
+      mailMe() {
+        if (this.acctMode === 'saved') { const c = (this.connections || []).find((x) => x.id === this.mailAccountId); return c ? (c.from || c.username || '') : ''; }
+        return this.mailAdhoc.from || this.mailAdhoc.username || '';
+      },
+      /** Whether the conversion dialog has anything to do. */
+      textConvChanges() { const c = this.textConv; return c.to !== 'keep' || c.newline !== 'keep' || c.bom !== 'keep'; },
+      /** The first lines of the first file that has some, as read. */
+      textConvPreview() {
+        const f = (this.textConv.files || []).find((x) => x.preview);
+        return f ? f.preview : '';
+      },
+      fileOpTitle() {
+        return { copy: T('Copy'), move: T('Move'), compress: T('Compress'), extract: T('Extract'), chmod: T('Change permissions') }[this.fileOp.kind] || '';
+      },
+      fileOpConfirm() {
+        return { copy: T('Copy'), move: T('Move'), compress: T('Compress'), extract: T('Extract'), chmod: T('Change') }[this.fileOp.kind] || T('OK');
       },
       /**
        * The types offered when making a connection.
@@ -4873,6 +5429,32 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         this.banner = { kind: 'error', text: String((e && e.message) || e), reload: !!(e && e.sessionLost) };
       },
       reloadPage() { window.location.reload(); },
+      /**
+       * An error stays up until it is read, but only until the next thing is
+       * done. Before, it stayed until it was closed or the tab changed, so the
+       * error of the last task sat over the next one as if it were about it.
+       * What counts as the next task is what a person does: a button pressed,
+       * Enter in a field, a choice made in a list, a row opened, a file dropped,
+       * a key that acts on a file list. A refresh NetBase makes on its own is not
+       * one, or a fresh error would be wiped by the reload that follows it. The
+       * banner's own buttons are not one either, and a notice that the session
+       * has run out stays: nothing works until the page is reloaded.
+       */
+      onRootAction(e) {
+        const b = this.banner;
+        if (!b || b.kind !== 'error' || b.reload) return;
+        const t = e.target;
+        if (!(t instanceof Element) || t.closest('.banner')) return;
+        if (e.type === 'click' && !t.closest('button, .btn, a[href], [role=button], .mail-row')) return;
+        if (e.type === 'change' && !t.matches('select, input[type=checkbox], input[type=radio]')) return;
+        if (e.type === 'keydown') {
+          const field = e.key === 'Enter' && t.matches('input, select');
+          const list = ['Enter', 'F2', 'F5', 'Delete', 'Backspace'].includes(e.key) && t.closest('.pane-body');
+          if (!field && !list) return;
+        }
+        clearTimeout(this.noteTimer);
+        this.banner = null;
+      },
       note(text) {
         this.banner = { kind: 'info', text };
         // An informational notice (a finished scan, a saved file) fades on its
@@ -5677,7 +6259,13 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         try { here = frame.contentWindow.location.pathname + frame.contentWindow.location.search; } catch (e) { this.endWindowLoad(w); return; }
         if (!here || !w.url) { this.endWindowLoad(w); return; }
         const prefix = w.url.replace(/\/$/, '');
-        if (here.indexOf(prefix) === 0) {
+        // A ticket of its own, which the server issues when a device sends the
+        // window to another address of its own (http to https on port 4444, a
+        // controller to its access point), is still inside the proxy. Taken for
+        // an escape, the window "corrected" it into a loop and gave up with
+        // "keeps leaving the device window" (a Check Point appliance, 2026-10-19).
+        const root = prefix.slice(0, prefix.indexOf('/proxy/') + 7);
+        if (here.indexOf(prefix) === 0 || (root.length > 7 && here.indexOf(root) === 0)) {
           this.endWindowLoad(w);                        // the page is here — stop the loading indicator
           // Clicking a button up here takes the focus off whatever was being
           // typed into down there, so the field has to be remembered while it
@@ -5685,6 +6273,14 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
           try {
             const doc = frame.contentWindow.document;
             doc.addEventListener('focusin', (e) => { w.field = e.target; }, true);
+            // A device that answers with nothing at all (a Panasonic AV server
+            // sends "200, Content-Length: 0") leaves a blank window that looks
+            // like NetBase failed; say what came back instead.
+            const body = doc.body;
+            if (!doc.querySelector('script,meta[http-equiv],frameset,frame,iframe,img,svg,object,embed,canvas,video,form,input')
+              && !(body && body.textContent.trim())) {
+              this.windowToast(w, T('The device sent an empty page. Its web interface may be at another address or port.'), 'info', 12000);
+            }
           } catch (e) { /* not ours to listen to */ }
           if (w.fit) { this.applyFit(w, frame.contentWindow); } else { this.applyZoom(w, frame.contentWindow); }
           return;                                       // still inside the proxy
@@ -5888,8 +6484,38 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
           w.y = Math.max(0, Math.min(w.y, window.innerHeight - 60));
         }
       },
+      /** The device window a message came from: the page in it, or a frame inside that page. */
+      windowOfSource(source) {
+        const frames = [...document.querySelectorAll('.devwin-frame')];
+        let src = source, frame = null;
+        for (let i = 0; src && i < 8 && !frame; i++) {
+          frame = frames.find((f) => f.contentWindow === src) || null;
+          if (src === src.parent) break;
+          src = src.parent;
+        }
+        return frame ? this.windows.find((x) => String(x.id) === frame.getAttribute('data-window')) || null : null;
+      },
       onWindowMessage(event) {
         const data = event && event.data;
+        // A click inside the window: the next page is on its way. Shown as
+        // loading until a page (or a frame's page) says it has arrived, so a slow
+        // device does not look as if the click did nothing. A download fires the
+        // first and never the second, hence the limit.
+        if (data && data.netbase === 'busy' && event.origin === location.origin) {
+          const w = this.windowOfSource(event.source);
+          if (!w || w.error) return;
+          if (data.state === 'loading') {
+            w.navPending = true;
+            this.startWindowLoad(w);
+            clearTimeout(w.navGuard);
+            w.navGuard = setTimeout(() => { if (w.navPending) { w.navPending = false; this.endWindowLoad(w); } }, 45000);
+          } else if (w.navPending) {
+            w.navPending = false;
+            clearTimeout(w.navGuard);
+            this.endWindowLoad(w);
+          }
+          return;
+        }
         if (data && data.netbase === 'diag' && data.ev && event.origin === location.origin) {
           // From the page itself or from a frame inside it: the window is the one
           // whose frame the sender sits in.
@@ -6045,7 +6671,12 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         this.ctxmClose();
         if (it && typeof it.run === 'function') it.run();
       },
-      onCtxKey(event) { if (event.key === 'Escape' && this.nbctx.open) this.ctxmClose(); },
+      onCtxKey(event) {
+        if (event.key !== 'Escape') return;
+        // Escape puts away whichever menu is open: the app's own, or a row's.
+        if (this.nbctx.open) this.ctxmClose();
+        for (const m of [this.fileMenu, this.localMenu, this.bookmarkMenu]) if (m && m.open) m.open = false;
+      },
       /**
        * The ways into this device, from the ports it actually has open.
        *
@@ -7459,6 +8090,155 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         this.sendResult = await this.guarded('send', () => api('mail/send', { method: 'POST', body: JSON.stringify(body) }));
         if (this.sendResult) this.note(this.sendResult.ok ? T('The server accepted the message') : T('Sending failed: {error}', { error: this.sendResult.error }));
       },
+      /** The newest messages, or older ones added under them. */
+      async loadMail(offset, more = false) {
+        const body = this.mailTarget({ folder: this.mailFolder, offset, limit: 50, search: this.mailSearch.trim() });
+        const r = await this.guarded('mailread', () => api('mail/messages', { method: 'POST', body: JSON.stringify(body) }));
+        if (!r) return;
+        if (more && this.mailList) {
+          this.mailList = { ...r, offset: this.mailList.offset, messages: this.mailList.messages.concat(r.messages) };
+        } else {
+          this.mailList = r;
+          this.mailOpen = null;
+        }
+        this.mailFolder = r.folder;
+      },
+      async openMail(m) {
+        this.mailOpen = null;
+        const mark = this.mailMarkSeen && this.mailList && this.mailList.kind === 'imap' && m.seen === false;
+        const body = this.mailTarget({ folder: this.mailFolder, ref: m.ref, markSeen: mark });
+        const r = await this.guarded('mailopen', () => api('mail/message', { method: 'POST', body: JSON.stringify(body) }));
+        if (!r) return;
+        this.mailOpen = r;
+        this.mailShow = r.html ? 'html' : 'text';
+        this.mailMoveTo = '';
+        if (mark) m.seen = true;
+      },
+      saveMailMarkSeen() { try { localStorage.setItem('netbase.mailMarkSeen', this.mailMarkSeen ? '1' : '0'); } catch (e) { /* private window */ } },
+      /** "Name <a@b>", quoted when the name holds a comma or the like. */
+      mailAddr(a) {
+        if (!a || !a.address) return '';
+        if (!a.name) return a.address;
+        return (/[,;<>@"]/.test(a.name) ? '"' + a.name.replace(/"/g, '') + '"' : a.name) + ' <' + a.address + '>';
+      },
+      /** Where a deleted message goes: the Trash folder, or null when it is removed for good. */
+      mailTrash() {
+        const fs = (this.mailList && this.mailList.folders) || [];
+        const t = fs.find((f) => f.use === 'trash') || fs.find((f) => /^(?:inbox[./])?(?:trash|deleted|deleted items|deleted messages|bin|ゴミ箱|ごみ箱|削除済み|削除済みアイテム)$/i.test(f.label));
+        return t ? t.name : null;
+      },
+      openCompose(mode) {
+        const o = this.mailOpen;
+        const me = String(this.composeFrom || '').toLowerCase();
+        const c = { open: true, mode, to: '', cc: '', bcc: '', showCc: false, subject: '', body: '', attach: [], saveSent: !/gmail|googlemail/i.test(String(this.mailAdhoc.sendHost || this.mailAdhoc.host || '')),
+          inReplyTo: '', references: '', answered: null, forwarded: null, busy: false };
+        if (o && mode !== 'new') {
+          const when = o.date ? new Date(o.date * 1000).toLocaleString() : (o.dateText || '');
+          const quote = String(o.quote || o.text || '').replace(/\r\n?/g, '\n').replace(/\s+$/, '');
+          if (mode === 'forward') {
+            c.subject = /^\s*(fwd?|fw|wg|tr|rv)\s*:/i.test(o.subject || '') ? o.subject : 'Fwd: ' + (o.subject || '');
+            c.body = '\n\n---------- ' + T('Forwarded message') + ' ----------\n' + T('From') + ': ' + (o.from || '') + '\n' + T('Date') + ': ' + when + '\n'
+              + T('Mail subject') + ': ' + (o.subject || '') + '\n' + T('To') + ': ' + (o.to || '') + '\n\n' + quote + '\n';
+            c.attach = (o.attachments || []).map((a) => ({ kind: 'original', folder: this.mailFolder, ref: o.ref, index: a.index, name: a.name, size: a.size }));
+            if (this.mailList.kind === 'imap') c.forwarded = { folder: this.mailFolder, ref: o.ref };
+          } else {
+            const target = (o.replyToList && o.replyToList.length ? o.replyToList : o.fromList) || [];
+            c.to = target.map((a) => this.mailAddr(a)).join(', ');
+            if (mode === 'all') {
+              const seen = new Set(target.map((a) => a.address.toLowerCase()).concat(me ? [me] : []));
+              const rest = [...(o.toList || []), ...(o.ccList || [])].filter((a) => { const k = a.address.toLowerCase(); if (seen.has(k)) return false; seen.add(k); return true; });
+              c.cc = rest.map((a) => this.mailAddr(a)).join(', ');
+              c.showCc = !!c.cc;
+            }
+            c.subject = /^\s*(re|aw|sv|antw)\s*:/i.test(o.subject || '') ? o.subject : 'Re: ' + (o.subject || '');
+            c.body = '\n\n' + T('On {date}, {from} wrote:', { date: when, from: this.mailName(o.from) }) + '\n' + quote.split('\n').map((l) => '> ' + l).join('\n') + '\n';
+            c.inReplyTo = o.messageId || '';
+            c.references = o.references || '';
+            if (this.mailList.kind === 'imap') c.answered = { folder: this.mailFolder, ref: o.ref };
+          }
+        }
+        this.compose = c;
+        this.$nextTick(() => { const el = document.getElementById(mode === 'new' || mode === 'forward' ? 'nb-compose-to' : 'nb-compose-subject'); if (el) el.focus(); });
+      },
+      attachFromNextcloud() {
+        this.pickFile('Choose a file to attach', (p, entry) => {
+          if (!p) return;
+          this.compose.attach.push({ kind: 'nextcloud', path: p, name: String(p).split('/').pop(), size: entry && entry.size });
+        });
+      },
+      async sendCompose() {
+        const c = this.compose;
+        if (c.busy) return;
+        c.busy = true;
+        try {
+          const body = this.mailTarget({
+            to: c.to, cc: c.cc, bcc: c.bcc, subject: c.subject, body: c.body, inReplyTo: c.inReplyTo, references: c.references,
+            attach: c.attach.map((a) => (a.kind === 'original' ? { kind: 'original', folder: a.folder, ref: a.ref, index: a.index } : { kind: 'nextcloud', path: a.path })),
+            saveSent: !!(this.mailList && this.mailList.kind === 'imap' && c.saveSent), answered: c.answered, forwarded: c.forwarded,
+          });
+          const r = await api('mail/compose', { method: 'POST', body: JSON.stringify(body) });
+          c.open = false;
+          this.note([T('The message was sent.'), r.savedTo ? T('A copy is in {folder}.', { folder: this.mailFolderLabel(r.savedTo) }) : '', r.note || ''].filter(Boolean).join(' '));
+          if (this.mailRow && c.answered) this.mailRow.answered = true;
+          if (this.mailRow && c.forwarded) this.mailRow.forwarded = true;
+        } catch (e) {
+          this.fail(e);
+        } finally {
+          c.busy = false;
+        }
+      },
+      mailFolderLabel(name) { const f = ((this.mailList && this.mailList.folders) || []).find((x) => x.name === name); return f ? f.label : name; },
+      async mailAct(action, target = '') {
+        const o = this.mailOpen;
+        if (!o) return;
+        const pop = this.mailList.kind !== 'imap';
+        const trash = this.mailTrash();
+        if (action === 'delete' && (pop || !trash || trash === this.mailFolder)) {
+          if (!await this.askFor({ icon: '🗑️', title: T('Delete'), subject: o.subject || T('(no subject)'), input: false, danger: true,
+            body: T('This message is removed from the server for good. It cannot be undone.'), confirm: T('Delete') })) return;
+        }
+        const r = await this.guarded('mailact', () => api('mail/action', { method: 'POST', body: JSON.stringify(this.mailTarget({ action, folder: this.mailFolder, refs: [o.ref], target })) }));
+        if (!r) return;
+        const row = this.mailRow;
+        if (action === 'seen' || action === 'unseen') { if (row) row.seen = action === 'seen'; return; }
+        if (action === 'flag' || action === 'unflag') { if (row) row.flagged = action === 'flag'; return; }
+        // moved or deleted: it leaves this folder's list
+        this.mailList.messages = this.mailList.messages.filter((m) => m.ref !== o.ref);
+        this.mailList.total = Math.max(0, this.mailList.total - 1);
+        this.mailOpen = null;
+        this.note(r.movedTo ? T('Moved to {folder}.', { folder: this.mailFolderLabel(r.movedTo) }) : T('Deleted.'));
+        if (pop) this.loadMail(0);
+      },
+      async saveMailAttachment(a) {
+        const body = this.mailTarget({ folder: this.mailFolder, ref: this.mailOpen.ref, part: a.index, target: this.filesTarget || 'NetBase' });
+        const r = await this.guarded('mailatt', () => api('mail/attachment', { method: 'POST', body: JSON.stringify(body) }));
+        if (r) this.note(T('{name} saved to {folder}', { name: r.name || a.name, folder: r.path || (this.filesTarget || 'NetBase') }));
+      },
+      /**
+       * An HTML message, for a frame that runs no scripts and fetches nothing:
+       * only pictures carried in the message itself (data:) are shown. Links
+       * open in a new tab, outside the frame.
+       */
+      mailFrame(html) {
+        const csp = "default-src 'none'; img-src data:; style-src 'unsafe-inline'; font-src data:";
+        return '<!doctype html><html><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="' + csp + '">'
+          + '<base target="_blank"><style>html{background:#fff;color:#111}body{font-family:system-ui,sans-serif;font-size:14px;margin:12px;overflow-wrap:anywhere}img{max-width:100%;height:auto}</style></head><body>'
+          + String(html).replace(/<script\b[\s\S]*?<\/script>/gi, '').replace(/<meta[^>]+http-equiv[^>]*>/gi, '')
+          + '</body></html>';
+      },
+      /** "Sato Taro <taro@example.jp>" → "Sato Taro"; an address alone stays as it is. */
+      mailName(from) {
+        const m = String(from || '').match(/^\s*"?([^"<]+?)"?\s*<[^>]+>\s*$/);
+        return m ? m[1] : String(from || '');
+      },
+      mailWhen(ts) {
+        if (!ts) return '';
+        const d = new Date(ts * 1000);
+        const now = new Date();
+        return d.toDateString() === now.toDateString()
+          ? d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+          : d.toLocaleDateString();
+      },
       async runMailbox() {
         const body = this.mailTarget({});
         this.mailboxResult = await this.guarded('mailbox', () => api('mail/login', { method: 'POST', body: JSON.stringify(body) }));
@@ -7500,7 +8280,10 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
       fileTarget(extra) {
         this.touchRoot();
         const out = { id: this.filesConn, connection: this.filesConn ? {} : { ...this.adhoc }, ...extra };
-        if (this.asRoot && this.sudoPassword) out.sudoPassword = this.sudoPassword;
+        if (this.asRoot && this.sudoOn) {
+          out.sudoPassword = this.sudoPassword;
+          out.sudoUser = String(this.sudoUser || 'root').trim();
+        }
         // Which protocol the screen is set to. A connection saved as SSH can be
         // opened over SFTP or over SCP, and only SCP can act as root — without
         // this the server chose SFTP and "act as root" did nothing at all.
@@ -7521,36 +8304,583 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
       /** The menu for one row, placed where the pointer is. */
       openFileMenu(entry, event) {
         this.filePicked = entry.name;
-        const width = 230, height = 260;
-        this.fileMenu = {
-          open: true, entry,
-          x: Math.max(8, Math.min(event.clientX, window.innerWidth - width - 8)),
-          y: Math.max(8, Math.min(event.clientY, window.innerHeight - height - 8)),
-        };
+        // Right-clicking one of several chosen rows acts on all of them; any
+        // other row becomes the only one chosen, as in every file manager.
+        if (!this.remotePicked[entry.name]) this.remotePicked = { [entry.name]: true };
+        const rows = this.pickedRows('remote');
+        this.fileMenu = { open: true, entry, rows: rows.length ? rows : [entry], x: Math.max(8, event.clientX), y: Math.max(8, event.clientY) };
+        this.fitRowMenu(this.fileMenu);
+      },
+      /**
+       * Move an open row menu to where all of it can be seen. It opens where
+       * the pointer was; how tall it is depends on what the row offers, so it
+       * is measured once drawn instead of guessed. The guess (430px) cut the
+       * end of the file menu off below the window once the menu had grown past
+       * it. A menu taller than the window scrolls inside itself (see the CSS).
+       */
+      fitRowMenu(state) {
+        this.$nextTick(() => {
+          const el = this.$el && this.$el.querySelector ? this.$el.querySelector('.row-menu') : null;
+          if (!el || !state.open) return;
+          const r = el.getBoundingClientRect();
+          if (r.right > window.innerWidth - 8) state.x = Math.max(8, window.innerWidth - r.width - 8);
+          if (r.bottom > window.innerHeight - 8) state.y = Math.max(8, window.innerHeight - r.height - 8);
+        });
       },
       async runFileMenu(what) {
         const e = this.fileMenu.entry;
-        this.fileMenu = { open: false, x: 0, y: 0, entry: {} };
+        const rows = (this.fileMenu.rows || []).length ? this.fileMenu.rows : [e];
+        this.fileMenu = { open: false, x: 0, y: 0, entry: {}, rows: [] };
         if (!e || !e.name) return;
         const full = this.joinPath(this.filesData.path, e.name);
+        if (what === 'copyTo') return this.openFileOp('copy', rows);
+        if (what === 'moveTo') return this.openFileOp('move', rows);
+        if (what === 'compress') return this.openFileOp('compress', rows);
+        if (what === 'extract') return this.openFileOp('extract', rows);
+        if (what === 'textconv') return this.openTextConv('remote', rows);
+        if (what === 'chmod') return this.openFileOp('chmod', rows);
+        if (rows.length > 1) {
+          if (what === 'download') { this.remotePicked = Object.fromEntries(rows.map((r) => [r.name, true])); return this.enqueue('remote'); }
+          if (what === 'delete') return this.deleteMany(rows);
+          if (what === 'chown' || what === 'chgrp') return this.chownMany(what, rows);
+          return;
+        }
+        if (what === 'copyUrl') {
+          const url = this.fileUrl(full);
+          try { await navigator.clipboard.writeText(url); this.note(T('Copied')); }
+          catch (err) { this.note(url); }
+          return;
+        }
         if (what === 'open') return this.browse(full);
         if (what === 'view') return this.openText(e);
         if (what === 'download') return this.downloadFile(e);
         if (what === 'rename') return this.fileAction('rename', e);
         if (what === 'delete') return this.fileAction(e.directory ? 'rmdir' : 'delete', e);
-        if (what === 'chmod') return this.fileAction('chmod', e);
         if (what === 'chown' || what === 'chgrp' || what === 'touch') return this.fileAction(what, e);
         if (what === 'copyPath') {
           try { await navigator.clipboard.writeText(full); this.note(T('Copied')); }
           catch (err) { this.note(full); }
         }
       },
+      /** A test for names: plain text matches anywhere; * and ? are wildcards. Case is ignored. */
+      nameMatcher(filter) {
+        const f = String(filter || '').trim().toLowerCase();
+        if (!f) return () => true;
+        if (!/[*?]/.test(f)) return (name) => String(name).toLowerCase().includes(f);
+        const re = new RegExp('^' + f.replace(/[.+^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*').replace(/\?/g, '.') + '$');
+        return (name) => re.test(String(name).toLowerCase());
+      },
+      /**
+       * What comparing the two sides says about one row: there only on this
+       * side, newer than the other side's, or a different size. Facts, in
+       * words — not a colour that says which side is right.
+       */
+      compareTag(side, e) {
+        if (!this.compare || !this.localData || !this.filesData) return '';
+        const other = (side === 'local' ? this.remoteByName : this.localByName)[e.name];
+        if (!other) return T('Only here');
+        if (e.directory || other.directory) return '';
+        if (e.size !== null && other.size !== null && e.size !== other.size) return T('Size differs');
+        if (e.modified && other.modified && e.modified > other.modified + 1) return T('Newer');
+        return '';
+      },
+      /** The keys a file manager answers to, in whichever pane has the focus. */
+      paneKey(side, e) {
+        if (/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) return;
+        const remote = side === 'remote';
+        const rows = this.pickedRows(side);
+        const one = rows.length === 1 ? rows[0] : null;
+        const key = e.key;
+        let done = true;
+        if (key === 'F5') {
+          if (remote) this.browse(this.filesData ? this.filesData.path : this.filesPath); else this.browseLocal(this.localPath);
+        } else if (key === 'Backspace') {
+          if (remote && this.filesData && this.filesData.parent) this.browse(this.filesData.parent);
+          else if (!remote && this.localData && this.localData.parent !== null) this.browseLocal(this.localData.parent);
+        } else if (key === 'Enter' && one) {
+          if (remote) { if (one.directory) this.openEntry(one); else this.openText(one); } else if (one.directory) this.browseLocal(one.path);
+        } else if (key === 'Delete' && rows.length) {
+          if (!remote) this.localDelete(rows);
+          else if (rows.length > 1) this.deleteMany(rows);
+          else this.fileAction(one.directory ? 'rmdir' : 'delete', one);
+        } else if (key === 'F2' && one) {
+          if (remote) this.fileAction('rename', one); else this.localRename(one);
+        } else if ((e.ctrlKey || e.metaKey) && key.toLowerCase() === 'a') {
+          this.pickAll(side);
+        } else if (key === 'ArrowDown' || key === 'ArrowUp') {
+          const list = remote ? this.sortedFiles : this.sortedLocal;
+          if (!list.length) return;
+          const at = one ? list.findIndex((r) => r.name === one.name) : -1;
+          const next = list[Math.max(0, Math.min(list.length - 1, at + (key === 'ArrowDown' ? 1 : -1)))];
+          if (remote) this.remotePicked = { [next.name]: true }; else this.localPicked = { [next.name]: true };
+        } else {
+          done = false;
+        }
+        if (done) e.preventDefault();
+      },
+      openLocalMenu(entry, event) {
+        if (!this.localPicked[entry.name]) this.localPicked = { [entry.name]: true };
+        const rows = this.pickedRows('local');
+        this.localMenu = { open: true, entry, rows: rows.length ? rows : [entry], x: Math.max(8, event.clientX), y: Math.max(8, event.clientY) };
+        this.fitRowMenu(this.localMenu);
+      },
+      runLocalMenu(what) {
+        const { entry, rows } = this.localMenu;
+        this.localMenu = { open: false, x: 0, y: 0, entry: {}, rows: [] };
+        if (what === 'open') return this.browseLocal(entry.path);
+        if (what === 'send') { this.localPicked = Object.fromEntries(rows.map((r) => [r.name, true])); return this.enqueue('local'); }
+        if (what === 'rename') return this.localRename(entry);
+        if (what === 'textconv') return this.openTextConv('local', rows);
+        if (what === 'delete') return this.localDelete(rows);
+      },
+      async localNewFolder() {
+        const name = await this.askFor({ icon: '📁', title: T('New folder'), label: T('Name for the new folder'), confirm: T('Create') });
+        if (!name) return;
+        const r = await this.guarded('localop', () => api('nc-files/op', { method: 'POST', body: JSON.stringify({ action: 'mkdir', path: this.localPath || '', name }) }));
+        if (r) this.browseLocal(this.localPath);
+      },
+      async localRename(entry) {
+        const name = await this.askFor({ icon: entry.directory ? '📁' : '📄', title: T('Rename'), subject: entry.name, label: T('New name'), value: entry.name });
+        if (!name || name === entry.name) return;
+        const r = await this.guarded('localop', () => api('nc-files/op', { method: 'POST', body: JSON.stringify({ action: 'rename', path: entry.path, name }) }));
+        if (r) this.browseLocal(this.localPath);
+      },
+      /** Into the Nextcloud trash, as from Files — said so, since it can be brought back from there. */
+      async localDelete(rows) {
+        const says = rows.length > 1 ? T('Move {n} items to the Nextcloud trash?', { n: rows.length }) : T('Move {name} to the Nextcloud trash?', { name: rows[0].name });
+        if (!await this.askFor({ icon: '🗑️', title: T('Delete'), subject: rows.map((r) => r.name).slice(0, 5).join(', '), input: false, danger: true, body: says + ' ' + T('It can be restored from the trash in Files.'), confirm: T('Delete') })) return;
+        const failed = [];
+        for (const row of rows) {
+          try { await api('nc-files/op', { method: 'POST', body: JSON.stringify({ action: 'delete', path: row.path }) }); }
+          catch (e) { failed.push(row.name + ': ' + String((e && e.message) || e)); }
+        }
+        if (failed.length) this.note(failed.join(' / '));
+        this.browseLocal(this.localPath);
+      },
+      openSearch() {
+        if (!this.filesData) return;
+        this.searchBox = { open: true, path: this.filesData.path, pattern: this.searchBox.pattern || '', busy: false, done: false, results: [], more: false, stop: null };
+        this.$nextTick(() => { if (this.$refs.searchInput) this.$refs.searchInput.focus(); });
+      },
+      async runSearch() {
+        const box = this.searchBox;
+        if (box.busy || !box.pattern.trim()) return;
+        const controller = new AbortController();
+        box.busy = true; box.done = false; box.results = []; box.more = false; box.stop = () => controller.abort();
+        try {
+          const r = await this.runFileOp({ action: 'search', path: box.path, pattern: box.pattern.trim() }, controller.signal);
+          box.results = r.results || [];
+          box.more = !!r.more;
+          box.done = true;
+        } catch (e) {
+          if (!(e && (e.name === 'AbortError' || /abort/i.test(String(e.message || ''))))) this.note(String((e && e.message) || e));
+        } finally {
+          box.busy = false;
+          box.stop = null;
+        }
+      },
+      stopSearch() { if (this.searchBox.stop) this.searchBox.stop(); },
+      closeSearch() { this.stopSearch(); this.searchBox.open = false; },
+      async goSearchHit(hit) {
+        const parent = hit.path.replace(/\/[^/]*$/, '') || '/';
+        this.searchBox.open = false;
+        if (hit.directory) { await this.browse(hit.path); return; }
+        await this.browse(parent);
+        const name = hit.path.split('/').pop();
+        this.remotePicked = { [name]: true };
+      },
+      openBookmarks(event) {
+        this.bookmarkMenu = { open: true, x: Math.max(8, event.clientX - 120), y: Math.max(8, event.clientY + 12) };
+        this.fitRowMenu(this.bookmarkMenu);
+      },
+      async addBookmark() {
+        if (!this.filesData) return;
+        const name = await this.askFor({ icon: '★', title: T('Add this folder'), subject: this.filesData.path, label: T('Name for the bookmark'), value: this.filesData.path.split('/').filter(Boolean).pop() || '/' });
+        if (!name) return;
+        const list = this.currentBookmarks.concat([{ name, remote: this.filesData.path, local: this.localPath || '' }]);
+        await this.saveBookmarks(list);
+        this.bookmarkMenu.open = false;
+      },
+      async removeBookmark(i) {
+        const list = this.currentBookmarks.slice();
+        list.splice(i, 1);
+        await this.saveBookmarks(list);
+      },
+      async goBookmark(b) {
+        this.bookmarkMenu.open = false;
+        const sync = this.syncBrowse;
+        this.syncBrowse = false;
+        await this.browse(b.remote);
+        if (b.local) await this.browseLocal(b.local);
+        this.syncBrowse = sync;
+        if (sync) this.syncBase = { local: this.localPath || '', remote: this.filesData ? this.filesData.path : '' };
+      },
+      async saveBookmarks(list) {
+        const all = { ...(this.settings.fileBookmarks || {}) };
+        if (list.length) all[this.bookmarkKey] = list; else delete all[this.bookmarkKey];
+        this.settings = { ...this.settings, fileBookmarks: all };
+        try { await api('settings', { method: 'POST', body: JSON.stringify({ settings: { fileBookmarks: all } }) }); } catch (e) { this.fail(e); }
+      },
+      /** Synchronized browsing starts from the two folders open now, as the pair to keep in step. */
+      syncToggled() {
+        this.syncBase = this.syncBrowse && this.filesData ? { local: this.localPath || '', remote: this.filesData.path } : null;
+        if (this.syncBrowse && !this.filesData) this.syncBrowse = false;
+      },
+      /**
+       * Open on the other side the folder that matches where this side went.
+       * Leaving the pair of starting folders, or reaching a folder the other
+       * side does not have, ends it — and says so — rather than leaving one
+       * side behind without a word.
+       */
+      async mirror(from, path) {
+        const base = this.syncBase;
+        if (!base) return;
+        const here = String(from === 'remote' ? base.remote : base.local).replace(/\/+$/, '');
+        const p = String(path || '').replace(/\/+$/, '');
+        if (p !== here && !p.startsWith(here + '/') && !(here === '' && from === 'local')) {
+          this.syncBrowse = false;
+          this.note(T('Synchronized browsing is off: this folder is outside the pair it started from.'));
+          return;
+        }
+        const rel = p.slice(here.length).replace(/^\/+/, '');
+        const there = String(from === 'remote' ? base.local : base.remote).replace(/\/+$/, '');
+        const target = rel ? (there === '' ? rel : there + '/' + rel) : (there || (from === 'remote' ? '' : '/'));
+        this.syncing = true;
+        try {
+          const ok = from === 'remote' ? await this.browseLocal(target) : await this.browse(target);
+          if (!ok) {
+            this.syncBrowse = false;
+            this.note(T('Synchronized browsing is off: the other side has no folder {name}.', { name: rel || '/' }));
+          }
+        } finally {
+          this.syncing = false;
+        }
+      },
+      /** sftp://user@host:port/path, for pasting into another client. */
+      fileUrl(path) {
+        const c = this.filesSaved || this.adhoc;
+        const kind = (this.filesKind || c.kind || 'sftp') === 'ftp' ? (c.mode === 'tls' ? 'ftps' : 'ftp') : (this.filesKind === 'scp' ? 'scp' : 'sftp');
+        const fallback = kind.startsWith('ftp') ? 21 : 22;
+        const port = Number(c.port) && Number(c.port) !== fallback ? ':' + c.port : '';
+        const user = c.username ? encodeURIComponent(c.username) + '@' : '';
+        const host = String(c.host || '').includes(':') ? '[' + c.host + ']' : c.host;
+        return kind + '://' + user + host + port + encodeURI(path.startsWith('/') ? path : '/' + path);
+      },
+      openFileOp(kind, rows) {
+        const here = (this.filesData && this.filesData.path) || '/';
+        const one = rows.length === 1 ? rows[0] : null;
+        const perms = one ? String(one.permissions || '') : '';
+        this.fileOp = {
+          open: true, kind, rows, paths: rows.map((r) => this.joinPath(here, r.name)),
+          dest: here, ncDest: this.filesTarget || 'NetBase', where: 'server', format: 'zip',
+          name: one ? one.name : 'archive',
+          mode: /^[0-7]{3,4}$/.test(perms) ? perms.replace(/^0(?=[0-7]{3}$)/, '') : (one && one.directory ? '755' : '644'),
+          recurse: false, applyTo: 'all', busy: false, progress: '',
+          into: 'folder', onExists: 'skip', archLoading: false,
+        };
+        if (kind === 'compress' || kind === 'extract') this.loadArchivers();
+      },
+      /**
+       * What the connected server can make and open, asked once per connection
+       * (and again after acting as another user, who may see other tools).
+       */
+      async loadArchivers() {
+        const key = this.bookmarkKey + '|' + (this.sudoOn ? this.sudoUser : '');
+        if (this.archInfo && this.archInfo.key === key) { this.pickArchiveFormat(); return; }
+        this.archInfo = null;
+        this.fileOp.archLoading = true;
+        try {
+          const r = await this.runFileOp({ action: 'archivers', paths: [] });
+          this.archInfo = { key, formats: r.formats || null, shell: !!r.shell };
+        } catch (e) {
+          this.archInfo = { key, formats: null, shell: false };
+        } finally {
+          this.fileOp.archLoading = false;
+        }
+        this.pickArchiveFormat();
+      },
+      /** Keep the chosen format if it can be made here, otherwise the first that can. */
+      pickArchiveFormat() {
+        if (this.fileOp.kind !== 'compress') return;
+        const ok = this.archiveChoices.filter((f) => !f.why);
+        if (ok.length && !ok.some((f) => f.id === this.fileOp.format)) this.fileOp.format = ok[0].id;
+      },
+      archiveOf(name) {
+        const lower = String(name || '').toLowerCase();
+        const hit = ARCHIVE_ENDINGS.find(([ext]) => lower.endsWith(ext) && lower.length > ext.length);
+        return hit ? hit[1] : null;
+      },
+      archiveStem(name) {
+        const lower = String(name || '').toLowerCase();
+        const hit = ARCHIVE_ENDINGS.find(([ext]) => lower.endsWith(ext) && lower.length > ext.length);
+        return hit ? String(name).slice(0, -hit[0].length) : String(name || '');
+      },
+      archiveSingle(name) { return ARCHIVE_SINGLE.includes(this.archiveOf(name)); },
+      archiveExt(id) { const f = ARCHIVE_FORMATS.find((x) => x[0] === id); return f ? f[2] : ''; },
+      /** The encoding conversion, for files on the server or in Nextcloud. */
+      openTextConv(side, rows) {
+        const here = (this.filesData && this.filesData.path) || '/';
+        this.textConv = {
+          open: true, side, rows, files: [], loading: true, from: 'auto', to: 'UTF-8', newline: 'keep', bom: 'keep', output: 'copy',
+          busy: false, progress: '', lost: [],
+          paths: rows.map((r) => (side === 'remote' ? this.joinPath(here, r.name) : r.path)),
+        };
+        this.inspectTextConv();
+      },
+      /** One request for either side; the server side streams, Nextcloud's answers at once. */
+      async textConvCall(body) {
+        if (this.textConv.side === 'local') return api('nc-files/op', { method: 'POST', body: JSON.stringify(body) });
+        const progress = this.fileOp.progress;
+        try { return await this.runFileOp(body); } finally { this.textConv.progress = this.fileOp.progress; this.fileOp.progress = progress; }
+      },
+      async inspectTextConv() {
+        const c = this.textConv;
+        c.loading = true;
+        try {
+          const r = await this.textConvCall({ action: 'inspect', paths: c.paths, encFrom: c.from });
+          c.files = r.files || [];
+        } catch (e) {
+          this.fail(e);
+          c.open = false;
+        } finally {
+          c.loading = false;
+        }
+      },
+      async runTextConv(allowLoss) {
+        const c = this.textConv;
+        if (c.busy) return;
+        const paths = allowLoss ? c.lost.map((x) => x.path) : c.paths;
+        if (c.output === 'overwrite' && !await this.askFor({
+          icon: '🔤', title: T('Overwrite the file'), subject: c.rows.map((r) => r.name).slice(0, 5).join(', ') + (c.rows.length > 5 ? ' …' : ''),
+          input: false, danger: true, body: T('The files are written again in the new form, in place. The old form is not kept.'), confirm: T('Overwrite'),
+        })) return;
+        c.busy = true;
+        c.progress = '';
+        try {
+          const r = await this.textConvCall({ action: 'convert', paths, encFrom: c.from, encTo: c.to, newline: c.newline, bom: c.bom, output: c.output, allowLoss });
+          const said = [];
+          if (r.done) said.push(T('Converted: {n}', { n: r.done }));
+          if (r.skipped) said.push(T('Already in that form: {n}', { n: r.skipped }));
+          const replaced = (r.results || []).filter((x) => x.replaced && x.replaced.length);
+          if (replaced.length) said.push(T('Written as "?": {chars}', { chars: [...new Set(replaced.flatMap((x) => x.replaced))].join(' ') }));
+          c.lost = allowLoss ? [] : (r.lost || []);
+          const otherErrors = (r.errors || []).filter((m) => !c.lost.some((x) => m.startsWith(x.name + ':')));
+          if (otherErrors.length) this.fail(otherErrors.join(' / '));
+          else if (said.length) this.note(said.join(' '));
+          if (c.side === 'remote' && this.filesData) this.browse(this.filesData.path);
+          if (c.side === 'local' && this.localData) this.browseLocal(this.localData.path);
+          if (!c.lost.length) c.open = false;
+        } catch (e) {
+          this.fail(e);
+        } finally {
+          c.busy = false;
+        }
+      },
+      encodingLabel(e) {
+        const lang = {
+          'Shift_JIS': T('Japanese'), 'EUC-JP': T('Japanese'), 'ISO-2022-JP': T('Japanese'), GB18030: T('Simplified Chinese'), Big5: T('Traditional Chinese'),
+          'EUC-KR': T('Korean'), 'Windows-1252': T('Western European'), 'ISO-8859-1': T('Western European'), 'Windows-1251': T('Cyrillic'), 'KOI8-R': T('Russian'),
+        }[e];
+        if (e === 'ASCII') return 'ASCII (' + T('letters and digits only') + ')';
+        return lang ? e + ' (' + lang + ')' : (e || '');
+      },
+      newlineLabel(n) {
+        return { lf: 'LF', crlf: 'CRLF', cr: 'CR', mixed: T('Mixed'), none: T('None') }[n] || n || '';
+      },
+      opBit(who, bit) {
+        const m = String(this.fileOp.mode || '').padStart(4, '0');
+        return /^[0-7]{4}$/.test(m) && (Number(m[who + 1]) & bit) !== 0;
+      },
+      setOpBit(who, bit, on) {
+        if (!/^[0-7]{3,4}$/.test(this.fileOp.mode)) this.fileOp.mode = '000';
+        const m = this.fileOp.mode.padStart(4, '0').split('');
+        const d = on ? (Number(m[who + 1]) | bit) : (Number(m[who + 1]) & ~bit);
+        m[who + 1] = String(d);
+        const out = m.join('');
+        this.fileOp.mode = out[0] === '0' ? out.slice(1) : out;
+      },
+      async confirmFileOp() {
+        const f = this.fileOp;
+        if (f.busy) return;
+        let body = null;
+        if (f.kind === 'copy' || f.kind === 'move') {
+          if (!String(f.dest).trim()) return;
+          body = { action: f.kind, paths: f.paths, dest: String(f.dest).trim() };
+        } else if (f.kind === 'compress') {
+          body = { action: 'compress', paths: f.paths, format: f.format, name: String(f.name).trim(), where: f.where, dest: String(f.where === 'server' ? f.dest : f.ncDest).trim() };
+        } else if (f.kind === 'extract') {
+          if (this.extractBlocked) return;
+          const single = this.archiveSingle(f.rows[0].name);
+          body = { action: 'extract', paths: f.paths, dest: String(f.dest).trim(), into: f.into, onExists: single ? 'ask' : f.onExists };
+        } else if (f.kind === 'chmod') {
+          if (!/^[0-7]{3,4}$/.test(String(f.mode).trim())) { this.note(T('That is not a permission number.')); return; }
+          body = { action: 'chmod', paths: f.paths, mode: String(f.mode).trim(), recurse: f.recurse ? f.applyTo : '' };
+        }
+        if (!body) return;
+        f.busy = true;
+        f.progress = '';
+        try {
+          const r = await this.doFileOp(body);
+          if (r) f.open = false;
+        } finally {
+          f.busy = false;
+        }
+      },
+      /**
+       * Send one piece of work, and settle a clash of names if there is one.
+       *
+       * The server does nothing while a name is taken and lists the clashes;
+       * the reader chooses once, and the same work is sent again with that
+       * choice. Whatever was skipped or refused is said, not swallowed.
+       */
+      async doFileOp(body) {
+        let r;
+        try {
+          r = await this.runFileOp(body);
+          if (r.conflicts && r.conflicts.length) {
+            const choice = await this.askClash(r.conflicts, ['overwrite', 'rename', 'skip']);
+            if (!choice) return null;
+            r = await this.runFileOp({ ...body, onExists: choice });
+          }
+        } catch (e) {
+          this.fail(e);
+          return null;
+        }
+        const said = [];
+        if (body.action === 'copy' && r.done) said.push(T('Copied: {n}', { n: r.done }));
+        if (body.action === 'move' && r.done) said.push(T('Moved: {n}', { n: r.done }));
+        if (body.action === 'compress' && r.done) said.push(T('{name} was made.', { name: r.name }) + ' ' + (r.where === 'nextcloud' ? T('In your Nextcloud files: {path}', { path: r.path }) : r.path));
+        if (body.action === 'chmod' && r.done) said.push(T('Permissions changed: {n}', { n: r.done }));
+        if (body.action === 'extract' && r.done) said.push(T('Extracted into {path}: {n}', { path: r.path || '~', n: r.done }));
+        if (r.skipped) said.push(T('Skipped: {n}', { n: r.skipped }));
+        if (r.errors && r.errors.length) said.push(r.errors.join(' / '));
+        // What failed stays up like any other error; a clean result fades.
+        if (said.length && r.errors && r.errors.length) this.fail(said.join(' '));
+        else if (said.length) this.note(said.join(' '));
+        if (this.filesData) this.browse(this.filesData.path);
+        if (body.where === 'nextcloud' && this.localData) this.browseLocal(this.localData.path);
+        return r;
+      },
+      /** The work, streamed: progress lines while it runs, then the outcome. */
+      async runFileOp(body, signal = undefined) {
+        const res = await fetch(BASE + 'api/files/op', {
+          signal,
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', requesttoken: TOKEN },
+          credentials: 'same-origin',
+          body: JSON.stringify(this.fileTarget(body)),
+        });
+        if (!res.ok || !res.body) {
+          let why = '';
+          try { why = (await res.json()).error || ''; } catch (err) { /* not JSON */ }
+          throw new Error(why || T('The server did not answer.'));
+        }
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let rest = '';
+        let outcome = null;
+        let failure = '';
+        for (;;) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          rest += decoder.decode(value, { stream: true });
+          const lines = rest.split('\n');
+          rest = lines.pop() || '';
+          for (const line of lines) {
+            if (!line.trim()) continue;
+            let said = null;
+            try { said = JSON.parse(line); } catch (err) { continue; }
+            if (said.stage === 'progress') this.fileOp.progress = said.name || '';
+            else if (said.stage === 'error') failure = said.message || T('Failed');
+            else if (said.stage === 'done') outcome = said;
+          }
+        }
+        if (failure) throw new Error(failure);
+        if (!outcome) throw new Error(T('The server did not answer.'));
+        return outcome;
+      },
+      askClash(items, choices, offerAll = false) {
+        this.clash = { open: true, items, choices, choice: choices[0], offerAll, all: false };
+        return new Promise((settle) => { this.clashSettle = settle; });
+      },
+      clashClose(answer) {
+        const settle = this.clashSettle;
+        this.clashSettle = null;
+        this.clash.open = false;
+        if (settle) settle(answer);
+      },
+      clashLabel(choice) {
+        return {
+          overwrite: T('Overwrite'), newer: T('Overwrite if this one is newer'), size: T('Overwrite if the size differs'),
+          resume: T('Resume (send only the rest)'), rename: T('Keep both, under a new name'), skip: T('Skip'),
+        }[choice] || choice;
+      },
+      clashSide(size, modified) {
+        const parts = [];
+        if (size !== null && size !== undefined) parts.push(this.fmtBytes(size));
+        if (modified) parts.push(this.ago(modified));
+        return parts.join(' · ') || '—';
+      },
+      async newRemoteFile() {
+        if (!this.filesData) return;
+        const name = await this.askFor({ icon: '📄', title: T('New file'), label: T('Name for the new file'), confirm: T('Create') });
+        if (!name) return;
+        await this.doFileOp({ action: 'newfile', paths: [this.joinPath(this.filesData.path, name)] });
+      },
+      async deleteMany(rows) {
+        const says = [T('Delete {n} items from the server?', { n: rows.length })];
+        if (rows.some((r) => r.directory)) says.push(T('Folders go with everything inside them.'));
+        says.push(T('This cannot be undone.'));
+        if (!await this.askFor({ icon: '🗑️', title: T('Delete'), subject: rows.map((r) => r.name).slice(0, 5).join(', ') + (rows.length > 5 ? ' …' : ''), input: false, danger: true, body: says.join(' '), confirm: T('Delete') })) return;
+        const failed = [];
+        for (const row of rows) {
+          try {
+            await api('files/manage', { method: 'POST', body: JSON.stringify(this.fileTarget({ action: row.directory ? 'rmdir' : 'delete', path: this.joinPath(this.filesData.path, row.name) })) });
+          } catch (e) {
+            failed.push(row.name + ': ' + String((e && e.message) || e));
+          }
+        }
+        if (failed.length) this.note(failed.join(' / '));
+        this.remotePicked = {};
+        this.browse(this.filesData.path);
+      },
+      async chownMany(action, rows) {
+        const owner = action === 'chown';
+        const who = await this.askFor({ icon: '👤', title: owner ? T('Change owner') : T('Change group'), subject: T('{n} chosen', { n: rows.length }), label: owner ? T('New owner') : T('New group') });
+        if (!who) return;
+        const failed = [];
+        for (const row of rows) {
+          try {
+            await api('files/manage', { method: 'POST', body: JSON.stringify(this.fileTarget({ action, path: this.joinPath(this.filesData.path, row.name), extra: who.trim() })) });
+          } catch (e) {
+            failed.push(row.name + ': ' + String((e && e.message) || e));
+          }
+        }
+        if (failed.length) this.note(failed.join(' / '));
+        this.browse(this.filesData.path);
+      },
       /** Take the password for this page, then show the folder again as root. */
-      useSudo() {
+      async useSudo() {
+        if (!this.validSudoUser) return;
+        this.sudoUser = String(this.sudoUser).trim();
         this.sudoPassword = this.sudoDraft;
         this.sudoDraft = '';
+        this.sudoOn = true;
         this.startRootWatch();
-        this.browse(this.filesPath || '');
+        // Acting as somebody starts in their home ("~": www-data's /var/www),
+        // and stopping goes back to where the reader was: the other account's
+        // home is often one the signed-in account may not read.
+        const from = this.filesPath || '';
+        // A refused password, or an account sudo may not become, shows its
+        // reason and puts the box back rather than leaving the screen claiming
+        // to act as somebody it is not.
+        if (!await this.browse('~')) {
+          this.stopRootWatch();
+          this.sudoOn = false;
+          this.sudoPassword = '';
+          return;
+        }
+        this.sudoFrom = from;
       },
       async saveRootIdle() {
         const n = Math.max(0, Math.min(120, Number(this.settings.rootIdleMinutes) || 0));
@@ -7572,7 +8902,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
       startRootWatch() {
         this.stopRootWatch();
         const mins = Number(this.settings.rootIdleMinutes) || 0;
-        if (!this.sudoPassword || mins <= 0) { this.rootLeft = 0; return; }
+        if (!this.sudoOn || mins <= 0) { this.rootLeft = 0; return; }
         this.rootTouched = Date.now();
         this.rootLeft = mins;
         this.rootTimer = setInterval(() => {
@@ -7581,9 +8911,10 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
           if (left <= 0) {
             this.stopRootWatch();
             this.sudoPassword = '';
+            this.sudoOn = false;
             this.asRoot = false;
-            this.note(T('Root was given up after {n} minutes with nothing touched. Enter the password again to act as root.', { n: mins }));
-            this.browse(this.filesPath || '');
+            this.note(T('Stopped acting as {user} after {n} minutes with nothing touched. Enter the password again to continue.', { user: this.sudoUser, n: mins }));
+            this.browse(this.leaveSudo());
           }
         }, 5000);
       },
@@ -7593,18 +8924,25 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
       },
       /** Anything done in NetBase counts as being there. */
       touchRoot() {
-        if (this.sudoPassword) this.rootTouched = Date.now();
+        if (this.sudoOn) this.rootTouched = Date.now();
       },
       /** Give it up now rather than when the page closes. */
       forgetSudo() {
         this.stopRootWatch();
         this.sudoPassword = '';
+        this.sudoOn = false;
         this.asRoot = false;
-        this.browse(this.filesPath || '');
+        this.browse(this.leaveSudo());
+      },
+      /** The folder to go back to once nobody is being acted as. */
+      leaveSudo() {
+        const back = this.sudoFrom || this.filesPath || '';
+        this.sudoFrom = '';
+        return back;
       },
       /** Turning it off drops the password with it. */
       rootToggled() {
-        if (!this.asRoot) { this.stopRootWatch(); this.sudoPassword = ''; this.sudoDraft = ''; this.browse(this.filesPath || ''); }
+        if (!this.asRoot) { this.stopRootWatch(); this.sudoOn = false; this.sudoPassword = ''; this.sudoDraft = ''; this.browse(this.leaveSudo()); }
       },
       /**
        * A new protocol, without throwing away what was typed.
@@ -7733,7 +9071,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         await this.browse(this.adhoc.path || '');
         if (!this.filesData) this.adhocActive = false;
       },
-      disconnect() { this.adhocActive = false; this.filesConn = 0; this.filesPick = ''; this.filesData = null; this.transferNote = ''; },
+      disconnect() { this.stopRootWatch(); this.sudoOn = false; this.sudoFrom = ''; this.sudoPassword = ''; this.asRoot = false; this.adhocActive = false; this.filesConn = 0; this.filesPick = ''; this.filesData = null; this.transferNote = ''; },
       /** Hand the one-off details to the editor so they can be named and kept. */
       saveAdhoc() {
         this.openConn(null, this.adhoc.kind);
@@ -7782,6 +9120,8 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         this.localPath = r.path;
         this.localPicked = {};
         this.localAnchor = '';
+        if (this.syncBrowse && !this.syncing) await this.mirror('local', r.path);
+        return r;
       },
       /**
        * Clicking a row, the way a file manager means it.
@@ -7906,7 +9246,21 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
             if (!job) break;
             job.state = 'running';
             try {
+              if (!job.onExists && this.queuePolicy) job.onExists = this.queuePolicy;
               await this.runJob(job);
+              // A name already taken: nothing was sent. The reader chooses,
+              // for this one or for the rest of the queue, and it goes again.
+              if (job.exists) {
+                const choices = job.exists.directory
+                  ? ['overwrite', 'newer', 'size', 'rename', 'skip']
+                  : ['overwrite', 'newer', 'size', 'resume', 'rename', 'skip'];
+                const choice = await this.askClash([job.exists], choices, true);
+                if (!choice) throw new DOMException('stopped', 'AbortError');
+                if (this.clash.all) this.queuePolicy = choice;
+                job.onExists = choice;
+                job.exists = null;
+                await this.runJob(job);
+              }
               job.state = 'done';
             } catch (e) {
               // Pressing Stop is not a failure, and the browser's own wording
@@ -7924,6 +9278,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         } finally {
           this.queueBusy = false;
           this.queueStop = null;
+          this.queuePolicy = '';
           if (this.filesData) this.browse(this.filesData.path);
           if (this.localData) this.browseLocal(this.localData.path);
         }
@@ -7954,6 +9309,10 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
           local: job.local,
           target: this.filesTarget,
           folder: job.folder,
+          onExists: job.onExists || 'ask',
+          keepTime: !!this.settings.filesKeepTime,
+          // KB/s. Not "limit": Nextcloud itself holds a parameter of that name to 1–500.
+          rate: Number(job.direction === 'up' ? this.settings.filesLimitUp : this.settings.filesLimitDown) || 0,
         });
         const res = await fetch(BASE + 'api/files/transfer', {
           method: 'POST',
@@ -7985,7 +9344,13 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
               job.rate = said.bytesPerSecond || 0;
               job.left = said.secondsLeft;
             }
-            if (said.stage === 'done') { job.done = said.bytes || job.done; job.total = job.total || job.done; }
+            if (said.stage === 'exists') job.exists = said;
+            if (said.stage === 'done') {
+              job.done = (said.bytes || 0) + (said.resumedAt || 0) || job.done;
+              job.total = job.total || job.done;
+              job.skipped = !!said.skipped;
+              job.resumedAt = said.resumedAt || 0;
+            }
           }
         }
         if (failure) throw new Error(failure);
@@ -7995,6 +9360,22 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         this.queue = this.queue.filter((j) => j.state === 'running');
       },
       clearQueueDone() { this.queueDone = []; },
+      /** Put failed or stopped transfers back in the queue, to go again from the start of the question. */
+      retryJobs(jobs) {
+        for (const j of jobs) {
+          this.queue.push({ ...j, id: ++this.windowSeq, state: 'waiting', done: 0, rate: 0, left: null, error: '', exists: null, onExists: '', skipped: false, resumedAt: 0 });
+        }
+        this.queueDone = this.queueDone.filter((j) => !jobs.includes(j));
+        this.runQueue();
+      },
+      async saveFilesOptions() {
+        const settings = {
+          filesKeepTime: this.settings.filesKeepTime ? '1' : '0',
+          filesLimitDown: Math.max(0, Number(this.settings.filesLimitDown) || 0),
+          filesLimitUp: Math.max(0, Number(this.settings.filesLimitUp) || 0),
+        };
+        try { await api('settings', { method: 'POST', body: JSON.stringify({ settings }) }); } catch (e) { this.fail(e); }
+      },
       /** How far along, as a percentage, for the bar. */
       jobPercent(job) {
         if (!job.total) return job.state === 'done' ? 100 : 0;
@@ -8088,9 +9469,11 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         this.touchRoot();
         const body = JSON.stringify(this.listQuery(path));
         const r = await this.guarded('browse', () => api('files/list', { method: 'POST', body }));
-        if (!r) return;
+        if (!r) return null;
         this.filesData = r;
         this.filesPath = r.path;
+        if (this.syncBrowse && !this.syncing) await this.mirror('remote', r.path);
+        return r;
       },
       /**
        * Bring one row back into the reader's own Nextcloud files.
@@ -8253,10 +9636,25 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
       },
       // ---- choosing a file or folder from the user's own Nextcloud files ----
       pickFile(title, onPick, foldersOnly = false, start = '') {
-        this.picker = { open: true, title, path: '', parent: null, entries: [], foldersOnly, onPick };
+        this.picker = { open: true, title, path: '', parent: null, entries: [], foldersOnly, onPick, remote: false };
         this.pickerOpen(start);
       },
+      /** The same chooser, walking the server's folders instead of Nextcloud's. */
+      pickRemoteFolder(start, onPick) {
+        this.picker = { open: true, title: 'Choose a folder on the server', path: '', parent: null, entries: [], foldersOnly: true, onPick, remote: true };
+        this.pickerOpen(start || (this.filesData ? this.filesData.path : '') || '');
+      },
       async pickerOpen(path) {
+        if (this.picker.remote) {
+          const got = await this.guarded('picker', () => api('files/list', { method: 'POST', body: JSON.stringify(this.listQuery(path)) }));
+          if (!got) return;
+          this.picker.path = got.path;
+          this.picker.parent = got.parent || null;
+          this.picker.entries = (got.entries || [])
+            .filter((e) => e.directory && (this.showHidden || !String(e.name).startsWith('.')))
+            .map((e) => ({ ...e, path: this.joinPath(got.path, e.name) }));
+          return;
+        }
         const r = await this.guarded('picker', () => api('nc-files?' + qs({ path: path || '', foldersOnly: this.picker.foldersOnly ? 1 : 0 })));
         if (!r) return;
         this.picker.path = r.path;
@@ -8776,6 +10174,76 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         ctx.fillText('0', 2, py(0) + 4);
         ctx.fillText(maxX.toFixed(1) + ' s', width - 42, height - 3);
       },
+      /** The speed test to a saved connection, read as it streams. */
+      async runXferSpeed() {
+        if (!this.xferId || this.busy.xfer) return;
+        this.busy.xfer = true;
+        this.xferResult = null;
+        this.xferLive = '';
+        const controller = new AbortController();
+        this.xferStop = () => controller.abort();
+        try {
+          const res = await fetch(BASE + 'api/bench/transfer', {
+            signal: controller.signal,
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', requesttoken: TOKEN },
+            credentials: 'same-origin',
+            body: JSON.stringify({ id: this.xferId, megabytes: this.xferMb, folder: this.xferFolder }),
+          });
+          if (!res.ok || !res.body) {
+            let why = '';
+            try { why = (await res.json()).error || ''; } catch (err) { /* not JSON */ }
+            throw new Error(why || T('The server did not answer.'));
+          }
+          const reader = res.body.getReader();
+          const decoder = new TextDecoder();
+          let rest = '';
+          let outcome = null;
+          for (;;) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            rest += decoder.decode(value, { stream: true });
+            const lines = rest.split('\n');
+            rest = lines.pop() || '';
+            for (const line of lines) {
+              if (!line.trim()) continue;
+              let said = null;
+              try { said = JSON.parse(line); } catch (err) { continue; }
+              if (said.stage === 'progress') {
+                const pc = said.total ? Math.floor(said.done / said.total * 1000) / 10 : 0;
+                const rate = said.seconds > 0 ? said.done / said.seconds : 0;
+                const left = rate > 0 ? Math.round((said.total - said.done) / rate) : null;
+                this.xferLive = (said.direction === 'up' ? T('Sending') : T('Receiving')) + ' ' + pc + '% · '
+                  + this.fmtBytes(said.done) + ' / ' + this.fmtBytes(said.total) + ' · ' + said.mbps + ' Mbps'
+                  + (left !== null ? ' · ' + T('about {time} left', { time: this.fmtDuration(left) }) : '');
+              } else if (said.stage === 'error') {
+                outcome = { error: said.message || T('Failed') };
+              } else if (said.stage === 'done') {
+                outcome = said;
+              }
+            }
+          }
+          this.xferResult = outcome || { error: T('The server did not answer.') };
+        } catch (e) {
+          const aborted = e && (e.name === 'AbortError' || /abort/i.test(String(e.message || '')));
+          this.xferResult = aborted ? { stopped: true } : { error: String((e && e.message) || e) };
+        } finally {
+          this.busy.xfer = false;
+          this.xferLive = '';
+          this.xferStop = null;
+        }
+      },
+      /** Break the test off. The server notices the closed request, stops, and removes its file. */
+      stopXferSpeed() {
+        if (this.xferStop) this.xferStop();
+      },
+      /** 75 s → "1 min 15 s"; an hour and more in hours and minutes. */
+      fmtDuration(seconds) {
+        const s = Math.max(0, Math.round(seconds));
+        if (s < 60) return T('{n} s', { n: s });
+        if (s < 3600) return T('{m} min {s} s', { m: Math.floor(s / 60), s: s % 60 });
+        return T('{h} h {m} min', { h: Math.floor(s / 3600), m: Math.floor((s % 3600) / 60) });
+      },
       async runIperf() {
         this.iperfResult = await this.guarded('iperf', () => api('bench/iperf', {
           method: 'POST',
@@ -9033,7 +10501,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         // Saved connections are shared by the mail and file tabs; fetch them the
         // first time either one is opened.
         if (value === 'whois') this.loadAvailTiers();
-        if ((value === 'files' || value === 'mail' || value === 'ssh') && !this.connections.length) this.loadConnections();
+        if ((value === 'files' || value === 'mail' || value === 'ssh' || (value === 'bench' && this.allowed('files'))) && !this.connections.length) this.loadConnections();
         if (value === 'files' && this.filesConn && !this.filesData) this.browse('');
         // Polling counters from a tab nobody is looking at is just noise.
         if (value !== 'bench' && this.liveTimer) this.toggleLive();
@@ -9045,6 +10513,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
       window.removeEventListener('resize', this.onViewportResize);
       const root = document.getElementById('netbase-root');
       if (root) root.removeEventListener('contextmenu', this.onRootCtxMenu);
+      if (root) for (const ev of ROOT_ACTIONS) root.removeEventListener(ev, this.onRootAction, true);
       window.removeEventListener('keydown', this.onCtxKey);
       window.removeEventListener('scroll', this.ctxmClose, true);
     },
@@ -9061,6 +10530,9 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
       // The right button is NetBase's own everywhere inside the app (the terminal
       // keeps its own); Escape or a scroll puts the menu away.
       if (root) root.addEventListener('contextmenu', this.onRootCtxMenu);
+      // A button pressed, Enter in a field, a choice in a list or a drop starts
+      // the next task; see onRootAction.
+      if (root) for (const ev of ROOT_ACTIONS) root.addEventListener(ev, this.onRootAction, true);
       window.addEventListener('keydown', this.onCtxKey);
       window.addEventListener('scroll', this.ctxmClose, true);
       if (root && root.dataset.theme) this.settings.theme = root.dataset.theme;
