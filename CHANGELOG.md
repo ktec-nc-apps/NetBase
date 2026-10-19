@@ -2,6 +2,21 @@
 
 All notable changes to NetBase are documented here.
 
+## 0.9.3 — 2026-10-19
+
+The example under the terminal's environment variables now fits the person reading it.
+
+### Changed
+
+- **The example for the environment variables** (Settings → Terminal → SSH windows) was always "LANG=ja_JP.UTF-8". It now shows the locale of the person using NetBase: the language NetBase speaks to them, and the country from Nextcloud's region setting, or else from the browser's languages, or else the country where that language is most used — "LANG=de_DE.UTF-8" in German, for example. For a language with no country to go by, it shows "LANG=C.UTF-8", which keeps the letters of every language readable. It is only an example: nothing is sent until something is written there.
+
+（日本語）
+端末の環境変数の欄に出る例を、見ている人に合わせたものにしました。
+
+### 変更
+
+- **環境変数の例**（「設定」→「端末（シェルとSSH）」→「SSH ウィンドウ」）：これまではいつも「LANG=ja_JP.UTF-8」でした。今は使っている人に合わせて出します。言語は NetBase の表示言語、国は Nextcloud の「地域」の設定から、それが無ければブラウザーの言語から、それも無ければその言語が主に使われる国から取ります（ドイツ語なら「LANG=de_DE.UTF-8」）。国の決まらない言語では、どの言語の文字も読める「LANG=C.UTF-8」を出します。例を出すだけで、欄に書くまでは何も送りません。
+
 ## 0.9.2 — 2026-10-19
 
 Terminal settings after TeraTerm's, and the colours in SSH windows.

@@ -2806,7 +2806,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
             <p class="dim tiny">{{ t('xterm-256color suits nearly every server. Choose vt100 or another type only for a device that asks for it, and an encoding other than UTF-8 for an older server or device that speaks Shift_JIS, EUC-JP and the like.') }}</p>
             <label class="fl">
               <span class="fl-label">{{ t('Environment variables sent to the server') }}</span>
-              <textarea v-model="settings.termEnv" rows="3" spellcheck="false" autocomplete="off" placeholder="LANG=ja_JP.UTF-8" @change="saveTermSettings()"></textarea>
+              <textarea v-model="settings.termEnv" rows="3" spellcheck="false" autocomplete="off" :placeholder="termEnvExample()" @change="saveTermSettings()"></textarea>
             </label>
             <p class="dim tiny">{{ t('One NAME=value to a line, sent when the shell starts, as OpenSSH does with SendEnv. A server takes only the names its AcceptEnv setting allows — usually LANG and LC_* — and ignores the rest.') }}</p>
             <label class="fl short">
@@ -7218,16 +7218,42 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         w.menuY = box ? box.bottom + 4 : 8;
         w.keyMenu = true;
       },
+      /** The language NetBase is being used in, as Nextcloud or the settings name it. */
+      chosenLanguage() {
+        return String(this.settings.language && this.settings.language !== 'auto'
+          ? this.settings.language
+          : (document.documentElement.lang || 'en'));
+      },
+      /**
+       * The locale of the person using NetBase, or '' when it cannot be told.
+       *
+       * The language is the one NetBase speaks to them; the country comes from
+       * where they are, as far as the page knows it: Nextcloud's own region
+       * setting first, then the browser's languages — only when either names
+       * the same language — and else the country that language is most used in.
+       */
+      knownLocale() {
+        const chosen = this.chosenLanguage();
+        // a language with its country (zh_CN, pt_BR, or the page's own pt-BR) names the locale itself
+        const full = /^([a-z]{2})[-_]([a-z]{2})$/i.exec(chosen);
+        if (full) return full[1].toLowerCase() + '_' + full[2].toUpperCase() + '.UTF-8';
+        const lang = chosen.slice(0, 2).toLowerCase();
+        const around = [document.documentElement.dataset.locale || '']
+          .concat(Array.from(navigator.languages || [navigator.language || '']));
+        for (const place of around) {
+          const m = /^([a-z]{2})[-_]([a-z]{2})(?![a-z])/i.exec(String(place));
+          if (m && m[1].toLowerCase() === lang) return lang + '_' + m[2].toUpperCase() + '.UTF-8';
+        }
+        return LOCALE_HINTS[lang] ? LOCALE_HINTS[lang] + '.UTF-8' : '';
+      },
       /** A locale worth suggesting, from the language NetBase is being used in. */
       suggestedLocale() {
-        const chosen = this.settings.language && this.settings.language !== 'auto'
-          ? this.settings.language
-          : (document.documentElement.lang || 'en');
-        // a language with its country (zh_CN, pt_BR, or the page's own pt-BR) names the locale itself
-        const full = /^([a-z]{2})[-_]([a-z]{2})$/i.exec(String(chosen));
-        if (full) return full[1].toLowerCase() + '_' + full[2].toUpperCase() + '.UTF-8';
-        const lang = String(chosen).slice(0, 2).toLowerCase();
-        return (LOCALE_HINTS[lang] || (lang + '_' + lang.toUpperCase())) + '.UTF-8';
+        const lang = this.chosenLanguage().slice(0, 2).toLowerCase();
+        return this.knownLocale() || (lang + '_' + lang.toUpperCase() + '.UTF-8');
+      },
+      /** The example under the terminal's variables: the viewer's own locale, or one every server has. */
+      termEnvExample() {
+        return 'LANG=' + (this.knownLocale() || 'C.UTF-8');
       },
       /**
        * Reloading PHP is what makes a new locale visible to the shell.
