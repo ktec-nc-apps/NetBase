@@ -4,16 +4,20 @@ All notable changes to NetBase are documented here.
 
 ## 0.9.1 — 2026-10-19
 
-Translations corrected after a review, in every language but Japanese (which was corrected in 0.9.0). No feature was added or changed.
+Translations corrected after a review, in every language but Japanese (which was corrected in 0.9.0), and two small fixes. No feature was added.
 
-- "The whole network", one of the two choices of what a scan covers, was translated as "the network range" in most languages. A service's banner had become a street banner, a rack PDU a household power strip, and giving up root letting go of it by hand. These and other wordings are corrected.
+- "The whole network", one of the two choices of what a scan covers, was translated as "the network range" in most languages, and the English screen itself said "Network range". A service's banner had become a street banner, a rack PDU a household power strip, and giving up root letting go of it by hand. These and other wordings are corrected.
 - In Czech, Ukrainian, Polish and Korean, RegiBase's collections are now called by the word RegiBase itself uses.
+- **The well-known ports are 1 to 1023**, as IANA defines them, and the high ports 1024 to 65535. Port 1024 was counted among the well-known ports.
+- The Mail page's subtitle now says that it reads and sends mail, not only that it sends a test message.
 
 （日本語）
-日本語以外のすべての言語で、翻訳の見直しを受けて訳を直しました（日本語は 0.9.0 で直しました）。機能の追加や変更はありません。
+日本語以外のすべての言語で、翻訳の見直しを受けて訳を直しました（日本語は 0.9.0 で直しました）。あわせて小さな修正を 2 つ行いました。機能の追加はありません。
 
-- 機器のスキャンの対象を選ぶ「ネットワーク全体」を、多くの言語で「ネットワークの範囲」と訳していました。サービスのバナーを横断幕、ラック用の PDU を家庭用の電源タップ、root の解除を「手を離す」と訳していた箇所なども直しました。
+- 機器のスキャンの対象を選ぶ「ネットワーク全体」を、多くの言語で「ネットワークの範囲」と訳していました（英語の画面でも「Network range」と出ていました）。サービスのバナーを横断幕、ラック用の PDU を家庭用の電源タップ、root の解除を「手を離す」と訳していた箇所なども直しました。
 - チェコ語・ウクライナ語・ポーランド語・韓国語では、RegiBase のコレクションを、RegiBase と同じ語で呼ぶようにしました。
+- **ウェルノウンポートを、IANA の定めどおり 1〜1023 番にしました。** ハイポートは 1024〜65535 番です。これまでは 1024 番をウェルノウンポートに含めていました。
+- メールの画面の説明を、テストメールを送るだけでなく、メールを読み書きできることが分かる文にしました。
 
 ## 0.9.0 — 2026-10-19
 

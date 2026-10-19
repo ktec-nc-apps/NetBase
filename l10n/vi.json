@@ -1972,7 +1972,8 @@
         "No answer from the time server": "Không có phản hồi từ máy chủ thời gian",
         "No certificate presented": "Không có chứng chỉ nào được đưa ra",
         "Wake-on-LAN needs the PHP sockets extension, which is not installed": "Wake-on-LAN cần phần mở rộng sockets của PHP, nhưng chưa được cài đặt",
-        "Could not open a UDP socket": "Không thể mở socket UDP"
+        "Could not open a UDP socket": "Không thể mở socket UDP",
+        "Domain policy, server tests, and reading and sending mail": "Chính sách tên miền, kiểm tra máy chủ, đọc và gửi thư"
     },
     "pluralForm": "nplurals=1; plural=0;"
 }

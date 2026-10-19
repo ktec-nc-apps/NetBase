@@ -1972,7 +1972,8 @@
         "No answer from the time server": "پاسخی از سرور زمان نیامد",
         "No certificate presented": "هیچ گواهی‌ای ارائه نشد",
         "Wake-on-LAN needs the PHP sockets extension, which is not installed": "Wake-on-LAN به افزونهٔ sockets در PHP نیاز دارد که نصب نشده است",
-        "Could not open a UDP socket": "باز کردن سوکت UDP ممکن نشد"
+        "Could not open a UDP socket": "باز کردن سوکت UDP ممکن نشد",
+        "Domain policy, server tests, and reading and sending mail": "سیاست دامنه، آزمون سرور، خواندن و فرستادن رایانامه"
     },
     "pluralForm": "nplurals=2; plural=(n > 1);"
 }

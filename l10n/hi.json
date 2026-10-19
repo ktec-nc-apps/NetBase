@@ -1972,7 +1972,8 @@
         "No answer from the time server": "टाइम सर्वर से कोई जवाब नहीं",
         "No certificate presented": "कोई सर्टिफ़िकेट प्रस्तुत नहीं किया गया",
         "Wake-on-LAN needs the PHP sockets extension, which is not installed": "Wake-on-LAN के लिए PHP का sockets एक्सटेंशन चाहिए, जो इंस्टॉल नहीं है",
-        "Could not open a UDP socket": "UDP सॉकेट नहीं खोला जा सका"
+        "Could not open a UDP socket": "UDP सॉकेट नहीं खोला जा सका",
+        "Domain policy, server tests, and reading and sending mail": "डोमेन नीति, सर्वर परीक्षण, और मेल पढ़ना व भेजना"
     },
     "pluralForm": "nplurals=2; plural=(n != 1);"
 }

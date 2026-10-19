@@ -1973,7 +1973,8 @@ OC.L10N.register(
         "No answer from the time server": "Немає відповіді від сервера часу",
         "No certificate presented": "Сертифікат не надано",
         "Wake-on-LAN needs the PHP sockets extension, which is not installed": "Для Wake-on-LAN потрібне розширення PHP sockets, але його не встановлено",
-        "Could not open a UDP socket": "Не вдалося відкрити UDP-сокет"
+        "Could not open a UDP socket": "Не вдалося відкрити UDP-сокет",
+        "Domain policy, server tests, and reading and sending mail": "Політика домену, перевірка сервера, читання й надсилання пошти"
     },
     "nplurals=4; plural=(n % 1 == 0 && n % 10 == 1 && n % 100 != 11 ? 0 : n % 1 == 0 && n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14) ? 1 : n % 1 == 0 && (n % 10 ==0 || (n % 10 >=5 && n % 10 <=9) || (n % 100 >=11 && n % 100 <=14 )) ? 2: 3);"
 );

@@ -1972,7 +1972,8 @@
         "No answer from the time server": "Sem resposta do servidor de hora",
         "No certificate presented": "Nenhum certificado apresentado",
         "Wake-on-LAN needs the PHP sockets extension, which is not installed": "O Wake-on-LAN precisa da extensão sockets do PHP, que não está instalada",
-        "Could not open a UDP socket": "Não foi possível abrir um socket UDP"
+        "Could not open a UDP socket": "Não foi possível abrir um socket UDP",
+        "Domain policy, server tests, and reading and sending mail": "Política do domínio, testes do servidor e leitura e envio de e-mails"
     },
     "pluralForm": "nplurals=2; plural=(n > 1);"
 }

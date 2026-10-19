@@ -1972,7 +1972,8 @@
         "No answer from the time server": "时间服务器没有响应",
         "No certificate presented": "未提供证书",
         "Wake-on-LAN needs the PHP sockets extension, which is not installed": "Wake-on-LAN 需要 PHP 的 sockets 扩展，但未安装",
-        "Could not open a UDP socket": "无法打开 UDP 套接字"
+        "Could not open a UDP socket": "无法打开 UDP 套接字",
+        "Domain policy, server tests, and reading and sending mail": "域名策略、服务器检测与邮件收发"
     },
     "pluralForm": "nplurals=1; plural=0;"
 }

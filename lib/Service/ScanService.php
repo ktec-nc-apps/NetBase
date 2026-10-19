@@ -666,12 +666,13 @@ class ScanService {
 		}
 		return match ($options['portScan'] ?? 'common') {
 			'all' => range(1, 65535),
-			// Everything IANA calls well known — where a service that expects to
-			// be found still puts itself.
-			'wellKnown' => range(1, 1024),
+			// Everything IANA calls well known (0 to 1023; port 0 is never
+			// listened on) — where a service that expects to be found still puts
+			// itself. 1024 was counted here once; it is the first registered port.
+			'wellKnown' => range(1, 1023),
 			// And everything above it, which is where a maker hides a web
 			// interface it would rather not advertise — 22401 on a router here.
-			'high' => range(1025, 65535),
+			'high' => range(1024, 65535),
 			'detailed' => DiscoveryService::DETAILED_PORTS,
 			default => DiscoveryService::FINGERPRINT_PORTS,
 		};

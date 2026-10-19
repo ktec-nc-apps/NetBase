@@ -1972,7 +1972,8 @@
         "No answer from the time server": "시간 서버가 응답하지 않습니다",
         "No certificate presented": "인증서가 제시되지 않았습니다",
         "Wake-on-LAN needs the PHP sockets extension, which is not installed": "Wake-on-LAN에는 PHP sockets 확장 기능이 필요하지만 설치되어 있지 않습니다",
-        "Could not open a UDP socket": "UDP 소켓을 열 수 없습니다"
+        "Could not open a UDP socket": "UDP 소켓을 열 수 없습니다",
+        "Domain policy, server tests, and reading and sending mail": "도메인 정책, 서버 점검, 메일 읽기와 보내기"
     },
     "pluralForm": "nplurals=1; plural=0;"
 }

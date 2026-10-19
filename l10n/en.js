@@ -57,7 +57,7 @@ OC.L10N.register(
         "High ports": "High ports",
         "Ports to try": "Ports to try",
         "What to scan": "What to scan",
-        "The whole network": "Network range",
+        "The whole network": "The whole network",
         "The ARP table only": "The ARP table only",
         "Start scanning": "Start scanning",
         "Well-known ports": "Well-known ports",
@@ -1973,7 +1973,8 @@ OC.L10N.register(
         "No answer from the time server": "No answer from the time server",
         "No certificate presented": "No certificate presented",
         "Wake-on-LAN needs the PHP sockets extension, which is not installed": "Wake-on-LAN needs the PHP sockets extension, which is not installed",
-        "Could not open a UDP socket": "Could not open a UDP socket"
+        "Could not open a UDP socket": "Could not open a UDP socket",
+        "Domain policy, server tests, and reading and sending mail": "Domain policy, server tests, and reading and sending mail"
     },
     "nplurals=2; plural=(n != 1);"
 );

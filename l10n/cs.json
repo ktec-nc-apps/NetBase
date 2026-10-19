@@ -1972,7 +1972,8 @@
         "No answer from the time server": "Žádná odpověď od časového serveru",
         "No certificate presented": "Nebyl předložen žádný certifikát",
         "Wake-on-LAN needs the PHP sockets extension, which is not installed": "Wake-on-LAN potřebuje rozšíření PHP sockets, které není nainstalováno",
-        "Could not open a UDP socket": "Nepodařilo se otevřít soket UDP"
+        "Could not open a UDP socket": "Nepodařilo se otevřít soket UDP",
+        "Domain policy, server tests, and reading and sending mail": "Zásady domény, testy serveru, čtení a odesílání pošty"
     },
     "pluralForm": "nplurals=4; plural=(n == 1 && n % 1 == 0) ? 0 : (n >= 2 && n <= 4 && n % 1 == 0) ? 1: (n % 1 != 0 ) ? 2 : 3;"
 }

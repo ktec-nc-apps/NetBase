@@ -13145,7 +13145,7 @@ return function render(_ctx, _cache) {
     { id: 'tls', icon: '🔒', label: 'TLS & HTTP', hint: 'Certificates, redirects and headers' },
     { id: 'subnet', icon: '🧮', label: 'Subnet & MAC', hint: 'Address maths and vendor lookup' },
     { id: 'bench', icon: '⏱️', label: 'Benchmarks', hint: 'Throughput, latency and where the time goes' },
-    { id: 'mail', icon: '📧', label: 'Mail', hint: 'Domain policy, server tests and a real test message' },
+    { id: 'mail', icon: '📧', label: 'Mail', hint: 'Domain policy, server tests, and reading and sending mail' },
     { id: 'files', icon: '📁', label: 'File transfer', hint: 'Browse a remote server and move files' },
     { id: 'ssh', icon: '🔐', label: 'SSH & Telnet', hint: 'What a service offers, and commands on the servers you keep' },
     { id: 'ntp', icon: '🕒', label: 'Clock check', hint: 'How far the clock has drifted from a time server' },
@@ -14930,8 +14930,8 @@ return function render(_ctx, _cache) {
       /** How many ports each depth actually probes, straight from the server. */
       portCount(depth) {
         if (depth === 'all') return 65535;
-        if (depth === 'wellKnown') return 1024;
-        if (depth === 'high') return 64511;
+        if (depth === 'wellKnown') return 1023;
+        if (depth === 'high') return 64512;
         const list = depth === 'detailed' ? this.status.detailedPorts : this.status.fingerprintPorts;
         return (list || []).length;
       },

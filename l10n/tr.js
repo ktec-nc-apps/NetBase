@@ -1973,7 +1973,8 @@ OC.L10N.register(
         "No answer from the time server": "Zaman sunucusundan yanıt yok",
         "No certificate presented": "Sertifika sunulmadı",
         "Wake-on-LAN needs the PHP sockets extension, which is not installed": "Wake-on-LAN için PHP sockets eklentisi gerekiyor, ancak yüklü değil",
-        "Could not open a UDP socket": "UDP soketi açılamadı"
+        "Could not open a UDP socket": "UDP soketi açılamadı",
+        "Domain policy, server tests, and reading and sending mail": "Alan adı politikası, sunucu testleri, e-posta okuma ve gönderme"
     },
     "nplurals=2; plural=(n > 1);"
 );
