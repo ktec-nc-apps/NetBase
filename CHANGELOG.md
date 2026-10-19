@@ -2,6 +2,29 @@
 
 All notable changes to NetBase are documented here.
 
+## 0.9.2 — 2026-10-19
+
+Terminal settings after TeraTerm's, and the colours in SSH windows.
+
+### Added
+
+- **Terminal settings** (Settings → Terminal), modelled on TeraTerm's setup menus: the terminal type the server is told; the character encoding both ways (UTF-8, Shift_JIS, EUC-JP, GB18030, Big5, EUC-KR and others), for an older server or device; environment variables sent with the shell, as OpenSSH's SendEnv does (a server takes only the names its AcceptEnv allows, usually LANG and LC_*); a keep-alive, so that a router or firewall does not drop a quiet connection; what Enter sends (CR or CR+LF) and what Backspace sends (DEL or BS); the lines to scroll back; and the cursor's shape and blinking.
+
+### Fixed
+
+- **Colours in SSH windows.** The terminal told the server it was a "vt100", the SSH library's default, which has no colours. Programs that look at the terminal type, such as htop, drew in black and white, while scripts that print their own colour codes still showed colour. It now says xterm-256color.
+
+（日本語）
+TeraTerm を手本にした端末の設定を加え、SSH ウィンドウの色の不具合を直しました。
+
+### 追加
+
+- **端末の設定**（「設定」→「端末」）：TeraTerm の設定メニューを手本にしました。サーバーに伝える端末の種類、古いサーバーや機器のための送受信の文字コード（UTF-8、Shift_JIS、EUC-JP、GB18030、Big5、EUC-KR など）、OpenSSH の SendEnv と同じようにシェルと一緒に送る環境変数（サーバーが受け取るのは AcceptEnv で許した名前だけで、ふつうは LANG と LC_*）、通信の無い接続をルーターやファイアウォールが切らないための合図、Enter で送る改行（CR または CR+LF）と Backspace で送る文字（DEL または BS）、スクロールバックの行数、カーソルの形と点滅を設定できます。
+
+### 修正
+
+- **SSH ウィンドウの色。** これまでは、使っている SSH の部品の既定のまま、色の無い「vt100」だとサーバーに伝えていました。そのため、htop のように端末の種類を見て描くソフトは白黒になり、色の記号を自分で書き出すスクリプトだけ色が付いていました。今は xterm-256color と伝えます。
+
 ## 0.9.1 — 2026-10-19
 
 Translations corrected after a review, in every language but Japanese (which was corrected in 0.9.0), and two small fixes. No feature was added.

@@ -140,6 +140,8 @@ Two halves, deliberately separate.
 
 **The terminal** is the real thing. PHP-FPM ends every request, so the session is held by the server rather than by the page: the browser opens one long-lived request that the answer streams down, and what is typed goes up alongside it, one batch at a time so that keystrokes cannot overtake each other. The far end is a proper pseudo-terminal, so `top`, `vi`, `less` and an interactive password prompt all work, colours and cursor movement work, and resizing the window resizes the terminal. It can be opened from a device's port 22, from the SSH page, or from the notice on a device that is out of reach — where the command that would reach it is waiting to be run on this server.
 
+**Terminal settings**, after TeraTerm's setup menus, are in Settings → Terminal: the terminal type the server is told (xterm-256color unless a device asks for another), the character encoding both ways for an older server or device that speaks Shift_JIS, EUC-JP and the like, environment variables sent with the shell as OpenSSH's SendEnv does (a server takes only the names its AcceptEnv allows, usually LANG and LC_*), a keep-alive for routers and firewalls that drop a quiet connection, what Enter and Backspace send, the scrollback and the cursor.
+
 **Signing in** asks for the host, the port, the account, and either a password or a private key from your own Nextcloud files. A default folder for keys can be set in Settings, so the picker opens where they are kept.
 
 ## Files: FTP, SFTP and SCP
@@ -382,6 +384,8 @@ NetBase は、Nextcloud をネットワーク管理コンソールとして使�
 **コマンド実行** では、保存済みの接続先にパスワードまたは秘密鍵でサインインし、コマンドを 1 つ実行して、出力と終了ステータスを返します。よく使う確認はプリセットにしてあります（システムの概要、ディスク使用量、失敗したサービスと最近のエラー、ネットワーク設定、待ち受け中のソケット、未適用の更新、ログイン中のユーザーとログインに失敗したユーザー）。その隣には、コマンドを自由に入力できる欄もあります。
 
 **ターミナル** は本物のターミナルです。PHP-FPM はリクエストごとに処理を終えるため、セッションはページではなくサーバー側で保持します。ブラウザーは長時間つながったままのリクエストを 1 本開き、出力はそこを通って順に届きます。入力はそれとは別に送りますが、キー入力の順序が入れ替わらないよう、ひとまとまりずつ順番に送ります。接続先では本物の疑似端末を使うため、`top`・`vi`・`less` や対話式のパスワード入力もそのまま動き、色やカーソル移動も正しく表示されます。ウィンドウのサイズを変えると、ターミナルのサイズも変わります。ターミナルは、機器のポート 22、SSH の画面、接続できない機器に表示される案内から開けます。その案内には、その機器に接続するためのコマンドが、このサーバーで実行できる状態で用意されています。
+
+**ターミナルの設定** は、TeraTerm の設定メニューを手本に「設定」→「端末」にまとめています。サーバーに伝える端末の種類（機器が別の種類を求めない限り xterm-256color）、Shift_JIS や EUC-JP などを使う古いサーバーや機器のための送受信の文字コード、OpenSSH の SendEnv と同じようにシェルと一緒に送る環境変数（サーバーが受け取るのは AcceptEnv で許した名前だけで、ふつうは LANG と LC_*）、通信の無い接続をルーターやファイアウォールが切らないための合図、Enter と Backspace で送る文字、スクロールバック、カーソルです。
 
 **サインイン** では、ホスト、ポート、アカウントと、パスワードまたはご自身の Nextcloud にある秘密鍵ファイルを指定します。鍵を置いているフォルダーを設定画面で指定しておくと、ファイルの選択画面がそのフォルダーから開きます。
 
