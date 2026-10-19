@@ -2,6 +2,19 @@
 
 All notable changes to NetBase are documented here.
 
+## 0.9.1 — 2026-10-19
+
+Translations corrected after a review, in every language but Japanese (which was corrected in 0.9.0). No feature was added or changed.
+
+- "The whole network", one of the two choices of what a scan covers, was translated as "the network range" in most languages. A service's banner had become a street banner, a rack PDU a household power strip, and giving up root letting go of it by hand. These and other wordings are corrected.
+- In Czech, Ukrainian, Polish and Korean, RegiBase's collections are now called by the word RegiBase itself uses.
+
+（日本語）
+日本語以外のすべての言語で、翻訳の見直しを受けて訳を直しました（日本語は 0.9.0 で直しました）。機能の追加や変更はありません。
+
+- 機器のスキャンの対象を選ぶ「ネットワーク全体」を、多くの言語で「ネットワークの範囲」と訳していました。サービスのバナーを横断幕、ラック用の PDU を家庭用の電源タップ、root の解除を「手を離す」と訳していた箇所なども直しました。
+- チェコ語・ウクライナ語・ポーランド語・韓国語では、RegiBase のコレクションを、RegiBase と同じ語で呼ぶようにしました。
+
 ## 0.9.0 — 2026-10-19
 
 File transfer becomes a full file manager, the mail page becomes a basic mail client, and a device page that does not work in its window can now be diagnosed.
