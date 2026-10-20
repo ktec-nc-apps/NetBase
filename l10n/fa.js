@@ -129,7 +129,7 @@ OC.L10N.register(
         "Common ports": "درگاه‌های رایج",
         "Detailed search": "جست‌وجوی مفصل",
         "Reverse DNS": "DNS معکوس",
-        "Scan finished: {n} devices online": "پویش پایان یافت: {n} دستگاه برخط",
+        "Scan finished: {n} devices online in {range}": "پویش پایان یافت: {n} دستگاه برخط در {range}",
         "This target has {hosts} addresses but the kernel ARP table holds {gc3}. The sweep still works, but the kernel will log overflow warnings. To avoid that, an administrator can run:": "این هدف {hosts} نشانی دارد در حالی که جدول ARP هسته {gc3} مورد نگه می‌دارد. پویش باز هم کار می‌کند، اما هسته هشدارهای سرریز ثبت خواهد کرد. برای پیشگیری، مدیر می‌تواند این را اجرا کند:",
         "No devices recorded yet. Start a scan to build the list.": "هنوز هیچ دستگاهی ثبت نشده است. برای ساختن فهرست، یک پویش آغاز کنید.",
         "Network scanning is restricted to administrators on this instance.": "در این نمونه، پویش شبکه فقط برای مدیران است.",

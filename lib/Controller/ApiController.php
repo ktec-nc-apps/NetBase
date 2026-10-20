@@ -500,8 +500,14 @@ class ApiController extends Controller {
 			// A template key or the user's own words ("Container"): trimmed, with
 			// control characters dropped, to the 32 characters the column holds.
 			$dtype = $dtype !== null ? trim((string)preg_replace('/[\x00-\x1F\x7F]/u', '', $dtype)) : '';
-			if ($dtype !== '') {
-				$device->setDtype(mb_substr($dtype, 0, 32));
+			// The edit dialogs send the type every time, so only a type that
+			// differs from the one shown was picked; a guess saved along with a
+			// name is still a guess. A picked type is kept by every later scan,
+			// and picking "Unknown" hands the device back to the scans' guess.
+			$dtype = mb_substr($dtype, 0, 32);
+			if ($dtype !== '' && $dtype !== (string)$device->getDtype()) {
+				$device->setDtype($dtype);
+				ScanService::markTypeChosen($device, $dtype === 'unknown' ? null : $dtype);
 			}
 			return ['device' => $this->devices->update($device)->jsonSerialize()];
 		}, 'scan');

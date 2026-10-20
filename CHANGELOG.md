@@ -2,6 +2,23 @@
 
 All notable changes to NetBase are documented here.
 
+## 0.9.4 — 2026-10-20
+
+Two fixes to device scanning, reported on the forum.
+
+### Fixed
+
+- **"Scan finished" counted the whole list.** It gave the number of devices online in the whole list, not in the range that was scanned. Since 0.9.0 a scan of one network no longer sets the devices of other networks offline, so they were counted too, and the message read as though every network had been scanned. It now says how many devices are online in the range that was scanned, and names that range. The scan itself was already limited to that range.
+- **A type picked from the list was replaced at the next scan.** A type NetBase can guess by itself, such as a router or a camera, was kept only while it matched the guess: a router picked by hand could turn into "Host" at the next scan. A type picked by hand is now kept by every scan, whatever it is. Picking "Unknown" lets NetBase guess the type again. Types already replaced need picking once more.
+
+（日本語）
+掲示板で報告いただいた、機器の探索の不具合を2つ直しました。
+
+### 修正
+
+- **「調査完了」の台数が一覧全体の数だった。** 調べた範囲ではなく、一覧全体のオンラインの台数を出していました。0.9.0 から、ひとつのネットワークを調べても他のネットワークの機器をオフラインにしなくなったため、その台数も数に入り、すべてのネットワークを調べたように読めました。今は、調べた範囲でオンラインの台数を、その範囲と一緒に出します。調べる範囲そのものは、もともと指定のとおりでした。
+- **一覧から選んだ種別が、次の探索で置き換わった。** ルーターやカメラのように NetBase が自分で推測できる種別は、推測と同じ間しか残らず、手で選んだルーターが次の探索で「Host」に変わることがありました。今は、手で選んだ種別はどれでも探索で置き換えません。「不明」を選ぶと、また NetBase が推測します。すでに置き換わった種別は、もう一度選び直してください。
+
 ## 0.9.3 — 2026-10-19
 
 The example under the terminal's environment variables now fits the person reading it.

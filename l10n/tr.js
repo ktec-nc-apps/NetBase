@@ -129,7 +129,7 @@ OC.L10N.register(
         "Common ports": "Yaygın portlar",
         "Detailed search": "Ayrıntılı arama",
         "Reverse DNS": "Ters DNS",
-        "Scan finished: {n} devices online": "Tarama bitti: {n} cihaz çevrimiçi",
+        "Scan finished: {n} devices online in {range}": "Tarama bitti: {range} içinde {n} cihaz çevrimiçi",
         "This target has {hosts} addresses but the kernel ARP table holds {gc3}. The sweep still works, but the kernel will log overflow warnings. To avoid that, an administrator can run:": "Bu hedefte {hosts} adres var, çekirdeğin ARP tablosu ise {gc3} tutuyor. Tarama yine de çalışır ama çekirdek taşma uyarıları kaydeder. Bunu önlemek için bir yönetici şunu çalıştırabilir:",
         "No devices recorded yet. Start a scan to build the list.": "Henüz kayıtlı cihaz yok. Listeyi oluşturmak için bir tarama başlatın.",
         "Network scanning is restricted to administrators on this instance.": "Bu sunucuda ağ taraması yalnızca yöneticilere açıktır.",

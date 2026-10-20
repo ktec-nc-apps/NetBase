@@ -129,7 +129,7 @@ OC.L10N.register(
         "Common ports": "주요 포트",
         "Detailed search": "상세 검색",
         "Reverse DNS": "역방향 DNS",
-        "Scan finished: {n} devices online": "탐색 완료: 장치 {n}대 온라인",
+        "Scan finished: {n} devices online in {range}": "탐색 완료: {range}에서 장치 {n}대 온라인",
         "This target has {hosts} addresses but the kernel ARP table holds {gc3}. The sweep still works, but the kernel will log overflow warnings. To avoid that, an administrator can run:": "이 대상에는 주소가 {hosts}개 있지만 커널 ARP 테이블은 {gc3}개까지 담습니다. 탐색은 그래도 동작하지만 커널이 오버플로 경고를 기록합니다. 이를 피하려면 관리자가 다음을 실행할 수 있습니다:",
         "No devices recorded yet. Start a scan to build the list.": "아직 기록된 장치가 없습니다. 탐색을 시작해 목록을 만드세요.",
         "Network scanning is restricted to administrators on this instance.": "이 인스턴스에서 네트워크 탐색은 관리자만 사용할 수 있습니다.",

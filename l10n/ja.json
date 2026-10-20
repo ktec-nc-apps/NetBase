@@ -128,7 +128,7 @@
         "Common ports": "主要ポート",
         "Detailed search": "詳細検索",
         "Reverse DNS": "逆引きDNS",
-        "Scan finished: {n} devices online": "調査完了：{n}台がオンラインです",
+        "Scan finished: {n} devices online in {range}": "調査完了：{range} で {n} 台がオンラインです",
         "This target has {hosts} addresses but the kernel ARP table holds {gc3}. The sweep still works, but the kernel will log overflow warnings. To avoid that, an administrator can run:": "対象は{hosts}アドレスですが、カーネルのARPテーブルの上限は{gc3}件です。調査自体は正常に行えますが、カーネルログに溢れの警告が記録されます。避けるには、管理者が次を実行してください：",
         "No devices recorded yet. Start a scan to build the list.": "まだ機器がありません。調査を開始すると一覧が作られます。",
         "Network scanning is restricted to administrators on this instance.": "このインスタンスでは、ネットワーク調査は管理者に限定されています。",

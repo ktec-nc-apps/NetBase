@@ -129,7 +129,7 @@ OC.L10N.register(
         "Common ports": "Port umum",
         "Detailed search": "Pencarian rinci",
         "Reverse DNS": "DNS balik",
-        "Scan finished: {n} devices online": "Pemindaian selesai: {n} perangkat daring",
+        "Scan finished: {n} devices online in {range}": "Pemindaian selesai: {n} perangkat daring di {range}",
         "This target has {hosts} addresses but the kernel ARP table holds {gc3}. The sweep still works, but the kernel will log overflow warnings. To avoid that, an administrator can run:": "Sasaran ini memiliki {hosts} alamat sedangkan tabel ARP kernel menampung {gc3}. Pemindaian tetap berjalan, tetapi kernel akan mencatat peringatan luapan. Untuk menghindarinya, administrator dapat menjalankan:",
         "No devices recorded yet. Start a scan to build the list.": "Belum ada perangkat yang tercatat. Mulailah pemindaian untuk menyusun daftar.",
         "Network scanning is restricted to administrators on this instance.": "Pada instansi ini pemindaian jaringan hanya untuk administrator.",

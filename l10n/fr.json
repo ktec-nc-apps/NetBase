@@ -128,7 +128,7 @@
         "Common ports": "Ports courants",
         "Detailed search": "Recherche détaillée",
         "Reverse DNS": "DNS inverse",
-        "Scan finished: {n} devices online": "Exploration terminée : {n} appareils en ligne",
+        "Scan finished: {n} devices online in {range}": "Exploration terminée : {n} appareils en ligne dans {range}",
         "This target has {hosts} addresses but the kernel ARP table holds {gc3}. The sweep still works, but the kernel will log overflow warnings. To avoid that, an administrator can run:": "Cette cible compte {hosts} adresses alors que la table ARP du noyau en contient {gc3}. Le balayage fonctionne quand même, mais le noyau consignera des avertissements de dépassement. Pour l'éviter, un administrateur peut exécuter :",
         "No devices recorded yet. Start a scan to build the list.": "Aucun appareil enregistré pour l'instant. Lancez une exploration pour constituer la liste.",
         "Network scanning is restricted to administrators on this instance.": "Sur cette instance, l'exploration du réseau est réservée aux administrateurs.",

@@ -15283,7 +15283,10 @@ return function render(_ctx, _cache) {
         }
         this.scanning = false;
         if (this.scan && this.scan.state === 'done') {
-          this.note(T('Scan finished: {n} devices online', { n: this.onlineCount }));
+          // The devices online in the range just scanned (counted by the
+          // server), not the whole list: other networks stay as they were.
+          const range = (this.scan.targets || []).join(', ');
+          this.note(T('Scan finished: {n} devices online in {range}', { n: this.scan.found, range }));
         }
       },
       async cancelScan() {

@@ -53,6 +53,53 @@ $check('a template type is still re-guessed (server → printer on 9100)', $r ==
 $r = $scan->classify($device('camera', ''));
 $check('a template type with nothing to judge by is kept', $r === 'camera', $r);
 
+// ---------------------------------------------------------------------------
+// A template picked by hand from the list (forum #69: a router became "Host"
+// at the next scan). A template is one a scan can guess, so a hand-picked one
+// was taken for a guess and guessed again. The row now records the pick.
+$picked = static function (string $type, string $ports, ?string $mark, array $more = []) use ($device): DeviceEntity {
+	$d = $device($type, $ports);
+	$extra = $more + ($mark !== null ? [ScanService::TYPE_CHOSEN => $mark] : []);
+	$d->setExtra($extra !== [] ? json_encode($extra) : null);
+	return $d;
+};
+$r = $scan->classify($picked('router_wifi', '22', 'router_wifi'));
+$check('a router picked by hand stays a router when port 22 is seen', $r === 'router_wifi', $r);
+$r = $scan->classify($picked('camera', '9100', 'camera'));
+$check('a camera picked by hand stays a camera when a printer port is open', $r === 'camera', $r);
+$r = $scan->classify($picked('server', '9100', 'camera'));
+$check('a mark for another type does not hold the current one (re-guessed)', $r === 'printer', $r);
+$r = $scan->classify($picked('server', '9100', null, ['mdns' => 'x.local']));
+$check('without a mark a template is still re-guessed', $r === 'printer', $r);
+$plain = $scan->classify($picked('unknown', '', null, ['model' => 'Generic box']));
+$stale = $scan->classify($picked('unknown', '', 'printer', ['model' => 'Generic box']));
+$check('an old mark is no clue to what the device is (same guess with and without it)', $plain === $stale, "$plain / $stale");
+$check('typeChosen(): a hand-picked template', ScanService::typeChosen($picked('router', '', 'router')));
+$check('typeChosen(): a guessed template', !ScanService::typeChosen($picked('router', '', null)));
+$check('typeChosen(): own words need no mark', ScanService::typeChosen($picked('Container', '', null)));
+$m = $picked('router', '', 'router', ['mdns' => 'r.local']);
+ScanService::markTypeChosen($m, null);
+$check('markTypeChosen(null) forgets the pick and keeps the rest', json_decode((string)$m->getExtra(), true) === ['mdns' => 'r.local'], (string)$m->getExtra());
+$m = $device('router', '');
+ScanService::markTypeChosen($m, 'router');
+ScanService::markTypeChosen($m, null);
+$check('forgetting the only key leaves no empty extra behind', $m->getExtra() === null, (string)$m->getExtra());
+
+// The edit dialogs send the type every time, so the controller marks only a
+// type that differs from the one shown, and "Unknown" hands it back to the scans.
+$ctl = (string)file_get_contents(__DIR__ . '/../lib/Controller/ApiController.php');
+$uAt = strpos($ctl, 'public function updateDevice(');
+$update = $uAt === false ? '' : substr($ctl, $uAt, (int)strpos($ctl, 'public function deleteDevice(', $uAt) - $uAt);
+$check('updateDevice() was located', strlen($update) > 500, strlen($update) . ' chars');
+$check('only a changed type is taken as picked', str_contains($update, "\$dtype !== (string)\$device->getDtype()"));
+$check('a picked type is marked on the row', str_contains($update, 'ScanService::markTypeChosen($device,'));
+$check('"Unknown" forgets the pick', str_contains($update, "\$dtype === 'unknown' ? null : \$dtype"));
+
+// "Scan finished" counts the devices online in the range scanned, not the list.
+$src = (string)file_get_contents(__DIR__ . '/../lib/Service/ScanService.php');
+$check('a finished scan counts online devices inside its own plan', (bool)preg_match("/getState\\(\\) === 'done'\\) \\{\\s*\\\$online = array_filter\\(.*getOnline.*\\n\\s*\\\$scan->setFound\\(count\\(self::idsWithin\\(\\\$online, \\\$queue\\['plan'\\]/s", $src));
+$check('the message uses that count and the range', str_contains($js = (string)file_get_contents(__DIR__ . '/../js/netbase.js'), "T('Scan finished: {n} devices online in {range}', { n: this.scan.found, range })"));
+
 // The picker's templates and AUTO_TYPES must be the same set.
 $js = (string)file_get_contents(__DIR__ . '/../js/netbase.js');
 preg_match('/const TYPE_LABEL = \{(.*?)\};/s', $js, $m);
@@ -101,12 +148,16 @@ $check('their tags are carried across', str_contains($carry, '$to->setTags($from
 $check('a hand-picked type is carried across', str_contains($carry, '$to->setDtype($chosen)'));
 $check(
 	'but only when it is hand-picked, never a guessed one',
-	str_contains($carry, '!in_array($chosen, self::AUTO_TYPES, true)'),
-	'no AUTO_TYPES guard on the carried type'
+	str_contains($carry, 'self::typeChosen($from)'),
+	'no typeChosen() guard on the carried type'
 );
 $check(
 	'and only when the new row has no type of its own',
-	str_contains($carry, 'in_array($hasOwn, self::AUTO_TYPES, true)')
+	str_contains($carry, '!self::typeChosen($to)')
+);
+$check(
+	'a hand-picked template carries its mark along, or the next scan would re-guess it',
+	str_contains($carry, 'self::markTypeChosen($to, $chosen)')
 );
 $check('on the same address it is carried only when the host name matches', str_contains($other, '$this->sameName($keep, $other)'));
 $check('otherwise it goes to the row with that host name', str_contains($other, '$this->rowNamed('));

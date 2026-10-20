@@ -128,7 +128,7 @@
         "Common ports": "Основные порты",
         "Detailed search": "Подробный поиск",
         "Reverse DNS": "Обратный DNS",
-        "Scan finished: {n} devices online": "Сканирование завершено: устройств в сети — {n}",
+        "Scan finished: {n} devices online in {range}": "Сканирование завершено: {range} — устройств в сети: {n}",
         "This target has {hosts} addresses but the kernel ARP table holds {gc3}. The sweep still works, but the kernel will log overflow warnings. To avoid that, an administrator can run:": "У этой цели {hosts} адресов, а таблица ARP ядра вмещает {gc3}. Сканирование всё равно работает, но ядро запишет предупреждения о переполнении. Чтобы этого избежать, администратор может выполнить:",
         "No devices recorded yet. Start a scan to build the list.": "Устройства ещё не записаны. Запустите сканирование, чтобы составить список.",
         "Network scanning is restricted to administrators on this instance.": "В этом экземпляре сканирование сети доступно только администраторам.",

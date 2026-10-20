@@ -129,7 +129,7 @@ OC.L10N.register(
         "Common ports": "常用端口",
         "Detailed search": "详细搜索",
         "Reverse DNS": "反向 DNS",
-        "Scan finished: {n} devices online": "扫描结束：{n} 台设备在线",
+        "Scan finished: {n} devices online in {range}": "扫描结束：{range} 中有 {n} 台设备在线",
         "This target has {hosts} addresses but the kernel ARP table holds {gc3}. The sweep still works, but the kernel will log overflow warnings. To avoid that, an administrator can run:": "该目标包含 {hosts} 个地址，而内核ARP 表只能容纳 {gc3} 条。扫描仍可进行，但内核会记录溢出警告。管理员可执行以下命令来避免：",
         "No devices recorded yet. Start a scan to build the list.": "尚未记录到任何设备。请先启动一次扫描来建立列表。",
         "Network scanning is restricted to administrators on this instance.": "本实例的网络扫描仅限管理员使用。",

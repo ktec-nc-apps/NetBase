@@ -128,7 +128,7 @@
         "Common ports": "المنافذ الشائعة",
         "Detailed search": "بحث مفصّل",
         "Reverse DNS": "DNS العكسي",
-        "Scan finished: {n} devices online": "انتهى الفحص: {n} جهازًا متصلًا",
+        "Scan finished: {n} devices online in {range}": "انتهى الفحص: {n} جهازًا متصلًا في {range}",
         "This target has {hosts} addresses but the kernel ARP table holds {gc3}. The sweep still works, but the kernel will log overflow warnings. To avoid that, an administrator can run:": "يحتوي هذا الهدف على {hosts} عنوانًا بينما يتسع جدول ARP للنواة لـ {gc3}. الفحص يعمل رغم ذلك، لكن النواة ستسجّل تحذيرات تجاوز. لتفادي ذلك يمكن للمدير تنفيذ:",
         "No devices recorded yet. Start a scan to build the list.": "لم تُسجَّل أي أجهزة بعد. ابدأ فحصًا لبناء القائمة.",
         "Network scanning is restricted to administrators on this instance.": "فحص الشبكة في هذا الخادم مقصور على المديرين.",

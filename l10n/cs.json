@@ -128,7 +128,7 @@
         "Common ports": "Běžné porty",
         "Detailed search": "Podrobné hledání",
         "Reverse DNS": "Zpětné DNS",
-        "Scan finished: {n} devices online": "Prohledávání dokončeno: {n} zařízení online",
+        "Scan finished: {n} devices online in {range}": "Prohledávání dokončeno: {n} zařízení online v {range}",
         "This target has {hosts} addresses but the kernel ARP table holds {gc3}. The sweep still works, but the kernel will log overflow warnings. To avoid that, an administrator can run:": "Tento cíl má {hosts} adres, zatímco tabulka ARP v jádře pojme {gc3}. Prohledávání i tak funguje, ale jádro zapíše varování o přetečení. Aby k tomu nedošlo, může správce spustit:",
         "No devices recorded yet. Start a scan to build the list.": "Zatím nejsou zaznamenána žádná zařízení. Spusťte prohledávání a seznam se vytvoří.",
         "Network scanning is restricted to administrators on this instance.": "Na této instanci je prohledávání sítě vyhrazeno správcům.",

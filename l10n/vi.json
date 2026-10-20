@@ -128,7 +128,7 @@
         "Common ports": "Cổng thông dụng",
         "Detailed search": "Tìm kiếm chi tiết",
         "Reverse DNS": "DNS ngược",
-        "Scan finished: {n} devices online": "Quét xong: {n} thiết bị trực tuyến",
+        "Scan finished: {n} devices online in {range}": "Quét xong: {n} thiết bị trực tuyến trong {range}",
         "This target has {hosts} addresses but the kernel ARP table holds {gc3}. The sweep still works, but the kernel will log overflow warnings. To avoid that, an administrator can run:": "Mục tiêu này có {hosts} địa chỉ trong khi bảng ARP của nhân chỉ chứa {gc3}. Việc quét vẫn chạy, nhưng nhân sẽ ghi cảnh báo tràn. Để tránh điều đó, quản trị viên có thể chạy:",
         "No devices recorded yet. Start a scan to build the list.": "Chưa ghi nhận thiết bị nào. Hãy bắt đầu một lần quét để dựng danh sách.",
         "Network scanning is restricted to administrators on this instance.": "Trên máy chủ này, việc quét mạng chỉ dành cho quản trị viên.",

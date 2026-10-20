@@ -71,6 +71,14 @@ class ScanService {
 	 */
 	public const AUTO_TYPES = ['router', 'router_wifi', 'hub', 'switch', 'switch3', 'ap', 'onu', 'pc', 'server', 'sbc', 'nas', 'phone', 'tablet', 'printer', 'camera', 'nvr', 'dvr', 'tv', 'av', 'speaker', 'mediaplayer', 'game', 'ups', 'iot', 'smarthub', 'plug', 'light', 'sensor', 'voip', 'host', 'unknown'];
 
+	/**
+	 * The key in a device's extra data that records a type picked by hand,
+	 * holding the type itself. A type picked from the list may well be one a
+	 * scan can guess (a router, a camera), and without this the next scan took
+	 * it for its own guess and guessed again (forum #69: a router became "Host").
+	 */
+	public const TYPE_CHOSEN = 'typeChosen';
+
 	/** Templates the picker offers that only a person can tell apart. */
 	public const MANUAL_TYPES = ['repeater', 'firewall', 'vpn', 'lb', 'gateway', 'laptop', 'hypervisor', 'watch', 'mfp', 'scanner', 'projector', 'pos', 'barcode', 'cardreader', 'timeclock', 'signage', 'digicam', 'webcam', 'intercom', 'access', 'alarm', 'settop', 'ereader', 'aircon', 'airpurifier', 'solar', 'pcs', 'battery', 'chargectrl', 'evcharger', 'smartmeter', 'hems', 'generator', 'pdu', 'thermostat', 'thsensor', 'motion', 'contact', 'leak', 'lock', 'vacuum', 'robot', 'remote', 'scale', 'pet', 'pbx', 'conference', 'plc', 'industrial', 'container'];
 
@@ -215,6 +223,14 @@ class ScanService {
 		$scan->setQueue(json_encode($queue));
 		$scan->setUpdated(time());
 		$scan->setFound(count($queue['ips'] ?? []));
+		// What "Scan finished" reports: the devices online inside the range that
+		// was scanned. The whole list's online count included every other LAN,
+		// which since 0.9.0 a scan no longer sets offline, and read as though all
+		// of them had been scanned (forum #69).
+		if ($scan->getState() === 'done') {
+			$online = array_filter($this->devices->findAll(100000), static fn (DeviceEntity $d) => (bool)$d->getOnline());
+			$scan->setFound(count(self::idsWithin($online, $queue['plan'] ?? [])));
+		}
 		$this->scans->update($scan);
 
 		return ['scan' => $scan->jsonSerialize(), 'devices' => $this->devicesJson()];
@@ -1057,10 +1073,9 @@ class ScanService {
 
 	/** Whether a person wrote anything on the row: a name, notes, tags, a location, a room, a mounting spot or a hand-picked type. */
 	private function hasOwn(DeviceEntity $d): bool {
-		$type = (string)$d->getDtype();
 		return ($d->getLabel() ?? '') !== '' || ($d->getNotes() ?? '') !== '' || ($d->getTags() ?? '') !== ''
 			|| ($d->getLocation() ?? '') !== '' || ($d->getRoom() ?? '') !== '' || ($d->getMount() ?? '') !== ''
-			|| ($type !== '' && !in_array($type, self::AUTO_TYPES, true));
+			|| self::typeChosen($d);
 	}
 
 	private function sameName(DeviceEntity $a, DeviceEntity $b): bool {
@@ -1077,11 +1092,12 @@ class ScanService {
 		if (!$to->getLocation() && $from->getLocation()) { $to->setLocation($from->getLocation()); $changed = true; }
 		if (!$to->getRoom() && $from->getRoom()) { $to->setRoom($from->getRoom()); $changed = true; }
 		if (!$to->getMount() && $from->getMount()) { $to->setMount($from->getMount()); $changed = true; }
-		$chosen = (string)$from->getDtype();
-		$hasOwn = (string)$to->getDtype();
-		if ($chosen !== '' && !in_array($chosen, self::AUTO_TYPES, true)
-			&& ($hasOwn === '' || in_array($hasOwn, self::AUTO_TYPES, true))) {
+		if (self::typeChosen($from) && !self::typeChosen($to)) {
+			$chosen = (string)$from->getDtype();
 			$to->setDtype($chosen);
+			if (in_array($chosen, self::AUTO_TYPES, true)) {
+				self::markTypeChosen($to, $chosen);
+			}
 			$changed = true;
 		}
 		return $changed;
@@ -1185,19 +1201,54 @@ class ScanService {
 			|| (bool)preg_match('/\\b(wifi|wi-fi|wlan|wireless|aterm|wg\\d|wsr|wrc|ax\\d{3,}|archer|deco|orbi)\\b/', $name);
 	}
 
+	/**
+	 * Whether a person chose this device's type: their own words, a template
+	 * no scan can guess, or any type picked by hand from the list.
+	 */
+	public static function typeChosen(DeviceEntity $device): bool {
+		$type = (string)$device->getDtype();
+		if ($type === '') {
+			return false;
+		}
+		if (!in_array($type, self::AUTO_TYPES, true)) {
+			return true;
+		}
+		$extra = $device->getExtra() ? json_decode((string)$device->getExtra(), true) : null;
+		return is_array($extra) && ($extra[self::TYPE_CHOSEN] ?? null) === $type;
+	}
+
+	/** Record on the row that a person picked $type, or forget it ($type null). */
+	public static function markTypeChosen(DeviceEntity $device, ?string $type): void {
+		$extra = $device->getExtra() ? (json_decode((string)$device->getExtra(), true) ?: []) : [];
+		if ($type === null) {
+			unset($extra[self::TYPE_CHOSEN]);
+		} else {
+			$extra[self::TYPE_CHOSEN] = $type;
+		}
+		$device->setExtra($extra !== [] ? json_encode($extra, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) : null);
+	}
+
 	public function classify(DeviceEntity $device): string {
-		// A type the user wrote in their own words is theirs to keep: no scan
-		// may replace it with a guess, or "Container" would turn back into
-		// "Server" the next time the device's port 22 was seen.
+		// A type a person chose is theirs to keep: no scan may replace it with
+		// a guess, or "Container" would turn back into "Server" the next time
+		// the device's port 22 was seen, and a router picked from the list into
+		// "Host".
 		$current = (string)$device->getDtype();
-		if ($current !== '' && !in_array($current, self::AUTO_TYPES, true)) {
+		if (self::typeChosen($device)) {
 			return $current;
 		}
 		$ports =$device->getPorts() ? array_map('intval', explode(',', (string)$device->getPorts())) : [];
 		$vendor = strtolower((string)$device->getVendor());
 		// The name a person gave the device counts too: many devices announce no name at all,
 		// and the model number typed as their name ("BSL-WS-G2116M") is the best clue there is.
-		$name = strtolower((string)$device->getHostname() . ' ' . (string)$device->getLabel() . ' ' . (string)$device->getExtra());
+		// A type once picked by hand is no clue to what the device is now.
+		$extraText = (string)$device->getExtra();
+		$extraData = $extraText !== '' ? json_decode($extraText, true) : null;
+		if (is_array($extraData) && array_key_exists(self::TYPE_CHOSEN, $extraData)) {
+			unset($extraData[self::TYPE_CHOSEN]);
+			$extraText = $extraData !== [] ? (string)json_encode($extraData, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) : '';
+		}
+		$name = strtolower((string)$device->getHostname() . ' ' . (string)$device->getLabel() . ' ' . $extraText);
 		$has = static fn (int ...$p) => (bool)array_intersect($p, $ports);
 
 		// VoIP handset: SIP.

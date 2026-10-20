@@ -129,7 +129,7 @@ OC.L10N.register(
         "Common ports": "Portas comuns",
         "Detailed search": "Pesquisa detalhada",
         "Reverse DNS": "DNS inverso",
-        "Scan finished: {n} devices online": "Exploração concluída: {n} dispositivos online",
+        "Scan finished: {n} devices online in {range}": "Exploração concluída: {n} dispositivos online em {range}",
         "This target has {hosts} addresses but the kernel ARP table holds {gc3}. The sweep still works, but the kernel will log overflow warnings. To avoid that, an administrator can run:": "Este alvo tem {hosts} endereços, mas a tabela ARP do núcleo guarda {gc3}. A exploração funciona à mesma, mas o núcleo vai registar avisos de excesso. Para o evitar, um administrador pode executar:",
         "No devices recorded yet. Start a scan to build the list.": "Ainda não há dispositivos registados. Inicie uma exploração para criar a lista.",
         "Network scanning is restricted to administrators on this instance.": "Nesta instância a exploração da rede está reservada aos administradores.",

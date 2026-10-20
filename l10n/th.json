@@ -128,7 +128,7 @@
         "Common ports": "พอร์ตหลัก",
         "Detailed search": "การค้นหาแบบละเอียด",
         "Reverse DNS": "DNS ย้อนกลับ",
-        "Scan finished: {n} devices online": "สแกนเสร็จ: อุปกรณ์ออนไลน์ {n} เครื่อง",
+        "Scan finished: {n} devices online in {range}": "สแกนเสร็จ: อุปกรณ์ออนไลน์ใน {range} {n} เครื่อง",
         "This target has {hosts} addresses but the kernel ARP table holds {gc3}. The sweep still works, but the kernel will log overflow warnings. To avoid that, an administrator can run:": "เป้าหมายนี้มี {hosts} หมายเลข ขณะที่ตาราง ARPของเคอร์เนลเก็บได้ {gc3} รายการ การสแกนยังทำงานได้ แต่เคอร์เนลจะบันทึกคำเตือนล้น หากต้องการเลี่ยง ผู้ดูแลระบบสามารถรัน:",
         "No devices recorded yet. Start a scan to build the list.": "ยังไม่มีอุปกรณ์ที่บันทึกไว้ เริ่มการสแกนเพื่อสร้างรายการ",
         "Network scanning is restricted to administrators on this instance.": "บนเซิร์ฟเวอร์นี้ การสแกนเครือข่ายสงวนไว้สำหรับผู้ดูแลระบบ",
