@@ -2,6 +2,29 @@
 
 All notable changes to NetBase are documented here.
 
+## 0.9.5 — 2026-10-25
+
+A way to see what a device scan does, and a fix to a type picked by hand, both from a forum report.
+
+### Added
+
+- **Diagnose the scan.** A new checkbox under the scan options. Tick it and the next scan records what it does, step by step: this server's own networks, how many devices in the range were set offline at the start, which addresses were asked and which answered (and how long that took), and what changed on each device in the range — online or offline, type, ports. When the scan ends, the record is shown, ready to copy into a report. Device names and MAC addresses are left out. The checkbox turns itself off after one scan.
+
+### Fixed
+
+- **A type picked by hand could be lost when two rows of the same device were folded into one.** NetBase folds two rows of one device into one, for example one from before it learned the device's MAC address. It carried across the name, notes and tags, but not a type picked by hand, so the next guess took its place: a NAS picked as "NAS" could turn back into "Host". The picked type is now carried across too.
+
+（日本語）
+掲示板の報告を受けて、機器の探索が何をしたかを見る機能を足し、手で選んだ種別の不具合を直しました。
+
+### 追加
+
+- **調査の経過を記録。** 探索の設定に新しいチェックを足しました。入れておくと、次の探索が何をしたかを順に記録します。このサーバーが属するネットワーク、始めに範囲内の何台をオフラインにしたか、どのアドレスに問い合わせ、どれが応答したか（かかった時間つき）、範囲内の各機器で何が変わったか（オンラインかどうか・種別・ポート）です。探索が終わると記録を表示し、そのまま報告に貼れます。機器の名前と MAC アドレスは含めません。チェックは 1 回の探索で自動的に外れます。
+
+### 修正
+
+- **同じ機器の行を 1 つにまとめるとき、手で選んだ種別が失われることがあった。** NetBase は、同じ機器の行が 2 つになると（MAC アドレスが分かる前の行が残っていた場合など）1 つにまとめます。名前・メモ・タグは引き継いでいましたが、手で選んだ種別は引き継がず、次の推測に置き換わっていました。「NAS」と選んだ NAS が「Host」に戻ることがありました。今は手で選んだ種別も引き継ぎます。
+
 ## 0.9.4 — 2026-10-20
 
 Two fixes to device scanning, reported on the forum.

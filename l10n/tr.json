@@ -1991,7 +1991,11 @@
         "Underline": "Alt çizgi",
         "Bar": "Dikey çubuk",
         "Blinking": "Yanıp sönen",
-        "These apply to the shell and to SSH windows opened from now on, not to a window that is already open.": "Bundan sonra açılan kabuk ve SSH pencereleri için geçerlidir, zaten açık olan bir pencere için değil."
+        "These apply to the shell and to SSH windows opened from now on, not to a window that is already open.": "Bundan sonra açılan kabuk ve SSH pencereleri için geçerlidir, zaten açık olan bir pencere için değil.",
+        "Diagnose the scan": "Taramayı tanıla",
+        "Records what the next scan does, step by step, and shows it when the scan ends, to copy into a report. Device names and MAC addresses are left out.": "Bir sonraki taramanın yaptıklarını adım adım kaydeder ve tarama bitince gösterir; bir rapora kopyalayabilirsiniz. Cihaz adları ve MAC adresleri dahil edilmez.",
+        "What the scan did": "Taramanın yaptıkları",
+        "This is what the scan did, step by step: which addresses it asked, which answered, and what changed on each device in the range. It holds no device names and no MAC addresses. You can paste it into a report.": "Taramanın adım adım yaptıkları: hangi adreslere sorduğu, hangilerinin yanıt verdiği ve aralıktaki her cihazda neyin değiştiği. Cihaz adları ve MAC adresleri içermez. Bir rapora yapıştırabilirsiniz."
     },
     "pluralForm": "nplurals=2; plural=(n > 1);"
 }

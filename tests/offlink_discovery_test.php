@@ -50,7 +50,7 @@ $check('it counts only completed connections (tcpSweep reports open ports)', str
 $check('it does not use alive(), which counts a refusal as a device', !str_contains($reach, '$this->alive('));
 preg_match('/function reachBeyond\(array \$ips, float \$timeout = ([0-9.]+)\)/', $disc, $m);
 $check('its default wait covers a SYN retry (>= 1.5 s)', isset($m[1]) && (float)$m[1] >= 1.5);
-$check('a batch in which every address answered is dropped', (bool)preg_match('/count\(\$found\) === count\(\$ips\)\)\s*\{\s*return \[\];/', $reach));
+$check('a batch in which every address answered is dropped', (bool)preg_match('/\$guard = count\(\$ips\) >= 16 && count\(\$found\) === count\(\$ips\);/', $reach) && str_contains($reach, 'return $guard ? [] : $found;'));
 $check('it tries the ports home devices keep open (NAS 5000, Sonos 1400, Cast 8008)',
 	(bool)preg_match('/REACH_PORTS = \[[^\]]*\b5000\b[^\]]*\b1400\b[^\]]*\b8008\b/', $disc));
 $check('DiscoveryService has offLinkOnly()', str_contains($disc, 'public function offLinkOnly('));

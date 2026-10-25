@@ -1991,7 +1991,11 @@
         "Underline": "Garis bawah",
         "Bar": "Garis tegak",
         "Blinking": "Berkedip",
-        "These apply to the shell and to SSH windows opened from now on, not to a window that is already open.": "Berlaku untuk shell dan jendela SSH yang dibuka mulai sekarang, bukan untuk jendela yang sudah terbuka."
+        "These apply to the shell and to SSH windows opened from now on, not to a window that is already open.": "Berlaku untuk shell dan jendela SSH yang dibuka mulai sekarang, bukan untuk jendela yang sudah terbuka.",
+        "Diagnose the scan": "Diagnosis pemindaian",
+        "Records what the next scan does, step by step, and shows it when the scan ends, to copy into a report. Device names and MAC addresses are left out.": "Mencatat langkah demi langkah apa yang dilakukan pemindaian berikutnya dan menampilkannya saat selesai, untuk disalin ke laporan. Nama perangkat dan alamat MAC tidak disertakan.",
+        "What the scan did": "Yang dilakukan pemindaian",
+        "This is what the scan did, step by step: which addresses it asked, which answered, and what changed on each device in the range. It holds no device names and no MAC addresses. You can paste it into a report.": "Inilah yang dilakukan pemindaian, langkah demi langkah: alamat mana yang ditanya, mana yang menjawab, dan apa yang berubah pada setiap perangkat dalam rentang. Tidak berisi nama perangkat maupun alamat MAC. Anda dapat menempelkannya ke laporan."
     },
     "pluralForm": "nplurals=1; plural=0;"
 }

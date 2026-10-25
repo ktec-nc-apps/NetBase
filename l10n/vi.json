@@ -1991,7 +1991,11 @@
         "Underline": "Gạch dưới",
         "Bar": "Thanh dọc",
         "Blinking": "Nhấp nháy",
-        "These apply to the shell and to SSH windows opened from now on, not to a window that is already open.": "Áp dụng cho shell và cửa sổ SSH mở từ bây giờ, không áp dụng cho cửa sổ đang mở."
+        "These apply to the shell and to SSH windows opened from now on, not to a window that is already open.": "Áp dụng cho shell và cửa sổ SSH mở từ bây giờ, không áp dụng cho cửa sổ đang mở.",
+        "Diagnose the scan": "Chẩn đoán lần quét",
+        "Records what the next scan does, step by step, and shows it when the scan ends, to copy into a report. Device names and MAC addresses are left out.": "Ghi lại từng bước những gì lần quét tiếp theo làm và hiển thị khi quét xong, để sao chép vào báo cáo. Không gồm tên thiết bị và địa chỉ MAC.",
+        "What the scan did": "Lần quét đã làm gì",
+        "This is what the scan did, step by step: which addresses it asked, which answered, and what changed on each device in the range. It holds no device names and no MAC addresses. You can paste it into a report.": "Đây là những gì lần quét đã làm, từng bước: đã hỏi những địa chỉ nào, địa chỉ nào trả lời và điều gì thay đổi ở mỗi thiết bị trong dải. Không chứa tên thiết bị hay địa chỉ MAC. Bạn có thể dán vào báo cáo."
     },
     "pluralForm": "nplurals=1; plural=0;"
 }

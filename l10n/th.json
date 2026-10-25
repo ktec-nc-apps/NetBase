@@ -1991,7 +1991,11 @@
         "Underline": "ขีดเส้นใต้",
         "Bar": "แถบแนวตั้ง",
         "Blinking": "กะพริบ",
-        "These apply to the shell and to SSH windows opened from now on, not to a window that is already open.": "ใช้กับเชลล์และหน้าต่าง SSH ที่เปิดนับจากนี้ ไม่ใช้กับหน้าต่างที่เปิดอยู่แล้ว"
+        "These apply to the shell and to SSH windows opened from now on, not to a window that is already open.": "ใช้กับเชลล์และหน้าต่าง SSH ที่เปิดนับจากนี้ ไม่ใช้กับหน้าต่างที่เปิดอยู่แล้ว",
+        "Diagnose the scan": "วินิจฉัยการสแกน",
+        "Records what the next scan does, step by step, and shows it when the scan ends, to copy into a report. Device names and MAC addresses are left out.": "บันทึกทีละขั้นว่าการสแกนครั้งถัดไปทำอะไร และแสดงเมื่อสแกนเสร็จ เพื่อคัดลอกไปใส่ในรายงาน ไม่รวมชื่ออุปกรณ์และที่อยู่ MAC",
+        "What the scan did": "สิ่งที่การสแกนทำ",
+        "This is what the scan did, step by step: which addresses it asked, which answered, and what changed on each device in the range. It holds no device names and no MAC addresses. You can paste it into a report.": "นี่คือสิ่งที่การสแกนทำทีละขั้น: ถามที่อยู่ใดบ้าง ที่อยู่ใดตอบกลับ และอุปกรณ์แต่ละเครื่องในช่วงนั้นเปลี่ยนไปอย่างไร ไม่มีชื่ออุปกรณ์และที่อยู่ MAC คุณวางลงในรายงานได้"
     },
     "pluralForm": "nplurals=1; plural=0;"
 }

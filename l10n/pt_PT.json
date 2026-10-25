@@ -1991,7 +1991,11 @@
         "Underline": "Sublinhado",
         "Bar": "Barra",
         "Blinking": "A piscar",
-        "These apply to the shell and to SSH windows opened from now on, not to a window that is already open.": "Aplicam-se à shell e às janelas SSH abertas a partir de agora, não a uma janela já aberta."
+        "These apply to the shell and to SSH windows opened from now on, not to a window that is already open.": "Aplicam-se à shell e às janelas SSH abertas a partir de agora, não a uma janela já aberta.",
+        "Diagnose the scan": "Diagnosticar a pesquisa",
+        "Records what the next scan does, step by step, and shows it when the scan ends, to copy into a report. Device names and MAC addresses are left out.": "Regista passo a passo o que a próxima pesquisa faz e mostra-o no fim, para copiar para um relatório. Os nomes dos dispositivos e os endereços MAC ficam de fora.",
+        "What the scan did": "O que a pesquisa fez",
+        "This is what the scan did, step by step: which addresses it asked, which answered, and what changed on each device in the range. It holds no device names and no MAC addresses. You can paste it into a report.": "Isto é o que a pesquisa fez, passo a passo: que endereços consultou, quais responderam e o que mudou em cada dispositivo do intervalo. Não contém nomes de dispositivos nem endereços MAC. Pode colá-lo num relatório."
     },
     "pluralForm": "nplurals=2; plural=(n > 1);"
 }

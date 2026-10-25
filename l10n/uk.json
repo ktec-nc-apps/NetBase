@@ -1991,7 +1991,11 @@
         "Underline": "Підкреслення",
         "Bar": "Вертикальна риска",
         "Blinking": "Блимання",
-        "These apply to the shell and to SSH windows opened from now on, not to a window that is already open.": "Застосовується до оболонки та вікон SSH, відкритих відтепер, але не до вже відкритого вікна."
+        "These apply to the shell and to SSH windows opened from now on, not to a window that is already open.": "Застосовується до оболонки та вікон SSH, відкритих відтепер, але не до вже відкритого вікна.",
+        "Diagnose the scan": "Діагностика сканування",
+        "Records what the next scan does, step by step, and shows it when the scan ends, to copy into a report. Device names and MAC addresses are left out.": "Покроково записує, що робить наступне сканування, і показує це наприкінці, щоб скопіювати у звіт. Назви пристроїв і MAC-адреси не включаються.",
+        "What the scan did": "Що зробило сканування",
+        "This is what the scan did, step by step: which addresses it asked, which answered, and what changed on each device in the range. It holds no device names and no MAC addresses. You can paste it into a report.": "Ось що покроково зробило сканування: які адреси воно опитало, які відповіли і що змінилося в кожного пристрою в діапазоні. Назв пристроїв і MAC-адрес тут немає. Це можна вставити у звіт."
     },
     "pluralForm": "nplurals=4; plural=(n % 1 == 0 && n % 10 == 1 && n % 100 != 11 ? 0 : n % 1 == 0 && n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14) ? 1 : n % 1 == 0 && (n % 10 ==0 || (n % 10 >=5 && n % 10 <=9) || (n % 100 >=11 && n % 100 <=14 )) ? 2: 3);"
 }

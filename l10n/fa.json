@@ -1991,7 +1991,11 @@
         "Underline": "زیرخط",
         "Bar": "خط عمودی",
         "Blinking": "چشمک‌زن",
-        "These apply to the shell and to SSH windows opened from now on, not to a window that is already open.": "برای پوسته و پنجره‌های SSH که از این پس باز می‌شوند به کار می‌رود، نه برای پنجره‌ای که اکنون باز است."
+        "These apply to the shell and to SSH windows opened from now on, not to a window that is already open.": "برای پوسته و پنجره‌های SSH که از این پس باز می‌شوند به کار می‌رود، نه برای پنجره‌ای که اکنون باز است.",
+        "Diagnose the scan": "عیب‌یابی پویش",
+        "Records what the next scan does, step by step, and shows it when the scan ends, to copy into a report. Device names and MAC addresses are left out.": "کارهایی را که پویش بعدی انجام می‌دهد گام‌به‌گام ثبت می‌کند و در پایان نشان می‌دهد تا در گزارش کپی کنید. نام دستگاه‌ها و نشانی‌های MAC آورده نمی‌شوند.",
+        "What the scan did": "کارهایی که پویش کرد",
+        "This is what the scan did, step by step: which addresses it asked, which answered, and what changed on each device in the range. It holds no device names and no MAC addresses. You can paste it into a report.": "این کارهایی است که پویش گام‌به‌گام انجام داد: از کدام نشانی‌ها پرسید، کدام‌ها پاسخ دادند و در هر دستگاه درون بازه چه چیزی تغییر کرد. نام دستگاه‌ها و نشانی‌های MAC در آن نیست. می‌توانید آن را در گزارش جای‌گذاری کنید."
     },
     "pluralForm": "nplurals=2; plural=(n > 1);"
 }

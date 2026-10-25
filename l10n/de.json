@@ -1991,7 +1991,11 @@
         "Underline": "Unterstrich",
         "Bar": "Balken",
         "Blinking": "Blinkend",
-        "These apply to the shell and to SSH windows opened from now on, not to a window that is already open.": "Gilt für Shells und SSH-Fenster, die ab jetzt geöffnet werden, nicht für ein bereits offenes Fenster."
+        "These apply to the shell and to SSH windows opened from now on, not to a window that is already open.": "Gilt für Shells und SSH-Fenster, die ab jetzt geöffnet werden, nicht für ein bereits offenes Fenster.",
+        "Diagnose the scan": "Scan diagnostizieren",
+        "Records what the next scan does, step by step, and shows it when the scan ends, to copy into a report. Device names and MAC addresses are left out.": "Zeichnet Schritt für Schritt auf, was der nächste Scan tut, und zeigt es am Ende an – zum Kopieren in einen Bericht. Gerätenamen und MAC-Adressen werden weggelassen.",
+        "What the scan did": "Was der Scan getan hat",
+        "This is what the scan did, step by step: which addresses it asked, which answered, and what changed on each device in the range. It holds no device names and no MAC addresses. You can paste it into a report.": "Das hat der Scan Schritt für Schritt getan: welche Adressen er gefragt hat, welche geantwortet haben und was sich an jedem Gerät im Bereich geändert hat. Gerätenamen und MAC-Adressen sind nicht enthalten. Sie können es in einen Bericht einfügen."
     },
     "pluralForm": "nplurals=2; plural=(n != 1);"
 }

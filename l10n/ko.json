@@ -1991,7 +1991,11 @@
         "Underline": "밑줄",
         "Bar": "세로 막대",
         "Blinking": "깜박임",
-        "These apply to the shell and to SSH windows opened from now on, not to a window that is already open.": "앞으로 여는 셸과 SSH 창에 적용되며, 이미 열린 창에는 적용되지 않습니다."
+        "These apply to the shell and to SSH windows opened from now on, not to a window that is already open.": "앞으로 여는 셸과 SSH 창에 적용되며, 이미 열린 창에는 적용되지 않습니다.",
+        "Diagnose the scan": "검색 진단",
+        "Records what the next scan does, step by step, and shows it when the scan ends, to copy into a report. Device names and MAC addresses are left out.": "다음 검색이 하는 일을 단계별로 기록하고 끝나면 보여 줍니다. 보고서에 복사해 넣을 수 있습니다. 기기 이름과 MAC 주소는 포함하지 않습니다.",
+        "What the scan did": "검색이 한 일",
+        "This is what the scan did, step by step: which addresses it asked, which answered, and what changed on each device in the range. It holds no device names and no MAC addresses. You can paste it into a report.": "검색이 단계별로 한 일입니다. 어떤 주소에 물었고, 어느 것이 응답했고, 범위 안의 각 기기에서 무엇이 바뀌었는지 보여 줍니다. 기기 이름과 MAC 주소는 포함하지 않습니다. 보고서에 붙여 넣을 수 있습니다."
     },
     "pluralForm": "nplurals=1; plural=0;"
 }

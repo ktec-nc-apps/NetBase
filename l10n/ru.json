@@ -1991,7 +1991,11 @@
         "Underline": "Подчёркивание",
         "Bar": "Вертикальная черта",
         "Blinking": "Мигающий",
-        "These apply to the shell and to SSH windows opened from now on, not to a window that is already open.": "Применяется к оболочке и окнам SSH, открытым с этого момента, но не к уже открытому окну."
+        "These apply to the shell and to SSH windows opened from now on, not to a window that is already open.": "Применяется к оболочке и окнам SSH, открытым с этого момента, но не к уже открытому окну.",
+        "Diagnose the scan": "Диагностика сканирования",
+        "Records what the next scan does, step by step, and shows it when the scan ends, to copy into a report. Device names and MAC addresses are left out.": "Пошагово записывает, что делает следующее сканирование, и показывает это по окончании, чтобы скопировать в отчёт. Имена устройств и MAC-адреса не включаются.",
+        "What the scan did": "Что сделало сканирование",
+        "This is what the scan did, step by step: which addresses it asked, which answered, and what changed on each device in the range. It holds no device names and no MAC addresses. You can paste it into a report.": "Вот что пошагово сделало сканирование: какие адреса оно опросило, какие ответили и что изменилось у каждого устройства в диапазоне. Имён устройств и MAC-адресов здесь нет. Это можно вставить в отчёт."
     },
     "pluralForm": "nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);"
 }

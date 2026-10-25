@@ -762,6 +762,9 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
               <label :title="t('Asks each address for its own name, over NetBIOS and mDNS.')"><input type="checkbox" v-model="opts.names"> {{ t('Ask devices for their names') }}</label>
               <label :title="t('Listens for the devices that announce themselves — mDNS, WS-Discovery and SSDP. It finds devices the sweep missed.')"><input type="checkbox" v-model="opts.multicast"> {{ t('Multicast discovery') }}</label>
               <label :title="t('Asks the DNS server what name it has on record for each address.')"><input type="checkbox" v-model="opts.rdns"> {{ t('Reverse DNS') }}</label>
+              <!-- For a scan that does not do what it should: a record of what it
+                   did, step by step, shown when it ends, to copy into a report. -->
+              <label :title="t('Records what the next scan does, step by step, and shows it when the scan ends, to copy into a report. Device names and MAC addresses are left out.')"><input type="checkbox" v-model="scanDiag"> {{ t('Diagnose the scan') }}</label>
             </div>
             <!-- The settings for the "Port scan" button, kept under the row so
                  a depth can be chosen before it is pressed. They do nothing for
@@ -2583,14 +2586,15 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         <div class="drawer-head">
           <span class="ic big">🩺</span>
           <div>
-            <strong>{{ t('What the page did') }}</strong>
+            <strong>{{ diagView.kind === 'scan' ? t('What the scan did') : t('What the page did') }}</strong>
             <div class="dim">{{ diagView.title }}</div>
           </div>
           <span class="spacer"></span>
           <button class="btn xs ib" :title="t('Close')" :aria-label="t('Close')" @click="diagView.open=false"><svg viewBox="0 0 24 24"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg></button>
         </div>
         <div class="drawer-body">
-          <p class="dim">{{ t('This is what the page and this server saw while you used it. It holds no passwords, nothing typed into the page and none of its text — only addresses (with the values after “?” hidden), answers and errors. You can paste it into a report.') }}</p>
+          <p v-if="diagView.kind === 'scan'" class="dim">{{ t('This is what the scan did, step by step: which addresses it asked, which answered, and what changed on each device in the range. It holds no device names and no MAC addresses. You can paste it into a report.') }}</p>
+          <p v-else class="dim">{{ t('This is what the page and this server saw while you used it. It holds no passwords, nothing typed into the page and none of its text — only addresses (with the values after “?” hidden), answers and errors. You can paste it into a report.') }}</p>
           <textarea class="diag-text mono" readonly :value="diagView.text"></textarea>
           <div class="row">
             <button class="btn sm primary" @click="copyText(diagView.text, t('Copied'))">{{ t('Copy') }}</button>
@@ -4211,6 +4215,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         // out of what this server has already spoken to, and a sweep is a
         // deliberate thing to ask for rather than the first thing that happens.
         opts: { names: true, multicast: true, ports: true, portScan: 'common', portWait: 0.9, rdns: true },
+        scanDiag: false,
         openPort: '', openScheme: 'http',
         // One device asked about itself: which search is running, how far it
         // has got, and what it came back with.
@@ -4390,7 +4395,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         ],
         // What was kept of past terminals: the list of them, and the one being read.
         termLog: { open: false, loading: false, sessions: [], session: null, steps: [] },
-        diagView: { open: false, title: '', text: '' },
+        diagView: { open: false, kind: '', title: '', text: '' },
         themeOptions: THEME_OPTIONS,
         adminUrl: (window.OC && OC.generateUrl) ? OC.generateUrl('/settings/admin/netbase') : '/settings/admin/netbase',
         liveOn: false, liveIface: '', liveIfaces: [], liveNow: { rx: 0, tx: 0 }, liveRx: [], liveTx: [],
@@ -5977,7 +5982,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         const targets = this.scanTargets.split(',').map((x) => x.trim()).filter(Boolean);
         // The override wins over everything, including arpOnly, so "Port scan"
         // can turn the discovery phases off and not repeat what a refresh did.
-        const options = { ...this.opts, pace: this.pace, arpOnly: this.scanWhat === 'arp', ...override };
+        const options = { ...this.opts, pace: this.pace, arpOnly: this.scanWhat === 'arp', diagnose: this.scanDiag, ...override };
         try {
           this.advice = await api('scan/advice?' + qs({ targets }));
           const r = await api('scan', { method: 'POST', body: JSON.stringify({ targets, options }) });
@@ -6001,6 +6006,12 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
           // server), not the whole list: other networks stay as they were.
           const range = (this.scan.targets || []).join(', ');
           this.note(T('Scan finished: {n} devices online in {range}', { n: this.scan.found, range }));
+        }
+        // A diagnosis is for one scan: shown once it ends, and switched off.
+        if (this.scan && this.scan.diag) {
+          this.scanDiag = false;
+          const head = 'NetBase ' + (this.version || '') + ' — scan diagnosis (' + (this.scan.state || '') + ')';
+          this.diagView = { open: true, kind: 'scan', title: (this.scan.targets || []).join(', '), text: head + '\n' + this.scan.diag };
         }
       },
       async cancelScan() {

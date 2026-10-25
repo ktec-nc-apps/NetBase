@@ -47,6 +47,6 @@ $ok(S::mergePorts('22', [22, 9000], array_flip(range(1, 65535))) === [22, 9000],
 $ok(str_contains($src, '\'portsTested\' => $tested'), 'the port step passes what it tried');
 
 $start = substr($src, strpos($src, 'public function start('), 6000);
-$ok(!str_contains($start, 'markAllOffline()') && str_contains($start, 'markOffline(self::idsWithin('), 'start() no longer sets every device offline');
+$ok(!str_contains($start, 'markAllOffline()') && str_contains($start, '$within = self::idsWithin(') && str_contains($start, 'markOffline($within)'), 'start() no longer sets every device offline');
 echo $fail ? "$fail FAILED\n" : "ALL OK\n";
 exit($fail ? 1 : 0);

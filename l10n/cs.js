@@ -1992,7 +1992,11 @@ OC.L10N.register(
         "Underline": "Podtržítko",
         "Bar": "Svislá čára",
         "Blinking": "Blikající",
-        "These apply to the shell and to SSH windows opened from now on, not to a window that is already open.": "Platí pro shell a okna SSH otevřená od teď, ne pro okno, které už je otevřené."
+        "These apply to the shell and to SSH windows opened from now on, not to a window that is already open.": "Platí pro shell a okna SSH otevřená od teď, ne pro okno, které už je otevřené.",
+        "Diagnose the scan": "Diagnostika prohledávání",
+        "Records what the next scan does, step by step, and shows it when the scan ends, to copy into a report. Device names and MAC addresses are left out.": "Krok za krokem zaznamená, co dělá příští prohledávání, a na konci to zobrazí ke zkopírování do hlášení. Názvy zařízení a MAC adresy se vynechávají.",
+        "What the scan did": "Co prohledávání udělalo",
+        "This is what the scan did, step by step: which addresses it asked, which answered, and what changed on each device in the range. It holds no device names and no MAC addresses. You can paste it into a report.": "Toto krok za krokem udělalo prohledávání: které adresy se ptalo, které odpověděly a co se změnilo u každého zařízení v rozsahu. Neobsahuje názvy zařízení ani MAC adresy. Můžete to vložit do hlášení."
     },
     "nplurals=4; plural=(n == 1 && n % 1 == 0) ? 0 : (n >= 2 && n <= 4 && n % 1 == 0) ? 1: (n % 1 != 0 ) ? 2 : 3;"
 );

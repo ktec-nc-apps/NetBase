@@ -1991,7 +1991,11 @@
         "Underline": "下線",
         "Bar": "縦線",
         "Blinking": "点滅する",
-        "These apply to the shell and to SSH windows opened from now on, not to a window that is already open.": "シェルと SSH のウィンドウを、これから開くときに使います。開いているウィンドウには反映されません。"
+        "These apply to the shell and to SSH windows opened from now on, not to a window that is already open.": "シェルと SSH のウィンドウを、これから開くときに使います。開いているウィンドウには反映されません。",
+        "Diagnose the scan": "調査の経過を記録",
+        "Records what the next scan does, step by step, and shows it when the scan ends, to copy into a report. Device names and MAC addresses are left out.": "次の調査で行ったことを順に記録し、終わったときに表示します。報告に貼り付けて使えます。機器の名前と MAC アドレスは含めません。",
+        "What the scan did": "調査の経過",
+        "This is what the scan did, step by step: which addresses it asked, which answered, and what changed on each device in the range. It holds no device names and no MAC addresses. You can paste it into a report.": "調査が行ったことを順に記録したものです。どのアドレスに問い合わせ、どれが応答し、範囲内の各機器で何が変わったかが分かります。機器の名前と MAC アドレスは含みません。報告にそのまま貼り付けられます。"
     },
     "pluralForm": "nplurals=1; plural=0;"
 }

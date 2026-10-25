@@ -1225,12 +1225,20 @@ class DiscoveryService {
 		if ($ips === []) {
 			return [];
 		}
+		$t = microtime(true);
 		$found = $this->tcpSweep($ips, self::REACH_PORTS, $timeout);
-		if (count($ips) >= 16 && count($found) === count($ips)) {
-			return [];
-		}
-		return $found;
+		$guard = count($ips) >= 16 && count($found) === count($ips);
+		$this->lastReach = ['ms' => (int)round((microtime(true) - $t) * 1000), 'guard' => $guard];
+		return $guard ? [] : $found;
 	}
+
+	/**
+	 * How the last reachBeyond() went — its time and whether the every-address
+	 * guard threw the batch away — for a scan's diagnosis.
+	 *
+	 * @var array{ms?: int, guard?: bool}
+	 */
+	public array $lastReach = [];
 
 	/**
 	 * The addresses that are not on any of this server's own subnets — the

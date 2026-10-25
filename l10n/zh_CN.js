@@ -1992,7 +1992,11 @@ OC.L10N.register(
         "Underline": "下划线",
         "Bar": "竖线",
         "Blinking": "闪烁",
-        "These apply to the shell and to SSH windows opened from now on, not to a window that is already open.": "这些设置适用于此后打开的 Shell 和 SSH 窗口，不影响已打开的窗口。"
+        "These apply to the shell and to SSH windows opened from now on, not to a window that is already open.": "这些设置适用于此后打开的 Shell 和 SSH 窗口，不影响已打开的窗口。",
+        "Diagnose the scan": "诊断扫描",
+        "Records what the next scan does, step by step, and shows it when the scan ends, to copy into a report. Device names and MAC addresses are left out.": "逐步记录下一次扫描所做的事，并在扫描结束时显示，便于复制到报告中。不包含设备名称和 MAC 地址。",
+        "What the scan did": "扫描做了什么",
+        "This is what the scan did, step by step: which addresses it asked, which answered, and what changed on each device in the range. It holds no device names and no MAC addresses. You can paste it into a report.": "这是扫描逐步所做的事：询问了哪些地址、哪些作出了应答，以及范围内每台设备发生了什么变化。不包含设备名称和 MAC 地址。可以直接粘贴到报告中。"
     },
     "nplurals=1; plural=0;"
 );

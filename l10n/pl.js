@@ -1992,7 +1992,11 @@ OC.L10N.register(
         "Underline": "Podkreślenie",
         "Bar": "Pionowa kreska",
         "Blinking": "Migający",
-        "These apply to the shell and to SSH windows opened from now on, not to a window that is already open.": "Dotyczy powłoki i okien SSH otwieranych od teraz, nie okna, które jest już otwarte."
+        "These apply to the shell and to SSH windows opened from now on, not to a window that is already open.": "Dotyczy powłoki i okien SSH otwieranych od teraz, nie okna, które jest już otwarte.",
+        "Diagnose the scan": "Diagnozuj skanowanie",
+        "Records what the next scan does, step by step, and shows it when the scan ends, to copy into a report. Device names and MAC addresses are left out.": "Zapisuje krok po kroku, co robi następne skanowanie, i pokazuje to na końcu, do skopiowania do zgłoszenia. Nazwy urządzeń i adresy MAC są pomijane.",
+        "What the scan did": "Co zrobiło skanowanie",
+        "This is what the scan did, step by step: which addresses it asked, which answered, and what changed on each device in the range. It holds no device names and no MAC addresses. You can paste it into a report.": "Oto co krok po kroku zrobiło skanowanie: o które adresy pytało, które odpowiedziały i co zmieniło się w każdym urządzeniu z zakresu. Nie zawiera nazw urządzeń ani adresów MAC. Możesz wkleić to do zgłoszenia."
     },
     "nplurals=4; plural=(n==1 ? 0 : (n%10>=2 && n%10<=4) && (n%100<12 || n%100>14) ? 1 : n!=1 && (n%10>=0 && n%10<=1) || (n%10>=5 && n%10<=9) || (n%100>=12 && n%100<=14) ? 2 : 3);"
 );

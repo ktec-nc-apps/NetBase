@@ -1991,7 +1991,11 @@
         "Underline": "خط سفلي",
         "Bar": "شريط عمودي",
         "Blinking": "وامض",
-        "These apply to the shell and to SSH windows opened from now on, not to a window that is already open.": "ينطبق على الصدفة ونوافذ SSH التي تُفتح من الآن، لا على نافذة مفتوحة بالفعل."
+        "These apply to the shell and to SSH windows opened from now on, not to a window that is already open.": "ينطبق على الصدفة ونوافذ SSH التي تُفتح من الآن، لا على نافذة مفتوحة بالفعل.",
+        "Diagnose the scan": "تشخيص الفحص",
+        "Records what the next scan does, step by step, and shows it when the scan ends, to copy into a report. Device names and MAC addresses are left out.": "يسجّل خطوة بخطوة ما يفعله الفحص التالي ويعرضه عند انتهائه، لنسخه في تقرير. لا تُضمَّن أسماء الأجهزة ولا عناوين MAC.",
+        "What the scan did": "ما فعله الفحص",
+        "This is what the scan did, step by step: which addresses it asked, which answered, and what changed on each device in the range. It holds no device names and no MAC addresses. You can paste it into a report.": "هذا ما فعله الفحص خطوة بخطوة: العناوين التي سألها، وأيّها أجاب، وما الذي تغيّر في كل جهاز ضمن النطاق. لا يحتوي على أسماء الأجهزة ولا عناوين MAC. يمكنك لصقه في تقرير."
     },
     "pluralForm": "nplurals=6; plural=(n==0 ? 0 : n==1 ? 1 : n==2 ? 2 : n%100>=3 && n%100<=10 ? 3 : n%100>=11 && n%100<=99 ? 4 : 5);"
 }

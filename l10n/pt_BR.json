@@ -1991,7 +1991,11 @@
         "Underline": "Sublinhado",
         "Bar": "Barra",
         "Blinking": "Piscando",
-        "These apply to the shell and to SSH windows opened from now on, not to a window that is already open.": "Valem para o shell e para as janelas SSH abertas a partir de agora, não para uma janela já aberta."
+        "These apply to the shell and to SSH windows opened from now on, not to a window that is already open.": "Valem para o shell e para as janelas SSH abertas a partir de agora, não para uma janela já aberta.",
+        "Diagnose the scan": "Diagnosticar a varredura",
+        "Records what the next scan does, step by step, and shows it when the scan ends, to copy into a report. Device names and MAC addresses are left out.": "Registra passo a passo o que a próxima varredura faz e mostra ao terminar, para copiar em um relatório. Nomes de dispositivos e endereços MAC ficam de fora.",
+        "What the scan did": "O que a varredura fez",
+        "This is what the scan did, step by step: which addresses it asked, which answered, and what changed on each device in the range. It holds no device names and no MAC addresses. You can paste it into a report.": "Isto é o que a varredura fez, passo a passo: quais endereços consultou, quais responderam e o que mudou em cada dispositivo do intervalo. Não contém nomes de dispositivos nem endereços MAC. Você pode colá-lo em um relatório."
     },
     "pluralForm": "nplurals=2; plural=(n > 1);"
 }

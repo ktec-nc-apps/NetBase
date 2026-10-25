@@ -79,6 +79,22 @@ class ScanService {
 	 */
 	public const TYPE_CHOSEN = 'typeChosen';
 
+	/**
+	 * Lines a scan's diagnosis keeps at most. It is read by a person and
+	 * pasted into a forum post, so it has to stop somewhere.
+	 */
+	public const TRACE_MAX = 600;
+
+	/**
+	 * The diagnosis of the scan being stepped, when one was asked for: what
+	 * the scan did, line by line, kept in the scan's queue between requests.
+	 * Device names and MACs stay out of it, so it can be posted as it is.
+	 *
+	 * @var list<string>|null
+	 */
+	private ?array $trace = null;
+	private float $traceT0 = 0.0;
+
 	/** Templates the picker offers that only a person can tell apart. */
 	public const MANUAL_TYPES = ['repeater', 'firewall', 'vpn', 'lb', 'gateway', 'laptop', 'hypervisor', 'watch', 'mfp', 'scanner', 'projector', 'pos', 'barcode', 'cardreader', 'timeclock', 'signage', 'digicam', 'webcam', 'intercom', 'access', 'alarm', 'settop', 'ereader', 'aircon', 'airpurifier', 'solar', 'pcs', 'battery', 'chargectrl', 'evcharger', 'smartmeter', 'hems', 'generator', 'pdu', 'thermostat', 'thsensor', 'motion', 'contact', 'leak', 'lock', 'vacuum', 'robot', 'remote', 'scale', 'pet', 'pbx', 'conference', 'plc', 'industrial', 'container'];
 
@@ -145,28 +161,46 @@ class ScanService {
 		$scan->setCursor(0);
 		$scan->setTotal($total);
 		$scan->setFound(0);
-		$scan->setQueue(json_encode([
+		$queue = [
 			'plan' => $plan, 'ips' => [], 'idx' => 0,
 			'asked' => [], 'named' => [], 'retried' => [], 'retrying' => false,
 			'mcastDone' => false, 'retryDone' => false,
-		]));
+		];
 		$scan->setStarted(time());
 		$scan->setUpdated(time());
+		if ($normalised['diagnose']) {
+			$this->trace = [];
+			$this->traceT0 = microtime(true);
+			$this->traceStart($targets, $plan, $normalised);
+		}
 
 		// Only the devices inside what this scan looks at are set back to offline
 		// until they answer. Setting every device offline — as it used to — meant
 		// that re-scanning one LAN marked every device of another LAN offline,
 		// though nothing there had been looked at (reported on the forum, #59:
 		// two LANs, .20 and .40, each going offline when the other was scanned).
-		$this->devices->markOffline(self::idsWithin($this->devices->findAll(100000), $plan));
+		$within = self::idsWithin($this->devices->findAll(100000), $plan);
+		$this->devices->markOffline($within);
+		$this->note('set offline until they answer: ' . count($within) . ' devices in the range');
 		// What can only be heard, and was heard lately, is still here. It has
 		// no way of answering a scan, so a scan cannot say otherwise.
 		$this->devices->keepRecentlyHeard(time() - self::HEARD_FOR);
+		if ($this->trace !== null) {
+			$kept = array_filter($this->devices->findAll(100000), static fn (DeviceEntity $d) => $d->getOnline() && self::inPlan($plan, (string)$d->getIp()));
+			$this->note('kept online without asking, as seen in the last ' . intdiv(self::HEARD_FOR, 60) . ' min and never in the ARP table: '
+				. count($kept) . ' — ' . self::someIps(array_map(static fn (DeviceEntity $d) => (string)$d->getIp(), $kept)));
+		}
 		// Fold together any address that ended up on more than one row before
 		// now (a device whose MAC changed, or an older build that duplicated
 		// it), so the list starts clean rather than only the addresses this
 		// scan happens to re-find.
 		$this->dedupeExisting();
+		if ($this->trace !== null) {
+			$queue['diag'] = $this->trace;
+			$queue['diagT0'] = $this->traceT0;
+			$this->trace = null;
+		}
+		$scan->setQueue(json_encode($queue));
 		return $this->scans->insert($scan);
 	}
 
@@ -187,6 +221,10 @@ class ScanService {
 		$queue = json_decode((string)$scan->getQueue(), true) ?: ['plan' => [], 'ips' => [], 'idx' => 0];
 		$options = json_decode((string)$scan->getOptions(), true) ?: $this->normaliseOptions([]);
 		$deadline = microtime(true) + $budget;
+		if (!empty($options['diagnose'])) {
+			$this->trace = $queue['diag'] ?? [];
+			$this->traceT0 = (float)($queue['diagT0'] ?? microtime(true));
+		}
 
 		try {
 			while (microtime(true) < $deadline && $scan->getPhase() !== 'done') {
@@ -198,6 +236,11 @@ class ScanService {
 					$queue['mcastAnnounced'] = true;
 					$this->progress($scan, 'mcastListen', 0, 0);
 					break;
+				}
+				$phase = (string)$scan->getPhase();
+				if (($queue['diagPhase'] ?? '') !== $phase && $this->trace !== null) {
+					$queue['diagPhase'] = $phase;
+					$this->note('-- phase: ' . $phase);
 				}
 				match ($scan->getPhase()) {
 					'arp' => $this->stepArp($scan, $queue, $options),
@@ -213,12 +256,20 @@ class ScanService {
 			$this->logger->error('NetBase scan failed: ' . $e->getMessage(), ['exception' => $e, 'app' => 'netbase']);
 			$scan->setState('error');
 			$scan->setMessage($e->getMessage());
+			$this->note('the scan failed: ' . $e->getMessage());
 		}
 
 		if ($scan->getPhase() === 'done' && $scan->getState() === 'running') {
 			$scan->setState('done');
 			$scan->setFinished(time());
 			$scan->setCursor($scan->getTotal());
+		}
+		if ($this->trace !== null) {
+			if ($scan->getState() !== 'running') {
+				$this->traceEnd($queue['plan'] ?? []);
+			}
+			$queue['diag'] = $this->trace;
+			$this->trace = null;
 		}
 		$scan->setQueue(json_encode($queue));
 		$scan->setUpdated(time());
@@ -233,7 +284,11 @@ class ScanService {
 		}
 		$this->scans->update($scan);
 
-		return ['scan' => $scan->jsonSerialize(), 'devices' => $this->devicesJson()];
+		$out = ['scan' => $scan->jsonSerialize(), 'devices' => $this->devicesJson()];
+		if ($scan->getState() !== 'running' && isset($queue['diag'])) {
+			$out['scan']['diag'] = implode("\n", $queue['diag']);
+		}
+		return $out;
 	}
 
 	public function cancel(int $scanId): void {
@@ -306,9 +361,11 @@ class ScanService {
 			usleep((int)($options['settle'] * 1000));
 		}
 		if ($beyond !== []) {
-			$this->absorbReached($queue, $this->discovery->reachBeyond($beyond));
+			$reached = $this->discovery->reachBeyond($beyond);
+			$this->noteReach('beyond-link sweep ' . $beyond[0] . ' - ' . $beyond[count($beyond) - 1], $beyond, $reached, false);
+			$this->absorbReached($queue, $reached);
 		}
-		$this->absorbNeighbours($queue, $options);
+		$this->absorbNeighbours($queue, $options, false);
 
 		$cursor = min($total, $cursor + $chunk);
 		$scan->setCursor($cursor);
@@ -792,7 +849,11 @@ class ScanService {
 		$ips = array_values(array_unique($ips));
 		$near = $this->discovery->onLinkOnly($ips);
 		if ($near !== []) {
-			$this->devices->markOnline($this->discovery->alive($near));
+			$t = microtime(true);
+			$up = $this->discovery->alive($near);
+			$this->devices->markOnline($up);
+			$this->note(sprintf('on-link check of the addresses on file: %d asked, %d answered (%d ms); no answer: %s',
+				count($near), count($up), (int)round((microtime(true) - $t) * 1000), self::someIps(array_diff($near, $up))));
 		}
 		// Beyond the server's subnets the neighbour table knows nothing, so a
 		// device found there earlier is here now only if it still accepts a
@@ -800,8 +861,24 @@ class ScanService {
 		// lookup that follows covers them as well.
 		$beyond = $this->discovery->offLinkOnly($ips);
 		if ($beyond !== []) {
-			$this->absorbReached($queue, $this->discovery->reachBeyond($beyond));
+			$reached = $this->discovery->reachBeyond($beyond);
+			$this->noteReach('beyond-link check of the addresses on file', $beyond, $reached);
+			$this->absorbReached($queue, $reached);
 		}
+	}
+
+	/** One line of the diagnosis for a reachBeyond() call. */
+	private function noteReach(string $what, array $asked, array $reached, bool $listSilent = true): void {
+		if ($this->trace === null) {
+			return;
+		}
+		$last = $this->discovery->lastReach;
+		$this->note(sprintf('%s: %d asked, %d accepted a connection (%d ms)%s; %s',
+			$what, count($asked), count($reached), (int)($last['ms'] ?? 0),
+			!empty($last['guard']) ? ' — EVERY address answered, so something in between answers for all of them and none was taken' : '',
+			$listSilent
+				? 'no answer: ' . self::someIps(array_diff($asked, array_keys($reached)))
+				: 'accepted: ' . self::someIps(array_keys($reached))));
 	}
 
 	/**
@@ -823,9 +900,27 @@ class ScanService {
 	}
 
 	/** Read the ARP table and record everything new in it. */
-	private function absorbNeighbours(array &$queue, array $options): void {
+	private function absorbNeighbours(array &$queue, array $options, bool $noteIt = true): void {
 		$known = array_flip($queue['ips'] ?? []);
-		foreach ($this->discovery->neighbours() as $ip => $entry) {
+		$table = $this->discovery->neighbours();
+		if ($this->trace !== null && $noteIt) {
+			$states = [];
+			foreach ($table as $entry) {
+				$state = (string)($entry['state'] ?? '');
+				if ($state === '') {
+					$state = ($entry['reachable'] ?? true) ? 'complete' : 'stale';
+				}
+				$states[$state] = ($states[$state] ?? 0) + 1;
+			}
+			$inPlan = array_filter(array_map('strval', array_keys($table)), static fn (string $ip) => self::inPlan($queue['plan'] ?? [], $ip));
+			$parts = [];
+			foreach ($states as $s => $n) {
+				$parts[] = $n . ' ' . strtolower($s);
+			}
+			$this->note('ARP table read: ' . count($table) . ' entries (' . ($parts !== [] ? implode(', ', $parts) : 'none')
+				. '), ' . count($inPlan) . ' of them in the range: ' . self::someIps($inPlan));
+		}
+		foreach ($table as $ip => $entry) {
 			if (($options['interface'] ?? '') !== '' && $entry['interface'] !== $options['interface']) {
 				continue;
 			}
@@ -884,6 +979,9 @@ class ScanService {
 			$device->setDkey($key);
 			$device->setFirstSeen(time());
 		}
+		$before = $this->trace !== null && !$isNew
+			? [(string)$device->getDtype(), (bool)$device->getOnline(), (string)$device->getPorts(), self::typeChosen($device)]
+			: null;
 		// Only a positive signal turns a device online and updates "last seen";
 		// the scan set everything offline at the start, so a "not present"
 		// reading (a stale ARP entry) leaves both as they are rather than
@@ -985,6 +1083,27 @@ class ScanService {
 			$device->setExtra(json_encode($extra, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
 		}
 
+		if ($this->trace !== null) {
+			$via = (string)($update['source'] ?? (isset($update['ports']) ? 'port scan' : (isset($update['hostname']) ? 'name' : 'update')));
+			if ($before === null) {
+				$this->note(sprintf('%s new row (%s): %s, type %s, ports %s', $ip, $via,
+					$device->getOnline() ? 'online' : 'offline', (string)$device->getDtype(), (string)$device->getPorts() ?: '-'));
+			} else {
+				$changes = [];
+				if ($before[1] !== (bool)$device->getOnline()) {
+					$changes[] = ($before[1] ? 'online' : 'offline') . ' -> ' . ($device->getOnline() ? 'online' : 'offline');
+				}
+				if ($before[0] !== (string)$device->getDtype()) {
+					$changes[] = 'type ' . $before[0] . ($before[3] ? ' (picked)' : '') . ' -> ' . (string)$device->getDtype();
+				}
+				if ($before[2] !== (string)$device->getPorts()) {
+					$changes[] = 'ports ' . ($before[2] ?: '-') . ' -> ' . ((string)$device->getPorts() ?: '-');
+				}
+				if ($changes !== []) {
+					$this->note($ip . ' (' . $via . '): ' . implode('; ', $changes));
+				}
+			}
+		}
 		$saved = $isNew ? $this->devices->insert($device) : $this->devices->update($device);
 		$this->mergeDuplicateIps($saved);
 		$this->adoptParked($saved);
@@ -1035,6 +1154,18 @@ class ScanService {
 					$keep->setFirstSeen($other->getFirstSeen());
 					$changed = true;
 				}
+				// A type picked by hand on either copy is the device's. Left behind on
+				// the copy that is deleted, it was lost and the next guess took over
+				// (forum #72: a Synology picked as "NAS" turned back into "Host").
+				if (self::typeChosen($other) && !self::typeChosen($keep)) {
+					$chosen = (string)$other->getDtype();
+					$keep->setDtype($chosen);
+					if (in_array($chosen, self::AUTO_TYPES, true)) {
+						self::markTypeChosen($keep, $chosen);
+					}
+					$changed = true;
+				}
+				$this->note($ip . ': two rows for the same device, folded into one' . (self::typeChosen($keep) ? ' (picked type ' . $keep->getDtype() . ')' : ''));
 			} else {
 				// Two different MACs on one address: a container that came back with a
 				// new MAC, or an address handed to another machine. Only what a person
@@ -1044,7 +1175,8 @@ class ScanService {
 				// and when a restart shuffled the addresses the HAProxy note turned up on
 				// a Redis node (NCC #34). Everything the old machine said about itself
 				// (ports, names, vendor) goes with its row.
-				if ($this->sameName($keep, $other)) {
+				$carried = $this->sameName($keep, $other);
+				if ($carried) {
 					$changed = $this->carryOwn($other, $keep) || $changed;
 				} elseif ($this->hasOwn($other) && ($other->getHostname() ?? '') !== '') {
 					$home = $this->rowNamed((string)$other->getHostname(), [(int)$other->getId(), (int)$keep->getId()]);
@@ -1059,9 +1191,13 @@ class ScanService {
 						$other->setIp(null);
 						$other->setOnline(false);
 						$this->devices->update($other);
+						$this->note($ip . ': an older row with another MAC was set aside until its name turns up again');
 						continue;
 					}
 				}
+				$this->note($ip . ': an older row with another MAC was removed' . (!$this->hasOwn($other) ? ''
+					: ($carried ? ' (what a person wrote on it moved to this row)'
+						: ' (what a person wrote on it went to the device of that name, or was lost if none' . (self::typeChosen($other) ? '; picked type ' . $other->getDtype() : '') . ')')));
 			}
 			$this->devices->delete($other);
 		}
@@ -1640,7 +1776,82 @@ class ScanService {
 			'rdns' => (bool)($options['rdns'] ?? true),
 			'interface' => (string)($options['interface'] ?? ''),
 			'portList' => $ports ?: $default,
+			'diagnose' => (bool)($options['diagnose'] ?? false),
 		];
+	}
+
+	/** One line of the diagnosis, stamped with the seconds since the scan began. */
+	private function note(string $line): void {
+		if ($this->trace === null) {
+			return;
+		}
+		if (count($this->trace) === self::TRACE_MAX) {
+			$this->trace[] = '... (the rest is left out: the diagnosis is limited to ' . self::TRACE_MAX . ' lines)';
+		}
+		if (count($this->trace) > self::TRACE_MAX) {
+			return;
+		}
+		$this->trace[] = sprintf('%7.2fs  %s', microtime(true) - $this->traceT0, $line);
+	}
+
+	/** A short list of addresses for the diagnosis: all of them up to a point, then a count. */
+	private static function someIps(array $ips, int $max = 40): string {
+		$ips = array_values($ips);
+		if ($ips === []) {
+			return '(none)';
+		}
+		$shown = implode(' ', array_slice($ips, 0, $max));
+		return count($ips) > $max ? $shown . ' ... (+' . (count($ips) - $max) . ' more)' : $shown;
+	}
+
+	/** What the diagnosis says first: what was asked for, and where this server stands. */
+	private function traceStart(array $targets, array $plan, array $options): void {
+		$this->note('scan of ' . implode(', ', $targets) . ' — ' . ($options['arpOnly'] ? 'the ARP table only' : 'the whole network')
+			. '; names ' . ($options['names'] ? 'on' : 'off') . ', multicast ' . ($options['multicast'] ? 'on' : 'off')
+			. ', ports ' . ($options['ports'] ? $options['portScan'] . ' (wait ' . $options['portWait'] . ' s)' : 'off')
+			. ', pace ' . $options['pace'] . ($options['interface'] !== '' ? ', interface ' . $options['interface'] : ''));
+		$own = [];
+		foreach ($this->discovery->interfaces() as $if) {
+			if ($if['loopback']) {
+				continue;
+			}
+			foreach ($if['addresses'] as $addr) {
+				if (($addr['family'] ?? '') === 'inet') {
+					$own[] = $if['name'] . ($if['up'] ? '' : ' (down)') . ' ' . $addr['network'] . '/' . $addr['cidr'];
+				}
+			}
+		}
+		$this->note('this server\'s own networks: ' . ($own !== [] ? implode(', ', $own) : '(none found)'));
+		$route = $this->discovery->defaultRoute();
+		if (($route['gateway'] ?? '') !== '') {
+			$this->note('default route: ' . $route['gateway'] . ' via ' . $route['interface']);
+		}
+		$inPlan = array_filter($this->devices->findAll(100000), static fn (DeviceEntity $d) => self::inPlan($plan, (string)$d->getIp()));
+		$this->note('on file in the range before the scan: ' . count($inPlan) . ' devices, '
+			. count(array_filter($inPlan, static fn (DeviceEntity $d) => (bool)$d->getOnline())) . ' of them online');
+		$ips = array_map(static fn (DeviceEntity $d) => (string)$d->getIp(), $inPlan);
+		$near = $this->discovery->onLinkOnly($ips);
+		$this->note('of those, on this server\'s own networks: ' . count($near) . '; beyond them (found by TCP only): ' . (count($ips) - count($near)));
+	}
+
+	/** What the diagnosis says last: every device in the range as the scan leaves it. */
+	private function traceEnd(array $plan): void {
+		$this->note('-- the devices in the range now');
+		$rows = array_filter($this->devices->findAll(100000), static fn (DeviceEntity $d) => self::inPlan($plan, (string)$d->getIp()));
+		usort($rows, static fn (DeviceEntity $a, DeviceEntity $b) => ip2long((string)$a->getIp()) <=> ip2long((string)$b->getIp()));
+		$now = time();
+		foreach ($rows as $d) {
+			$seen = $d->getLastSeen() ? $now - (int)$d->getLastSeen() : null;
+			$this->note(sprintf('%-15s %-7s type %-11s%s  ports %s  from %s  seen %s  %s',
+				(string)$d->getIp(),
+				$d->getOnline() ? 'online' : 'offline',
+				(string)$d->getDtype(),
+				self::typeChosen($d) ? ' (picked)' : '',
+				(string)$d->getPorts() ?: '-',
+				(string)$d->getSources() ?: '-',
+				$seen === null ? 'never' : ($seen < 120 ? $seen . ' s ago' : intdiv($seen, 60) . ' min ago'),
+				$d->getMac() ? 'MAC known' : 'no MAC'));
+		}
 	}
 
 	private function cleanName(string $name): string {

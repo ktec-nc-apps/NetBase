@@ -1992,7 +1992,11 @@ OC.L10N.register(
         "Underline": "अंडरलाइन",
         "Bar": "खड़ी रेखा",
         "Blinking": "टिमटिमाता हुआ",
-        "These apply to the shell and to SSH windows opened from now on, not to a window that is already open.": "अब से खुलने वाले शेल और SSH विंडो पर लागू होता है, पहले से खुली विंडो पर नहीं।"
+        "These apply to the shell and to SSH windows opened from now on, not to a window that is already open.": "अब से खुलने वाले शेल और SSH विंडो पर लागू होता है, पहले से खुली विंडो पर नहीं।",
+        "Diagnose the scan": "स्कैन का निदान",
+        "Records what the next scan does, step by step, and shows it when the scan ends, to copy into a report. Device names and MAC addresses are left out.": "अगला स्कैन जो करता है उसे क्रम से दर्ज करता है और स्कैन पूरा होने पर दिखाता है, ताकि आप उसे रिपोर्ट में कॉपी कर सकें। डिवाइस के नाम और MAC पते शामिल नहीं होते।",
+        "What the scan did": "स्कैन ने क्या किया",
+        "This is what the scan did, step by step: which addresses it asked, which answered, and what changed on each device in the range. It holds no device names and no MAC addresses. You can paste it into a report.": "स्कैन ने क्रम से यह किया: किन पतों से पूछा, किन्होंने जवाब दिया, और दायरे के हर डिवाइस में क्या बदला। इसमें डिवाइस के नाम और MAC पते नहीं हैं। आप इसे रिपोर्ट में चिपका सकते हैं।"
     },
     "nplurals=2; plural=(n != 1);"
 );
