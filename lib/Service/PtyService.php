@@ -159,7 +159,12 @@ class PtyService {
 				if ($resize !== '') {
 					[$c, $r] = array_pad(explode(' ', trim($resize)), 2, '');
 					if (ctype_digit($c) && ctype_digit($r)) {
-						$ssh->setWindowSize(max(20, min(500, (int)$c)), max(5, min(200, (int)$r)));
+						// setWindowSize() alone never reaches a shell that is already open
+						if ($ssh instanceof TermSsh) {
+							$ssh->resizeWindow(max(20, min(500, (int)$c)), max(5, min(200, (int)$r)));
+						} else {
+							$ssh->setWindowSize(max(20, min(500, (int)$c)), max(5, min(200, (int)$r)));
+						}
 					}
 				}
 				$said = $ssh->read();

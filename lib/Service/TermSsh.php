@@ -88,4 +88,34 @@ final class TermSsh extends SSH2 {
 		}, $this, SSH2::class);
 		return $open();
 	}
+
+	/**
+	 * Tell the server the window has a new size, as OpenSSH's client does on
+	 * SIGWINCH ("window-change", RFC 4254 6.7).
+	 *
+	 * phpseclib's setWindowSize() only remembers the size for the next shell it
+	 * opens, so a shell already running kept the size it started with: the
+	 * browser's terminal grew while the far end went on wrapping and drawing
+	 * full-screen programs at the old width and height (GitHub issue #1).
+	 */
+	public function resizeWindow(int $columns, int $rows): void {
+		$this->setWindowSize($columns, $rows);
+		$send = \Closure::bind(function () use ($columns, $rows) {
+			if (!($this->bitmap & self::MASK_SHELL) || !isset($this->server_channels[self::CHANNEL_SHELL])) {
+				return;
+			}
+			$this->send_binary_packet(Strings::packSSH2(
+				'CNsbNNNN',
+				NET_SSH2_MSG_CHANNEL_REQUEST,
+				$this->server_channels[self::CHANNEL_SHELL],
+				'window-change',
+				false,
+				$columns,
+				$rows,
+				0,
+				0
+			));
+		}, $this, SSH2::class);
+		$send();
+	}
 }

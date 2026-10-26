@@ -15857,7 +15857,12 @@ return function render(_ctx, _cache) {
         if (this.narrow) return;
         // Turning a phone back to a desktop width would otherwise leave the
         // windows off the edge of the screen, with no title bar to drag.
-        for (const w of this.windows) {
+        for (const w of [...this.windows, ...this.terms]) {
+          // A maximised window keeps filling the browser as it grows or shrinks.
+          if (w.full) {
+            Object.assign(w, { x: 12, y: 60, w: window.innerWidth - 24, h: window.innerHeight - 76 });
+            continue;
+          }
           w.w = Math.min(w.w, window.innerWidth - 40);
           w.h = Math.min(w.h, window.innerHeight - 100);
           w.x = Math.max(0, Math.min(w.x, window.innerWidth - 120));
@@ -16329,7 +16334,24 @@ return function render(_ctx, _cache) {
         if (fit) term.loadAddon(fit);
         term.open(el);
         if (fit) { try { fit.fit(); } catch (e) { /* the window may not be laid out yet */ } }
-        SCREENS.set(w.id, { term, fit, abort: null });
+        // Whatever changes the box -- the window dragged or maximised, the
+        // browser resized, the toolbar wrapping onto a second line -- the rows
+        // and columns are measured again, and onResize below tells the far end.
+        // Only a resize, a maximise and the font buttons did that before, and
+        // never the browser's own window (GitHub issue #1).
+        let observer = null;
+        if (fit && window.ResizeObserver) {
+          let frame = 0;
+          observer = new ResizeObserver(() => {
+            cancelAnimationFrame(frame);
+            frame = requestAnimationFrame(() => {
+              if (!el.offsetWidth || !el.offsetHeight) return;
+              try { fit.fit(); } catch (e) { /* mid-drag */ }
+            });
+          });
+          observer.observe(el);
+        }
+        SCREENS.set(w.id, { term, fit, observer, abort: null });
         term.onData((data) => {
           // Ctrl and Meta were armed by their buttons, and each holds for one
           // keystroke: Ctrl folds the key down to its control code, Meta puts
@@ -16861,6 +16883,7 @@ return function render(_ctx, _cache) {
         const live = SCREENS.get(w.id);
         if (live) {
           if (live.abort) { try { live.abort.abort(); } catch (e) { /* already gone */ } }
+          if (live.observer) live.observer.disconnect();
           try { live.term.dispose(); } catch (e) { /* already gone */ }
           SCREENS.delete(w.id);
         }

@@ -1,11 +1,11 @@
 {
     "hashes": {
         ".gitignore": "c779f80dc1a4f1b375d482de1b19185c23af7b3755cf0a88639159401ab5985a96d4ba4801600d0efa79675a6021a8d2e921c9ee9c95cd0244cf9f2d1420fd98",
-        "CHANGELOG.md": "bc19781f6570bc7f61c16344ed0bb31928a2dea9a97aec19b5a577702225a3ff3b854335afe12d90a4ff7de6dd92edadd720e5fe3fe8312e1250b43d7d6eedc8",
+        "CHANGELOG.md": "6ff1021f4a38e42f3cf6e1f96df0c80e9d38ec617fa2cca33fd2e8a1aa5ac44b198af3ed81d182ed6b1a32e7a455867ec167e3200a956ce3d927f023e1d16629",
         "LICENSE": "3568a76677f3d55dbbc7fc33c4073b4714cc6f68d92cd842a9ca2b230e8bd2140e59c3fc3cce34be34ffed78d75ab6e9d991ba59bf7c4addde7fb96648d3375d",
         "README.md": "7ba3da28ed025c3c09d30f361cac846fbe4544aa9b34d2846dc855559406f6b0ed547895c428fd50002291e2c83de9972ebcb12d441113f83e289de1e065637b",
         "appinfo\/ai-hub.json": "ff95490ce780420401ab66e379f040f3d93ad853c6f9680de9f36d722efb1d66f2e55c3aa1e056425286cba7ba4dbee53e05b853c80fd2fe59b5122549b2e40b",
-        "appinfo\/info.xml": "c7488b91d68c0538e4b0f9a0ae0764a0d3db491bcddcb5a50c3e6e6fb8b5dd7fc02c839c963626505316f250bf2487a73fa92a553bf44a000bff40bc05770f87",
+        "appinfo\/info.xml": "cab229ca679e00e754946f6a91d9ec71ac93e5211ea8f6bc9aadd40c538c85c797d367502b53bab8d70745246309996adc6cee83bb2296cdc6d5c233bc2b85c7",
         "appinfo\/routes.php": "73f2d74295f428bff6cc44b317d4fc3cdbb9672997601b8d086222b855cc5af2dde6c03347fdd76fc3254a3bb503bd1a5caf2b86a3f711b7eba091aa3939d9dc",
         "css\/admin-ai.css": "5ca27d6bf630da5f7c0ea51ec63450c9c99eab63d826ccbc8130cf355cdce3d11c8e63e0cea378804815ce89eb834b24f1832c8614ab5494d18b64bc67bb855c",
         "css\/admin.css": "4dab50dd88293f38cb2c185694f3a3f79acf8a467ed8a690a6a3a2906cdb3169fdbec64ae2ebab8c7c0ec30b7db3b36db29f3c70f1c7ab1dbea27875a5df1b6b",
@@ -19,8 +19,8 @@
         "img\/logo.svg": "3bf8e78d6571c0956a9884231875132dc5a929c83c16bdfcfd7d85942017d6f0e4d1947690f43c8cf1b1abedb78f69f0e10e73be71d6e7ca48cb7423aaa973e3",
         "js\/admin-ai.js": "34d09b9b873a55ddd08b0da16a177bbaaba4c7543cdb0dfe86061e81bb977df37f91cac9a2c7da51d3f3cbb54040a01c65441571e019ae5b200b356717607baf",
         "js\/admin.js": "ca7e0f073a07c779fa376cd1f9ffa30d9dfa141ac32559ed95ac43a69ee1f5d2020b1deabc5319e360267700064b69605bb4b8ff7b3d7737c0de393692fc9729",
-        "js\/netbase.dist.js": "6a026e004802fe7413ae8de2d6bcd4d8a95772cb2c6a9b3b77227883a1ce7727c9ba2ae3d43e4a3b4e1eff6a025e973d818812703c318018be1c52d5a2e1c398",
-        "js\/netbase.js": "781a365c98807675d079f0c897e40c17c0cbb6606cb80c618844656fe5c7a6d3ffbc5f0b910313bb3149c1d10a7f4353576752153992bb730100fc0660809b2a",
+        "js\/netbase.dist.js": "ff3d2929aa8a91977ddb39d379a7496f680a60ea1533ef0098305deb2eb2ef03a2e0387acf9b53f259918570217dc82fc291bfd6b0e36b7b7298735ba76f99be",
+        "js\/netbase.js": "19b7d8e8285760e15b3e3b43d95c9065d574736596bd5cbb2658bfbbaa86d2d03894a02435152f9eed24e71e11c8d96302ba880e4be82a6e1e372f3a0d0991ab",
         "js\/vendor\/xterm-addon-fit.js": "2c15b2b6f5eca49c5671bf26335feb4b36e6f957b1bd90801c0e2d3c0994318623034b340417ae9298be01dc4cee818018347c41f61c3634a407a38e23964bf7",
         "js\/vendor\/xterm.js": "1ae8f0e466a31798acde73281aff57fad08ca9e3cb2ffeb4aaf02fd4ba1f5194d5f632bc10d6ccf4bfa668698eb0dcee65a8aec9cfdfa69875293f6e479c3709",
         "js\/vue-private.js": "0dea4a48638b0630fca89c7ab1c7e5e73191b48826a5b9bc1c4f7209f9a4b31e34f324f5cbfff6a9c357bcee1a97734c291fd63d4cfe92bdc8ae6355285bb479",
@@ -115,7 +115,7 @@
         "lib\/Service\/PermissionService.php": "5a009e3df421bc7896e7a9fdffc3fdcdff213432f868b271523eecf4a667d27ef88939eda7b72b6a3387ad135e9ae56520a89b7450bcb9c7d631917160d4bd58",
         "lib\/Service\/ProbeService.php": "1b17c3b7fbc0ceba7149e7b128cf1324ac048b880fd591bb4dfc4b4ce87c8d30800985b24a09a016511feaa559e201e459c24e539a21965b7d3d64c2a31871c6",
         "lib\/Service\/ProxyService.php": "8aa82191b8e0144dcd199e27e528f97be420675e403d963eaa0faa0235e1aeb562ae49327b9e6b34f5ebf70e3d8aacc8b160fc10c9ebbf7169ca327247fce432",
-        "lib\/Service\/PtyService.php": "b561aae7814652f2e95b89e917c45146a0014002f9e5f09cc694793c0dee9782bc376ad27f648bdce66cc1e6315017cf689f44265db4ecfc3ec41dfa9218d0a1",
+        "lib\/Service\/PtyService.php": "9b5b5d17bebd9adf1cf286d32813e32f823b3ca0155770a3ef677c4da1cc04602dc2e21ace8b975d371c062f97b985faec852de5d6c228c79f3c1d726e8fa5eb",
         "lib\/Service\/RegiBaseBridge.php": "f79fc2f995230f665ea9676a617986e11b42fbd29b1f5100fa5084b5e017883e362315e4ec60304820e1f66288e69c3c136f1404b9b5118c90b3d4ceaf4fe420",
         "lib\/Service\/RequirementsService.php": "7f6fab735e8f658daeb6fa00a41be0641ee03fafa644bccc0419b3879abfa829108d699b583f1700d550c018cc298ae4ef020da73985d7b7d43dbee7d971fca2",
         "lib\/Service\/ScanService.php": "09904f27aa46abb65c7dfd8663cc36af74cba1bb42e22ea4f64de670f3852802c263142828d4d1dedde6a6becd113f7f03e5054367401b0741906ab386710652",
@@ -126,7 +126,7 @@
         "lib\/Service\/TelnetService.php": "00eb4f92e372ddab4a412b298917f942069b7de9aeb6207b838a050c5548c4e975cf43ac839b89cba13011c9ffe49a5b8efd8821c49f8203d0c9be8ae40ea57b",
         "lib\/Service\/TermCodec.php": "bdbec46ec6e2aa57012ef6e6d8d7cef5b6504872a1ae61994ffdfece8ebdd2441bb085fa946e39e643442a3456fe809702cbd3c3232edef63edc23667ba9f406",
         "lib\/Service\/TermLogService.php": "d95641e2aabeabdd9adcbd80e73005431837d747662916feabd9567b0a782cb9c5ae32b1b389e72c1ece6900c493b0add67b7baba66d60c133c0f5ed402225b2",
-        "lib\/Service\/TermSsh.php": "1a29dac144449d282cfd2239a9c25481221d99b4e696f86d3791ff9aba3d92148b9c0219e962cc8e483a1df0177911e8088115a75fdda02cb5b18b735af9e19e",
+        "lib\/Service\/TermSsh.php": "da50e43aba59d96d1bbea6475eacaf9bbb24b8217cb37acac2fa5d3738d44c774cb23c66e434fce7e1032148339ebab86d279e6e85b5c0808c06e8bf3e332e50",
         "lib\/Service\/TextConvert.php": "6beb247a94cc3662119a3a539f64cda18f7a14f71133df54ad3457dc57bdd233bcb75b4de8e6b4f317e759e8db24aede4e752752fa94c869280e92a844488cdf",
         "lib\/Service\/TextConvertException.php": "544307a9bd98c1c79236d00844ec14e986ab40a173d3e59a8ab78d32cae110118e86f845ebd5aa014599fe78caf6e98d55ec5c07002cebcf3c5601a6fdf2a404",
         "lib\/Service\/ToolService.php": "dbdfd6c119afd1150cc2705283e82e7fbcbfec35090e1fac87ae84ccb4e9a0fea37cf6d3538f8ef705c4baa6789af9afa3628f88df9c59fbac219f5c98c171da",
@@ -492,6 +492,6 @@
         "templates\/denied.php": "437cc858a7379a677da597481761e3b8537d13e02696cf4554a7607f600d5604c1a0e933574351216fa77f7293fad270165914b6d37c62896879ada8eb563ca6",
         "templates\/main.php": "1ba7d01be50758cd0e0b8ca70a1e6411efe5047876afa9d3adf57bad0be6b8e9385a127b11361364d00cb55b47a5efd963c3d3595c4e3d828a4a0e88a8c2a377"
     },
-    "signature": "jhFaEmJgiamVj269eqqWjnbsYdStspbRLl32nfB5sFre\/3JXP3B31YTunorTeP21N10gjEhmdiT9f2+I5DxVtllYmlxbwr4VYK0VV89cs6KVa2DlAOC7WHtXtybTWAxF7p9XgqPT3c4Oey1Ky83V+Kmd7vchSJVQQqCem01mjJfOj5L3mxptrhTMve3bj4JkNIQG0CZPVAzuwFbVB3XgXxH0w1X2s4Uk2hVUpST9RpTmp+MNaH8bAjsi+kQwrbTbQGCFTfPNvKGsizZOjvkFhNUheN+Sr+iMxTqMkWyc49UGOkQQM8Y4MVCfD\/34JG5fJnzsqj9w59jo9GK1RbDWLDW4vb3nq\/oraWR7H\/FeCR+HsnxZIP27v+pohvAieaRp17z0pwdRJMpHz71IyAC+C\/WF9MaNhHCx5KeAPHknyXzq0QzasH5PmSut7afDPdQaQlqzeeUskdl7eCY3FP22ahcpvE2X48nS\/ST3xzHOqlzCcdsQiKFNxnpSB+mtWMtxCaF+bxRmGf\/+xyhVCYmIpulhhY8AakAusI9beF48lcpLihr8NjGNHNqcvmx35dU8yd1CAZZHHofZsAdFwtRrBOFQwuvZnNEzPcS9CXO7SL+zsDrNU9nFmzfdrXMaWtnuMq5kWMDLFaHpJofq0vKjob\/TU4E+q\/g+vs6BGV6k7w0=",
+    "signature": "WRS3Mk1RYM+vsqWwo4bB7FlxNHTGcACq2QQC6qqYf8GrWrkQ0Kf+xFJ1YBvueECzIYT8AE+jqoMF5If6EOLxoaVZDX49aYUHdou14Q5D0f\/QjT+Qb0aiP3AIr+t9Sqm2WzxHSHm1173FbpYNrfoOXz6vKnq9YnIVhlv8vKhkyqiBZGZpgesR0J8OBX9v2hq0yE1qMxg14Zne9t3dBzD266Fq5LXc7xTsaVcGwQ7eBqZNnuyDdvAQbFzHE2r0G2SMa6j7yVAB\/FTUY7l82WMxNKj\/8VpuRTMYBpmFxVES6w\/v+ug8Uip2ETXp5ZlP8jUEHvFYmS1E3RycTT+jWbPG5zgx9nEVlfnWP6wjl0hgNSwOHzQK9rwV8Shqgot\/C4lDz6TtaQnyKbxDQqtse7PifVPeqayk5JfDtndRZ7GrDi\/pIxWyNKk+2s+1L6GiHbKUhg9HCwnkkA48kdC4\/aZfR2GkgbfqPT1T7AKiFii\/mgQp6U22nEx0mo4YcMJK+kvLRjOLrNzvjnyB6uKxVDjy0hqn0Buszy+FV9kiWB+rCOJuGdPtmqNN7Mzc7zgQZSoYEr3gv1hwIcvtHCFp3j5mspe\/yAJiSMin\/REoGIk\/ioW2p+xo9C4yjO+VuSY2MwfIR6fZSyEsFOhNS5IO\/OgUZFRPUhUix8kIP99Ug7ULvLE=",
     "certificate": "-----BEGIN CERTIFICATE-----\r\nMIIEAjCCAuoCAhQGMA0GCSqGSIb3DQEBCwUAMHsxCzAJBgNVBAYTAkRFMRswGQYD\r\nVQQIDBJCYWRlbi1XdWVydHRlbWJlcmcxFzAVBgNVBAoMDk5leHRjbG91ZCBHbWJI\r\nMTYwNAYDVQQDDC1OZXh0Y2xvdWQgQ29kZSBTaWduaW5nIEludGVybWVkaWF0ZSBB\r\ndXRob3JpdHkwHhcNMjYwOTA0MTcxMTI4WhcNMzYxMjEwMTcxMTI4WjASMRAwDgYD\r\nVQQDDAduZXRiYXNlMIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEAxJYl\r\nCkqzFAiO4MRvrPqDTY5Ld8AZt7eMiR9G9E5yLdKOy+49HJZeYyQff0jjyJz9wnPi\r\nFaefWc6\/NASleMExcqRnSsxT9s\/cMZmNwf\/f8rzSSdlTWEwVdLAhkIHtU1o4TYgE\r\ncqGdu0gy2WbjFQbs8Auj6kV6NN2HhVkR0cXbpBoKvIHhYql+FVdl4DcgMGLXVUC4\r\nZwfsqUAqO1H4+9dV1KpINmw\/nebFrTVqsZTLyI50+7eXD0SBccHPzsYzFwcBI82U\r\nZHqXH7QassTVVCDKh03qQhjfWdSBn09OCNVKtHq2irPJgv7xffV5HluL4vDpnHaQ\r\ns9lvBQxXfR9Gr58dAZZjoyGj\/uUgU89DZpvF0NFiVWWx5C7K4GB42slT0vM6pfj6\r\nOM\/LuYabweqwSaJB6fCZizMp90ekNS\/IvQKJquVtUwCzVXdCaEi5tQ4lIuMCWTM1\r\n9FTLKbYTkmTQklsvT5YtNXjNwjLajFAvM7dV\/o5SrlU\/sRnKmF2BaCMVH\/5c7E4M\r\n+odmf6IQgSSBR+P9Z+Ibv0pjd9q5eBiej\/Nolk87A\/9QrWaHm9ggFEoriGM9+a2h\r\nZM1ubTbgjcj2BZrzYH3mY0oRzxPI3+tbNbRl\/hhLic05hv+Ni+9hhJ75nCJffrGG\r\nAVxvJ782J4b91nx2J\/lEvkGDRfdNozxG3sGmwnsCAwEAATANBgkqhkiG9w0BAQsF\r\nAAOCAQEAmeZn8CaDKmY2so3qmQh96qSUalr+knwEjX5skr7LnJCaxNK96DKCu\/4d\r\nbRZMRkbTypcvhDV8p4vr13EWErL43MF\/edxNRmZPfGM1MgunUkp5zdu97nba8YmJ\r\n4EYB8s\/v0Iql6HrMyBTCMXgPVwVzKCdmfrax8LER+XMDgoj4YZWJ+dMA0tSww7CA\r\n8FTLXt1XICT3yrg4Xy8dqDvyX4gNXjtM8zMrP2vPI8DOXTyZdcR+aflMCc7o4e9p\r\nPxUz\/PqzLbHWhuwWzrl0TIr03HHEqXuVWj8VxAh+fdRURhxbmscyj\/nsgr6\/EYqM\r\nUSwDscLXvONFUqUZyWnlW9O2HTlQ1g==\r\n-----END CERTIFICATE-----"
 }

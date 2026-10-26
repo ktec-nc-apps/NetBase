@@ -2,6 +2,21 @@
 
 All notable changes to NetBase are documented here.
 
+## 0.9.6 — 2026-10-26
+
+A fix to the SSH and shell terminals, reported on GitHub (issue #1).
+
+### Fixed
+
+- **The shell did not follow the size of its window.** Over SSH, a new window size was never sent to the server, so a running shell kept the size it started with: the window grew, but the shell went on wrapping lines and drawing full-screen programs at the old width and height. The terminal also measured its rows and columns again only when its window was dragged or maximised, not when the browser itself was resized, and a maximised window did not follow the browser. Now, whenever the window, the browser or the text size changes, the terminal measures again and the server is told the new size.
+
+（日本語）
+GitHub の報告（Issue #1）を受けて、SSH とシェルの端末を直しました。
+
+### 修正
+
+- **シェルが窓の大きさに追従しなかった。** SSH では、窓の大きさが変わってもサーバーに伝えていなかったため、動いているシェルは最初の大きさのままでした。窓を広げても、行の折り返しや全画面のプログラムの表示は前の幅と高さのままでした。また、行数と桁数を測り直すのは窓をドラッグしたときと最大化したときだけで、ブラウザーの大きさを変えたときは測り直さず、最大化した窓もブラウザーに合わせて変わりませんでした。今は、窓・ブラウザー・文字の大きさのどれが変わっても測り直し、新しい大きさをサーバーに伝えます。
+
 ## 0.9.5 — 2026-10-25
 
 A way to see what a device scan does, and a fix to a type picked by hand, both from a forum report.
