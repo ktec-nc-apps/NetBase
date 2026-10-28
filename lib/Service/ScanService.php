@@ -861,7 +861,7 @@ class ScanService {
 		// lookup that follows covers them as well.
 		$beyond = $this->discovery->offLinkOnly($ips);
 		if ($beyond !== []) {
-			$reached = $this->discovery->reachBeyond($beyond);
+			$reached = $this->discovery->reachKnown($beyond);
 			$this->noteReach('beyond-link check of the addresses on file', $beyond, $reached);
 			$this->absorbReached($queue, $reached);
 		}
@@ -873,9 +873,18 @@ class ScanService {
 			return;
 		}
 		$last = $this->discovery->lastReach;
+		$why = '';
+		if (!empty($last['guard'])) {
+			$why = ' — EVERY address answered, so something in between answers for all of them and none was taken';
+		} elseif (!empty($last['middle'])) {
+			$why = ' — unused addresses in ' . implode(', ', array_map(static fn ($p) => $p . '.0/24', $last['middle']))
+				. ' answered too, so something in between answers for them and none there was taken';
+		} elseif (!empty($last['canaries'])) {
+			$why = ' — checked against ' . $last['canaries'] . ' unused addresses, none of them answered';
+		}
 		$this->note(sprintf('%s: %d asked, %d accepted a connection (%d ms)%s; %s',
 			$what, count($asked), count($reached), (int)($last['ms'] ?? 0),
-			!empty($last['guard']) ? ' — EVERY address answered, so something in between answers for all of them and none was taken' : '',
+			$why,
 			$listSilent
 				? 'no answer: ' . self::someIps(array_diff($asked, array_keys($reached)))
 				: 'accepted: ' . self::someIps(array_keys($reached))));

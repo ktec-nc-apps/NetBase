@@ -2,6 +2,21 @@
 
 All notable changes to NetBase are documented here.
 
+## 0.9.7 — 2026-10-28
+
+A fix to devices beyond the server's own network going offline on a refresh, reported on GitHub (issue #2).
+
+### Fixed
+
+- **A refresh that reads only the ARP table could set every device beyond a router offline.** Those devices never appear in the ARP table, so they are kept online by touching the addresses on file with a connection. That check threw its whole result away when 16 or more addresses all answered, on the thinking that only a proxy or firewall answering for everything could make everything answer. For devices already on file, all of them answering is just a healthy network: with 23 on file and 23 answering, none was taken and they all went offline until a scan of the whole network brought them back. The check now asks about a few unused addresses in each /24 as well. If those answer too, something in between is answering for them and nothing there is taken; otherwise every device that answers is kept. The scan diagnosis says which of the two it found.
+
+（日本語）
+GitHub の報告（Issue #2）を受けて、ルーターの向こうの機器が、更新のときにオフラインになる不具合を直しました。
+
+### 修正
+
+- **「ARP の表だけ」で更新すると、ルーターの向こうの機器がすべてオフラインになることがあった。** そうした機器は ARP の表に載らないため、記録してあるアドレスへ接続を試して、オンラインのままにしていました。この確認は、16 個以上のアドレスがすべて応答すると、結果をすべて捨てていました。すべてに答えるのは、プロキシやファイアウォールだけだという考えからです。しかし、すでに記録してある機器については、すべてが応答するのは、ふつうの健全なネットワークです。23 台を記録していて 23 台とも応答したのに、1 台も採用されず、ネットワーク全体を調べ直すまで、すべてがオフラインのままでした。今は、各 /24 の使っていないアドレスも数個あわせて調べます。それにも応答があれば、途中の機器が代わりに答えているとみなして、その範囲のものは採用しません。応答がなければ、応答した機器をすべてオンラインのままにします。どちらだったかは、探索の診断に書きます。
+
 ## 0.9.6 — 2026-10-26
 
 A fix to the SSH and shell terminals, reported on GitHub (issue #1).

@@ -1233,10 +1233,88 @@ class DiscoveryService {
 	}
 
 	/**
-	 * How the last reachBeyond() went — its time and whether the every-address
-	 * guard threw the batch away — for a scan's diagnosis.
+	 * Which of the devices already on file, beyond this server's own subnets,
+	 * still accept a connection.
 	 *
-	 * @var array{ms?: int, guard?: bool}
+	 * reachBeyond() throws a batch away when every address of it answers, which
+	 * is right for a sweep of a range: only a proxy or a firewall that accepts
+	 * everything makes everything answer. A list of devices known to exist is
+	 * the opposite case — all of them answering is a healthy network, and the
+	 * guard took 23 of 23 devices offline (GitHub issue #2). So here the same
+	 * addresses are asked together with a few unused ones in each /24: a proxy
+	 * answers for those as well, a healthy network does not. Where two of the
+	 * three answer, nothing in that /24 is taken.
+	 *
+	 * @param list<string> $ips
+	 * @return array<string, list<int>> the addresses that accepted a connection, with the ports that did
+	 */
+	public function reachKnown(array $ips, float $timeout = 1.5): array {
+		$ips = array_values(array_unique(array_filter($ips, static fn ($ip) => filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) !== false)));
+		if ($ips === []) {
+			return [];
+		}
+		$t = microtime(true);
+		$canaries = $this->canariesFor($ips);
+		$open = $this->tcpSweep(array_merge($ips, ...array_values($canaries)), self::REACH_PORTS, $timeout);
+		$middle = [];
+		foreach ($canaries as $prefix => $list) {
+			if (count(array_filter($list, static fn ($c) => isset($open[$c]))) >= 2) {
+				$middle[] = $prefix;
+			}
+		}
+		$found = [];
+		foreach ($ips as $ip) {
+			if (isset($open[$ip]) && !in_array(substr($ip, 0, (int)strrpos($ip, '.')), $middle, true)) {
+				$found[$ip] = $open[$ip];
+			}
+		}
+		$this->lastReach = [
+			'ms' => (int)round((microtime(true) - $t) * 1000),
+			'guard' => false,
+			'canaries' => count($canaries) * 3,
+			'middle' => $middle,
+		];
+		return $found;
+	}
+
+	/**
+	 * Three unused addresses in each /24 that holds one of these, to tell a
+	 * network that answers for its devices from a proxy that answers for every
+	 * address. Never one of the addresses asked about, never .0 or .255.
+	 *
+	 * @param list<string> $ips
+	 * @return array<string, list<string>> the first three octets, with the addresses chosen
+	 */
+	private function canariesFor(array $ips): array {
+		$byNet = [];
+		foreach ($ips as $ip) {
+			$byNet[substr($ip, 0, (int)strrpos($ip, '.'))][$ip] = true;
+		}
+		ksort($byNet);
+		$out = [];
+		foreach ($byNet as $prefix => $used) {
+			$free = [];
+			for ($i = 1; $i < 255; $i++) {
+				if (!isset($used[$prefix . '.' . $i])) {
+					$free[] = $prefix . '.' . $i;
+				}
+			}
+			if (count($free) < 3) {
+				continue;   // a /24 that full has nowhere to hide a proxy's answer
+			}
+			$keys = (array)array_rand($free, 3);
+			$out[$prefix] = array_map(static fn ($k) => $free[$k], $keys);
+		}
+		return $out;
+	}
+
+	/**
+	 * How the last reachBeyond() or reachKnown() went — its time, whether the
+	 * every-address guard threw the batch away, and for reachKnown() how many
+	 * unused addresses were asked and which /24s had a proxy answering for them —
+	 * for a scan's diagnosis.
+	 *
+	 * @var array{ms?: int, guard?: bool, canaries?: int, middle?: list<string>}
 	 */
 	public array $lastReach = [];
 
