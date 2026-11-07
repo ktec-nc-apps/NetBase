@@ -31,13 +31,13 @@ Available in twenty-one languages, and NetBase can be set to a different languag
 
 中心となる機能は「機器ウィンドウ」です。サーバーが機器の Web 管理画面を取得し、その中のアドレスをすべて書き換えて表示するため、Nextcloud にアクセスできる場所であればどこからでも、ルーター、スイッチ、プリンター、NAS にログインして設定を変更できます。VPN も踏み台サーバーも、現地への訪問も必要ありません。ファームウェアの送信、設定の復元、バックアップの取得もできます。ウィンドウは複数同時に開けます。
 
-機器の検出に、root 権限、エージェント、追加のパッケージは必要ありません。NetBase はカーネルの近隣テーブルに機器を登録させてから読み取り、NetBIOS・mDNS・WS-Discovery・SSDP で各機器に名前を問い合わせます。また、機器が送信するアナウンスをバックグラウンドで常に受信しているため、同じケーブルにつながった別サブネットの機器も一覧に表示されます。こちらからは接続できず、問い合わせにも応答できない機器でも同様です。MAC アドレスは、同梱の IEEE レジストリ（53,000 件を超えるベンダーのプレフィックス）を使って、オフラインで判別します。
+機器の検出に、root 権限、エージェント、追加のパッケージは必要ありません。NetBase はカーネルの近傍テーブルに機器を登録させてから読み取り、NetBIOS・mDNS・WS-Discovery・SSDP で各機器に名前を問い合わせます。また、機器が送信するアナウンスをバックグラウンドで常に受信しているため、同じケーブルにつながった別サブネットの機器も一覧に表示されます。こちらからは接続できず、問い合わせにも応答できない機器でも同様です。MAC アドレスは、同梱の IEEE レジストリ（53,000 件を超えるベンダーのプレフィックス）を使って、オフラインで判別します。
 
-各機能でできること:
+各機能でできること：
 - 機器ウィンドウ ― どこからでも、Nextcloud 経由で機器の設定画面を操作
 - LAN スキャンと機器台帳 ― 名前、IPv4 アドレス、MAC アドレス、ベンダー、種類、開いているポートを一覧にし、CSV でエクスポート
-- DNS ― 任意の DNS サーバーへの、あらゆる種類のレコードの問い合わせ、リゾルバの比較、委任の追跡、ゾーン転送のテスト
-- whois・空きドメイン検索 ― ドメインや IP アドレスの調査（IANA からの紹介をたどるため whois コマンドは不要）と、1 つの名前を多数のトップレベルドメインで一度に調べて、まだ空いているドメインを探す検索
+- DNS ― 任意の DNS サーバーへの、あらゆる種類のレコードの問い合わせ、DNS サーバーの比較、委任の追跡、ゾーン転送のテスト
+- whois・空きドメイン検索 ― ドメインや IP アドレスの調査（IANA から順に参照先をたどるため whois コマンドは不要）と、1 つの名前を多数のトップレベルドメインで一度に調べて、まだ空いているドメインを探す検索
 - Wake-on-LAN ― MAC アドレスを指定して機器を起動
 - TLS・HTTP ― 証明書とそのチェーン・有効期限、受け付ける TLS バージョン、リダイレクトの経路、セキュリティヘッダー
 - メール ― SPF・DKIM・DMARC・MTA-STS・DANE・ブロックリストの確認、SMTP/IMAP/POP3 サーバーのテスト、オープンリレーのテストに加え、基本的なメールソフトとしての読み書き（検索、返信、転送、Nextcloud のファイルの添付）
@@ -50,12 +50,13 @@ Available in twenty-one languages, and NetBase can be set to a different languag
 アクセス権はツールごとに設定します。NetBase は管理者向けのアプリで、ローカルネットワークに関わる機能は、初期設定では管理者だけが使えます。ただし、管理者設定から各ツールを、指定したグループや全ユーザーに公開できます。ネットワークへのアクセス権を渡さずに、whois や DNS など危険のない調査だけをほかのユーザーに使ってもらえます。何も許可されていないユーザーには、アプリメニューに NetBase を表示しません。
 
 21 の言語に対応しています。NetBase だけを Nextcloud 本体とは別の言語に、ユーザーごとに設定することもできます。]]></description>
-	<version>0.9.7</version>
+	<version>0.9.12</version>
 	<licence>agpl</licence>
 	<author>KTEC</author>
 	<namespace>NetBase</namespace>
 	<category>tools</category>
 	<category>monitoring</category>
+	<category>ai</category>
 	<website>https://github.com/ktec-nc-apps/NetBase</website>
 	<bugs>https://github.com/ktec-nc-apps/NetBase/issues</bugs>
 	<repository>https://github.com/ktec-nc-apps/NetBase</repository>

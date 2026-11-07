@@ -175,6 +175,24 @@ class PermissionService {
 		return false;
 	}
 
+	/**
+	 * can(), for a person who need not be the one signed in to this request: the AI assistant's
+	 * tools run in AI-Hub's own request, which has no session (2026-11-07).
+	 */
+	public function canFor(string $uid, string $tool): bool {
+		if ($uid === '' || !isset(self::TOOLS[$tool])) {
+			return false;
+		}
+		if ($this->groupManager->isAdmin($uid)) {
+			return true;
+		}
+		return match ($this->levels()[$tool] ?? self::ADMIN) {
+			self::ALL => true,
+			self::GROUPS => $this->inConfiguredGroup($uid),
+			default => false,
+		};
+	}
+
 	public function require(string $tool): void {
 		if (!$this->can($tool)) {
 			throw new ForbiddenException('This tool is not available to your account on this instance');

@@ -42,11 +42,12 @@ $reasons = [
 		</div>
 		<p class="settings-hint"><?php p($l->t('Someone who may use no tool in NetBase never sees the assistant, whoever is chosen here.')); ?></p>
 
-		<h3><?php p($l->t('What it may read (read only — it never changes anything there)')); ?></h3>
+		<h3><?php p($l->t('What it may read and change')); ?></h3>
 		<?php
 		$labels = [
 			'screen' => $l->t('What is on the screen (the current tool\'s result)'),
 			'devices' => $l->t('The device list (only for people allowed the Devices tool; notes are never read)'),
+			'write' => $l->t('Change the device list: add, name, place and remove devices (only for people allowed Scanning; notes are never read or written, and nothing is sent to the devices)'),
 		];
 		foreach ($labels as $src => $label) { ?>
 			<p><input type="checkbox" class="checkbox" id="nb-ai-read-<?php p($src); ?>" data-read="<?php p($src); ?>"

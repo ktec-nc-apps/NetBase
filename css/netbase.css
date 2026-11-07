@@ -197,6 +197,11 @@ html.nb-col-resizing, html.nb-col-resizing * { cursor: col-resize !important; -w
 #netbase-root .ai-bubble.busy { color: var(--muted); }
 /* The "run this command" button under an answer that is waiting for the administrator's approval. */
 #netbase-root .ai-confirm { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 6px; }
+/* "What was actually done": what the tools really did, under the answer (AI-Hub 0.1.5) */
+#netbase-root .ai-acts { margin-top: 8px; padding: 6px 8px; border-radius: 8px; background: color-mix(in srgb, var(--primary) 6%, var(--surface)); border-left: 3px solid var(--primary); font-size: 12.5px; white-space: normal; }
+#netbase-root .ai-acts-h { font-weight: 700; margin-bottom: 2px; }
+#netbase-root .ai-act.ok .mk { color: var(--ok); font-weight: 700; }
+#netbase-root .ai-act.ng .mk, #netbase-root .ai-act .ng-t { color: var(--danger); font-weight: 700; }
 #netbase-root .ai-err { color: var(--danger); margin: 2px 0; }
 /* Saving the conversation to Files (the owner, 2026-10-06): two small icon buttons in the
    head, and a line under the messages that says where it went. */

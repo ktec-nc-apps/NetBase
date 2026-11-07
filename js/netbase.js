@@ -12,6 +12,8 @@
   let TOKEN = (window.OC && OC.requestToken) ? OC.requestToken : '';
   // AI-Hub's own pages for a remembered conversation: read back, saved, summed up (the owner, 2026-10-06).
   const HUB = ((window.OC && OC.generateUrl) ? OC.generateUrl('/apps/ai_hub') : '/apps/ai_hub') + '/conversation';
+  // the assistant's tools that change the device list: after one of them the list reloads
+  const AI_WRITE_TOOLS = ['update_devices', 'add_device', 'delete_devices'];
   /** Where this tab keeps the token of its conversation with the AI (sessionStorage). */
   const AI_CONV_KEY = 'netbase.ai.conversation';
   let rootProxy = null;
@@ -2317,7 +2319,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
              person's own message (review 2026-10-04, medium 8). -->
         <!-- Each message can be copied as it stands (the owner, 2026-10-06): the button shows while
              the pointer is on the message; images sent with a question are shown small above its words. -->
-        <div class="ai-msg" :class="m.role" v-for="(m, i) in ai.msgs" :key="i"><div class="ai-bubble"><div class="ai-imgs" v-if="m.images && m.images.length"><img v-for="(im, k) in m.images" :key="k" :src="im.url" :alt="im.name" :title="im.name"></div>{{ m.text }}<div class="ai-confirm" v-if="m.confirm && m.confirm.length"><button type="button" class="btn xs primary" v-for="h in m.confirm" :key="h" :disabled="ai.busy" @click="aiApprove(m, h)">▶ {{ t('Run this command') }}</button></div></div><button type="button" class="ai-copy" v-if="m.text" :class="{ done: m.copied }" :title="t('Copy')" :aria-label="t('Copy')" @click="aiCopy(m)">{{ m.copied ? '✓' : '📋' }}<span class="ai-copied" v-if="m.copied" role="status">{{ t('Copied') }}</span></button></div>
+        <div class="ai-msg" :class="m.role" v-for="(m, i) in ai.msgs" :key="i"><div class="ai-bubble"><div class="ai-imgs" v-if="m.images && m.images.length"><img v-for="(im, k) in m.images" :key="k" :src="im.url" :alt="im.name" :title="im.name"></div>{{ m.text }}<div class="ai-confirm" v-if="m.confirm && m.confirm.length"><button type="button" class="btn xs primary" v-for="h in m.confirm" :key="h" :disabled="ai.busy" @click="aiApprove(m, h)">▶ {{ t('Run this command') }}</button></div><div class="ai-acts" v-if="m.actions && m.actions.length"><div class="ai-acts-h">{{ t('What was actually done') }}</div><div class="ai-act" v-for="(a, k) in m.actions" :key="k" :class="a.ok ? 'ok' : 'ng'"><span class="mk">{{ a.ok ? '✓' : '✗' }}</span> <span>{{ a.ok ? (a.report || aiToolLabel(a)) : aiToolLabel(a) }}</span><span v-if="!a.ok" class="ng-t"> （{{ t('Failed') }}）</span></div></div></div><button type="button" class="ai-copy" v-if="m.text" :class="{ done: m.copied }" :title="t('Copy')" :aria-label="t('Copy')" @click="aiCopy(m)">{{ m.copied ? '✓' : '📋' }}<span class="ai-copied" v-if="m.copied" role="status">{{ t('Copied') }}</span></button></div>
         <div class="ai-msg assistant" v-if="ai.busy"><div class="ai-bubble busy">{{ t('Thinking…') }}</div></div>
         <p class="ai-err" v-if="ai.error">{{ ai.error }}</p>
         <p class="ai-note" v-if="ai.note" role="status">{{ ai.note }}</p>
@@ -4915,6 +4917,12 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         return id;
       },
       /** An answer as the page shows it: the approval markers become buttons, the words lose them. */
+      /** A tool's name on the screen, in the person's language. */
+      aiToolLabel(a) {
+        const names = { list_devices: 'Look at the device list', update_devices: 'Change devices', add_device: 'Add a device', delete_devices: 'Remove devices',
+          regibase_read: 'Read RegiBase', ssh: 'Run a command over SSH', shell: 'Run a shell command on this server' };
+        return names[a.tool] ? this.t(names[a.tool]) : (a.label || a.tool);
+      },
       aiAnswer(answer) {
         const confirm = [];
         const text = String(answer || '').replace(/\[\[nb-confirm:([0-9a-f]{8,64})\]\]/gi, (all, h) => {
@@ -5286,6 +5294,9 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         this.ai.busy = true;
         this.aiScroll();
         let answer = null;
+        let changed = false;
+        // what the tools really did, as AI-Hub recorded it from the calls (AI-Hub 0.1.5)
+        let actions = [];
         try {
           const r = await api('ai/ask', { method: 'POST', body: JSON.stringify({ history, message, context: this.aiContext(), conversation,
             images: images.map((im) => ({ type: im.type, data: im.data })) }) });
@@ -5296,7 +5307,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
             if (ticket !== this.ai.ask) { return; }
             const x = await api('ai/result/' + encodeURIComponent(r.id));
             if (x.state === 'running') { continue; }
-            if (x.state === 'done') { answer = String(x.text || ''); fresh = !!x.fresh; break; }
+            if (x.state === 'done') { answer = String(x.text || ''); fresh = !!x.fresh; changed = (x.tools || []).some((n) => AI_WRITE_TOOLS.includes(n)); actions = Array.isArray(x.actions) ? x.actions : []; break; }
             throw new Error(x.error || x.state);
           }
           if (answer === null) { throw new Error('timeout'); }
@@ -5313,9 +5324,13 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         }
         // [[nb-confirm:<hash>]] marks a command the server refused to run until the
         // administrator approves it. The marker becomes a button; the text loses it.
-        this.ai.msgs.push(this.aiAnswer(answer));
+        this.ai.msgs.push(Object.assign(this.aiAnswer(answer), { actions: actions.filter((a) => a && a.kind !== 'read') }));
         this.ai.busy = false;
         this.aiScroll();
+        // the assistant changed the device list: show it (2026-11-07)
+        if (changed) {
+          try { await this.loadDevices(); } catch (e) { /* the list shows it on the next load */ }
+        }
       },
       /**
        * The administrator approves one refused command. The approval is a message of

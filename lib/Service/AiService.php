@@ -19,9 +19,10 @@ use OCP\IUserManager;
  * key, model and limits are set once in AI-Hub's admin settings. Without AI-Hub
  * the assistant is not offered at all, and its admin settings are shown greyed out.
  *
- * The assistant runs nothing. It reads what the person already has on the screen
- * -- the current tool's result, as the browser sends it -- and, when allowed, the
- * device list, and explains them. What it may read, who may use it and whether it
+ * The assistant runs no network tool. It reads what the person already has on the
+ * screen -- the current tool's result, as the browser sends it -- and, when allowed,
+ * the device list, and explains them; when allowed, it also changes the device list
+ * with its tools (AiTools), with the person's own rights. What it may read, who may use it and whether it
  * may search the web is set by the administrator.
  */
 class AiService {
@@ -40,8 +41,11 @@ class AiService {
 	/** The person's own: how wide the assistant's column is. */
 	public const KEY_WIDTH = 'ai_width';
 	public const DEFAULT_WIDTH = '500px';
-	/** What the assistant may be allowed to read: the screen, and the device list. */
-	public const SOURCES = ['screen', 'devices'];
+	/**
+	 * What the assistant may be allowed: to read the screen and the device list, and to
+	 * change the device list itself with its tools (AiTools; the owner, 2026-11-07).
+	 */
+	public const SOURCES = ['screen', 'devices', 'write'];
 	/** The name the read-only, everyone's assistant is registered under at AI-Hub. */
 	public const SCENARIO = 'assistant';
 	/** The name the administrator's tool-carrying assistant is registered under. */
@@ -103,6 +107,9 @@ class AiService {
 				// to it on every way in -- not only through NetBase's own controller.
 				'allow' => fn (string $uid): bool => $this->allowed($uid),
 				'transcript' => [self::class, 'transcriptTurn'],
+				// NetBase's own records -- the device list -- and nothing that reaches the
+				// network; each tool checks the setting and the person's own rights as it runs
+				'tools' => $this->dataTools(),
 			]);
 		}
 		// The administrator's assistant, with tools. It is registered whatever the
@@ -112,7 +119,7 @@ class AiService {
 		if (!$hub->hasScenario(Application::APP_ID, self::SCENARIO_ADMIN)) {
 			$hub->registerScenario(Application::APP_ID, self::SCENARIO_ADMIN, [
 				'system' => AiScenario::baseAdmin(),
-				'tools' => $this->adminTools(),
+				'tools' => $this->adminTools() + $this->dataTools(),
 				'search' => true,
 				'language' => false,
 				// Only an administrator, while the tier is switched on -- the same test
@@ -135,6 +142,11 @@ class AiService {
 		return $text !== '' ? $text : null;
 	}
 
+	/** The device-list tools every allowed person's assistant has (AiTools). */
+	private function dataTools(): array {
+		return \OCP\Server::get(AiTools::class)->tools(fn (): array => $this->settings()['read']);
+	}
+
 	/**
 	 * The administrator's tools, as AI-Hub runs them: each with the rights of the
 	 * web server. Every callback checks again, on the server, that the asking user
@@ -144,12 +156,16 @@ class AiService {
 	 * @return array<string, array{description: string, input: array, run: callable}>
 	 */
 	private function adminTools(): array {
+		$l = \OCP\Server::get(\OCP\L10N\IFactory::class)->get(Application::APP_ID);
 		$guard = function (string $uid): ?string {
 			return $this->adminToolsAllowed($uid) ? null
 				: 'Not allowed: administrator tools are off, or you are not an administrator.';
 		};
 		return [
 			'regibase_read' => [
+				// AI-Hub 0.1.5: the administrator's tier is 'admin', off in AI-Hub unless turned on there too
+				'kind' => 'admin',
+				'label' => $l->t('Read RegiBase'),
 				'description' => 'Read the administrator\'s own RegiBase. With no argument, lists their collections (id, name, field labels). With a collection id, returns that collection\'s records. Fields the collection marks secret are never shown.',
 				'input' => [
 					'type' => 'object',
@@ -163,6 +179,9 @@ class AiService {
 				},
 			],
 			'ssh' => [
+				// AI-Hub 0.1.5: the administrator's tier is 'admin', off in AI-Hub unless turned on there too
+				'kind' => 'admin',
+				'label' => $l->t('Run a command over SSH'),
 				'description' => 'Run one command over SSH on a host and return what it printed. The host need not be a saved connection. Give the user name and a password or the path of a private key in the administrator\'s Nextcloud files. Runs only once the administrator has approved that exact command: the first call answers NOT RUN with a marker to show them.',
 				'input' => [
 					'type' => 'object',
@@ -182,6 +201,9 @@ class AiService {
 				},
 			],
 			'shell' => [
+				// AI-Hub 0.1.5: the administrator's tier is 'admin', off in AI-Hub unless turned on there too
+				'kind' => 'admin',
+				'label' => $l->t('Run a shell command on this server'),
 				'description' => 'Run a shell command on this Nextcloud server, with the rights of the web server user. Returns its standard output, standard error and exit code. Runs only once the administrator has approved that exact command: the first call answers NOT RUN with a marker to show them.',
 				'input' => [
 					'type' => 'object',
@@ -330,8 +352,12 @@ class AiService {
 	 */
 	private function readFor(string $uid): array {
 		$read = $this->settings()['read'];
-		if ($this->permissions->uid() !== $uid || !$this->permissions->can('devices')) {
+		if (!$this->permissions->canFor($uid, 'devices')) {
 			$read = array_values(array_diff($read, ['devices']));
+		}
+		// changing the list is the "Scanning" right, as on the page
+		if (!$this->permissions->canFor($uid, 'scan')) {
+			$read = array_values(array_diff($read, ['write']));
 		}
 		return $read;
 	}

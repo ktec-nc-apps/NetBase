@@ -2,6 +2,35 @@
 
 All notable changes to NetBase are documented here.
 
+## 0.9.12 — 2026-11-08
+
+The AI assistant can now keep the device list itself.
+
+### Added
+
+- **The AI assistant can read and change the device list** (with AI-Hub). Ask it, for example, to name a device, put it in a room, give it a type or tags, mark it known, set its Wake-on-LAN MAC, add a device by its address, or remove one, and it does so; it can also search the whole list, not only what was on the screen. It acts with the asking person's own NetBase rights: reading the list takes "Devices", changing it takes "Scanning", as on the page, and the list on the screen reloads as soon as the answer comes. It changes NetBase's record only — it never scans, pings, wakes or sends anything to a device — and a device's notes are never read or written by it, since people keep passwords in them. Removing a device cannot be undone, so it asks before removing more than one. In the administration settings, "What it may read and change" has a new choice, "Change the device list", off until the administrator turns it on.
+- **"What was actually done" under the assistant's answer** (with AI-Hub 0.1.7): each change it made — devices added, changed or removed, with their names — is listed from the call itself, not from the assistant's words, with ✗ for one that failed.
+
+### Changed
+
+- The administrator's tools of the assistant (shell, SSH, reading RegiBase) are now marked as administrator tools for AI-Hub 0.1.7: they run only when "admin" is also allowed for NetBase in AI-Hub's settings.
+- NetBase is listed in the App Store's AI category as well.
+- **Translations reviewed in every language.** Japanese was gone through in full, and every other language line by line for wrong meanings, literal phrasing and terms used two ways — for example, in Czech "Hosts" read as guests and NVR/DVR as an answering machine. In English, the port choice "Detailed search" now reads "Detailed (more ports)", since it is the number of ports to look at, not a search.
+
+（日本語）
+AI アシスタントが、機器一覧を自分で管理できるようになりました。
+
+### 追加
+
+- **AI アシスタントが機器一覧を読み、変更できるようになりました**（AI-Hub を使います）。機器の名前・部屋・種類・タグの設定、「既知」のマーク、Wake-on-LAN の MAC の設定、アドレスでの機器の追加、機器の削除を頼めます。画面に出ている物だけでなく、一覧全体から探すこともできます。操作は、質問した人の NetBase の権限で行います。画面と同じく、一覧を読むには「接続機器調査」、変更するには「探索」の権限が必要です。AI が答えると、画面の一覧もすぐに新しくなります。変えるのは NetBase の記録だけで、機器を走査したり、ping を送ったり、起動したりすることはありません。機器のメモにはパスワードを書く人もいるため、AI はメモを読みも書きもしません。削除は元に戻せないので、2 台以上を消すときは先に確かめます。管理設定の「参照と変更ができるもの」に「機器一覧の変更」を足しました。管理者がオンにするまでは使えません。
+- **AI の答えの下に「実際に行った操作」を出すようにしました**（AI-Hub 0.1.7 を使います）。追加・変更・削除した機器を名前つきで、AI の言葉ではなく実際の操作の記録から出します。失敗した操作には ✗ が付きます。
+
+### 変更
+
+- AI の管理者用のツール（シェル・SSH・RegiBase の読み取り）を、AI-Hub 0.1.7 の「管理者」の操作として扱うようにしました。AI-Hub の設定で NetBase に「管理者」も許可したときだけ動きます。
+- App Store の「AI」の分類にも載るようにしました。
+- **すべての言語の訳を見直しました。** 日本語は全体を、ほかの言語は 1 行ずつ、意味の誤り・直訳・用語の揺れを点検しました（たとえばチェコ語では、Hosts が「客」、NVR/DVR が「留守番電話」と読める訳でした）。英語でも、調べるポートの選択肢「Detailed search」を「Detailed (more ports)」にしました。検索ではなく、調べるポートの数の選択肢だからです。
+
 ## 0.9.7 — 2026-10-28
 
 A fix to devices beyond the server's own network going offline on a refresh, reported on GitHub (issue #2).
@@ -15,7 +44,7 @@ GitHub の報告（Issue #2）を受けて、ルーターの向こうの機器�
 
 ### 修正
 
-- **「ARP の表だけ」で更新すると、ルーターの向こうの機器がすべてオフラインになることがあった。** そうした機器は ARP の表に載らないため、記録してあるアドレスへ接続を試して、オンラインのままにしていました。この確認は、16 個以上のアドレスがすべて応答すると、結果をすべて捨てていました。すべてに答えるのは、プロキシやファイアウォールだけだという考えからです。しかし、すでに記録してある機器については、すべてが応答するのは、ふつうの健全なネットワークです。23 台を記録していて 23 台とも応答したのに、1 台も採用されず、ネットワーク全体を調べ直すまで、すべてがオフラインのままでした。今は、各 /24 の使っていないアドレスも数個あわせて調べます。それにも応答があれば、途中の機器が代わりに答えているとみなして、その範囲のものは採用しません。応答がなければ、応答した機器をすべてオンラインのままにします。どちらだったかは、探索の診断に書きます。
+- **「ARPテーブルのみ」で更新すると、ルーターの向こうの機器がすべてオフラインになることがありました。** そうした機器は ARP の表に載らないため、記録してあるアドレスへ接続を試して、オンラインのままにしていました。この確認は、16 個以上のアドレスがすべて応答すると、結果をすべて捨てていました。すべてに答えるのは、プロキシやファイアウォールだけだという考えからです。しかし、すでに記録してある機器については、すべてが応答するのは、ふつうの健全なネットワークです。23 台を記録していて 23 台とも応答したのに、1 台も採用されず、ネットワーク全体を調べ直すまで、すべてがオフラインのままでした。今は、各 /24 の使っていないアドレスも数個あわせて調べます。それにも応答があれば、途中の機器が代わりに答えているとみなして、その範囲のものは採用しません。応答がなければ、応答した機器をすべてオンラインのままにします。どちらだったかは、「調査の経過を記録」の記録に書きます。
 
 ## 0.9.6 — 2026-10-26
 
@@ -26,11 +55,11 @@ A fix to the SSH and shell terminals, reported on GitHub (issue #1).
 - **The shell did not follow the size of its window.** Over SSH, a new window size was never sent to the server, so a running shell kept the size it started with: the window grew, but the shell went on wrapping lines and drawing full-screen programs at the old width and height. The terminal also measured its rows and columns again only when its window was dragged or maximised, not when the browser itself was resized, and a maximised window did not follow the browser. Now, whenever the window, the browser or the text size changes, the terminal measures again and the server is told the new size.
 
 （日本語）
-GitHub の報告（Issue #1）を受けて、SSH とシェルの端末を直しました。
+GitHub の報告（Issue #1）を受けて、SSH とシェルの端末の不具合を直しました。
 
 ### 修正
 
-- **シェルが窓の大きさに追従しなかった。** SSH では、窓の大きさが変わってもサーバーに伝えていなかったため、動いているシェルは最初の大きさのままでした。窓を広げても、行の折り返しや全画面のプログラムの表示は前の幅と高さのままでした。また、行数と桁数を測り直すのは窓をドラッグしたときと最大化したときだけで、ブラウザーの大きさを変えたときは測り直さず、最大化した窓もブラウザーに合わせて変わりませんでした。今は、窓・ブラウザー・文字の大きさのどれが変わっても測り直し、新しい大きさをサーバーに伝えます。
+- **シェルがウィンドウの大きさに追従しませんでした。** SSH では、窓の大きさが変わってもサーバーに伝えていなかったため、動いているシェルは最初の大きさのままでした。窓を広げても、行の折り返しや全画面のプログラムの表示は前の幅と高さのままでした。また、行数と桁数を測り直すのは窓をドラッグしたときと最大化したときだけで、ブラウザーの大きさを変えたときは測り直さず、最大化した窓もブラウザーに合わせて変わりませんでした。今は、窓・ブラウザー・文字の大きさのどれが変わっても測り直し、新しい大きさをサーバーに伝えます。
 
 ## 0.9.5 — 2026-10-25
 
@@ -45,15 +74,15 @@ A way to see what a device scan does, and a fix to a type picked by hand, both f
 - **A type picked by hand could be lost when two rows of the same device were folded into one.** NetBase folds two rows of one device into one, for example one from before it learned the device's MAC address. It carried across the name, notes and tags, but not a type picked by hand, so the next guess took its place: a NAS picked as "NAS" could turn back into "Host". The picked type is now carried across too.
 
 （日本語）
-掲示板の報告を受けて、機器の探索が何をしたかを見る機能を足し、手で選んだ種別の不具合を直しました。
+フォーラムでの報告を受けて、機器の探索で何が行われたかを確認できる機能を追加し、手動で選んだ種別の不具合を直しました。
 
 ### 追加
 
-- **調査の経過を記録。** 探索の設定に新しいチェックを足しました。入れておくと、次の探索が何をしたかを順に記録します。このサーバーが属するネットワーク、始めに範囲内の何台をオフラインにしたか、どのアドレスに問い合わせ、どれが応答したか（かかった時間つき）、範囲内の各機器で何が変わったか（オンラインかどうか・種別・ポート）です。探索が終わると記録を表示し、そのまま報告に貼れます。機器の名前と MAC アドレスは含めません。チェックは 1 回の探索で自動的に外れます。
+- **調査の経過を記録。** 探索の設定に新しいチェックボックスを追加しました。チェックを入れておくと、次の探索が何をしたかを順に記録します。このサーバーが属するネットワーク、始めに範囲内の何台をオフラインにしたか、どのアドレスに問い合わせ、どれが応答したか（かかった時間つき）、範囲内の各機器で何が変わったか（オンラインかどうか・種別・ポート）です。探索が終わると記録を表示し、そのまま報告に貼れます。機器の名前と MAC アドレスは含めません。チェックは 1 回の探索で自動的に外れます。
 
 ### 修正
 
-- **同じ機器の行を 1 つにまとめるとき、手で選んだ種別が失われることがあった。** NetBase は、同じ機器の行が 2 つになると（MAC アドレスが分かる前の行が残っていた場合など）1 つにまとめます。名前・メモ・タグは引き継いでいましたが、手で選んだ種別は引き継がず、次の推測に置き換わっていました。「NAS」と選んだ NAS が「Host」に戻ることがありました。今は手で選んだ種別も引き継ぎます。
+- **同じ機器の行を 1 つにまとめるとき、手動で選んだ種別が失われることがありました。** NetBase は、同じ機器の行が 2 つになると（MAC アドレスが分かる前の行が残っていた場合など）1 つにまとめます。名前・メモ・タグは引き継いでいましたが、手で選んだ種別は引き継がず、次の推測に置き換わっていました。「NAS」と選んだ NAS が「ホスト」に戻ることがありました。今は手で選んだ種別も引き継ぎます。
 
 ## 0.9.4 — 2026-10-20
 
@@ -65,12 +94,12 @@ Two fixes to device scanning, reported on the forum.
 - **A type picked from the list was replaced at the next scan.** A type NetBase can guess by itself, such as a router or a camera, was kept only while it matched the guess: a router picked by hand could turn into "Host" at the next scan. A type picked by hand is now kept by every scan, whatever it is. Picking "Unknown" lets NetBase guess the type again. Types already replaced need picking once more.
 
 （日本語）
-掲示板で報告いただいた、機器の探索の不具合を2つ直しました。
+フォーラムで報告いただいた、機器の探索の不具合を 2 つ直しました。
 
 ### 修正
 
-- **「調査完了」の台数が一覧全体の数だった。** 調べた範囲ではなく、一覧全体のオンラインの台数を出していました。0.9.0 から、ひとつのネットワークを調べても他のネットワークの機器をオフラインにしなくなったため、その台数も数に入り、すべてのネットワークを調べたように読めました。今は、調べた範囲でオンラインの台数を、その範囲と一緒に出します。調べる範囲そのものは、もともと指定のとおりでした。
-- **一覧から選んだ種別が、次の探索で置き換わった。** ルーターやカメラのように NetBase が自分で推測できる種別は、推測と同じ間しか残らず、手で選んだルーターが次の探索で「Host」に変わることがありました。今は、手で選んだ種別はどれでも探索で置き換えません。「不明」を選ぶと、また NetBase が推測します。すでに置き換わった種別は、もう一度選び直してください。
+- **「調査完了」の台数が一覧全体の数になっていました。** 調べた範囲ではなく、一覧全体のオンラインの台数を出していました。0.9.0 から、ひとつのネットワークを調べても他のネットワークの機器をオフラインにしなくなったため、その台数も数に入り、すべてのネットワークを調べたように読めました。今は、調べた範囲でオンラインの台数を、その範囲と一緒に出します。調べる範囲そのものは、もともと指定のとおりでした。
+- **一覧から選んだ種別が、次の探索で置き換わった。** ルーターやカメラのように NetBase が自分で推測できる種別は、推測結果と一致している間しか保たれず、手動で選んだルーターが次の探索で「ホスト」に変わることがありました。今は、手で選んだ種別はどれでも探索で置き換えません。「不明」を選ぶと、また NetBase が推測します。すでに置き換わった種別は、もう一度選び直してください。
 
 ## 0.9.3 — 2026-10-19
 
@@ -108,7 +137,7 @@ TeraTerm を手本にした端末の設定を加え、SSH ウィンドウの色�
 
 ### 修正
 
-- **SSH ウィンドウの色。** これまでは、使っている SSH の部品の既定のまま、色の無い「vt100」だとサーバーに伝えていました。そのため、htop のように端末の種類を見て描くソフトは白黒になり、色の記号を自分で書き出すスクリプトだけ色が付いていました。今は xterm-256color と伝えます。
+- **SSH ウィンドウの色。** これまでは、SSH ライブラリの既定値のまま、色の無い「vt100」だとサーバーに伝えていました。そのため、htop のように端末の種類を見て描くソフトは白黒になり、色のエスケープシーケンスを自分で出力するスクリプトだけ色が付いていました。今は xterm-256color と伝えます。
 
 ## 0.9.1 — 2026-10-19
 
@@ -168,8 +197,8 @@ File transfer becomes a full file manager, the mail page becomes a basic mail cl
 ### 追加
 
 - **ファイル転送**
-  - 行を右クリックすると、コピー、移動、圧縮、展開、変換、権限の変更、アドレスのコピーができます。Ctrl や Shift を押しながら選ぶと、複数の行をまとめて扱えます。
-  - **圧縮と展開**：ZIP、tar、tar.gz、tar.bz2、tar.xz、tar.zst、7z、gz、bz2、xz、zst の圧縮と展開、RAR の展開に対応しました。接続先にどの道具が入っているかを調べ、作れない形式は理由を添えて灰色で表示します。シェルが使えない接続先（FTP や SFTP 専用のアカウント）では、ZIP、tar、tar.gz、tar.bz2 を Nextcloud のサーバー側で作成・展開します。
+  - 行を右クリックすると、コピー、移動、圧縮、展開、変換、パーミッションの変更、アドレスのコピーができます。Ctrl や Shift を押しながら選ぶと、複数の行をまとめて扱えます。
+  - **圧縮と展開**：ZIP、tar、tar.gz、tar.bz2、tar.xz、tar.zst、7z、gz、bz2、xz、zst の圧縮と展開、RAR の展開に対応しました。接続先にどのツールが入っているかを調べ、作れない形式は理由を添えて灰色で表示します。シェルが使えない接続先（FTP や SFTP 専用のアカウント）では、ZIP、tar、tar.gz、tar.bz2 を Nextcloud のサーバー側で作成・展開します。
   - **文字コード・改行コード・BOM の変換**：UTF-8、UTF-16、Shift_JIS、EUC-JP、ISO-2022-JP、GB18030、Big5、EUC-KR、Windows-1252 などに対応しています。今の文字コードを自動で判定し、変換先で表せない文字があるときは、書き込む前にその文字をお知らせします。変換した結果は、上書きを選ばない限り別の名前で保存します。
   - **同じ名前のファイルがあるとき**：上書き、新しければ上書き、サイズが違えば上書き、続きから、両方残す、飛ばす、から選べます。このファイルだけにするか、残りすべてに当てはめるかも選べます。
   - 中断した転送の再開、失敗した転送のやり直し、更新日時の保持、送信・受信それぞれの速度の上限を設定できます。
@@ -212,17 +241,17 @@ Wake-on-LAN works where NetBase cannot broadcast on the LAN itself — Nextcloud
 - **The icon beside a tool's title** is now the same line icon as the tool's row in the sidebar; it was still the old emoji.
 
 （日本語）
-NetBase 自身が LAN に放送を出せない環境（Nextcloud AIO などのコンテナ、別の網にあるサーバー）でも、また一度も見えたことのない機器でも、Wake-on-LAN を使えるようになりました。
+NetBase 自身が LAN にブロードキャストを送れない環境（Nextcloud AIO などのコンテナ、別のサブネットにあるサーバー）でも、また一度も見えたことのない機器でも、Wake-on-LAN を使えるようになりました。
 
 ### 追加
 
 - **Wake-on-LAN 用の MAC アドレスを入力できます。** 電源の切れた機器は何も応答せず、ルーターの向こうやコンテナの中からは MAC アドレスも見えません。機器の詳細や、アドレスで機器を追加するときに、MAC アドレスを入力できるようにしました。電源の切れている機器も追加でき、そのまますぐ起動できます。「Wake on LAN」ボタンは、見えた MAC か入力した MAC のある機器すべてに出ます。
-- **マジックパケットの送り方を選べます**（管理者設定 → NetBase → Wake-on-LAN）。このサーバーから指定したアドレスとポートへ送る（ふつうの放送、網の放送アドレス、中継役）、このサーバーでコマンドやスクリプトを実行する、常に動いている機械で保存済みの SSH 接続を使ってコマンドを実行する、の 3 つです。`{mac}`・`{MAC}`・`{ip}` が置き換わり、差し込まれるのは形を確かめた MAC アドレスと IPv4 アドレスだけです。
-- **コンテナ向けの中継役。** `resources/wol-relay.py` はホストで動かし、1 つの UDP ポートで受けたマジックパケットを LAN への放送として送り直します。それ以外は何も通さず、Python の標準ライブラリだけで動きます。使い方は README の「Wake-on-LAN」をご覧ください。
+- **マジックパケットの送り方を選べます**（管理者設定 → NetBase → Wake-on-LAN）。このサーバーから指定したアドレスとポートへ送る（通常のブロードキャスト、サブネットのブロードキャストアドレス、リレー）、このサーバーでコマンドやスクリプトを実行する、常時稼働しているマシンで保存済みの SSH 接続を使ってコマンドを実行する、の 3 つです。`{mac}`・`{MAC}`・`{ip}` が置き換わり、差し込まれるのは形式を検証した MAC アドレスと IPv4 アドレスだけです。
+- **コンテナ向けのリレー。** `resources/wol-relay.py` はホストで動かし、1 つの UDP ポートで受けたマジックパケットを LAN への放送として送り直します。それ以外は何も通さず、Python の標準ライブラリだけで動きます。使い方は README の「Wake-on-LAN」をご覧ください。
 
 ### 変更
 
-- **パケットの送り先は管理者の設定だけで決まります。** 画面からの要求で放送アドレスやポートを指定することはできなくなりました。
+- **パケットの送り先は管理者の設定だけで決まります。** 画面からの要求でブロードキャストアドレスやポートを指定することはできなくなりました。
 - **ツール名の横のアイコン**を、サイドバーの同じツールと同じ線画のアイコンにしました。古い絵文字のままでした。
 
 ## 0.8.2 — 2026-10-12
@@ -243,7 +272,7 @@ NetBase in a container on a bridge — Nextcloud AIO, Docker, Podman — now fin
 
 ### 追加
 
-- **サーバー自身のネットワークの外にある機器も見つけます。** ブリッジ接続のコンテナでは LAN がコンテナ自身のネットワークの外にあるため、NetBase が読む近隣（ARP）表には他のコンテナしか載らず、LAN を調べても 1 台も見つかりませんでした。こうしたアドレスは、機器がよく開けているポート（Web 画面・ファイル共有・NAS の管理画面・プリンター・Sonos・Chromecast やテレビ・AirPlay・カメラ）に接続できるかどうかで確かめるようにしました。「スキャン対象」で「ネットワーク範囲指定」を選び、「調べるネットワーク」に LAN の範囲（例：`192.168.1.0/24`）を入れてください。ルーターの向こうでは MAC アドレスが分からないため、メーカー名も出ません。ポートを一つも開けていない機器（スマートフォンなど）は見つからないので、アドレスで追加してください。
+- **サーバー自身のネットワークの外にある機器も見つけます。** ブリッジ接続のコンテナでは LAN がコンテナ自身のネットワークの外にあるため、NetBase が読む近傍（ARP）テーブルには他のコンテナしか載らず、LAN を調べても 1 台も見つかりませんでした。こうしたアドレスは、機器がよく開けているポート（Web 画面・ファイル共有・NAS の管理画面・プリンター・Sonos・Chromecast やテレビ・AirPlay・カメラ）に接続できるかどうかで確かめるようにしました。「スキャン対象」で「ネットワーク範囲指定」を選び、「調べるネットワーク」に LAN の範囲（例：`192.168.1.0/24`）を入れてください。ルーターの向こうでは MAC アドレスが分からないため、ベンダー名も出ません。ポートを一つも開けていない機器（スマートフォンなど）は見つからないので、アドレスで追加してください。
 - **アドレスで追加。** 「機器一覧を更新」の横のボタンから、IP アドレス（と、必要なら名前）を入れて機器を 1 台追加できます。追加のときに一度応答を確かめるので、実際のとおりオンラインかオフラインかで載ります。受け付けるのは、調査と同じくローカルネットワークのアドレスだけです。一覧に載れば、ほかの機器と同じように Web 画面・ポートスキャン・ping を開けます。
 
 ### 変更
@@ -378,7 +407,7 @@ An AI assistant, through the new AI-Hub app, and the fixes from a review of the 
   is widened from 30–34 to 30–35. The app itself is unchanged from 0.6.1: it was tested
   on Nextcloud 35 against the changes that release makes for apps, and ran without
   modification.
-  （**Nextcloud 35 に対応した。それ以外の変更はない。** 対応範囲を 30〜34 から 30〜35 に
+  （**Nextcloud 35 に対応しました。それ以外の変更はありません。** 対応範囲を 30〜34 から 30〜35 に
   広げた。アプリ本体は 0.6.1 から変わっていない。Nextcloud 35 でアプリ向けに変わった点に
   照らして試験し、修正なしで動くことを確かめた。）
 
@@ -397,9 +426,8 @@ An AI assistant, through the new AI-Hub app, and the fixes from a review of the 
   an address, so there is no field in which to aim it at the internet, and the
   server checks the address against its own subnets before a single packet
   leaves. An address on no subnet of this server is refused rather than tried.
-  （**一覧の機器に ping を送れるようにした。行を右クリックするだけ。** 送信数・受信数・
-  損失率・往復時間を、消えてしまう通知ではなく**閉じるまで残る小窓**に出す。数字とその
-  読み方は二度読む価値があるため。応答がない場合は「**多くの機器やファイアウォールは
+  （**一覧の機器に ping を送れるようにしました。行を右クリックするだけです。** 送信数・受信数・
+  損失率・往復時間を、消えてしまう通知ではなく**閉じるまで残る小窓**に出す。数字と注意書きは、じっくり読んでいただきたいためです。応答がない場合は「**多くの機器やファイアウォールは
   ping を無視しつつポートには応答する**」と添える。損失 100% だけを見せると「電源が
   落ちている」と読めてしまうが、実際はそうでないことが多いからである。**外部には届かない**。
   仕掛けは二重で、①要求はアドレスではなく**機器の行を指定**するため、外部を狙う入力欄が
@@ -416,12 +444,11 @@ An AI assistant, through the new AI-Hub app, and the fixes from a review of the 
   networks first, primary before secondary, then an address this server merely
   has an interface on, and never one it has no interface on at all. Ties fall
   to the lowest address, so the choice does not wander between scans.
-  （**複数のネットワークに足を持つ機器では、意味のあるアドレスに送るようにした。**
-  この種の機器はアドレスごとに別の行になり、一覧では1台として表示される。右クリックが
-  渡すのは「名前を持っている行」で、**届くかどうかで選ばれていない**。開発機では、誰もが
-  思い浮かべるアドレスではなく**コンテナ橋の側**が選ばれていた。条件次第では、その機械が
+  （**複数のネットワークにつながっている機器では、ふさわしいアドレスに送るようにしました。**
+  この種の機器はアドレスごとに別の行になり、一覧では1台として表示される。右クリックのメニューが使うのは「名前を持っている行」で、**届くかどうかでは選んでいませんでした**。開発機では、誰もが
+  思い浮かべるアドレスではなく**コンテナのブリッジ側**が選ばれていた。条件次第では、その機械が
   すでに持たないネットワークの古いアドレスが選ばれ、サーバーに拒否されて終わることも
-  あり得た。**アドレス自体の素性で選ぶ**ようにした。経路のあるネットワークを優先し
+  あり得た。**アドレスそのものの条件で選ぶ**ようにしました。経路のあるネットワークを優先し
   （主たるものを副次より先に）、次にこのサーバーが足だけ持つネットワーク、足を持たない
   ものは**選ばない**。同順位なら小さいアドレスを採り、探索のたびに揺れないようにした。）
 
@@ -447,21 +474,20 @@ An AI assistant, through the new AI-Hub app, and the fixes from a review of the 
   it, their notes and tags, and a type they picked by hand. A *guessed* type is
   still left behind, because "Printer" was the scan's opinion of the machine
   that left and says nothing about whatever holds the address now.
-  （**手で決めた機器の種別が、コンテナの再起動で消えてしまう不具合を修正。** すべてを
+  （**手動で選んだ機器の種別が、コンテナの再起動で消えてしまう不具合を修正しました。** すべてを
   コンテナで運用されている方からの報告で、「コンテナ」に変えた種別が、再起動して機器を
   更新すると「不明」に戻っていた。**推測による上書きを防ぐ仕組みは正しく働いており**、
   別のものが打ち消していた。NetBase は機器を **MAC アドレス**で見分けるが、コンテナは
-  起動のたびに新しい MAC を受け取る。podman ではアドレスまで変わる。戻ってきた機械は、
+  起動のたびに新しい MAC を受け取る。podman ではアドレスまで変わる。戻ってきたマシンは、
   NetBase から見れば**別の機械**だった。起こり方は2通りあり、両方を再現した。アドレスも
   変わる場合は、古い行が種別を保ったままオフラインで残り、隣に新しい「不明」が現れる。
   アドレスが同じ場合は、**古い行が削除され、種別ごと消える**。この削除は意図的なもので、
   DHCP で古い PC からアドレスが別の機器へ渡ったとき、前の機器の名前や種別を新しい
   持ち主に引き継いではならないためである。そして**再起動したコンテナと、渡されたアドレスは
   外から見分けがつかない**。そこで線を引き直した。機械が自分について報告したもの
-  （ポート、名前、製造元、履歴）は従来どおり古い行とともに捨て、**人が入力したものだけを
-  引き継ぐ** — 付けた名前、メモ、付箋、そして**自分で選んだ種別**。**推測された種別は
-  引き継がない**。「プリンター」は去った機械についての意見であって、いまそのアドレスを
-  持つものについては何も語らないからである。）
+  （ポート、名前、ベンダー、履歴）は従来どおり古い行とともに捨て、**人が入力したものだけを
+  引き継ぐ** — 付けた名前、メモ、タグ、そして**手動で選んだ種別**。**推測された種別は
+  引き継がない**。「プリンター」は、いなくなったマシンについてのスキャンの推測にすぎず、今そのアドレスを使っている機器には当てはまらないためです。）
 
 - **The settings screen no longer answers 500 on a confined install.** Listing
   the fonts a terminal can borrow walks the font folders, and on a confined
@@ -472,13 +498,12 @@ An AI assistant, through the new AI-Hub app, and the fixes from a review of the 
   The walk is now guarded, and the same refusal arriving from a folder deeper
   in is caught too rather than only the opening of the top one. A font nobody
   can read is not worth a broken screen: the folder is skipped instead.
-  （**限定された環境で設定画面が 500 になる不具合を修正。** 端末に貸せるフォントを
-  数えるためにフォント用のフォルダーを辿るが、限定された環境 — snap などがそうである —
+  （**限定された環境で設定画面が 500 になる不具合を修正。** 端末で使えるフォントを一覧にするために、フォント用のフォルダーをたどりますが、限定された環境 — snap などがそうである —
   では `/usr/share/fonts` が丸ごと拒否される。開けないフォルダーは**警告ではなく例外を
   投げる**ため、前に付けた `@` では抑えられない。例外はフォント一覧から設定の処理まで
   抜けていき、**画面全体が 500** になっていた。辿る処理そのものを保護し、先頭のフォルダーを
   開くときだけでなく、**途中のフォルダーから同じ拒否が来た場合も受け止める**ようにした。
-  読めないフォント1つのために画面を壊す価値はない。そのフォルダーは飛ばす。）
+  読めないフォントのために画面全体を使えなくすることはありません。そのフォルダーは飛ばします。）
 
 ## 0.6.0 — 2026-09-14
 
@@ -504,9 +529,8 @@ release are gone.**
   しました。** 560ピクセルの幅に4つのタブは収まらず2段に折り返していましたが、各段には
   余白がありました。通常の660ピクセルに広げ、**タブが幅を分け合って1段に収まり**、名前が
   読めなくなるときだけ折り返すようにしました。閉じているタブは**白に近い地に薄い灰色の
-  文字**で、ひと目では本文と区別がつきませんでした。地を濃くし、文字を通常の文字色に
-  しています。**当てずっぽうではなく実測**しました。文字と地の比は 4.3 → **12.1**、開と閉の
-  地色の差は 1.11 → **1.21**。5通りの濃さを比べたうえで決めています。）
+  文字**で、ひと目ではパネルと区別がつきませんでした。地を濃くし、文字を通常の文字色に
+  しています。**当てずっぽうではなく実測**しました。文字と地の比は 4.3 → **12.1**、開いているタブと閉じているタブの地色の差は 1.11 → **1.21**。5通りの濃さを比べたうえで決めています。）
 
 - **Acting as root now lapses on its own.** The sudo password was never stored,
   but it stayed usable for as long as the page was open — and a page left open
@@ -519,9 +543,9 @@ release are gone.**
   on this screen while its owner is elsewhere is the case this is for.
   （**root として操作している状態が、自動で切れるようになりました。** sudo のパスワードは
   もともとどこにも保存していませんが、**画面を開いている限り使える状態が続いて**いました。
-  施錠されていない端末に開いたまま置かれた画面は、そこにいる誰にとっても root です。
+  ロックしていない PC で開いたままの画面は、そこにいる誰でも root として使えてしまいます。
   **何も操作しないまま一定時間が過ぎたら手放します**。既定は10分、設定で1〜30分から選べ、
-  「自分からは手放さない」も選べます。残り時間は知らせの横に出し、「**いま root を手放す**」
+  「自分からは手放さない」も選べます。残り時間は通知の横に表示し、「**今すぐ root 権限を解除**」
   は小さな文字の一行ではなくボタンにしました。NetBase で何か操作すれば数え直しますが、
   **画面が目の前にあるだけでは数え直しません**。持ち主が席にいないままこの画面が開かれて
   いる、という場合のための仕組みだからです。）
@@ -538,11 +562,11 @@ release are gone.**
   folder.
   （**フォルダーを、1つの ZIP ファイルとしてダウンロードできるようにしました。** これまで
   取り込めるのは単体のファイルだけで、フォルダーは中へ入って1つずつ取るしかありません
-  でした。書庫は**接続先ではなくこのサーバーで**組み立てます。それが唯一どこでも同じに
+  でした。ZIP ファイルは**接続先ではなくこのサーバーで**作ります。それが唯一どこでも同じに
   動く方法だからです。FTP の相手にはそもそもコマンドがなく、Unix のサーバーでも zip は
   入っていないことが多く（この検証機も tar はあるが zip は無し）、**相手側に何も導入する
   必要がありません**。1回の要求が際限なく走らないよう、**深さ・件数・総量**の3つに上限を
-  設けています。上限に達したら walk を止めてその旨をお伝えします。**黙って半分だけ渡す
+  設けています。上限に達したら、たどるのを止めてその旨をお伝えします。**黙って半分だけ渡す
   ことはしません**。）
 
 - **"Download to my files" in the right-click menu is just "Download" now.**
@@ -558,7 +582,7 @@ release are gone.**
   the same ones the connection list uses. The tabs were fixed at two to a row,
   which forced a second row even where there was width to spare; they fill the
   row and wrap only when they must.
-  （**設定ダイアログもタブにし、タブは収まるなら1段にしました。** 4つの群を縦に並べて
+  （**設定ダイアログもタブにし、タブは収まるなら1段にしました。** 4 つのグループを縦に並べて
   いたためダイアログが画面より長くなり、外観・端末・接続先と鍵・ツールの並びのうち最後の
   ものへ行くには手前の3つを通り過ぎる必要がありました。接続先リストと同じ形の4つのタブに
   しました。タブは**2つずつの2段に固定**していましたが、幅に余裕があっても2段になって
@@ -611,9 +635,7 @@ release are gone.**
   SSH.
   （**不具合修正：保存済みの SSH 接続先では「root として操作する」が効いていませんでした。**
   SCP はサインインの仕方が同じなので SSH の接続先を候補に出しますが、**開くときは SFTP を
-  使って**いました。SFTP の背後にはシェルが無く、sudo を通せません。そのため切り替えは
-  あるのにパスワードも受け取られ、それでも `/root` は読めないままでした。**画面がどの手順に
-  設定されているかを毎回の要求に添える**ようにし、SSH として保存された接続先でも SCP は
+  使って**いました。SFTP の背後にはシェルが無く、sudo を通せません。そのため、チェックを入れてパスワードも受け付けたのに、`/root` は読めないままでした。**画面でどのプロトコルを選んでいるかを毎回の要求に添える**ようにし、SSH として保存された接続先でも SCP は
   SCP で開きます。）
 
 - **The file list works like a file manager now.** It was a table with three
@@ -626,7 +648,7 @@ release are gone.**
   （**ファイルの一覧を、ファイル管理ソフトらしい操作にしました。** これまでは各行に
   ボタンが3つ並ぶ表で、**フォルダーは名前を正確に狙わないと開けません**でした。行は
   クリックで選択、**フォルダーはダブルクリックで開き**、**右クリックでその行にできること**
-  （開く・自分のファイルへ取り込む・パスをコピー・改名・権限を変更・削除）が出ます。列は
+  （開く・自分のファイルへ取り込む・パスをコピー・名前変更・パーミッションを変更・削除）が出ます。列は
   並べ替えられ（どの列で並べてもフォルダーが上に残ります）、一覧の中から「..」で上の階層へ
   戻れ、所有者の列と再読み込みのボタンを足しました。）
 
@@ -635,8 +657,7 @@ release are gone.**
   and nothing more. Somebody typing a master key deserves to know what they are
   agreeing to before they type it, not after.
   （**マスターキーを尋ねる場所に、有効期間を明記しました。** 入力欄の下に「このマスター
-  キーはブラウザーを閉じるまで有効です（このセッションのみ有効）」と出します。マスター
-  キーを打つ人は、**打つ前に**何に同意しているのかを知っているべきです。）
+  キーはブラウザーを閉じるまで有効です（このセッションのみ有効）」と出します。マスターキーを入力する前に、何に同意するのかが分かるようにするためです。）
 
 - **Fixed: the saved list could be chosen from without the master key, and then
   would not connect.** A name and an address in RegiBase are not secret and
@@ -652,7 +673,7 @@ release are gone.**
   パスワードや秘密鍵は読めません。そのため**一覧は完全に見え、どれでも選べるのに、使う
   段になって失敗**し、鍵を尋ねられるのは接続を試みたあとでした。**実行できない選択肢を
   差し出すのは、何も出さないより悪い**ことです。リストを選んだ時点で、一覧があった場所に
-  「**RegiBaseのマスターキーを入力して下さい**」と出して先に尋ねるようにしました。SSH 画面と
+  「**RegiBaseのマスターキーを入力してください**」と出して先に尋ねるようにしました。SSH 画面と
   ファイル転送の両方です。）
 
 - **SCP offers the SSH connections again.** Splitting the lists by type was
@@ -722,7 +743,7 @@ release are gone.**
   transfer now follows the SSH screen exactly — the same choice, in the same
   order, in one card, with the chosen connection shown back the same way.
   （**ファイル転送の画面を、SSH 画面と同じ操作に揃えました。** どちらも「相手を決めて
-  使う」という同じ仕事なのに、**訊き方が違っていました**。SSH 画面は選択を先頭に置いて
+  使う」という同じ仕事なのに、**尋ね方が違っていました**。SSH 画面は選択を先頭に置いて
   その下にすべてを1枚で収めていたのに対し、ファイル転送は手入力が上のカード、選択が下の
   カードで、**ボタンの並び順も既定も逆**でした。片方だけを見れば問題はなく、**両方ある
   ことが問題**でした。ファイル転送を SSH 画面に合わせ、同じ選択・同じ順序・1枚のカードに
@@ -762,7 +783,7 @@ release are gone.**
   1つの一覧にまとめ、「下に直接入力する」をその先頭の項目にしていました。保存済みを選ぶと
   手入力欄が消え、**戻れることが画面のどこにも書かれていない**ため、消したようにしか
   見えませんでした。とくに **Telnet は手入力しかなく保存もしない**ため、接続できないように
-  見えていました。相手の指定方法を**選択として画面に出す**形に改めます。「**手入力する**」と
+  見えていました。相手の指定方法を**選択として画面に出す**形に改めました。「**手入力する**」と
   「**リストから選ぶ**」を常に表示し、いつでも切り替えられます。リストへ行って戻っても、
   入力済みの内容は保たれます。）
 
@@ -829,7 +850,7 @@ release are gone.**
   SSH の情報をそのまま使いますが、**FTP は別の機器の別アカウント**です。それを同じ一覧から
   読んでいました。SSH・SCP・FTP/SFTP・メールが、それぞれ自分のコレクションと項目の割り当てを
   持ちます。**複数の種別に同じコレクションを指定して構いません** ― SSH と SCP はたいてい同じ
-  一覧です。更新しただけでは何も動きません。自分のコレクションをまだ持たない種別は、
+  一覧です。更新しただけでは、保存先は何も変わりません。自分のコレクションをまだ持たない種別は、
   これまでの単一の設定をそのまま読むため、**意図して分けるまで一覧は変わりません**。）
 
 - **A record that does not say what it is, is no longer assumed to be SSH.** It
@@ -845,7 +866,7 @@ release are gone.**
   the question that was actually being asked. A connection saved as SFTP before
   this still works and still shows its own kind.
   （**SFTP を、新規作成の種別としては出さないようにしました。** SFTP は FTP の一種では
-  なく SSH の副系統です。保存済みの SSH 接続先はすでに SFTP でファイルを開くため、別々に
+  なく SSH のサブシステムです。保存済みの SSH 接続先はすでに SFTP でファイルを開くため、別々に
   出しても**違いの無い選択を迫るだけ**でした。FTP には暗号化の選択肢が残っており、実際に
   訊きたかったのはそちらです。**これまでに SFTP として保存した接続先はそのまま動き**、
   種別も SFTP のまま表示されます。）
@@ -860,7 +881,7 @@ release are gone.**
   server answers now says so instead of handing back Cloudflare's figure under
   M-Lab's name.
   （**速度テストで、どこと測るかを選べるようにしました。** これまでは M-Lab で測り、
-  M-Lab へまったく届かないときだけ Cloudflare に落ちる作りで、**もう一方を指定する
+  M-Lab へまったく届かないときだけ Cloudflare に切り替わる仕組みで、**もう一方を指定する
   手段がありませんでした**。片方に届く回線がもう片方に届くとは限らず（M-Lab は外向きの
   WebSocket を必要とします）、同じ回線を独立した2つの物差しで測れるほうが確かなため、
   「最も近いところ（自動）」「M-Lab」「Cloudflare」から選べるようにしました。名指しした
@@ -875,7 +896,7 @@ release are gone.**
   came from.
   （**不具合修正：速度テストの遅延が、別の相手のものになっていました。** M-Lab で測る
   とき、速度は M-Lab のサーバーから得ているのに、その横に並ぶ遅延とジッターは
-  `speed.cloudflare.com` に対して計っていました。相手も距離も違うため、画面の数値が
+  `speed.cloudflare.com` に対して測っていました。相手も距離も違うため、画面の数値が
   **別々の経路の話**になっていました。遅延も、速度を測ったのと同じ機器に対して計るよう
   にしました。）
 
@@ -905,7 +926,7 @@ release are gone.**
   接続元のアドレスから推定した順で候補を返しますが、ここでは**ソウルが東京より前**に
   来ていました。国の違う相手を測ると、遠いのではなく回線が遅いように見えます。上位数件へ
   実際に接続して所要時間を測り、最も速いものを使います。かかるのは約0.5秒で、推測を実測に
-  置き換えられます。当サーバーでは下りの読みが 187 Mbps から 427 Mbps になりました。）
+  置き換えられます。当サーバーでは下りの計測値が 187 Mbps から 427 Mbps になりました。）
 
 - **SCP can now actually be used.** The protocol was added, tested and reachable
   by the server — and by nothing else: the file transfer panel offered only SFTP
@@ -929,7 +950,7 @@ release are gone.**
   device list" had been translated as "device survey", which is not what it
   does; the two buttons that set every tool at once read as fragments; and the
   wording for scanning was inconsistent with the rest of the app.
-  （**管理設定の日本語を整えました。** `Devices — read the device list` が
+  （**管理者設定の日本語を整えました。** `Devices — read the device list` が
   「接続機器調査」と訳されていましたが、実際は一覧を見るだけです。全ツールを一括で
   切り替える2つのボタンは「すべて全利用者」のように語として立っておらず、探索まわりの
   用語も他の画面と揃っていませんでした。）
@@ -944,7 +965,7 @@ release are gone.**
   settings inside a group sit a level below it. A setting an administrator
   changes for the whole server now says so on its label, instead of looking
   like one of the reader's own.
-  （**設定画面を、見出し11個の一本道から4つの束に改めました。** 追加を重ねた結果、
+  （**設定画面を、11 個の見出しが並ぶ形から、4 つのグループにまとめました。** 追加を重ねた結果、
   端末のフォント・シェルの言語・シェルのログ記録が3か所に分かれ、その間に接続先
   リストが挟まる並びになっていました。「言語」という同じ語が同じ大きさで2か所に出て、
   一方はアプリの言語、もう一方はシェルの言語を指していました。**外観と言語／
@@ -971,13 +992,13 @@ release are gone.**
   いません。これまで新しい版は「別のアプリがたまたま同梱していた」ために使えて
   いただけで、無関係なアプリの有無で鍵が使えるかどうかが決まっていました。
 
-  同じ名前のまま2つ目を積んでも問題は移るだけです。1つの PHP 処理の中で1つの
+  同じ名前のまま 2 つ目を同梱しても、問題の場所が移るだけです。1つの PHP 処理の中で1つの
   名前に応えられるライブラリは1つだけで、**先に読み込まれたアプリの版が両方の
   アプリに使われます**。つまり NetBase は、同梱も試験もしていない版で動くことに
   なります。そこで `OCA\NetBase\Vendor\phpseclib3` という NetBase 専用の名前に
   改めました。衝突が起きないため、NetBase は常に自分が同梱した版で動き、他の
   アプリは自分の版のまま一切影響を受けません。登録の仕組みも不要で、Nextcloud
-  本体の読み込み器がそのまま見つけます。）
+  本体のオートローダーがそのまま見つけます。）
 
 - **SCP has been added to the saved connections.** A server can offer SSH
   without the SFTP subsystem, and on that machine SCP is the only way to move a
@@ -1030,7 +1051,7 @@ release are gone.**
   own store was encrypted with the instance secret, which sits on the same
   server as the data it protects. A stolen database is now a database of
   ciphertext.
-  （**移行の理由**。RegiBase のパスワードはブラウザ側で封印され、その鍵はどこにも保存され
+  （**移行の理由**。RegiBase のパスワードはブラウザー側で暗号化され、その鍵はどこにも保存され
   ないマスターキーから導かれます。データベースにも設定にもディスクにも残りません。NetBase
   単独ではこれを提供できませんでした。従来はインスタンス秘密鍵で暗号化しており、それは
   守るべきデータと同じサーバー上にあるからです。データベースを盗まれても、そこにあるのは
@@ -1048,7 +1069,7 @@ release are gone.**
   clear. A public key is deliberately not treated as secret.
   （**コレクションの構成は自由です。** NetBase 専用の形を強いません。どの項目がホストで、
   どれがパスワードかを指定すれば、それに合わせます。用意されたコレクションを自動で作る
-  こともできます。パスワードは RegiBase 側で秘匿とされた項目にしか割り当てられないため、
+  こともできます。パスワードは RegiBase で秘密の項目に設定した項目にしか割り当てられないため、
   平文で書かれることはありません。公開鍵は意図的に秘匿として扱いません。）
 - **The master key is asked for once per browser session** and is forgotten when
   that session ends. It is never written down on the server.
@@ -1061,7 +1082,7 @@ release are gone.**
   held. That is the point of it: they were sealed with a secret kept on the same
   server as the data.
   （**接続先の旧保存領域を削除しました。** 0.6.0 で接続先は RegiBase へ移り、NetBase 側に
-  残っていたものは引き継がないとお伝えしていました。その表を削除し、そこに残っていた
+  残っていたものは引き継がないとお伝えしていました。そのテーブルを削除し、そこに残っていた
   パスワードも消えました。これが目的です。旧方式はデータと同じサーバーにある鍵で
   暗号化されており、守りとして弱いものでした。）
 - **Errors now speak the language you read.** Everything a tool refuses to do —
@@ -1080,8 +1101,7 @@ release are gone.**
   which registry or name server answered, with the technical reason kept on a
   second line.
   （**空きドメイン検索の説明を、意味のある文に変えました。** 結果にカーソルを合わせると
-  「HTTP 404」と出ていましたが、これはレジストリ側の答えであって、お客様への答えでは
-  ありません。空きか、登録済みか、なぜ判定できなかったかを述べ、どのレジストリ／
+  「HTTP 404」と出ていましたが、これはレジストリ側の応答で、利用者が知りたい答えではありません。空きか、使用中か、なぜ判定できなかったかを述べ、どのレジストリ／
   ネームサーバーが答えたかも示します。技術的な理由は2行目に残しています。）
 
 - **The internet speed test now measures against M-Lab** — the measurement
@@ -1092,10 +1112,10 @@ release are gone.**
   NetBase speaks it directly. Where M-Lab cannot be reached at all — an instance
   with no way out, or a blocked connection — the previous HTTP test still stands
   behind it, so the tool never simply stops working.
-  （**回線速度の測定を M-Lab に切り替えました。** Google 自身の速度テストの実体であり、
+  （**回線速度の測定を M-Lab に切り替えました。** Google の速度テストでも使われている計測基盤で、
   固定の配信元から引くのではなく、**最寄りの測定サーバーを尋ねてそこで測ります**。これは
   「自分の回線を測る」ことと「他社CDNまでの距離を測る」ことの違いです。追加の導入物は
-  不要で、通信方式（WebSocket）を NetBase が自前で話します。M-Lab に到達できない環境
+  不要で、通信方式（WebSocket）は NetBase が直接扱います。M-Lab に到達できない環境
   （外部へ出られない・接続が塞がれている）では、従来のHTTP測定に自動で切り替わるため、
   機能が止まることはありません。）
 - **The reading is presented as a guide, because that is what it is.** The figure
@@ -1122,7 +1142,7 @@ release are gone.**
 - **The terminal log is a switch now, and it keeps 5,000 steps by default.** It
   was a number that started at zero, which read like a setting somebody had
   forgotten to fill in. Recording is still off until it is switched on.
-  （**端末の記録はチェック式にし、既定で5,000行を保持するようにしました。** 従来は0から
+  （**端末の記録はチェック式にし、既定で 5,000 ステップを保持するようにしました。** 従来は0から
   始まる数値欄で、設定し忘れのようにも見えました。記録が既定で無効である点は変わりません。）
 
 ### Added
@@ -1159,8 +1179,7 @@ release are gone.**
   status and how long it took.
   （**保存済み SSH 接続先の「コマンド実行」ボタンが無反応でした。** 存在しない
   メソッドに結び付けられており、Vue は未定義のメソッドへの `@click` では**何もしません**。
-  そのため、隣の対話コンソールは正常に動くのにボタンだけが死んでいました。よくある質問を
-  選ぶ「実行」ボタンも同じ状態でした。どちらも実行し、出力・終了状態・所要時間を表示します。）
+  そのため、隣の対話コンソールは正常に動くのにボタンだけが反応しない状態でした。プリセットの確認を選ぶ「実行」ボタンも同じ状態でした。どちらも実行し、出力・終了状態・所要時間を表示します。）
 
 - **After an upload, the file list did not refresh.** The file arrived — it was
   the listing that stayed behind. Upload read the folder back from the path box
@@ -1169,7 +1188,7 @@ release are gone.**
   other action on that panel already read it back from the listing.
   （**アップロードの後、ファイル一覧が更新されませんでした。** ファイル自体は届いており、
   一覧だけが古いままでした。アップロード処理が、一覧そのものではなく**パス入力欄**を基準に
-  読み直していたためです。入力欄は利用者が打ち込んだ値と結ばれているため、表示中の位置から
+  読み直していたためです。入力欄の値は利用者が入力した内容に連動するため、表示中の位置から
   ずれます。同じ画面の他の操作は、いずれも一覧を基準に読み直していました。）
 
 - **whois told you nothing about a .jp domain.** Every .jp is answered by
@@ -1194,19 +1213,19 @@ release are gone.**
   （**whois が .jp ドメインの情報を何も返していませんでした。** .jp はすべて JPRS が
   応答しますが、JPRS は多くのレジストリのような `ラベル: 値` ではなく、`[ラベル]` の
   後に**コロンを置かず空白だけ**で値を書きます。組織用ドメインでは `a. [ドメイン名]` の
-  ように索引文字が前に付きます。日本語ラベルは当初から規則に書かれていたものの、
+  ように索引文字が前に付きます。日本語のラベルは当初から照合パターンに含めていたものの、
   **JPRS が送らないコロンを要求していた**ため一致しようがなく、`.com` では6〜7項目
   取れるのに `.jp` では0項目でした。JPRS の2つの書式を読めるようにし、組織用ドメインに
-  固有の有効期限行が無い点は状態欄から取り、値の無いラベルを空項目にしないようにしました。
+  （前の行の「組織用ドメインに」と合わせて）組織用ドメインには有効期限の行が別に無いため、状態の行から読み取り、値の無いラベルを空項目にしないようにしました。
   従来の書式には手を触れていません。レジストリの実際の応答を固定データとした検査を添えて
   います。
 
-  なお、その修正のうち1行が誤っており、書き残す価値があります。whois サーバーはソケットで
-  応答し、行末は **CRLF** です。ところがネームサーバの規則は行末を LF だけと見なしていたため、
+  なお、その修正のうち 1 行に誤りがあったため、記録しておきます。whois サーバーはソケットで
+  応答し、行末は **CRLF** です。ところがネームサーバーのパターンは行末を LF だけと見なしていたため、
   **実物では1件も一致しませんでした**。日付は取れるのにネームサーバだけが空、という形です。
   検査ファイルに書いた文字列の行末は LF のみなので、**検査は合格したまま実物が失敗**して
   いました。固定データをソケットと同じ行末に通すよう改め、修正前の規則では 0 件・修正後は
-  2 件になることを確かめたうえで残しています。)
+  2 件になることを確かめたうえで残しています。）
 
 - **Choosing Telnet left the port at 22.** Two methods in the same object had
   the same name. That is not an error in JavaScript — the second simply
@@ -1261,9 +1280,8 @@ release are gone.**
   timestamp was matched by a greedy pattern that swallowed the beginning of a
   name like "report 2026.txt". Both are now covered by a test that needs no
   server.
-  （**SCP で、ファイルの権限が実際より小さく読まれ、空白を含む名前が先頭の語を
-  失っていました。** SCP には一覧の機能が無いため `ls -la` の出力を解いていますが、
-  その解き方に2つの誤りがありました。r・w・x は既に桁の重みを持っているのに位置で
+  （**SCP で、ファイルのパーミッションが実際より小さく読まれ、空白を含む名前が先頭の語を
+  失っていました。** SCP には一覧の機能が無いため `ls -la` の出力を解析していますが、その解析に 2 つの誤りがありました。r・w・x は既に桁の重みを持っているのに位置で
   さらに桁をずらしていたため 0640 が 0600 になり、また時刻の照合が貪欲だったため
   「report 2026.txt」のような名前の先頭が飲み込まれていました。どちらもサーバー
   不要の検査で押さえました。）
@@ -1306,8 +1324,7 @@ release are gone.**
   was picked up from the network, that reported name stays visible in the
   properties as well. The name you give is kept against the device, so it holds
   even when the device offers no name of its own.
-  （自分で機器名前をつけることが出来るようにしました。プロパティであなたが記入した名称を
-  優先的に表示し、もしアナウンス名が取得できている場合は、プロパティで確認できます。）
+  （機器に自分で名前を付けられるようにしました。プロパティで入力した名前を、検出した名前の代わりにどこでも表示します。ネットワークから名前を取得できている場合は、その名前もプロパティで確認できます。付けた名前は機器ごとに保存するため、機器が自分の名前を知らせない場合でも残ります。）
 - **The properties now say how a name was obtained** — NetBIOS, mDNS or reverse
   DNS — so a reported name is never mistaken for a NetBIOS name when it came from
   somewhere else.
@@ -1338,7 +1355,7 @@ release are gone.**
   Amazon Echo, say — are still kept online by what they broadcast over mDNS/SSDP
   in a normal scan.)
   （電源を切った機器がオンライン表示のままになる不具合を修正。カーネルの近隣テーブルに
-  STALE として古いMACのまま残り、/proc/net/arp では在席中の機器と区別できないため、緑点が
+  STALE として古いMACのまま残り、/proc/net/arp では今つながっている機器と区別できないため、緑の丸が
   残っていた。近隣の状態を `ip neigh` で読み、全アドレス走査はせずに、記録済みアドレスを
   短いTCP接触で確認するようにした（在席なら接続に応答＝開放でも拒否でも、不在なら無応答で
   オフライン判定）。再スキャンでオンライン/オフラインが最新になる。※mDNS/SSDPで自ら告知する
@@ -1362,7 +1379,7 @@ release are gone.**
   greyed and struck through once, with the reason in its hover tooltip — no
   English text on the row.
   （空きドメイン検索で、使用済みと調査不能のドメインを隠せるようにしました。結果の上に
-  スライドスイッチを2つ（接続機器調査と同じ部品）置き、使用済み（×）用と調査不能（?）用を
+  スライドスイッチを2つ（接続機器調査と同じスイッチ）置き、使用済み（×）用と調査不能（?）用を
   用意。調査不能は初期状態で非表示にし、空きと使用済みが先に見えるようにしています。使用済みは
   グレー表示、調査不能はグレー＋一重打ち消し線で示し、理由はマウスオーバーで表示します（行に
   英語は出しません）。）
@@ -1372,7 +1389,7 @@ release are gone.**
   list. Each ending's name always shows in full; the diagnostic note beside it is
   what gives way when space is tight.
   （空きドメイン検索の結果を、画面幅に余裕があるとき複数列で表示するようにしました。幅に応じて
-  自動で2〜3列になり、狭いときは1列に戻ります。語尾（ドメイン名）は常に全部表示し、横の理由
+  自動で2〜3列になり、狭いときは1列に戻ります。末尾（TLD）の名前は常に全部表示し、横の理由
   表示のほうを省略します。）
 - **Every column in a device's address lines is now aligned.** A device with
   several addresses lays them out in fixed columns so the eye can read down them:
@@ -1408,7 +1425,7 @@ release are gone.**
   「探索中」と示して固まって見えないようにし、工程が変わるたびにバーが戻って見えないようにしました。）
 - **"What to scan" lists "The ARP table only" first**, before "The whole
   network".
-  （「スキャン対象」の並びを、「ARPテーブルのみ」を先頭にしました。）
+  （「スキャン対象」で、「ARPテーブルのみ」を「ネットワーク全体」より前に並べました。）
 - **A device's note is now shown in the list and is searchable.** It used to be
   visible only in the properties; now it appears under the device (one line,
   full text on hover) and the filter box matches it too, so a note like "2F
@@ -1427,13 +1444,12 @@ release are gone.**
 - **Mail: the SPF DNS-lookup count no longer double-counts includes.** A top-level
   `include:` was counted twice, so a healthy record with a few includes could be
   reported as over the 10-lookup limit; it now counts each lookup once.
-  （メール：SPFのDNSルックアップ数がincludeを二重計上する不具合を修正。正常な記録が上限超過と
-  誤表示されることがありました。）
+  （メール：SPFのDNSルックアップ数がincludeを二重計上する不具合を修正。正常なレコードが上限超過と誤表示されることがありました。）
 - **HTTP check: an unreachable host is reported as unreachable.** A host that
   refuses the connection or times out was shown as a reachable server missing every
   security header; it now says it could not connect. A redirect's target host is
   validated too, so a page cannot bounce the fetch onto an internal address.
-  （HTTP確認：到達不能なホストを「稼働中でヘッダ欠落」と誤表示せず「接続できませんでした」と
+  （HTTP確認：到達不能なホストを「稼働中でヘッダー欠落」と誤表示せず「接続できませんでした」と
   表示。リダイレクト先ホストも検証し、内部アドレスへ飛ばされないようにしました。）
 - **A registered .jp/.co.jp domain is no longer reported as free.** JPRS answers
   with a "Domain Information" block whose fields are letter-prefixed
@@ -1466,13 +1482,13 @@ release are gone.**
   （/16 以上のネットワークでポートスキャンが失敗する不具合を修正。総当たり探索を守る
   ホスト数上限を、探索を行わないARPテーブルのみモード（近傍テーブル≒最大1024件しか触らない）
   にも適用していたため、よくある /16 のLAN（65,536アドレス）で「上限超過」で弾かれていた。
-  実際に総当たりを行うときだけ上限を判定するようにした。）
+  実際に総当たりを行うときだけ上限を判定するようにしました。）
 - **A port-scan step no longer logs "Undefined variable $wait".** In
   `ScanService::stepPorts()` the port budget was computed from `$wait` before the
   variable was assigned, which logged a PHP warning on every step and, reading
   null as 0.1, over-computed the budget nine-fold. `$wait` is now set before use.
   （ポートスキャンの各ステップで `Undefined variable $wait` を記録する不具合を修正。
-  `stepPorts()` で `$wait` を代入前に予算計算に使っていたため毎回PHP警告が出て、nullを0.1と
+  `stepPorts()` で `$wait` を代入前にポートの時間配分の計算に使っていたため毎回PHP警告が出て、nullを0.1と
   読み予算が9倍に膨らんでいた。使用前に定義するよう是正。）
 - **A free domain in the availability search no longer shows a raw "HTTP 404".**
   The diagnostic reason (e.g. RDAP's 404 that means "not registered") was printed
@@ -1486,7 +1502,7 @@ release are gone.**
   connection at error level; these are ordinary outcomes for a network tool and
   are now logged at info (the browser is still shown a problem page).
   （応答の遅い・届かない機器で管理ログがエラーで溢れる問題を解消。機器ビューのプロキシが
-  接続タイムアウト・TLS失敗・接続拒否をすべてエラー級で記録していたが、ネットワークツールに
+  接続タイムアウト・TLS失敗・接続拒否をすべてエラーレベルで記録していたが、ネットワークツールに
   とっては通常の結果のため info 級に格下げした（ブラウザには従来どおり問題ページを表示）。）
 - **The DNS tool no longer fails a whole lookup when CAA is included.** CAA was
   passed to `dns_get_record()` as the wire type number 257, which PHP 8 rejects
@@ -1526,7 +1542,7 @@ release are gone.**
   Each of the server's addresses is now its own row and each is marked.
   （サーバー自身の各アドレスすべてに「このサーバー」を表示するようにした。1枚のNICが複数の
   アドレスを持つ場合（同一NICの10.0.0.1と192.168.1.250）、共有MACをキーにしていたため最後の
-  1つしかバッジが付かなかった。各アドレスを独立した行にし、それぞれに印を付けるようにした。）
+  1つしかバッジが付かなかった。各アドレスを独立した行にし、それぞれにバッジを付けるようにしました。）
 
 ## 0.4.4 — 2026-09-09
 
@@ -1538,7 +1554,7 @@ release are gone.**
   and its fixed dark text was lost inside it. It now uses its own amber, readable
   on any theme.
   （「別ネットワーク」バッジがダークテーマで真っ黒な箱になっていた不具合を修正。背景に
-  NetBase 未定義の `--color-warning` を使っていたため Nextcloud 側の暗い色を継ぎ、固定の
+  NetBase 未定義の `--color-warning` を使っていたため Nextcloud 側の暗い色を引き継ぎ、固定の
   暗い文字と重なって潰れていた。自前のアンバー配色にして、どのテーマでも読めるようにした。）
 
 ## 0.4.3 — 2026-09-09
@@ -1555,7 +1571,7 @@ release are gone.**
   runs untouched and all of its text appears.
   （機器ページが自身のスクリプトで文言を書き込む場合に、機器ウィンドウで文言が消えていた不具合を
   修正。ASUS ルーターの WAN ページ等は JavaScript の文字列内に `target="_top"` を含む HTML 断片を
-  持ち、フレーム内に留めるための書き換えがその文字列を壊してスクリプトが止まっていた。書き換えを
+  持ち、ウィンドウ内に留めるための書き換えがその文字列を壊してスクリプトが止まっていた。書き換えを
   「本物の HTML 属性」だけに限定し `<script>` 内には一切触れないようにしたため、ページのスクリプトが
   そのまま動き、全ての文言が表示される。）
 - **The device-window "Screenshot" now shows its result inside the window.** A
@@ -1563,7 +1579,7 @@ release are gone.**
   or the reason a picture could not be taken — was hidden behind the very window
   it was about, and looked like nothing had happened. The message now appears in
   the window itself.
-  （機器ウィンドウの「Screenshot」の結果を、ウィンドウ内に表示するようにした。機器ウィンドウは
+  （機器ウィンドウの「画面を保存」の結果を、ウィンドウ内に表示するようにした。機器ウィンドウは
   アプリのメッセージ帯より前面に出るため、「保存しました」や失敗理由が対象ウィンドウの裏に隠れ、
   何も起きていないように見えていた。メッセージをウィンドウ内に出すようにした。）
 

@@ -136,15 +136,26 @@ TXT;
 
 	/** @param list<string> $read */
 	private static function readRules(array $read): string {
+		return self::readOnly(array_values(array_diff($read, ['write']))) . "\n\n" . (in_array('write', $read, true) ? self::CHANGING : self::NOT_CHANGING);
+	}
+
+	private const CHANGING = <<<'TXT'
+Changing the device list. You may change NetBase's device list yourself with the tools list_devices, update_devices, add_device and delete_devices, with the person's own rights: name a device, give it a type, tags and its place (location, room, mount), mark it known, set its Wake-on-LAN MAC, add one by its address, remove one. Do what the person asks: find the devices meant with list_devices first, then change exactly those. When it is not clear which devices or how many, list what you would change and ask first. Removing devices cannot be undone, so remove only what the person clearly asked for, and for more than one device get their clear yes in this conversation first. After a change, say briefly what you changed; say only what the tools reported, and if a tool reports a failure, say so. A device's notes are never shown to you and you cannot write them: the person edits them on the page. These tools change NetBase's record only: they never scan, ping, wake or send anything to a device -- for that, point to the tab as before.
+TXT;
+
+	private const NOT_CHANGING = 'Changing the device list. You cannot change it: the administrator has not allowed it, or the person may not edit it. When asked to name, place or remove a device, tell them how to do it in "Devices" ("Edit named").';
+
+	/** @param list<string> $read */
+	private static function readOnly(array $read): string {
 		if ($read === []) {
 			return 'You may read nothing from NetBase: neither what is on the screen nor the device list. Answer from what the person writes and from what you know about networks, and tell them what to look at.';
 		}
-		$lines = ['Reading. You may read, and only read, what is given below; it is all you can see of NetBase:'];
+		$lines = ['Reading. You may read what is given below; it is all you can see of NetBase:'];
 		if (in_array('screen', $read, true)) {
 			$lines[] = '- what is on the person\'s screen now: the result of the tool they are using, as they see it.';
 		}
 		if (in_array('devices', $read, true)) {
-			$lines[] = '- the device list NetBase has built of the local network (name, address, MAC vendor, kind, ports, place, online).';
+			$lines[] = '- the device list NetBase has built of the local network (name, address, MAC vendor, kind, ports, place, online), given below and through the tool list_devices (use it to search the whole list).';
 		}
 		return implode("\n", $lines);
 	}
