@@ -2,6 +2,25 @@
 
 All notable changes to NetBase are documented here.
 
+## 0.9.13 — 2026-11-08
+
+Fixes to "Port scan" after containers are restarted, reported on GitHub (issue #3).
+
+### Fixed
+
+- **"Port scan" skipped devices that were not in the ARP table.** The button reads the ARP table and checks the devices on file, but a device that answered that check was only marked online and never had its ports checked. Right after a restart the ARP table is nearly empty, so a port scan found nothing and the ports came back only after several tries. Every device in the range that answers now has its ports checked on the first run.
+- **"Port scan" checked devices outside the range.** Devices beyond a router that answered were port-scanned even when the range chosen did not include them, so a port scan of 172.19.0.0/16 spent most of its 48 minutes on 192.168.100.x. The port scan now keeps to the range it was asked for.
+- **The default gateway lost its name when its MAC address changed.** A device that comes back on the same address with another MAC is treated as a different device, which is right for containers that trade addresses on a restart. But the address this server leaves its network by is the same router or host whatever MAC answers for it — a Docker bridge gets a new MAC when its network is created again — so the name, notes, tags, place and hand-picked type written on it now stay with it.
+
+（日本語）
+コンテナを起動し直した後の「ポートスキャン」の不具合を直しました。GitHub の Issue #3 で報告されたものです。
+
+### 修正
+
+- **「ポートスキャン」が、ARP 表に載っていない機器を調べていませんでした。** このボタンは ARP 表を読み、記録済みの機器に応答があるかを確かめます。ところが、応答があった機器にはオンラインの印を付けるだけで、ポートを調べていませんでした。起動し直した直後は ARP 表がほとんど空のため、何度か繰り返すまでポートが出てきませんでした。今は、範囲内で応答した機器はすべて、1 回目でポートを調べます。
+- **「ポートスキャン」が、範囲外の機器まで調べていました。** ルーターの向こうで応答した機器は、選んだ範囲に入っていなくてもポートを調べていました。たとえば 172.19.0.0/16 のポートスキャンでは、48 分のほとんどを 192.168.100.x に使っていました。今は、指定した範囲の中だけを調べます。
+- **既定のゲートウェイの MAC アドレスが変わると、付けた名前が消えていました。** 同じアドレスに別の MAC で戻ってきた機器は、別の機器として扱います。起動し直すとアドレスが入れ替わるコンテナには、これが正しい扱いです。ただ、このサーバーがネットワークの外へ出る出口（ゲートウェイ）は、MAC が変わっても同じルーターかホストです。Docker のブリッジは、ネットワークを作り直すと MAC が変わります。そこで、ゲートウェイに書いた名前・メモ・タグ・場所・手で選んだ種類は、MAC が変わってもそのまま残すようにしました。
+
 ## 0.9.12 — 2026-11-08
 
 The AI assistant can now keep the device list itself.

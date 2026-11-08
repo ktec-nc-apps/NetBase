@@ -66,8 +66,15 @@ $check('found devices are recorded with no MAC, as source tcp, and join the scan
 	str_contains($absorb, "upsert((string)\$ip, null, ['source' => 'tcp'") && str_contains($absorb, "\$queue['ips'][]"));
 
 // ---- 3. liveness ------------------------------------------------------------
-$live = $fn($scan, 'private function confirmLiveness(', 1500);
-$check('the liveness check also covers off-link devices', str_contains($live, 'offLinkOnly(') && str_contains($live, 'reachBeyond('));
+$live = $fn($scan, 'private function confirmLiveness(', 2500);
+$check('the liveness check also covers off-link devices', str_contains($live, 'offLinkOnly(') && (str_contains($live, 'reachKnown(') || str_contains($live, 'reachBeyond(')));
+// GitHub #3: a device that answered the on-link check joins the scan (inside
+// the range), and the port scan keeps to the range it was asked for.
+$check('on-link devices that answered join the scan, inside the range only', str_contains($live, "self::inPlan(\$queue['plan'] ?? [], \$ip)") && str_contains($live, "\$queue['ips'][] = \$ip;"));
+$ports = $fn($scan, 'private function stepPorts(', 1200);
+$check('the port scan covers only the range asked for', str_contains($ports, 'self::inPlan($plan, (string)$ip)'));
+$merge = $fn($scan, 'private function mergeDuplicateIps(', 9000);
+$check('the default gateway keeps what a person wrote when its MAC changes', str_contains($merge, '$gateway = $ip === $this->gatewayIp();') && str_contains($merge, '$carried = $gateway || $this->sameName($keep, $other);'));
 
 // ---- 4. adding by address ---------------------------------------------------
 $check('POST /api/devices is routed to addDevice', (bool)preg_match("/'api#addDevice', 'url' => '\\/api\\/devices', 'verb' => 'POST'/", $routes));

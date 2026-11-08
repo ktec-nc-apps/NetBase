@@ -98,6 +98,9 @@ class ScanService {
 	/** Templates the picker offers that only a person can tell apart. */
 	public const MANUAL_TYPES = ['repeater', 'firewall', 'vpn', 'lb', 'gateway', 'laptop', 'hypervisor', 'watch', 'mfp', 'scanner', 'projector', 'pos', 'barcode', 'cardreader', 'timeclock', 'signage', 'digicam', 'webcam', 'intercom', 'access', 'alarm', 'settop', 'ereader', 'aircon', 'airpurifier', 'solar', 'pcs', 'battery', 'chargectrl', 'evcharger', 'smartmeter', 'hems', 'generator', 'pdu', 'thermostat', 'thsensor', 'motion', 'contact', 'leak', 'lock', 'vacuum', 'robot', 'remote', 'scale', 'pet', 'pbx', 'conference', 'plc', 'industrial', 'container'];
 
+	/** This server's default gateway (gatewayIp()), once known. */
+	private ?string $gateway = null;
+
 	public function __construct(
 		private DiscoveryService $discovery,
 		private OuiService $oui,
@@ -641,7 +644,15 @@ class ScanService {
 	}
 
 	private function stepPorts(ScanEntity $scan, array &$queue, array $options): void {
-		$ips = $queue['ips'] ?? [];
+		// Only the range the scan was asked for. The list also holds what was
+		// learned on the way about devices elsewhere (the ARP table, the devices
+		// on file beyond a router), and a port scan of 172.19.0.0/16 used to go
+		// on to 192.168.100.x for most of its 48 minutes (GitHub #3).
+		$plan = $queue['plan'] ?? [];
+		$ips = array_values(array_filter(
+			$queue['ips'] ?? [],
+			static fn ($ip): bool => $plan === [] || self::inPlan($plan, (string)$ip),
+		));
 		$idx = (int)($queue['idx'] ?? 0);
 		$ports = $this->portsFor($options);
 		$count = count($ports);
@@ -852,6 +863,19 @@ class ScanService {
 			$t = microtime(true);
 			$up = $this->discovery->alive($near);
 			$this->devices->markOnline($up);
+			// A device that answered is here now, so the phases that follow (the
+			// ports, the names) cover it too, as long as it lies in the range.
+			// Only those in the ARP table used to: after a restart a container
+			// that had not spoken to this server yet answered this check but was
+			// skipped by "Port scan", so its ports stayed empty (GitHub #3).
+			$known = array_flip($queue['ips'] ?? []);
+			foreach ($up as $ip) {
+				$ip = (string)$ip;
+				if (!isset($known[$ip]) && self::inPlan($queue['plan'] ?? [], $ip)) {
+					$queue['ips'][] = $ip;
+					$known[$ip] = true;
+				}
+			}
 			$this->note(sprintf('on-link check of the addresses on file: %d asked, %d answered (%d ms); no answer: %s',
 				count($near), count($up), (int)round((microtime(true) - $t) * 1000), self::someIps(array_diff($near, $up))));
 		}
@@ -1184,7 +1208,13 @@ class ScanService {
 				// and when a restart shuffled the addresses the HAProxy note turned up on
 				// a Redis node (NCC #34). Everything the old machine said about itself
 				// (ports, names, vendor) goes with its row.
-				$carried = $this->sameName($keep, $other);
+				// The address this server leaves its network by is a router, or
+				// the host a container network belongs to, whatever MAC answers
+				// for it: a Docker bridge comes back with a new MAC when the
+				// network is created again, but it is the same host (GitHub #3:
+				// 172.19.0.1 turned into a new, unnamed "PC" after an OS update).
+				$gateway = $ip === $this->gatewayIp();
+				$carried = $gateway || $this->sameName($keep, $other);
 				if ($carried) {
 					$changed = $this->carryOwn($other, $keep) || $changed;
 				} elseif ($this->hasOwn($other) && ($other->getHostname() ?? '') !== '') {
@@ -1221,6 +1251,14 @@ class ScanService {
 		return ($d->getLabel() ?? '') !== '' || ($d->getNotes() ?? '') !== '' || ($d->getTags() ?? '') !== ''
 			|| ($d->getLocation() ?? '') !== '' || ($d->getRoom() ?? '') !== '' || ($d->getMount() ?? '') !== ''
 			|| self::typeChosen($d);
+	}
+
+	/** This server's default gateway, read once per request. */
+	private function gatewayIp(): string {
+		if ($this->gateway === null) {
+			$this->gateway = (string)($this->discovery->defaultRoute()['gateway'] ?? '');
+		}
+		return $this->gateway;
 	}
 
 	private function sameName(DeviceEntity $a, DeviceEntity $b): bool {
