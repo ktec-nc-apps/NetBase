@@ -398,13 +398,23 @@ class DiscoveryService {
 			if ($mac === '' || $mac === '00:00:00:00:00:00') {
 				continue; // unresolved / failed entry
 			}
+			// Without ATF_COM (0x2) the kernel has not resolved the address: it is
+			// being asked for again, or nobody answered. The MAC shown is the one
+			// it had before, which may belong to a device that is gone — a
+			// container that came back with a new MAC (GitHub #3). The Nextcloud
+			// image has no `ip` command, so a containerised NetBase reads this
+			// file, and an entry like that counted as a device present now.
+			$flagBits = (int)hexdec(ltrim(substr($flags, 0, 2) === '0x' ? substr($flags, 2) : $flags, '0') ?: '0');
+			if (($flagBits & 0x2) === 0) {
+				continue;
+			}
 			if ($interface !== null && $dev !== $interface) {
 				continue;
 			}
 			$out[$ip] = [
 				'mac' => strtolower($mac),
 				'interface' => $dev,
-				'flags' => (int)hexdec(ltrim($flags, '0x') ?: '0'),
+				'flags' => $flagBits,
 				'state' => '',
 				'reachable' => true,
 			];

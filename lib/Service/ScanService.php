@@ -61,6 +61,22 @@ class ScanService {
 	 */
 	public const HEARD_FOR = 1200;
 
+	/**
+	 * How many addresses with a new MAC have their name asked in one read of
+	 * the ARP table. A lookup through a container network's DNS takes a few
+	 * milliseconds; this bounds the wait where the DNS is slow to say nothing.
+	 */
+	private const NEW_MAC_NAMES = 64;
+
+	/**
+	 * Seconds after the on-link check before an address that kept silent on
+	 * an old MAC is touched once more. Linux goes on sending to a MAC it has on
+	 * file: 5 s before it checks the entry (delay_first_probe_time), then three
+	 * probes a second apart, and only then asks the whole network again. A
+	 * container that came back with a new MAC is unreachable for those 8 s.
+	 */
+	private const RECHECK_AFTER = 9.0;
+
 	/** Said when a target is off the local network. English here; the controller translates it. */
 	public const NOT_LOCAL = 'NetBase scans only the local network: private address ranges and the networks this server is attached to.';
 
@@ -252,8 +268,12 @@ class ScanService {
 					'mcast' => $this->stepMulticast($scan, $queue, $options),
 					'ports' => $this->stepPorts($scan, $queue, $options),
 					'rdns' => $this->stepRdns($scan, $queue, $options),
+					'recheck' => $this->stepRecheck($scan, $queue, $options, $deadline),
 					default => $scan->setPhase('done'),
 				};
+				if ($scan->getPhase() === 'done' && !empty($queue['recheck']) && empty($queue['recheckDone'])) {
+					$scan->setPhase('recheck');
+				}
 			}
 		} catch (\Throwable $e) {
 			$this->logger->error('NetBase scan failed: ' . $e->getMessage(), ['exception' => $e, 'app' => 'netbase']);
@@ -322,7 +342,7 @@ class ScanService {
 		// So confirm the addresses on file with a quick TCP touch (no range
 		// walk): the ones still here answer and are marked online, the rest stay
 		// offline. This is what makes a re-scan's online/offline current.
-		$this->confirmLiveness($queue);
+		$this->confirmLiveness($queue, $options);
 		$total = max(1, count($queue['ips'] ?? []));
 		$scan->setCursor($scan->getTotal());
 		$this->progress($scan, 'arp', $total, $total);
@@ -381,7 +401,7 @@ class ScanService {
 			// known device that is now off leaves a stale entry the walk does
 			// not clear. Confirm the on-file addresses by TCP so the gone ones
 			// drop offline rather than lingering on their old MAC.
-			$this->confirmLiveness($queue);
+			$this->confirmLiveness($queue, $options);
 			$queue['idx'] = 0;
 			$scan->setPhase($options['names'] ? 'names' : ($options['ports'] ? 'ports' : 'rdns'));
 		}
@@ -849,7 +869,7 @@ class ScanService {
 	 * reliable, root-free test is whether the host answers a connection at all
 	 * (open or refused). Off-link addresses are left to what they announce.
 	 */
-	private function confirmLiveness(array &$queue): void {
+	private function confirmLiveness(array &$queue, array $options): void {
 		$ips = $queue['ips'] ?? [];
 		foreach ($this->devices->findAll() as $d) {
 			$ip = (string)$d->getIp();
@@ -863,6 +883,17 @@ class ScanService {
 			$t = microtime(true);
 			$up = $this->discovery->alive($near);
 			$this->devices->markOnline($up);
+			// The touch made the kernel ask each of them for its MAC, so the
+			// table now says who is at each address. Read it before anything is
+			// written by address: a container that came back with a new MAC, or
+			// on another container's address, is sorted out here, and the ports
+			// found next go to the right row. Without this read, a port scan with
+			// an empty table wrote one container's ports onto another's row
+			// (GitHub #3).
+			if ($up !== []) {
+				$this->absorbNeighbours($queue, $options);
+			}
+			$this->planRecheck($queue, array_values(array_diff($near, $up)));
 			// A device that answered is here now, so the phases that follow (the
 			// ports, the names) cover it too, as long as it lies in the range.
 			// Only those in the ARP table used to: after a restart a container
@@ -889,6 +920,117 @@ class ScanService {
 			$this->noteReach('beyond-link check of the addresses on file', $beyond, $reached);
 			$this->absorbReached($queue, $reached);
 		}
+	}
+
+	/**
+	 * Note the addresses to touch once more at the end of the scan: silent now,
+	 * but still in the ARP table with the MAC of a device whose MAC may change.
+	 *
+	 * The kernel keeps a neighbour entry it no longer needs (STALE) for as
+	 * long as the table is small, and sends to that MAC first. So the first
+	 * scan after a container restarted reached the old MAC, heard nothing, and
+	 * the container looked gone. By the end of the scan the kernel has given up
+	 * on the old MAC, and one more touch finds the container on its new one.
+	 * NetBase runs without root and cannot clear the entry itself. A device
+	 * with a MAC burned into its card is not touched again: if it is silent, it
+	 * is off, and waiting for it would only slow every scan down.
+	 *
+	 * @param list<string> $silent
+	 */
+	private function planRecheck(array &$queue, array $silent): void {
+		if ($silent === []) {
+			return;
+		}
+		$table = $this->discovery->neighbours();
+		$ips = [];
+		foreach ($silent as $ip) {
+			$ip = (string)$ip;
+			$entry = $table[$ip] ?? null;
+			if ($entry === null || ($entry['mac'] ?? '') === '' || !self::inPlan($queue['plan'] ?? [], $ip)) {
+				continue;
+			}
+			if (in_array(strtoupper((string)($entry['state'] ?? '')), ['FAILED', 'INCOMPLETE'], true)) {
+				continue;
+			}
+			$row = $this->devices->findByIp($ip);
+			if ($row !== null && $this->macMayChange($row)) {
+				$ips[] = $ip;
+			}
+		}
+		if ($ips === []) {
+			return;
+		}
+		$queue['recheck'] = array_values(array_unique(array_merge($queue['recheck'] ?? [], $ips)));
+		$queue['recheckAt'] = microtime(true) + self::RECHECK_AFTER;
+		$this->note('silent, on a MAC that may have changed, to be touched again at the end: ' . self::someIps($ips));
+	}
+
+	/**
+	 * The last step when planRecheck() noted anything: touch those addresses
+	 * once more, read the ARP table (which settles who answers there now, see
+	 * upsert()), and check the ports of those that answered.
+	 */
+	private function stepRecheck(ScanEntity $scan, array &$queue, array $options, float $deadline): void {
+		$left = (float)($queue['recheckAt'] ?? 0) - microtime(true);
+		if ($left > 0) {
+			usleep((int)(min($left, max(0.0, $deadline - microtime(true))) * 1000000));
+			if ((float)($queue['recheckAt'] ?? 0) > microtime(true)) {
+				return;
+			}
+		}
+		$ips = $queue['recheck'] ?? [];
+		$t = microtime(true);
+		$up = $ips !== [] ? $this->discovery->alive($ips) : [];
+		$this->note(sprintf('second touch of %d silent addresses: %d answered (%d ms): %s', count($ips), count($up),
+			(int)round((microtime(true) - $t) * 1000), self::someIps($up)));
+		if ($up !== []) {
+			$this->devices->markOnline($up);
+			$this->absorbNeighbours($queue, $options);
+			$ports = $options['ports'] ? $this->portsFor($options) : [];
+			// The short lists only: the whole range would take minutes per device.
+			if ($ports !== [] && count($ports) <= count(DiscoveryService::DETAILED_PORTS)) {
+				$open = $this->discovery->tcpSweep(array_values($up), $ports, (float)$options['portWait']);
+				foreach ($up as $ip) {
+					$this->upsert((string)$ip, null, ['ports' => $open[$ip] ?? [], 'portsTested' => array_flip($ports)]);
+				}
+			}
+		}
+		// Those that kept silent: by now the kernel has asked them for their MAC
+		// and heard nothing (FAILED, or the entry is gone), so they are not here,
+		// though an entry the kernel still trusted set them online at the start
+		// of the scan. A device that only keeps its ports shut still answers the
+		// kernel, keeps its entry, and stays online.
+		$silent = array_values(array_diff($ips, $up));
+		if ($silent !== []) {
+			$table = $this->discovery->neighbours();
+			$gone = [];
+			foreach ($silent as $ip) {
+				$entry = $table[$ip] ?? null;
+				if ($entry === null || ($entry['mac'] ?? '') === ''
+					|| in_array(strtoupper((string)($entry['state'] ?? '')), ['FAILED', 'INCOMPLETE'], true)) {
+					$row = $this->devices->findByIp($ip);
+					if ($row !== null) {
+						$gone[] = (int)$row->getId();
+					}
+				}
+			}
+			if ($gone !== []) {
+				$this->devices->markOffline($gone);
+				$this->note('no answer to the second touch nor to the kernel, set offline: ' . count($gone));
+			}
+		}
+		$queue['recheckDone'] = true;
+		$scan->setPhase('done');
+	}
+
+	/** Whether this device's MAC may change: a random one, or a device a person marked as a container. */
+	private function macMayChange(DeviceEntity $d): bool {
+		$type = strtolower(trim((string)$d->getDtype()));
+		if (self::typeChosen($d) && in_array($type, ['container', 'コンテナ'], true)) {
+			return true;
+		}
+		$mac = (string)$d->getMac();
+		return $mac !== '' && $this->oui->describe($mac)['local'];
 	}
 
 	/** One line of the diagnosis for a reachBeyond() call. */
@@ -953,11 +1095,12 @@ class ScanService {
 			$this->note('ARP table read: ' . count($table) . ' entries (' . ($parts !== [] ? implode(', ', $parts) : 'none')
 				. '), ' . count($inPlan) . ' of them in the range: ' . self::someIps($inPlan));
 		}
+		$names = $this->namesOfNewMacs($table, $options);
 		foreach ($table as $ip => $entry) {
 			if (($options['interface'] ?? '') !== '' && $entry['interface'] !== $options['interface']) {
 				continue;
 			}
-			$this->upsert($ip, $entry['mac'], [
+			$update = [
 				'interface' => $entry['interface'],
 				'source' => 'arp',
 				// A stale ARP entry (a device powered off but not yet evicted)
@@ -965,12 +1108,127 @@ class ScanService {
 				// neighbour the kernel has confirmed lately does. Older readers
 				// without state say reachable=true, preserving prior behaviour.
 				'present' => $entry['reachable'] ?? true,
-			]);
+			];
+			if (isset($names[(string)$ip])) {
+				$update['rdns'] = $names[(string)$ip];
+				$update['source'] = 'arp,rdns';
+			}
+			$this->upsert($ip, $entry['mac'], $update);
 			if (!isset($known[$ip])) {
 				$queue['ips'][] = $ip;
 				$known[$ip] = true;
 			}
 		}
+	}
+
+	/**
+	 * The names of the addresses that now answer with a MAC never seen before,
+	 * where a row with another MAC holds the address.
+	 *
+	 * That is what a container looks like after a restart: Docker 28 and Podman
+	 * give it a new random MAC every time, and the address may be another
+	 * container's from before. Its name is what stays, and the DNS of the
+	 * container network gives it for the address in a few milliseconds. Asked
+	 * here, before the row is written, so upsert() can tell at once whether it
+	 * is the same device (same name) or another one (its own name, so what a
+	 * person wrote goes to the right row). Only "Scan the network" used to ask
+	 * for names, so after "Port scan" a restarted container showed as a new,
+	 * unnamed device (GitHub #3).
+	 *
+	 * @param array<string, array> $table the ARP table
+	 * @return array<string, string> address => name
+	 */
+	private function namesOfNewMacs(array $table, array $options): array {
+		$ask = [];
+		foreach ($table as $ip => $entry) {
+			$mac = strtolower((string)($entry['mac'] ?? ''));
+			if ($mac === '' || (($options['interface'] ?? '') !== '' && $entry['interface'] !== $options['interface'])) {
+				continue;
+			}
+			if ($this->devices->findByKey($mac) !== null) {
+				continue;
+			}
+			$was = $this->devices->findByIp((string)$ip);
+			if ($was !== null && ($was->getMac() ?? '') !== '' && strtolower((string)$was->getMac()) !== $mac) {
+				$ask[] = (string)$ip;
+			}
+		}
+		if ($ask === []) {
+			return [];
+		}
+		$t = microtime(true);
+		$names = [];
+		foreach ($this->discovery->reverseDns(array_slice($ask, 0, self::NEW_MAC_NAMES)) as $ip => $name) {
+			if (!in_array(strtolower((string)$name), ['_gateway', 'localhost', 'localhost.localdomain'], true)) {
+				$names[(string)$ip] = (string)$name;
+			}
+		}
+		$this->note(sprintf('new MAC on an address on file: %d, names asked (%d ms): %s', count($ask),
+			(int)round((microtime(true) - $t) * 1000),
+			$names === [] ? 'none answered' : implode(', ', array_map(static fn ($ip, $n) => $ip . ' ' . $n, array_keys($names), $names))));
+		return $names;
+	}
+
+	/**
+	 * Whether the device now on an address, with a MAC unlike the row's, is the
+	 * device of that row: it gives the same name as the row has.
+	 *
+	 * Only for a device whose MAC says it may change — a random MAC (a
+	 * container, a phone's private address) — or one a person marked as a
+	 * container. A MAC burned into a network card does not change, so another
+	 * one on the address is another machine, even with the same name (two
+	 * "raspberrypi"). A name made from the address (192-168-1-5.example) stays
+	 * with the address whoever holds it, so it proves nothing.
+	 */
+	private function sameDeviceByName(DeviceEntity $was, string $mac, string $ip, array $update): bool {
+		$type = strtolower(trim((string)$was->getDtype()));
+		$markedContainer = self::typeChosen($was) && in_array($type, ['container', 'コンテナ'], true);
+		if (!$markedContainer && !$this->oui->describe($mac)['local']) {
+			return false;
+		}
+		$now = '';
+		foreach (['rdns', 'hostname', 'mdns'] as $field) {
+			$now = self::nameKey((string)($update[$field] ?? ''), $ip);
+			if ($now !== '') {
+				break;
+			}
+		}
+		if ($now === '') {
+			return false;
+		}
+		$extra = $was->getExtra() ? (json_decode((string)$was->getExtra(), true) ?: []) : [];
+		foreach ([(string)$was->getHostname(), (string)($extra['rdns'] ?? ''), (string)($extra['mdns'] ?? '')] as $name) {
+			if (self::nameKey($name, $ip) === $now) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * A name as compared to tell a device by: its first label, in lower case
+	 * ("mariadb00.lg.net" and "MARIADB00" are one name). Empty for no name and
+	 * for a name made from the address itself, which says nothing about which
+	 * device holds the address.
+	 */
+	public static function nameKey(string $name, string $ip): string {
+		$name = strtolower(rtrim(trim($name), '.'));
+		if ($name === '' || in_array($name, ['_gateway', 'localhost', 'localhost.localdomain'], true)) {
+			return '';
+		}
+		$octets = explode('.', $ip);
+		if (count($octets) === 4) {
+			$numbers = preg_split('/\D+/', $name, -1, PREG_SPLIT_NO_EMPTY) ?: [];
+			$numbers = array_map(static fn ($n) => (string)(int)$n, $numbers);
+			if (in_array($octets[3], $numbers, true) && in_array($octets[2], $numbers, true)) {
+				return '';
+			}
+			if (str_contains($name, vsprintf('%02x%02x%02x%02x', array_map('intval', $octets)))) {
+				return '';
+			}
+		}
+		$first = explode('.', $name)[0];
+		return $first === $ip ? '' : $first;
 	}
 
 	/**
@@ -1003,6 +1261,14 @@ class ScanService {
 					$byIp->setDkey($key);
 					$byIp->setMac($mac);
 				}
+				$device = $byIp;
+			} elseif ($byIp !== null && $mac !== null && $this->sameDeviceByName($byIp, $mac, $ip, $update)) {
+				// Another MAC, but the same name: the same device, back with a new
+				// MAC (a restarted container). It keeps its row — the name, the
+				// type, the notes and the ports — and only the MAC is new.
+				$this->note($ip . ': new MAC ' . $mac . ' (was ' . (string)$byIp->getMac() . '), same name ' . (string)$byIp->getHostname() . ': the same device, its row is kept');
+				$byIp->setDkey($key);
+				$byIp->setMac($mac);
 				$device = $byIp;
 			}
 		}

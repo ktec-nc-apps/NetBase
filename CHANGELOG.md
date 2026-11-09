@@ -2,6 +2,39 @@
 
 All notable changes to NetBase are documented here.
 
+## 0.9.14 — 2026-11-09
+
+Containers are now told apart by their names, not only by their MAC addresses (GitHub issue #3).
+
+Docker Engine 28 and later, and Podman, give a container a new random MAC address each time it starts, and a restart may hand it another container's address. NetBase told devices apart by MAC address alone, so a restarted container looked like a new device.
+
+### Fixed
+
+- **After "Port scan", restarted containers showed as new, unnamed devices.** When an address answers with a MAC address never seen before, NetBase now asks for its name at once — the DNS of a container network answers in milliseconds — and a device that gives the same name as before keeps its row, with its name, type, notes and ports; only the MAC address is updated. Until now the name was asked only by "Scan the network", so after "Port scan" the containers lost what had been written on them until the next full scan.
+- **When restarted containers traded addresses, one container's ports were written on another's row.** NetBase now reads the ARP table again after checking which devices answer, so it knows which device is at each address before it writes any ports.
+- **The first scan after a restart could still see the old MAC address.** Linux keeps sending to the MAC address it has on file for about eight seconds before it asks the network again, so a restarted container did not answer and looked gone. Devices whose MAC address may change and that kept silent are now checked once more at the end of the scan, and are found on their new MAC address. Only those devices are checked again, so this adds at most about nine seconds, and only when there is such a device.
+- **Where the `ip` command is missing (as in the Nextcloud container image), a device that had gone could still show as online.** An ARP table entry the kernel had given up on still showed the old MAC address and was counted as a device present now. Such entries are now ignored.
+
+### Changed
+
+- **Which devices are told apart by name.** Devices with a random MAC address (containers, and phones using a private address), and devices whose type is set to "Container" by hand. A MAC address burned into a network card does not change, so another MAC address there is still another machine, even with the same name — two devices both called "raspberrypi" stay apart. A name made from the address itself (such as 192-168-1-5.example.net) stays with the address whoever holds it, so it is not used to tell devices apart.
+
+（日本語）
+コンテナを、MAC アドレスだけでなく名前でも見分けるようにしました（GitHub の Issue #3）。
+
+Docker Engine 28 以降と Podman は、コンテナを起動するたびに新しい MAC アドレスを乱数で割り当てます。起動し直したときに、別のコンテナが使っていたアドレスになることもあります。NetBase は MAC アドレスだけで機器を見分けていたため、起動し直したコンテナを新しい機器と取り違えていました。
+
+### 修正
+
+- **「ポートスキャン」の後、起動し直したコンテナが名前のない新しい機器になっていました。** あるアドレスから見たことのない MAC アドレスで応答があったら、その場で名前を問い合わせるようにしました。コンテナのネットワークの DNS なら数ミリ秒で答えます。前と同じ名前なら同じ機器として扱い、名前・種類・メモ・ポートはそのまま残し、MAC アドレスだけを更新します。これまでは「ネットワークをスキャン」でしか名前を問い合わせなかったため、「ポートスキャン」の後は、次に全体をスキャンするまで、コンテナに書いた内容が見えなくなっていました。
+- **起動し直したコンテナどうしでアドレスが入れ替わると、別のコンテナのポートが書き込まれていました。** 応答の確認の後に ARP 表を読み直し、どのアドレスにどの機器がいるかを確かめてから、ポートを書き込むようにしました。
+- **起動し直した直後の 1 回目のスキャンでは、古い MAC アドレスが残っていることがありました。** Linux は、記録している MAC アドレスに 8 秒ほど送り続けてから、ネットワークに問い合わせ直します。その間はコンテナが応答せず、無くなったように見えていました。今は、MAC アドレスが変わり得る機器のうち応答しなかったものを、スキャンの最後にもう一度確かめ、新しい MAC アドレスで見つけます。確かめ直すのはこうした機器だけなので、増える時間は長くて 9 秒ほどで、該当する機器があるときだけです。
+- **`ip` コマンドが無い環境（Nextcloud のコンテナイメージなど）で、無くなった機器がオンラインのまま表示されることがありました。** カーネルが見切りを付けた ARP 表の項目にも古い MAC アドレスが残っており、それを今いる機器として数えていました。今は、こうした項目を数えません。
+
+### 変更
+
+- **名前で見分ける機器。** MAC アドレスが乱数の機器（コンテナや、プライベートアドレスを使うスマートフォン）と、種類を手で「コンテナ」にした機器です。ネットワークカードに焼き込まれた MAC アドレスは変わらないので、そこに別の MAC アドレスが現れたら、名前が同じでも別の機械として扱います。たとえば「raspberrypi」という名前の機器が 2 台あっても、1 台にはまとめません。また、「192-168-1-5.example.net」のようにアドレスから作られた名前は、そのアドレスに誰がいても変わらないので、見分けには使いません。
+
 ## 0.9.13 — 2026-11-08
 
 Fixes to "Port scan" after containers are restarted, reported on GitHub (issue #3).
