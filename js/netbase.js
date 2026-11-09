@@ -704,92 +704,89 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
               <button class="vt" :class="{on: deviceView==='card'}" @click="setDeviceView('card')" :title="t('Card view')"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span class="vt-lb">{{ t('Card view') }}</span></button>
           </div>
           <div class="card scan-card" v-if="allowed('scan')">
-            <!-- What is being scanned, before anything about how. The two are
-                 different jobs: one walks every address in the network, the
-                 other starts from what this server has already met. -->
-            <div class="scan-what">
-              <span class="fl-label">{{ t('What to scan') }}</span>
-              <label :title="t('Starts from the ARP table and what announces itself, instead of walking every address. Seconds rather than minutes, and everything found is still asked for its name and its open ports — but a device that has never spoken to this server and does not announce itself will not be found.')">
-                <input type="radio" value="arp" v-model="scanWhat"> {{ t('The ARP table only') }}
-              </label>
-              <label :title="t('Walks every address in the networks below. Thorough, and the slow one.')">
-                <input type="radio" value="network" v-model="scanWhat"> {{ t('The whole network') }}
-              </label>
-              <!-- 一覧とカードの切り替え（上の solo と同じもの）。行の右端に寄せ、入りきらなければ次の行へ回る。 -->
+            <!-- Two boxes, one per button, each holding the settings that button
+                 uses (owner, 2026-11-09: which setting belongs to the ARP side and
+                 which to the port scan was not clear). "Refresh devices" finds the
+                 devices — from the ARP table or by walking the network — and asks
+                 their names; "Port scan" reads the open ports of those already
+                 found and uses none of the other box's settings. -->
+            <div class="scan-groups">
+              <div class="scan-group">
+                <div class="scan-actions">
+                  <button class="btn primary" :disabled="scanning" :class="{working: scanning && scanKind === 'refresh'}" @click="startScan({ ports: false })" :title="t('Finds devices and rechecks which are online. Does not scan ports, so it is fast.')">{{ t('Refresh devices') }}</button>
+                  <!-- Clearing the neighbour (ARP) table needs privileges NetBase does
+                       not have; the button only works once an administrator installs a
+                       small helper, and the ? explains how. -->
+                  <span class="arp-clear">
+                    <button class="btn" :disabled="scanning || !(status.arpFlush && status.arpFlush.available) || busy.arpflush" :class="{working: busy.arpflush}" @click="clearArp" :title="t('Forget every remembered address so a refresh shows only what answers now. Stale entries (a device switched off) disappear. Needs a helper an administrator installs.')">{{ t('Clear the ARP table') }}</button>
+                    <button v-if="!(status.arpFlush && status.arpFlush.available)" class="btn xs ib arp-help-btn" :title="t('How to switch this on')" :aria-label="t('How to switch this on')" @click="arpHelp = true">?</button>
+                  </span>
+                </div>
+                <div class="scan-what">
+                  <span class="fl-label">{{ t('What to scan') }}</span>
+                  <label :title="t('Starts from the ARP table and what announces itself, instead of walking every address. Seconds rather than minutes, and everything found is still asked for its name and its open ports — but a device that has never spoken to this server and does not announce itself will not be found.')">
+                    <input type="radio" value="arp" v-model="scanWhat"> {{ t('The ARP table only') }}
+                  </label>
+                  <label :title="t('Walks every address in the networks below. Thorough, and the slow one.')">
+                    <input type="radio" value="network" v-model="scanWhat"> {{ t('The whole network') }}
+                  </label>
+                </div>
+                <div class="scan-row" v-if="scanWhat === 'network'">
+                  <label class="fl" v-if="scanWhat === 'network'" :title="t('Which networks to look at. Left blank, it uses the ones this server is on. Several can be given, separated by commas.')">
+                    <span class="fl-label">{{ t('Networks to scan') }}</span>
+                    <input v-model="scanTargets" :placeholder="suggestedPlaceholder">
+                  </label>
+                  <label class="fl narrow pace" v-if="scanWhat === 'network'" :title="t('How quickly the addresses are walked through. A slower speed finds more Wi-Fi devices, because a wireless network carries broadcasts slowly: on a /16 with ten devices, 15,000 a second found six of them and 1,500 found all ten.')">
+                    <span class="fl-label">{{ t('Scan speed') }}</span>
+                    <select v-model="pace">
+                      <option v-for="r in paceRates" :key="r" :value="String(r)">{{ paceLabel(r) }}</option>
+                    </select>
+                  </label>
+                </div>
+                <div class="scan-opts">
+                  <label :title="t('Asks each address for its own name, over NetBIOS and mDNS.')"><input type="checkbox" v-model="opts.names"> {{ t('Ask devices for their names') }}</label>
+                  <label :title="t('Listens for the devices that announce themselves — mDNS, WS-Discovery and SSDP. It finds devices the sweep missed.')"><input type="checkbox" v-model="opts.multicast"> {{ t('Multicast discovery') }}</label>
+                  <label :title="t('Asks the DNS server what name it has on record for each address.')"><input type="checkbox" v-model="opts.rdns"> {{ t('Reverse DNS') }}</label>
+                </div>
+              </div>
+              <div class="scan-group">
+                <div class="scan-actions">
+                  <button class="btn primary" :disabled="scanning" :class="{working: scanning && scanKind === 'ports'}" @click="startScan({ ports: true, names: false, multicast: false, rdns: false, arpOnly: true })" :title="t('Checks the open ports of the devices already found, without repeating the name and multicast discovery a refresh does.')">{{ t('Port scan') }}</button>
+                </div>
+                <div class="scan-sub">
+                  <label :title="t('How many ports to try on each device.')">
+                    <span class="opt-label">{{ t('Ports to try') }}</span>
+                    <select v-model="opts.portScan">
+                      <option value="common">{{ t('Common ports') }} ({{ portCount('common') }})</option>
+                      <option value="detailed">{{ t('Detailed search') }} ({{ portCount('detailed') }})</option>
+                      <option value="wellKnown">{{ t('Well-known ports') }} ({{ portCount('wellKnown') }})</option>
+                      <option value="high">{{ t('High ports') }} ({{ portCount('high') }})</option>
+                      <option value="all">{{ t('Every port') }} ({{ portCount('all') }})</option>
+                    </select>
+                  </label>
+                  <!-- The number that actually decides how long this takes. -->
+                  <label :title="t('How long to wait for a port to answer. A port that refuses is instant whatever this is; the wait only applies to one that says nothing at all, which is what a firewall and a sleeping device both look like. Waiting less is quicker and misses more.')">
+                    <span class="opt-label">{{ t('Wait for an answer') }}</span>
+                    <select v-model.number="opts.portWait">
+                      <option v-for="w in portWaits" :key="w" :value="w">{{ waitLabel(w) }}</option>
+                    </select>
+                  </label>
+                </div>
+              </div>
+            </div>
+            <!-- What belongs to neither box: stopping a scan, the record of a
+                 scan, a device added by hand, and how the list is shown. -->
+            <div class="scan-foot">
+              <button class="btn" v-if="scanning" @click="cancelScan">{{ t('Stop') }}</button>
+              <label class="scan-diag" :title="t('Records what the next scan does, step by step, and shows it when the scan ends, to copy into a report. Device names and MAC addresses are left out.')"><input type="checkbox" v-model="scanDiag"> {{ t('Diagnose the scan') }}</label>
+              <!-- For a device the scan cannot see: no port to probe, or NetBase in a
+                   container whose bridge hides the LAN (Nextcloud AIO, Docker). -->
+              <button class="btn" :disabled="scanning" @click="openAddDevice" :title="t('Add a device the scan does not find, by its IP address.')">{{ t('Add by address') }}</button>
+              <!-- 一覧とカードの切り替え（上の solo と同じもの）。行の右端に寄せる。 -->
               <div class="view-toggle dev-vt" role="group" :aria-label="t('View')">
                 <button class="vt" :class="{on: deviceView==='list'}" @click="setDeviceView('list')" :title="t('List view')"><svg viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg><span class="vt-lb">{{ t('List view') }}</span></button>
                 <button class="vt" :class="{on: deviceView==='card'}" @click="setDeviceView('card')" :title="t('Card view')"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span class="vt-lb">{{ t('Card view') }}</span></button>
               </div>
-            </div>
-            <div class="scan-row">
-              <label class="fl" v-if="scanWhat === 'network'" :title="t('Which networks to look at. Left blank, it uses the ones this server is on. Several can be given, separated by commas.')">
-                <span class="fl-label">{{ t('Networks to scan') }}</span>
-                <input v-model="scanTargets" :placeholder="suggestedPlaceholder">
-              </label>
-              <!-- Two different things, named as the two different things they
-                   are. This one walks the addresses; the wait beneath is what a
-                   port that says nothing costs, and it is the wait, not this,
-                   that decides how long a long scan takes. -->
-              <label class="fl narrow pace" v-if="scanWhat === 'network'" :title="t('How quickly the addresses are walked through. A slower speed finds more Wi-Fi devices, because a wireless network carries broadcasts slowly: on a /16 with ten devices, 15,000 a second found six of them and 1,500 found all ten.')">
-                <span class="fl-label">{{ t('Scan speed') }}</span>
-                <select v-model="pace">
-                  <option v-for="r in paceRates" :key="r" :value="String(r)">{{ paceLabel(r) }}</option>
-                </select>
-              </label>
-              <!-- Two buttons for two jobs. The first re-checks which devices
-                   are online and is fast because it skips the ports; the second
-                   is the full sweep that also reads each device's open ports.
-                   The per-device "every port" search lives in a device's own
-                   properties, and stays there. -->
-              <template v-if="!scanning">
-                <button class="btn primary" @click="startScan({ ports: false })" :title="t('Finds devices and rechecks which are online. Does not scan ports, so it is fast.')">{{ t('Refresh devices') }}</button>
-                <button class="btn" @click="startScan({ ports: true, names: false, multicast: false, rdns: false, arpOnly: true })" :title="t('Checks the open ports of the devices already found, without repeating the name and multicast discovery a refresh does.')">{{ t('Port scan') }}</button>
-                <!-- Clearing the neighbour (ARP) table needs privileges NetBase does
-                     not have; the button only works once an administrator installs a
-                     small helper, and the ? explains how. -->
-                <span class="arp-clear">
-                  <button class="btn" :disabled="!(status.arpFlush && status.arpFlush.available) || busy.arpflush" :class="{working: busy.arpflush}" @click="clearArp" :title="t('Forget every remembered address so a refresh shows only what answers now. Stale entries (a device switched off) disappear. Needs a helper an administrator installs.')">{{ t('Clear the ARP table') }}</button>
-                  <button v-if="!(status.arpFlush && status.arpFlush.available)" class="btn xs ib arp-help-btn" :title="t('How to switch this on')" :aria-label="t('How to switch this on')" @click="arpHelp = true">?</button>
-                </span>
-                <!-- For a device the scan cannot see: no port to probe, or NetBase in a
-                     container whose bridge hides the LAN (Nextcloud AIO, Docker). -->
-                <button class="btn" @click="openAddDevice" :title="t('Add a device the scan does not find, by its IP address.')">{{ t('Add by address') }}</button>
-              </template>
-              <button class="btn primary" v-else disabled>{{ t('Scanning…') }}</button>
-              <button class="btn" v-if="scanning" @click="cancelScan">{{ t('Stop') }}</button>
-            </div>
-            <!-- The four steps of a scan, in the order they happen, so the row
-                 reads as what the scan is about to do. -->
-            <div class="scan-opts">
-              <label :title="t('Asks each address for its own name, over NetBIOS and mDNS.')"><input type="checkbox" v-model="opts.names"> {{ t('Ask devices for their names') }}</label>
-              <label :title="t('Listens for the devices that announce themselves — mDNS, WS-Discovery and SSDP. It finds devices the sweep missed.')"><input type="checkbox" v-model="opts.multicast"> {{ t('Multicast discovery') }}</label>
-              <label :title="t('Asks the DNS server what name it has on record for each address.')"><input type="checkbox" v-model="opts.rdns"> {{ t('Reverse DNS') }}</label>
-              <!-- For a scan that does not do what it should: a record of what it
-                   did, step by step, shown when it ends, to copy into a report. -->
-              <label :title="t('Records what the next scan does, step by step, and shows it when the scan ends, to copy into a report. Device names and MAC addresses are left out.')"><input type="checkbox" v-model="scanDiag"> {{ t('Diagnose the scan') }}</label>
-            </div>
-            <!-- The settings for the "Port scan" button, kept under the row so
-                 a depth can be chosen before it is pressed. They do nothing for
-                 "Refresh devices", which never scans ports. -->
-            <div class="scan-sub">
-              <span class="scan-sub-head">{{ t('Port scan') }}</span>
-              <label :title="t('How many ports to try on each device.')">
-                <span class="opt-label">{{ t('Ports to try') }}</span>
-                <select v-model="opts.portScan">
-                  <option value="common">{{ t('Common ports') }} ({{ portCount('common') }})</option>
-                  <option value="detailed">{{ t('Detailed search') }} ({{ portCount('detailed') }})</option>
-                  <option value="wellKnown">{{ t('Well-known ports') }} ({{ portCount('wellKnown') }})</option>
-                  <option value="high">{{ t('High ports') }} ({{ portCount('high') }})</option>
-                  <option value="all">{{ t('Every port') }} ({{ portCount('all') }})</option>
-                </select>
-              </label>
-              <!-- The number that actually decides how long this takes. -->
-              <label :title="t('How long to wait for a port to answer. A port that refuses is instant whatever this is; the wait only applies to one that says nothing at all, which is what a firewall and a sleeping device both look like. Waiting less is quicker and misses more.')">
-                <span class="opt-label">{{ t('Wait for an answer') }}</span>
-                <select v-model.number="opts.portWait">
-                  <option v-for="w in portWaits" :key="w" :value="w">{{ waitLabel(w) }}</option>
-                </select>
-              </label>
             </div>
             <div class="progress" v-if="scanning && scan">
               <div class="phase-line"><span class="phase-step">{{ phaseLabel(scan) }}</span></div>
@@ -4218,6 +4215,8 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         // deliberate thing to ask for rather than the first thing that happens.
         opts: { names: true, multicast: true, ports: true, portScan: 'common', portWait: 0.9, rdns: true },
         scanDiag: false,
+        // Which button started the running scan, so that button shows it is working.
+        scanKind: 'refresh',
         openPort: '', openScheme: 'http',
         // One device asked about itself: which search is running, how far it
         // has got, and what it came back with.
@@ -5998,6 +5997,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         // The override wins over everything, including arpOnly, so "Port scan"
         // can turn the discovery phases off and not repeat what a refresh did.
         const options = { ...this.opts, pace: this.pace, arpOnly: this.scanWhat === 'arp', diagnose: this.scanDiag, ...override };
+        this.scanKind = override.ports ? 'ports' : 'refresh';
         try {
           this.advice = await api('scan/advice?' + qs({ targets }));
           const r = await api('scan', { method: 'POST', body: JSON.stringify({ targets, options }) });

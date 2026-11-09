@@ -375,6 +375,29 @@ html.nb-col-resizing, html.nb-col-resizing * { cursor: col-resize !important; -w
 #netbase-root .check { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; font-size: 14px; }
 
 /* ---------- scan card ---------- */
+/* One box per button, holding the button and the settings it uses — so it
+   can be seen which settings are the ARP side's ("Refresh devices", "Clear
+   the ARP table") and which the port scan's (owner, 2026-11-09). Side by
+   side while there is room, one under the other when there is not. */
+#netbase-root .scan-groups { display: flex; flex-wrap: wrap; gap: 12px; align-items: stretch; }
+#netbase-root .scan-group {
+  flex: 1 1 340px; min-width: 0;
+  display: flex; flex-direction: column; gap: 12px;
+  border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px;
+  background: var(--surface);
+}
+#netbase-root .scan-group .scan-what { margin-bottom: 0; }
+#netbase-root .scan-group .scan-opts { margin-top: 0; }
+/* The port settings as a small form: names in one column, choices in the next. */
+#netbase-root .scan-group .scan-sub { display: grid; grid-template-columns: max-content minmax(0, 18em); gap: 8px 12px; align-items: center; }
+#netbase-root .scan-group .scan-sub label { display: contents; }
+#netbase-root .scan-group .scan-sub select { width: 100%; }
+#netbase-root .scan-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+#netbase-root .scan-actions .btn { min-height: 40px; }
+/* What belongs to neither box, under both; the view switch keeps to the right. */
+#netbase-root .scan-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; margin-top: 12px; }
+#netbase-root .scan-foot .scan-diag { display: flex; align-items: center; gap: 7px; font-size: 13.5px; color: var(--muted); }
+#netbase-root .scan-foot .dev-vt { margin-left: auto; }
 /* What is being scanned, chosen before anything about how. */
 #netbase-root .scan-what { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 16px; margin-bottom: 12px; }
 #netbase-root .scan-what label { display: inline-flex; align-items: center; gap: 7px; font-size: 13.5px; color: var(--text); }
@@ -401,8 +424,6 @@ html.nb-col-resizing, html.nb-col-resizing * { cursor: col-resize !important; -w
    so it reads as part of that choice rather than as two more of the row. */
 #netbase-root .scan-sub {
   display: flex; flex-wrap: wrap; align-items: center; gap: 8px 18px;
-  margin: 8px 0 0 26px; padding-left: 12px;
-  border-left: 2px solid var(--border);
 }
 #netbase-root .scan-sub .scan-sub-head { font-size: 12.5px; font-weight: 600; color: var(--muted); letter-spacing: .02em; }
 #netbase-root .scan-sub label { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 7px; font-size: 13.5px; color: var(--muted); max-width: 100%; min-width: 0; }

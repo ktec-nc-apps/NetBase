@@ -2,6 +2,18 @@
 
 All notable changes to NetBase are documented here.
 
+## 0.9.15 — 2026-11-09
+
+### Changed
+
+- **The scan buttons are grouped with their own settings.** "Refresh devices" and "Clear the ARP table" sit in one box with what they use: what to scan, asking devices for their names, multicast discovery and reverse DNS. "Port scan" sits in another box with the ports to try and the wait for an answer. Before, all the buttons stood in one row and the settings below them, so it was hard to tell which setting belonged to which button. "Diagnose the scan", "Add by address" and the view switch are under the two boxes.
+
+（日本語）
+
+### 変更
+
+- **スキャンのボタンを、それぞれの設定と一緒にまとめました。** 「機器一覧を更新」と「ARPテーブルをクリア」は、使う設定（スキャン対象・機器に名前を問い合わせる・マルチキャスト探索・逆引きDNS）と一緒に 1 つの枠に入れました。「ポートスキャン」は、調べるポートと応答を待つ時間と一緒に、別の枠に入れました。これまではボタンが 1 列に並び、設定がその下にまとめて置かれていたため、どの設定がどのボタンのものか分かりにくくなっていました。「調査の経過を記録」「アドレスで追加」と表示の切り替えは、2 つの枠の下に置きました。
+
 ## 0.9.14 — 2026-11-09
 
 Containers are now told apart by their names, not only by their MAC addresses (GitHub issue #3).
