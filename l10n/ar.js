@@ -2005,7 +2005,12 @@ OC.L10N.register(
         "Remove devices": "إزالة الأجهزة",
         "Read RegiBase": "قراءة RegiBase",
         "Run a shell command on this server": "تشغيل أمر صدفة على هذا الخادم",
-        "What was actually done": "ما تم تنفيذه فعلًا"
+        "What was actually done": "ما تم تنفيذه فعلًا",
+        "Environment report": "تقرير البيئة",
+        "For a problem report: what this server runs in, which networks it sees, what it may do, and the state of the device records. Nothing is scanned or changed. Made again after restarting containers, it also shows what changed between the two reports.": "للإبلاغ عن مشكلة: داخل أي بيئة يعمل هذا الخادم، وأي الشبكات يراها، وما المسموح له به، وحالة سجلات الأجهزة. لا يُفحص شيء ولا يُغيَّر. وإذا أُنشئ مرة أخرى بعد إعادة تشغيل الحاويات، فإنه يبيّن أيضًا ما تغيّر بين التقريرين.",
+        "Hide the last half of MAC addresses and public addresses": "إخفاء النصف الثاني من عناوين MAC والعناوين العامة",
+        "Make the report": "إنشاء التقرير",
+        "Making the report…": "جارٍ إنشاء التقرير…"
     },
     "nplurals=6; plural=(n==0 ? 0 : n==1 ? 1 : n==2 ? 2 : n%100>=3 && n%100<=10 ? 3 : n%100>=11 && n%100<=99 ? 4 : 5);"
 );

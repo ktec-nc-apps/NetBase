@@ -2005,7 +2005,12 @@ OC.L10N.register(
         "Remove devices": "Видалити пристрої",
         "Read RegiBase": "Прочитати RegiBase",
         "Run a shell command on this server": "Виконати команду оболонки на цьому сервері",
-        "What was actually done": "Що було зроблено насправді"
+        "What was actually done": "Що було зроблено насправді",
+        "Environment report": "Звіт про середовище",
+        "For a problem report: what this server runs in, which networks it sees, what it may do, and the state of the device records. Nothing is scanned or changed. Made again after restarting containers, it also shows what changed between the two reports.": "Для повідомлення про проблему: у чому працює цей сервер, які мережі він бачить, що йому дозволено і в якому стані записи про пристрої. Нічого не сканується і не змінюється. Якщо створити його знову після перезапуску контейнерів, він покаже, що змінилося між двома звітами.",
+        "Hide the last half of MAC addresses and public addresses": "Приховати другу половину MAC-адрес і публічних адрес",
+        "Make the report": "Створити звіт",
+        "Making the report…": "Створення звіту…"
     },
     "nplurals=4; plural=(n % 1 == 0 && n % 10 == 1 && n % 100 != 11 ? 0 : n % 1 == 0 && n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14) ? 1 : n % 1 == 0 && (n % 10 ==0 || (n % 10 >=5 && n % 10 <=9) || (n % 100 >=11 && n % 100 <=14 )) ? 2: 3);"
 );

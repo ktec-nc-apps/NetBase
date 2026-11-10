@@ -2,6 +2,18 @@
 
 All notable changes to NetBase are documented here.
 
+## 0.9.16 — 2026-11-10
+
+### Added
+
+- **Environment report, for problem reports.** The admin settings have a new "Environment report" section, and there is a command, `occ netbase:diagnose`. The report shows what the server runs in (native, Docker, Podman, AIO, snap), which networks it sees, what it may do (programs, sockets, capabilities), the ARP table now, and the state of the device records. Made again after restarting containers, it also shows what changed between the two reports: a new MAC address under the same name, an address now held by another device, a name that moved to another address. The last part says whether what is seen comes from how containers behave or points to a fault of NetBase. Nothing is scanned or changed. The last half of MAC addresses and public addresses is hidden unless you choose otherwise, so the report can be pasted into a GitHub issue as it is. Administrators only.
+
+（日本語）
+
+### 追加
+
+- **問題の報告に付ける「環境の報告」。** 管理者設定に「環境の報告」の欄を足し、コマンド `occ netbase:diagnose` も用意しました。報告には、サーバーが動いている環境（ネイティブ・Docker・Podman・AIO・snap）、見えているネットワーク、できること（使えるプログラム・ソケット・権限）、今の ARP テーブル、機器の記録の状態が出ます。コンテナを起動し直した後にもう一度作ると、2 回の報告の間で変わったことも出ます。同じ名前で MAC アドレスだけ変わった、アドレスが別の機器に移った、名前が別のアドレスへ移った、の 3 つです。最後に、見えている現象がコンテナの動きによるものか、NetBase の不具合を指しているかを書きます。スキャンはせず、記録も変えません。MAC アドレスと公開アドレスの後半は、指定しない限り隠すので、そのまま GitHub の Issue に貼れます。管理者だけが使えます。
+
 ## 0.9.15 — 2026-11-09
 
 ### Changed

@@ -106,4 +106,53 @@
 			say(String(error.message || error), 'err');
 		});
 	});
+	// The environment report: made on the server, shown here to copy into a problem report.
+	var diagRun = document.getElementById('nb-diag-run');
+	var diagCopy = document.getElementById('nb-diag-copy');
+	var diagOut = document.getElementById('nb-diag-out');
+	var diagStatus = document.getElementById('nb-diag-status');
+	diagRun.addEventListener('click', function () {
+		diagRun.disabled = true;
+		diagStatus.textContent = t('Making the report…');
+		diagStatus.className = 'nb-status';
+		fetch(BASE + '/api/diagnose', {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json', 'requesttoken': token() },
+			credentials: 'same-origin',
+			body: JSON.stringify({ mask: document.getElementById('nb-diag-mask').checked }),
+		}).then(function (response) {
+			return response.json().catch(function () { return {}; }).then(function (body) {
+				if (!response.ok || typeof body.text !== 'string') {
+					throw new Error((body && body.error) || response.statusText);
+				}
+				return body;
+			});
+		}).then(function (body) {
+			diagOut.value = body.text;
+			diagOut.hidden = false;
+			diagCopy.hidden = false;
+			diagStatus.textContent = '';
+		}).catch(function (error) {
+			diagStatus.textContent = String(error.message || error);
+			diagStatus.className = 'nb-status err';
+		}).then(function () {
+			diagRun.disabled = false;
+		});
+	});
+	diagCopy.addEventListener('click', function () {
+		diagOut.select();
+		var done = function () {
+			diagStatus.textContent = t('Copied');
+			diagStatus.className = 'nb-status ok';
+		};
+		if (navigator.clipboard && window.isSecureContext) {
+			navigator.clipboard.writeText(diagOut.value).then(done, function () {
+				document.execCommand('copy');
+				done();
+			});
+		} else {
+			document.execCommand('copy');
+			done();
+		}
+	});
 }());

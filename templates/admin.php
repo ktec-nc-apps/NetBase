@@ -129,6 +129,19 @@ declare(strict_types=1);
 			<span class="nb-dim"><?php p($l->t('Sweeping more addresses than this in one go makes the kernel log overflow warnings. Raise it with: sysctl -w net.ipv4.neigh.default.gc_thresh3=%s', [(string)max(8192, (int)$_['neighbourLimits']['gc3'] * 8)])); ?></span></li>
 	</ul>
 
+	<h3><?php p($l->t('Environment report')); ?></h3>
+	<p class="settings-hint"><?php p($l->t('For a problem report: what this server runs in, which networks it sees, what it may do, and the state of the device records. Nothing is scanned or changed. Made again after restarting containers, it also shows what changed between the two reports.')); ?></p>
+	<div class="nb-field nb-check">
+		<input type="checkbox" id="nb-diag-mask" class="checkbox" checked>
+		<label for="nb-diag-mask"><?php p($l->t('Hide the last half of MAC addresses and public addresses')); ?></label>
+	</div>
+	<div class="nb-actions">
+		<button id="nb-diag-run"><?php p($l->t('Make the report')); ?></button>
+		<button id="nb-diag-copy" hidden><?php p($l->t('Copy')); ?></button>
+		<span id="nb-diag-status" class="nb-status" role="status"></span>
+	</div>
+	<textarea id="nb-diag-out" class="nb-diag-out nb-mono" readonly hidden></textarea>
+
 	<h3><?php p($l->t('Optional components')); ?></h3>
 	<p class="settings-hint">
 		<?php p($l->t('NetBase runs without any of these. Each one adds a specific capability, and the command below is the one for this system (%s).', [$_['requirements']['packageManagerLabel'] ?: $l->t('package manager not detected')])); ?>

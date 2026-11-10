@@ -2004,7 +2004,12 @@
         "Remove devices": "Удалить устройства",
         "Read RegiBase": "Прочитать RegiBase",
         "Run a shell command on this server": "Выполнить команду оболочки на этом сервере",
-        "What was actually done": "Что было сделано на самом деле"
+        "What was actually done": "Что было сделано на самом деле",
+        "Environment report": "Отчёт об окружении",
+        "For a problem report: what this server runs in, which networks it sees, what it may do, and the state of the device records. Nothing is scanned or changed. Made again after restarting containers, it also shows what changed between the two reports.": "Для сообщения о проблеме: в чём работает этот сервер, какие сети он видит, что ему разрешено и в каком состоянии записи об устройствах. Ничего не сканируется и не меняется. Если создать его снова после перезапуска контейнеров, он покажет, что изменилось между двумя отчётами.",
+        "Hide the last half of MAC addresses and public addresses": "Скрыть вторую половину MAC-адресов и публичных адресов",
+        "Make the report": "Создать отчёт",
+        "Making the report…": "Создание отчёта…"
     },
     "pluralForm": "nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);"
 }

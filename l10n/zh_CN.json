@@ -2004,7 +2004,12 @@
         "Remove devices": "删除设备",
         "Read RegiBase": "读取 RegiBase",
         "Run a shell command on this server": "在此服务器上运行 Shell 命令",
-        "What was actually done": "实际执行的操作"
+        "What was actually done": "实际执行的操作",
+        "Environment report": "环境报告",
+        "For a problem report: what this server runs in, which networks it sees, what it may do, and the state of the device records. Nothing is scanned or changed. Made again after restarting containers, it also shows what changed between the two reports.": "用于报告问题：这台服务器在什么环境中运行、能看到哪些网络、可以做什么，以及设备记录的状态。不扫描也不更改任何内容。重启容器后再生成一次，还会显示两份报告之间的变化。",
+        "Hide the last half of MAC addresses and public addresses": "隐藏 MAC 地址和公网地址的后半部分",
+        "Make the report": "生成报告",
+        "Making the report…": "正在生成报告…"
     },
     "pluralForm": "nplurals=1; plural=0;"
 }

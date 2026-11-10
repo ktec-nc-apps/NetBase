@@ -2005,7 +2005,12 @@ OC.L10N.register(
         "Remove devices": "Xóa thiết bị",
         "Read RegiBase": "Đọc RegiBase",
         "Run a shell command on this server": "Chạy lệnh shell trên máy chủ này",
-        "What was actually done": "Những gì đã thực sự làm"
+        "What was actually done": "Những gì đã thực sự làm",
+        "Environment report": "Báo cáo môi trường",
+        "For a problem report: what this server runs in, which networks it sees, what it may do, and the state of the device records. Nothing is scanned or changed. Made again after restarting containers, it also shows what changed between the two reports.": "Dùng khi báo lỗi: máy chủ này chạy bên trong gì, thấy những mạng nào, được phép làm gì và tình trạng hồ sơ thiết bị. Không quét và không thay đổi gì. Nếu tạo lại sau khi khởi động lại các container, báo cáo cũng cho thấy những gì đã thay đổi giữa hai lần.",
+        "Hide the last half of MAC addresses and public addresses": "Ẩn nửa sau của địa chỉ MAC và địa chỉ công khai",
+        "Make the report": "Tạo báo cáo",
+        "Making the report…": "Đang tạo báo cáo…"
     },
     "nplurals=1; plural=0;"
 );

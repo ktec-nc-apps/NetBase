@@ -2005,7 +2005,12 @@ OC.L10N.register(
         "Remove devices": "기기 삭제",
         "Read RegiBase": "RegiBase 읽기",
         "Run a shell command on this server": "이 서버에서 셸 명령 실행",
-        "What was actually done": "실제로 수행한 작업"
+        "What was actually done": "실제로 수행한 작업",
+        "Environment report": "환경 보고서",
+        "For a problem report: what this server runs in, which networks it sees, what it may do, and the state of the device records. Nothing is scanned or changed. Made again after restarting containers, it also shows what changed between the two reports.": "문제를 보고할 때 사용합니다. 이 서버가 무엇 안에서 실행되는지, 어떤 네트워크가 보이는지, 무엇을 할 수 있는지, 장치 기록의 상태를 정리합니다. 스캔이나 변경은 하지 않습니다. 컨테이너를 다시 시작한 뒤 한 번 더 만들면 두 보고서 사이에 바뀐 점도 보여 줍니다.",
+        "Hide the last half of MAC addresses and public addresses": "MAC 주소와 공인 주소의 뒷부분 숨기기",
+        "Make the report": "보고서 만들기",
+        "Making the report…": "보고서를 만드는 중…"
     },
     "nplurals=1; plural=0;"
 );

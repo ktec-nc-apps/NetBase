@@ -89,3 +89,18 @@
 	#netbase-admin .nb-tools td:last-child { width: auto; }
 	#netbase-admin .nb-tools select { width: 100%; max-width: none; }
 }
+
+#netbase-admin .nb-diag-out {
+	display: block;
+	width: 100%;
+	max-width: 900px;
+	height: 360px;
+	margin-top: 8px;
+	font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+	font-size: 12px;
+	white-space: pre;
+	overflow: auto;
+}
+#netbase-admin .nb-diag-out[hidden] {
+	display: none;
+}

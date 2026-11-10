@@ -56,6 +56,7 @@ return [
 		['name' => 'api#scanCancel', 'url' => '/api/scan/{id}', 'verb' => 'DELETE'],
 		['name' => 'api#scanHistory', 'url' => '/api/scans', 'verb' => 'GET'],
 		['name' => 'api#arpFlush', 'url' => '/api/arp-flush', 'verb' => 'POST'],
+		['name' => 'api#diagnose', 'url' => '/api/diagnose', 'verb' => 'POST'],
 
 		// tools
 		['name' => 'api#whois', 'url' => '/api/tools/whois', 'verb' => 'GET'],

@@ -2005,7 +2005,12 @@ OC.L10N.register(
         "Remove devices": "Odebrat zařízení",
         "Read RegiBase": "Číst RegiBase",
         "Run a shell command on this server": "Spustit příkaz shellu na tomto serveru",
-        "What was actually done": "Co se skutečně provedlo"
+        "What was actually done": "Co se skutečně provedlo",
+        "Environment report": "Zpráva o prostředí",
+        "For a problem report: what this server runs in, which networks it sees, what it may do, and the state of the device records. Nothing is scanned or changed. Made again after restarting containers, it also shows what changed between the two reports.": "Pro hlášení problému: v čem tento server běží, které sítě vidí, co smí dělat a v jakém stavu jsou záznamy zařízení. Nic neskenuje ani nemění. Vytvořena znovu po restartu kontejnerů ukáže i to, co se mezi oběma zprávami změnilo.",
+        "Hide the last half of MAC addresses and public addresses": "Skrýt druhou polovinu adres MAC a veřejných adres",
+        "Make the report": "Vytvořit zprávu",
+        "Making the report…": "Vytváření zprávy…"
     },
     "nplurals=4; plural=(n == 1 && n % 1 == 0) ? 0 : (n >= 2 && n <= 4 && n % 1 == 0) ? 1: (n % 1 != 0 ) ? 2 : 3;"
 );

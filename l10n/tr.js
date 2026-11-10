@@ -2005,7 +2005,12 @@ OC.L10N.register(
         "Remove devices": "Cihazları kaldır",
         "Read RegiBase": "RegiBase'i oku",
         "Run a shell command on this server": "Bu sunucuda kabuk komutu çalıştır",
-        "What was actually done": "Gerçekte yapılanlar"
+        "What was actually done": "Gerçekte yapılanlar",
+        "Environment report": "Ortam raporu",
+        "For a problem report: what this server runs in, which networks it sees, what it may do, and the state of the device records. Nothing is scanned or changed. Made again after restarting containers, it also shows what changed between the two reports.": "Sorun bildirmek için: bu sunucunun neyin içinde çalıştığı, hangi ağları gördüğü, neler yapabildiği ve cihaz kayıtlarının durumu. Hiçbir şey taranmaz veya değiştirilmez. Kapsayıcılar yeniden başlatıldıktan sonra tekrar oluşturulursa iki rapor arasında neyin değiştiğini de gösterir.",
+        "Hide the last half of MAC addresses and public addresses": "MAC adreslerinin ve genel adreslerin ikinci yarısını gizle",
+        "Make the report": "Raporu oluştur",
+        "Making the report…": "Rapor oluşturuluyor…"
     },
     "nplurals=2; plural=(n > 1);"
 );

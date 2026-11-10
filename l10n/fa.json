@@ -2004,7 +2004,12 @@
         "Remove devices": "حذف دستگاه‌ها",
         "Read RegiBase": "خواندن RegiBase",
         "Run a shell command on this server": "اجرای فرمان پوسته روی این سرور",
-        "What was actually done": "آنچه واقعاً انجام شد"
+        "What was actually done": "آنچه واقعاً انجام شد",
+        "Environment report": "گزارش محیط",
+        "For a problem report: what this server runs in, which networks it sees, what it may do, and the state of the device records. Nothing is scanned or changed. Made again after restarting containers, it also shows what changed between the two reports.": "برای گزارش یک مشکل: این سرور درون چه چیزی اجرا می‌شود، چه شبکه‌هایی را می‌بیند، چه کارهایی مجاز است و وضعیت سوابق دستگاه‌ها. چیزی پویش یا تغییر داده نمی‌شود. اگر پس از راه‌اندازی دوباره کانتینرها دوباره ساخته شود، تغییرات میان دو گزارش را هم نشان می‌دهد.",
+        "Hide the last half of MAC addresses and public addresses": "پنهان کردن نیمه دوم نشانی‌های MAC و نشانی‌های عمومی",
+        "Make the report": "ساختن گزارش",
+        "Making the report…": "در حال ساختن گزارش…"
     },
     "pluralForm": "nplurals=2; plural=(n > 1);"
 }

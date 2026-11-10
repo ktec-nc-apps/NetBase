@@ -2004,7 +2004,12 @@
         "Remove devices": "機器を削除",
         "Read RegiBase": "RegiBase を読む",
         "Run a shell command on this server": "このサーバーでシェルのコマンドを実行",
-        "What was actually done": "実際に行った操作"
+        "What was actually done": "実際に行った操作",
+        "Environment report": "環境の報告",
+        "For a problem report: what this server runs in, which networks it sees, what it may do, and the state of the device records. Nothing is scanned or changed. Made again after restarting containers, it also shows what changed between the two reports.": "問題を報告するときに使います。このサーバーが何の中で動いているか、どのネットワークが見えるか、何ができるか、機器の記録の状態をまとめます。スキャンも変更もしません。コンテナを再起動したあとにもう一度作ると、前回の報告からの変化も示します。",
+        "Hide the last half of MAC addresses and public addresses": "MAC アドレスと公開アドレスの後半を隠す",
+        "Make the report": "報告を作る",
+        "Making the report…": "報告を作っています…"
     },
     "pluralForm": "nplurals=1; plural=0;"
 }

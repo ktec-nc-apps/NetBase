@@ -2005,7 +2005,12 @@ OC.L10N.register(
         "Remove devices": "ลบอุปกรณ์",
         "Read RegiBase": "อ่าน RegiBase",
         "Run a shell command on this server": "รันคำสั่งเชลล์บนเซิร์ฟเวอร์นี้",
-        "What was actually done": "สิ่งที่ทำจริง"
+        "What was actually done": "สิ่งที่ทำจริง",
+        "Environment report": "รายงานสภาพแวดล้อม",
+        "For a problem report: what this server runs in, which networks it sees, what it may do, and the state of the device records. Nothing is scanned or changed. Made again after restarting containers, it also shows what changed between the two reports.": "สำหรับการรายงานปัญหา: เซิร์ฟเวอร์นี้ทำงานอยู่ภายในอะไร มองเห็นเครือข่ายใดบ้าง ทำอะไรได้บ้าง และสถานะของบันทึกอุปกรณ์ ไม่สแกนและไม่เปลี่ยนแปลงสิ่งใด หากสร้างอีกครั้งหลังรีสตาร์ตคอนเทนเนอร์ จะแสดงสิ่งที่เปลี่ยนไประหว่างสองรายงานด้วย",
+        "Hide the last half of MAC addresses and public addresses": "ซ่อนครึ่งหลังของที่อยู่ MAC และที่อยู่สาธารณะ",
+        "Make the report": "สร้างรายงาน",
+        "Making the report…": "กำลังสร้างรายงาน…"
     },
     "nplurals=1; plural=0;"
 );

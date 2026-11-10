@@ -2004,7 +2004,12 @@
         "Remove devices": "Geräte entfernen",
         "Read RegiBase": "RegiBase lesen",
         "Run a shell command on this server": "Shell-Befehl auf diesem Server ausführen",
-        "What was actually done": "Tatsächlich ausgeführt"
+        "What was actually done": "Tatsächlich ausgeführt",
+        "Environment report": "Umgebungsbericht",
+        "For a problem report: what this server runs in, which networks it sees, what it may do, and the state of the device records. Nothing is scanned or changed. Made again after restarting containers, it also shows what changed between the two reports.": "Für eine Fehlermeldung: worin dieser Server läuft, welche Netze er sieht, was er darf und wie es um die Geräteeinträge steht. Nichts wird gescannt oder geändert. Nach einem Neustart der Container erneut erstellt, zeigt er auch, was sich zwischen den beiden Berichten geändert hat.",
+        "Hide the last half of MAC addresses and public addresses": "Die hintere Hälfte von MAC-Adressen und öffentlichen Adressen ausblenden",
+        "Make the report": "Bericht erstellen",
+        "Making the report…": "Bericht wird erstellt…"
     },
     "pluralForm": "nplurals=2; plural=(n != 1);"
 }

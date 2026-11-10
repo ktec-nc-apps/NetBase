@@ -33,6 +33,7 @@ use OCA\NetBase\Service\RequirementsService;
 use OCA\NetBase\Service\ScanService;
 use OCA\NetBase\Service\ToolService;
 use OCA\NetBase\Service\DeviceDiagService;
+use OCA\NetBase\Service\DiagnoseService;
 use OCA\NetBase\Service\WakeService;
 use OCA\NetBase\Service\WhoisAvailabilityService;
 use OCA\NetBase\Http\ProxyResponse;
@@ -87,6 +88,7 @@ class ApiController extends Controller {
 		private WhoisAvailabilityService $avail,
 		private WakeService $wake,
 		private DeviceDiagService $diag,
+		private DiagnoseService $diagnose,
 	) {
 		parent::__construct(Application::APP_ID, $request);
 	}
@@ -582,6 +584,11 @@ class ApiController extends Controller {
 	#[NoAdminRequired]
 	public function arpFlush(): JSONResponse {
 		return $this->guard(fn () => $this->discovery->arpFlush(), 'scan');
+	}
+
+	/** The environment report for a problem report (administrators only; it reads, it does not scan). */
+	public function diagnose(bool $mask = true): JSONResponse {
+		return $this->guardAdmin(fn () => $this->diagnose->report($mask, true));
 	}
 
 	#[NoAdminRequired]

@@ -2005,7 +2005,12 @@ OC.L10N.register(
         "Remove devices": "Hapus perangkat",
         "Read RegiBase": "Baca RegiBase",
         "Run a shell command on this server": "Jalankan perintah shell di server ini",
-        "What was actually done": "Yang benar-benar dilakukan"
+        "What was actually done": "Yang benar-benar dilakukan",
+        "Environment report": "Laporan lingkungan",
+        "For a problem report: what this server runs in, which networks it sees, what it may do, and the state of the device records. Nothing is scanned or changed. Made again after restarting containers, it also shows what changed between the two reports.": "Untuk laporan masalah: server ini berjalan di dalam apa, jaringan mana yang terlihat, apa yang boleh dilakukannya, dan keadaan catatan perangkat. Tidak ada yang dipindai atau diubah. Jika dibuat lagi setelah kontainer dimulai ulang, laporan ini juga menunjukkan apa yang berubah di antara kedua laporan.",
+        "Hide the last half of MAC addresses and public addresses": "Sembunyikan separuh belakang alamat MAC dan alamat publik",
+        "Make the report": "Buat laporan",
+        "Making the report…": "Membuat laporan…"
     },
     "nplurals=1; plural=0;"
 );

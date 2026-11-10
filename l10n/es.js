@@ -2005,7 +2005,12 @@ OC.L10N.register(
         "Remove devices": "Quitar dispositivos",
         "Read RegiBase": "Leer RegiBase",
         "Run a shell command on this server": "Ejecutar un comando de shell en este servidor",
-        "What was actually done": "Lo que se hizo realmente"
+        "What was actually done": "Lo que se hizo realmente",
+        "Environment report": "Informe del entorno",
+        "For a problem report: what this server runs in, which networks it sees, what it may do, and the state of the device records. Nothing is scanned or changed. Made again after restarting containers, it also shows what changed between the two reports.": "Para informar de un problema: en qué se ejecuta este servidor, qué redes ve, qué puede hacer y el estado de los registros de dispositivos. No se escanea ni se cambia nada. Si se vuelve a crear tras reiniciar los contenedores, también muestra qué cambió entre los dos informes.",
+        "Hide the last half of MAC addresses and public addresses": "Ocultar la segunda mitad de las direcciones MAC y de las direcciones públicas",
+        "Make the report": "Crear el informe",
+        "Making the report…": "Creando el informe…"
     },
     "nplurals=2; plural=(n != 1);"
 );
