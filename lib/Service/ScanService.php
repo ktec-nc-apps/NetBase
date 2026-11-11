@@ -116,6 +116,8 @@ class ScanService {
 
 	/** This server's default gateway (gatewayIp()), once known. */
 	private ?string $gateway = null;
+	/** MAC addresses in the ARP table as last read in this request (null: not read yet). @var array<string, true>|null */
+	private ?array $macsNow = null;
 
 	public function __construct(
 		private DiscoveryService $discovery,
@@ -828,7 +830,18 @@ class ScanService {
 	 */
 	private function absorbSelf(array &$queue, array $options): void {
 		$known = array_flip($queue['ips'] ?? []);
-		foreach ($this->discovery->interfaces() as $interface) {
+		$interfaces = $this->discovery->interfaces();
+		// Every address this server holds now, on every interface: a row of
+		// this server on any other address is one it has left (see upsert).
+		$own = [];
+		foreach ($interfaces as $interface) {
+			foreach ($interface['addresses'] ?? [] as $address) {
+				if (($address['family'] ?? '') === 'inet' && ($address['ip'] ?? '') !== '') {
+					$own[] = (string)$address['ip'];
+				}
+			}
+		}
+		foreach ($interfaces as $interface) {
 			if ($interface['loopback'] || !$interface['up']) {
 				continue;
 			}
@@ -853,6 +866,7 @@ class ScanService {
 					'dtype' => 'server',
 					'source' => 'self',
 					'selfMac' => ($interface['mac'] ?? '') !== '' ? $interface['mac'] : null,
+					'ownIps' => $own,
 				]);
 				if (!isset($known[$ip])) {
 					$queue['ips'][] = $ip;
@@ -1095,6 +1109,12 @@ class ScanService {
 			$this->note('ARP table read: ' . count($table) . ' entries (' . ($parts !== [] ? implode(', ', $parts) : 'none')
 				. '), ' . count($inPlan) . ' of them in the range: ' . self::someIps($inPlan));
 		}
+		$this->macsNow = [];
+		foreach ($table as $entry) {
+			if (($entry['mac'] ?? '') !== '') {
+				$this->macsNow[strtolower((string)$entry['mac'])] = true;
+			}
+		}
 		$names = $this->namesOfNewMacs($table, $options);
 		foreach ($table as $ip => $entry) {
 			if (($options['interface'] ?? '') !== '' && $entry['interface'] !== $options['interface']) {
@@ -1140,6 +1160,10 @@ class ScanService {
 	 */
 	private function namesOfNewMacs(array $table, array $options): array {
 		$ask = [];
+		// A row set aside waits for its name. A device that comes back on an
+		// address nobody held is asked too, or it stays unnamed until "Scan
+		// the network" and what a person wrote waits with it.
+		$waiting = $this->devices->findParked() !== [];
 		foreach ($table as $ip => $entry) {
 			$mac = strtolower((string)($entry['mac'] ?? ''));
 			if ($mac === '' || (($options['interface'] ?? '') !== '' && $entry['interface'] !== $options['interface'])) {
@@ -1150,6 +1174,11 @@ class ScanService {
 			}
 			$was = $this->devices->findByIp((string)$ip);
 			if ($was !== null && ($was->getMac() ?? '') !== '' && strtolower((string)$was->getMac()) !== $mac) {
+				$ask[] = (string)$ip;
+			} elseif ($was === null && ($waiting || $this->oui->describe($mac)['local'])) {
+				// And a random MAC on an address nobody held: a container that
+				// started again on a free address, whose row is still on the
+				// address it left (see rowMovedHere).
 				$ask[] = (string)$ip;
 			}
 		}
@@ -1163,7 +1192,7 @@ class ScanService {
 				$names[(string)$ip] = (string)$name;
 			}
 		}
-		$this->note(sprintf('new MAC on an address on file: %d, names asked (%d ms): %s', count($ask),
+		$this->note(sprintf('new MAC on an address on file, or a random one on a new address%s: %d, names asked (%d ms): %s', $waiting ? ' (a set-aside row waits for its name)' : '', count($ask),
 			(int)round((microtime(true) - $t) * 1000),
 			$names === [] ? 'none answered' : implode(', ', array_map(static fn ($ip, $n) => $ip . ' ' . $n, array_keys($names), $names))));
 		return $names;
@@ -1203,6 +1232,61 @@ class ScanService {
 			}
 		}
 		return false;
+	}
+
+	/**
+	 * The row of the device now at $ip with a new MAC, left on the address it
+	 * held before. Only when the name tells it (sameDeviceByName: a random MAC
+	 * or a device marked as a container, and the same name), when its old MAC
+	 * is in the ARP table no more — a MAC still there is that device, still
+	 * there — and when one row only fits. Not this server's own row.
+	 */
+	private function rowMovedHere(string $mac, string $ip, array $update): ?DeviceEntity {
+		if ($this->macsNow === null || ($update['rdns'] ?? $update['hostname'] ?? $update['mdns'] ?? '') === '') {
+			return null;
+		}
+		$found = [];
+		foreach ($this->devices->findAll(100000) as $d) {
+			$at = (string)$d->getIp();
+			$old = strtolower((string)$d->getMac());
+			if ($at === '' || $at === $ip || $old === '' || $old === $mac || isset($this->macsNow[$old]) || self::isSelfRow($d)) {
+				continue;
+			}
+			if ($this->sameDeviceByName($d, $mac, $ip, $update)) {
+				$found[] = $d;
+			}
+		}
+		return count($found) === 1 ? $found[0] : null;
+	}
+
+	/**
+	 * A device that started again on another address while the ARP table still
+	 * showed its old MAC on the old one got a row of its own: the old row could
+	 * not be taken while its MAC still looked present (rowMovedHere). Once that
+	 * MAC is gone, what a person wrote on the old row comes to this one, with
+	 * the ports and the first sighting, and the old row goes.
+	 */
+	private function adoptLeftBehind(DeviceEntity $d): void {
+		$mac = strtolower((string)$d->getMac());
+		$name = (string)$d->getHostname();
+		if ($this->macsNow === null || $mac === '' || !isset($this->macsNow[$mac]) || $name === '' || self::isSelfRow($d)) {
+			return;
+		}
+		$old = $this->rowMovedHere($mac, (string)$d->getIp(), ['rdns' => $name]);
+		if ($old === null || (int)$old->getId() === (int)$d->getId()) {
+			return;
+		}
+		$this->carryOwn($old, $d);
+		$ports = $this->mergePortList((string)$d->getPorts(), (string)$old->getPorts());
+		$d->setPorts($ports === '' ? null : $ports);
+		if ($old->getFirstSeen() !== null && ($d->getFirstSeen() === null || $old->getFirstSeen() < $d->getFirstSeen())) {
+			$d->setFirstSeen($old->getFirstSeen());
+		}
+		$d->setDtype($this->classify($d));
+		$this->devices->update($d);
+		$this->devices->delete($old);
+		$this->note((string)$d->getIp() . ': the row ' . $name . ' left on ' . (string)$old->getIp() . ' (MAC ' . (string)$old->getMac()
+			. ', gone now) was folded into this one' . (self::typeChosen($d) ? ' (picked type ' . $d->getDtype() . ')' : ''));
 	}
 
 	/**
@@ -1251,6 +1335,26 @@ class ScanService {
 			// every phase that learns a MAC after one that did not, left another
 			// row and the same IP appeared twice in the list.
 			$byIp = $this->devices->findByIp($ip);
+			// This server, on an address it has not held before. In a container
+			// the address may be one another container held until a restart
+			// (GitHub #3: Nextcloud moved from .9 to .8, where lg7s had been).
+			// Without a MAC to compare, the rule below took that container's
+			// row for this server's, and with it the type a person had picked,
+			// the notes and the name: the container then came back as a new,
+			// unnamed device. This server's own row moves with it instead, and
+			// the other device's row is left to mergeDuplicateIps, which sends
+			// what a person wrote on it to the device of that name.
+			if (($update['source'] ?? '') === 'self') {
+				if ($byIp !== null && !self::isSelfRow($byIp) && ($byIp->getMac() ?? '') !== ''
+					&& strtolower((string)$byIp->getMac()) !== strtolower((string)($update['selfMac'] ?? ''))) {
+					$byIp = null;
+				}
+				if ($byIp === null && ($left = $this->selfRowLeft($update)) !== null) {
+					$this->note($ip . ': this server, before on ' . (string)$left->getIp() . ', keeps its row');
+					$left->setDkey($key);
+					$byIp = $left;
+				}
+			}
 			// Attach to the row that holds this address only when it is the same
 			// device — same MAC, or a MAC-less placeholder waiting for one. When
 			// the address is now on a different MAC (a new machine took the
@@ -1270,6 +1374,18 @@ class ScanService {
 				$byIp->setDkey($key);
 				$byIp->setMac($mac);
 				$device = $byIp;
+			}
+			if ($device === null && $mac !== null && ($moved = $this->rowMovedHere($mac, $ip, $update)) !== null) {
+				// The same device, started again on another address: a free one,
+				// or one another device has left. Its row is still on the old
+				// address, under a MAC no longer in the ARP table. It keeps that
+				// row — the name, the type, the notes and the ports — instead
+				// of a new, unnamed one beside it.
+				$this->note($ip . ': new MAC ' . $mac . ', same name ' . (string)$moved->getHostname() . ' as the row on '
+					. (string)$moved->getIp() . ', whose MAC ' . (string)$moved->getMac() . ' is gone: the same device, moved here, its row is kept');
+				$moved->setDkey($key);
+				$moved->setMac($mac);
+				$device = $moved;
 			}
 		}
 		$isNew = $device === null;
@@ -1293,7 +1409,8 @@ class ScanService {
 		// The server's own MAC, recorded for display only: it is not the row's
 		// key (a NIC's several addresses each get their own row), so it fills in
 		// a blank without ever pulling two addresses onto one row.
-		if (!empty($update['selfMac']) && ($device->getMac() === null || $device->getMac() === '')) {
+		if (!empty($update['selfMac']) && ($device->getMac() === null || $device->getMac() === ''
+			|| (($update['source'] ?? '') === 'self' && self::isSelfRow($device)))) {
 			$device->setMac(strtolower((string)$update['selfMac']));
 		}
 		$device->setIp($ip);
@@ -1406,6 +1523,7 @@ class ScanService {
 		$saved = $isNew ? $this->devices->insert($device) : $this->devices->update($device);
 		$this->mergeDuplicateIps($saved);
 		$this->adoptParked($saved);
+		$this->adoptLeftBehind($saved);
 		return $saved;
 	}
 
@@ -1436,6 +1554,11 @@ class ScanService {
 			// and ports must NOT follow the address to the new occupant, so its
 			// row is simply dropped.
 			$sameDevice = $keepMac === null || $otherMac === null || $keepMac === $otherMac;
+			// This server's row may have no MAC (one it cannot read); a row with
+			// a MAC of its own on the same address is still another device.
+			if (self::isSelfRow($keep) !== self::isSelfRow($other) && ($keepMac ?? $otherMac) !== null && $keepMac !== $otherMac) {
+				$sameDevice = false;
+			}
 			if ($sameDevice) {
 				if (!$keep->getLabel() && $other->getLabel()) { $keep->setLabel($other->getLabel()); $changed = true; }
 				if (!$keep->getTags() && $other->getTags()) { $keep->setTags($other->getTags()); $changed = true; }
@@ -1510,6 +1633,30 @@ class ScanService {
 			$keep->setDtype($this->classify($keep));
 			$this->devices->update($keep);
 		}
+	}
+
+	/** Whether the row is this server's own (written from its interfaces, not found on the network). */
+	public static function isSelfRow(DeviceEntity $d): bool {
+		return in_array('self', explode(',', (string)$d->getSources()), true);
+	}
+
+	/**
+	 * This server's row on an address it no longer holds: it moved (a container
+	 * started again on another address, a new DHCP lease). Only a row written
+	 * from the same interface, and only when the server holds that address on
+	 * no interface now.
+	 */
+	private function selfRowLeft(array $update): ?DeviceEntity {
+		$own = array_map('strval', $update['ownIps'] ?? []);
+		$interface = (string)($update['interface'] ?? '');
+		foreach ($this->devices->findAll(100000) as $d) {
+			$at = (string)$d->getIp();
+			if ($at !== '' && !in_array($at, $own, true) && self::isSelfRow($d)
+				&& ($interface === '' || (string)$d->getInterface() === $interface)) {
+				return $d;
+			}
+		}
+		return null;
 	}
 
 	/** Whether a person wrote anything on the row: a name, notes, tags, a location, a room, a mounting spot or a hand-picked type. */

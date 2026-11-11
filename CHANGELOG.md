@@ -2,6 +2,25 @@
 
 All notable changes to NetBase are documented here.
 
+## 0.9.17 — 2026-11-11
+
+Containers keep what was written on them when a restart moves them to other addresses (GitHub issue #3).
+
+### Fixed
+
+- **A container lost its type picked by hand, its notes and its name when Nextcloud took its address.** When the Nextcloud container started again on an address another container had held, NetBase wrote this server's own row over that container's row: the type, the notes and the name went to this server, and the container came back as a new device with a guessed type ("Server machine"). This server's row now moves with it, and never takes the row of a device with another MAC address.
+- **A container that started again on a free address showed twice.** Its row stayed on the old address, offline, and a new, unnamed row appeared on the new one. When a device with a random MAC address turns up on a new address, NetBase now asks for its name; a device with the same name whose old MAC address is no longer in the ARP table is the same device, and its row moves to the new address. If the old MAC address still shows in the ARP table right after the restart, the two rows become one at the next scan.
+- **This server's row stayed on an address it had left**, shown as online.
+
+（日本語）
+再起動でコンテナのアドレスが変わっても、書き込んだ内容がそのコンテナに残るようにしました（GitHub の Issue #3）。
+
+### 修正
+
+- **Nextcloud が別のコンテナのアドレスを使うと、そのコンテナの手で選んだ種類・メモ・名前が失われていました。** Nextcloud のコンテナが、別のコンテナが使っていたアドレスで起動し直すと、NetBase はそのコンテナの行を、このサーバー自身の行で上書きしていました。種類・メモ・名前はこのサーバーの行に移り、コンテナは種類を推測された（「Server machine」など）新しい機器として現れていました。このサーバーの行はサーバーと一緒に移るようにし、MAC アドレスの違う機器の行を取らないようにしました。
+- **空いていたアドレスで起動し直したコンテナが、2 つの行に分かれていました。** 元の行は古いアドレスにオフラインのまま残り、新しいアドレスには名前のない行ができていました。乱数の MAC アドレスの機器が新しいアドレスに現れたら、名前を問い合わせるようにしました。同じ名前で、古い MAC アドレスが ARP テーブルから消えている機器は同じ機器とみなし、その行を新しいアドレスへ移します。再起動の直後で古い MAC アドレスが ARP テーブルにまだ残っている場合は、次のスキャンで 2 つの行を 1 つにまとめます。
+- **このサーバーの行が、離れたアドレスに残り**、オンラインとして表示されていました。
+
 ## 0.9.16 — 2026-11-10
 
 ### Added
