@@ -119,6 +119,16 @@ class ScanService {
 	/** MAC addresses in the ARP table as last read in this request (null: not read yet). @var array<string, true>|null */
 	private ?array $macsNow = null;
 
+	/**
+	 * Rows removed in this request from an address another machine took, with
+	 * nothing a person wrote on them, by name: when the machine of that name
+	 * turns up on another address in the same request (a reboot shuffles the
+	 * containers' addresses all at once), its ports go to its new row (GitHub #4).
+	 * Not kept beyond the request, so nothing is left lying in the table.
+	 * @var array<string, DeviceEntity>
+	 */
+	private array $goneByName = [];
+
 	public function __construct(
 		private DiscoveryService $discovery,
 		private OuiService $oui,
@@ -1276,12 +1286,7 @@ class ScanService {
 		if ($old === null || (int)$old->getId() === (int)$d->getId()) {
 			return;
 		}
-		$this->carryOwn($old, $d);
-		$ports = $this->mergePortList((string)$d->getPorts(), (string)$old->getPorts());
-		$d->setPorts($ports === '' ? null : $ports);
-		if ($old->getFirstSeen() !== null && ($d->getFirstSeen() === null || $old->getFirstSeen() < $d->getFirstSeen())) {
-			$d->setFirstSeen($old->getFirstSeen());
-		}
+		$this->carrySameDevice($old, $d);
 		$d->setDtype($this->classify($d));
 		$this->devices->update($d);
 		$this->devices->delete($old);
@@ -1605,27 +1610,38 @@ class ScanService {
 				$gateway = $ip === $this->gatewayIp();
 				$carried = $gateway || $this->sameName($keep, $other);
 				if ($carried) {
-					$changed = $this->carryOwn($other, $keep) || $changed;
-				} elseif ($this->hasOwn($other) && ($other->getHostname() ?? '') !== '') {
-					$home = $this->rowNamed((string)$other->getHostname(), [(int)$other->getId(), (int)$keep->getId()]);
-					if ($home !== null) {
-						if ($this->carryOwn($other, $home)) {
-							$home->setDtype($this->classify($home));
-							$this->devices->update($home);
-						}
-					} else {
-						// Not seen yet under its new address: kept aside, without an
-						// address, until a device with that name turns up (adoptParked).
-						$other->setIp(null);
-						$other->setOnline(false);
-						$this->devices->update($other);
-						$this->note($ip . ': an older row with another MAC was set aside until its name turns up again');
-						continue;
+					// The same name is the same container: its ports too. A gateway
+					// told only by its address may be another router: what a person
+					// wrote, no more.
+					$changed = ($this->sameName($keep, $other) ? $this->carrySameDevice($other, $keep) : $this->carryOwn($other, $keep)) || $changed;
+				} elseif (($other->getHostname() ?? '') !== ''
+					&& ($home = $this->rowNamed((string)$other->getHostname(), [(int)$other->getId(), (int)$keep->getId()])) !== null) {
+					// The machine of that name is on another address already: the
+					// row goes to it, ports and all, whether or not a person wrote
+					// on it (GitHub #4).
+					if ($this->carrySameDevice($other, $home)) {
+						$home->setDtype($this->classify($home));
+						$this->devices->update($home);
 					}
+					$this->note($ip . ': an older row with another MAC was folded into the row of its name on ' . (string)$home->getIp()
+						. (self::typeChosen($other) ? ' (picked type ' . $other->getDtype() . ')' : ''));
+					$this->devices->delete($other);
+					continue;
+				} elseif ($this->hasOwn($other) && ($other->getHostname() ?? '') !== '') {
+					// Not seen yet under its new address: kept aside, without an
+					// address, until a device with that name turns up (adoptParked).
+					$other->setIp(null);
+					$other->setOnline(false);
+					$this->devices->update($other);
+					$this->note($ip . ': an older row with another MAC was set aside until its name turns up again');
+					continue;
+				}
+				if (!$this->hasOwn($other) && ($name = strtolower(trim((string)$other->getHostname()))) !== '') {
+					$this->goneByName[$name] = $other;
 				}
 				$this->note($ip . ': an older row with another MAC was removed' . (!$this->hasOwn($other) ? ''
 					: ($carried ? ' (what a person wrote on it moved to this row)'
-						: ' (what a person wrote on it went to the device of that name, or was lost if none' . (self::typeChosen($other) ? '; picked type ' . $other->getDtype() : '') . ')')));
+						: ' (what a person wrote on it was lost: it has no name to find its device by' . (self::typeChosen($other) ? '; picked type ' . $other->getDtype() : '') . ')')));
 			}
 			$this->devices->delete($other);
 		}
@@ -1699,6 +1715,31 @@ class ScanService {
 		return $changed;
 	}
 
+	/**
+	 * Copy one row of a device into another row of the same device, told by its
+	 * name: what a person wrote (carryOwn), and also the ports and the first
+	 * sighting, which are the device's own. A container that comes back on
+	 * another address after a reboot kept its name and picked type but lost its
+	 * ports until the next port scan (GitHub #4). Only for a device known by
+	 * name to be the same: an address handed to another machine keeps using
+	 * carryOwn alone.
+	 *
+	 * @return bool whether $to changed
+	 */
+	private function carrySameDevice(DeviceEntity $from, DeviceEntity $to): bool {
+		$changed = $this->carryOwn($from, $to);
+		$ports = $this->mergePortList((string)$to->getPorts(), (string)$from->getPorts());
+		if ($ports !== (string)$to->getPorts()) {
+			$to->setPorts($ports === '' ? null : $ports);
+			$changed = true;
+		}
+		if ($from->getFirstSeen() !== null && ($to->getFirstSeen() === null || $from->getFirstSeen() < $to->getFirstSeen())) {
+			$to->setFirstSeen($from->getFirstSeen());
+			$changed = true;
+		}
+		return $changed;
+	}
+
 	/** The row that carries this host name now (an address, and not one of $except). */
 	private function rowNamed(string $hostname, array $except): ?DeviceEntity {
 		$want = strtolower(trim($hostname));
@@ -1721,11 +1762,19 @@ class ScanService {
 			return;
 		}
 		$changed = false;
+		if (isset($this->goneByName[$name]) && (int)$this->goneByName[$name]->getId() !== (int)$d->getId()) {
+			$gone = $this->goneByName[$name];
+			unset($this->goneByName[$name]);
+			if ($this->carrySameDevice($gone, $d)) {
+				$changed = true;
+				$this->note((string)$d->getIp() . ': ' . (string)$d->getHostname() . ' took back the ports of its row removed from ' . (string)$gone->getIp());
+			}
+		}
 		foreach ($this->devices->findParked() as $parked) {
 			if ((int)$parked->getId() === (int)$d->getId() || strtolower(trim((string)$parked->getHostname())) !== $name) {
 				continue;
 			}
-			$changed = $this->carryOwn($parked, $d) || $changed;
+			$changed = $this->carrySameDevice($parked, $d) || $changed;
 			$this->devices->delete($parked);
 		}
 		if ($changed) {

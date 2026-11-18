@@ -77,7 +77,7 @@ $check('only by the same name, only when its old MAC is gone, only one row, neve
 $check('nothing is moved before the ARP table has been read', str_contains($moved, '$this->macsNow === null'));
 $behind = $fn('private function adoptLeftBehind(', 1600);
 $check('a row left behind while its old MAC still showed is folded in later',
-	str_contains($src, '$this->adoptLeftBehind($saved);') && str_contains($behind, 'carryOwn($old, $d)') && str_contains($behind, 'delete($old)'));
+	str_contains($src, '$this->adoptLeftBehind($saved);') && str_contains($behind, 'carrySameDevice($old, $d)') && str_contains($behind, 'delete($old)'));
 
 echo $fail === 0 ? "all passed\n" : "$fail failed\n";
 exit($fail === 0 ? 0 : 1);

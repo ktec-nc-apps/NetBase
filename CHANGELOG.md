@@ -2,6 +2,14 @@
 
 All notable changes to NetBase are documented here.
 
+## 0.9.18 — 2026-11-18
+
+A container comes back with its ports after a restart that shuffled the addresses (GitHub issue #4).
+
+### Fixed
+
+- **After a reboot that shuffled the containers' addresses, a container could come back with no ports until the next port scan.** When its row was taken back by its name, only what a person wrote on it (name, notes, picked type) went with it. Its ports and its first sighting now go with it too, also when nothing was written on the row. A machine that merely took over the address keeps nothing of the old one.
+
 ## 0.9.17 — 2026-11-11
 
 Containers keep what was written on them when a restart moves them to other addresses (GitHub issue #3).
