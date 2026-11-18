@@ -2,6 +2,14 @@
 
 All notable changes to NetBase are documented here.
 
+## 0.9.19 — 2026-11-19
+
+The gateway keeps its ports when its MAC address changes (GitHub issue #4).
+
+### Fixed
+
+- **The gateway lost its ports at a refresh, until the next port scan.** A Docker network's gateway (the address this server leaves by) can show up under a new MAC address and, having no name, was not told from a new device by its name: its row was folded into a new one, and only what a person wrote on it (notes, picked type) went along. Its ports and its first sighting now go with it too. If another router has taken the address, the next port scan replaces the ports.
+
 ## 0.9.18 — 2026-11-18
 
 A container comes back with its ports after a restart that shuffled the addresses (GitHub issue #4).

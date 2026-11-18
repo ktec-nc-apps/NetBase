@@ -1610,10 +1610,12 @@ class ScanService {
 				$gateway = $ip === $this->gatewayIp();
 				$carried = $gateway || $this->sameName($keep, $other);
 				if ($carried) {
-					// The same name is the same container: its ports too. A gateway
-					// told only by its address may be another router: what a person
-					// wrote, no more.
-					$changed = ($this->sameName($keep, $other) ? $this->carrySameDevice($other, $keep) : $this->carryOwn($other, $keep)) || $changed;
+					// The same name is the same container, and the address this
+					// server leaves by is the same gateway: its ports too. They
+					// showed empty after every refresh that found the bridge under
+					// a new MAC, until the next port scan (GitHub #4). If another
+					// router has taken the address, the port scan replaces them.
+					$changed = $this->carrySameDevice($other, $keep) || $changed;
 				} elseif (($other->getHostname() ?? '') !== ''
 					&& ($home = $this->rowNamed((string)$other->getHostname(), [(int)$other->getId(), (int)$keep->getId()])) !== null) {
 					// The machine of that name is on another address already: the

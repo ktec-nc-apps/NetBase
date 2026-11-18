@@ -143,6 +143,26 @@ $later = $m2->add($row(3, '172.19.0.6', 'dd:00:00:00:00:03', 'bd-web.lg.net', nu
 $call($world($m2), 'adoptParked', $later);
 $check('not in a later request: nothing is kept between requests', ($m2->rows[3]->getPorts() ?? '') === '', (string)$m2->rows[3]->getPorts());
 
+// ------------------------------------------------ the gateway with a new MAC (GitHub #4, second report)
+// A Docker bridge's address comes back with another MAC and no name: the row is
+// new and the old one is folded in. What a person wrote went along; the ports did
+// not, and showed empty until the next port scan.
+$m = new MemDevices();
+$keep = $m->add($row(1, '172.19.0.1', 'ee:00:00:00:00:01', '', null, 500));
+$old = $m->add($row(2, '172.19.0.1', 'ee:00:00:00:00:02', '', '22,80,443', 100, 'gateway', true));
+$old->setNotes('the host');
+$call($world($m), 'mergeDuplicateIps', $keep);
+$check('the gateway row with the old MAC is folded in', count($m->rows) === 1 && isset($m->rows[1]));
+$check('the gateway keeps its ports', ($m->rows[1]->getPorts() ?? '') === '22,80,443', (string)$m->rows[1]->getPorts());
+$check('and its first sighting', (int)$m->rows[1]->getFirstSeen() === 100, (string)$m->rows[1]->getFirstSeen());
+$check('and the notes and the picked type, as before', $m->rows[1]->getNotes() === 'the host' && $m->rows[1]->getDtype() === 'gateway' && ScanService::typeChosen($m->rows[1]));
+// only the gateway: another address without a name still gets nothing
+$m = new MemDevices();
+$keep = $m->add($row(1, '172.19.0.40', 'ee:00:00:00:00:11', '', null, 500));
+$m->add($row(2, '172.19.0.40', 'ee:00:00:00:00:12', '', '22,80', 100, 'pc', true));
+$call($world($m), 'mergeDuplicateIps', $keep);
+$check('an address that is not the gateway, with no name, takes no ports', ($m->rows[1]->getPorts() ?? '') === '', (string)$m->rows[1]->getPorts());
+
 // ------------------------------------------------ an address handed to a machine of another name
 $m = new MemDevices();
 $keep = $m->add($row(1, '10.0.0.20', 'cc:00:00:00:00:01', 'alexa', null, 500));
