@@ -779,6 +779,8 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
             <div class="scan-foot">
               <button class="btn" v-if="scanning" @click="cancelScan">{{ t('Stop') }}</button>
               <label class="scan-diag" :title="t('Records what the next scan does, step by step, and shows it when the scan ends, to copy into a report. Device names and MAC addresses are left out.')"><input type="checkbox" v-model="scanDiag"> {{ t('Diagnose the scan') }}</label>
+              <!-- The record of the last scan, kept until the page is loaded again. -->
+              <button class="btn sm" v-if="diagLast" @click="diagView = { ...diagLast, open: true }">🩺 {{ t('What the scan did') }}</button>
               <!-- For a device the scan cannot see: no port to probe, or NetBase in a
                    container whose bridge hides the LAN (Nextcloud AIO, Docker). -->
               <button class="btn" :disabled="scanning" @click="openAddDevice" :title="t('Add a device the scan does not find, by its IP address.')">{{ t('Add by address') }}</button>
@@ -2580,7 +2582,10 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
          it — and it is done on the server, not from here. -->
     <!-- What a diagnosis found, ready to copy into a report. -->
     <!-- Above the device windows (they stack from 3000 up): it is opened from one of them. -->
-    <div v-if="diagView.open" class="drawer-backdrop centred over-dialog" :style="{ zIndex: windowTop + 1 }" @click.self="diagView.open=false">
+    <!-- Not closed by a click outside it: a scan's record is shown once, and one
+         stray click (or a selection dragged past the edge of the text) lost it
+         for good (GitHub #4). It closes with its buttons. -->
+    <div v-if="diagView.open" class="drawer-backdrop centred over-dialog" :style="{ zIndex: windowTop + 1 }">
       <div class="modal wide">
         <div class="drawer-head">
           <span class="ic big">🩺</span>
@@ -4215,6 +4220,8 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         // deliberate thing to ask for rather than the first thing that happens.
         opts: { names: true, multicast: true, ports: true, portScan: 'common', portWait: 0.9, rdns: true },
         scanDiag: false,
+        // The record of the last scan that was diagnosed, to show again.
+        diagLast: null,
         // Which button started the running scan, so that button shows it is working.
         scanKind: 'refresh',
         openPort: '', openScheme: 'http',
@@ -6027,6 +6034,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
           this.scanDiag = false;
           const head = 'NetBase ' + (this.version || '') + ' — scan diagnosis (' + (this.scan.state || '') + ')';
           this.diagView = { open: true, kind: 'scan', title: (this.scan.targets || []).join(', '), text: head + '\n' + this.scan.diag };
+          this.diagLast = { ...this.diagView, open: false };
         }
       },
       async cancelScan() {

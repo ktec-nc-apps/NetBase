@@ -2,6 +2,14 @@
 
 All notable changes to NetBase are documented here.
 
+## 0.9.20 — 2026-11-20
+
+The record of a diagnosed scan can no longer be lost by a stray click (GitHub issue #4).
+
+### Fixed
+
+- **The "What the scan did" window closed when you clicked outside it, and there was no way to get it back.** It is shown once, when the scan ends, so a click beside it (or a selection dragged past the edge of the text) before you had copied it meant running the scan again. It now closes only with its Close button or the cross. After "Diagnose the scan", a "What the scan did" button next to the option opens the last record again, until the page is loaded again.
+
 ## 0.9.19 — 2026-11-19
 
 The gateway keeps its ports when its MAC address changes (GitHub issue #4).
