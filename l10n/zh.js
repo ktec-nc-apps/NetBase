@@ -1994,9 +1994,9 @@ OC.L10N.register(
         "Blinking": "闪烁",
         "These apply to the shell and to SSH windows opened from now on, not to a window that is already open.": "这些设置适用于此后打开的 Shell 和 SSH 窗口，不影响已打开的窗口。",
         "Diagnose the scan": "诊断扫描",
-        "Records what the next scan does, step by step, and shows it when the scan ends, to copy into a report. Device names and MAC addresses are left out.": "逐步记录下一次扫描所做的事，并在扫描结束时显示，便于复制到报告中。不包含设备名称和 MAC 地址。",
+        "Records what the next scan does, step by step, and shows it when the scan ends, to copy into a report. Device names are replaced by labels (name-1, name-2 …) and MAC addresses lose their last three bytes.": "逐步记录下一次扫描所做的事，并在扫描结束时显示，便于复制到报告中。设备名称会替换为标记（name-1、name-2……），MAC 地址会隐去最后三个字节。",
         "What the scan did": "扫描做了什么",
-        "This is what the scan did, step by step: which addresses it asked, which answered, and what changed on each device in the range. It holds no device names and no MAC addresses. You can paste it into a report.": "这是扫描逐步所做的事：询问了哪些地址、哪些作出了应答，以及范围内每台设备发生了什么变化。不包含设备名称和 MAC 地址。可以直接粘贴到报告中。",
+        "This is what the scan did, step by step: which addresses it asked, which answered, and what changed on each device in the range. Device names are shown as labels (name-1, name-2 …) and MAC addresses without their last three bytes. You can paste it into a report.": "这是扫描逐步所做的事：询问了哪些地址、哪些作出了应答，以及范围内每台设备发生了什么变化。设备名称会替换为标记（name-1、name-2……），MAC 地址会隐去最后三个字节。可以直接粘贴到报告中。",
         "What it may read and change": "可以读取和更改的内容",
         "Change the device list: add, name, place and remove devices (only for people allowed Scanning; notes are never read or written, and nothing is sent to the devices)": "更改设备列表：添加设备、命名、设置位置和删除（仅限可使用“扫描”的人；从不读写备注，也不会向设备发送任何内容）",
         "Look at the device list": "查看设备列表",
@@ -2010,7 +2010,9 @@ OC.L10N.register(
         "For a problem report: what this server runs in, which networks it sees, what it may do, and the state of the device records. Nothing is scanned or changed. Made again after restarting containers, it also shows what changed between the two reports.": "用於回報問題：這台伺服器在什麼環境中執行、看得到哪些網路、可以做什麼，以及裝置記錄的狀態。不會掃描或變更任何東西。重新啟動容器後再產生一次，也會顯示兩份報告之間的變化。",
         "Hide the last half of MAC addresses and public addresses": "隱藏 MAC 位址與公開位址的後半段",
         "Make the report": "產生報告",
-        "Making the report…": "正在產生報告…"
+        "Making the report…": "正在產生報告…",
+        "Keep the last scan record while I visit other pages": "查看其他页面时保留上次扫描的记录",
+        "With “Diagnose the scan” ticked, a scan ends by showing its record (“What the scan did”) for you to copy into a report. That record is normally lost as soon as you leave NetBase for another page of Nextcloud: when you come back, it is gone and the scan has to be run again. With this on, the record is kept in this browser tab (its session storage) until you close the tab, and the “What the scan did” button opens it again after you come back. It is kept only in this browser, never on the server, and a new diagnosed scan replaces it. It holds the addresses of the scanned network, so leave this off on a browser that other people use.": "勾选“诊断扫描”后，扫描结束时会显示它的记录（“扫描做了什么”），可复制到报告中。这份记录通常在您离开 NetBase、转到 Nextcloud 的其他页面时就会丢失：回来后它已不在，只能重新扫描。开启此选项后，记录会保存在此浏览器标签页中（会话存储），直到您关闭该标签页，回来后可用“扫描做了什么”按钮再次打开。它只保存在此浏览器里，从不保存到服务器，新的诊断扫描会将其替换。记录中包含所扫描网络的地址，因此在其他人也会使用的浏览器上请保持关闭。"
     },
     "nplurals=1; plural=0;"
 );

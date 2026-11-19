@@ -1856,6 +1856,10 @@ class ApiController extends Controller {
 			// says how many steps to keep; then that many per window, and each
 			// window dropped once it has been left alone for this many days.
 			'termLogOn' => $uid ? $this->config->getUserValue($uid, 'netbase', 'term_log_on', '0') === '1' : false,
+			// Whether the page keeps the record of the last diagnosed scan in the
+			// browser tab (session storage), so it can be opened again after
+			// going to another Nextcloud page and back. Off until it is asked for.
+			'scanDiagKeep' => $uid ? $this->config->getUserValue($uid, 'netbase', 'scan_diag_keep', '0') === '1' : false,
 			// Reported whether or not it is switched on, so the field shows the
 			// figure it would use rather than a zero.
 			'termLogSteps' => (int)($uid ? $this->config->getUserValue($uid, 'netbase', 'term_log_steps', '5000') : 5000),
@@ -1909,6 +1913,7 @@ class ApiController extends Controller {
 			'termCursor' => 'term_cursor', 'termCursorBlink' => 'term_cursor_blink',
 			'shellLang' => 'shell_lang',
 			'termLogOn' => 'term_log_on', 'termLogSteps' => 'term_log_steps', 'termLogDays' => 'term_log_days',
+			'scanDiagKeep' => 'scan_diag_keep',
 			'rootIdleMinutes' => 'root_idle_minutes',
 			'filesKeepTime' => 'files_keep_time', 'filesLimitDown' => 'files_limit_down', 'filesLimitUp' => 'files_limit_up',
 		] as $key => $stored) {
@@ -1962,7 +1967,7 @@ class ApiController extends Controller {
 			}
 			// How much of a terminal is kept. No steps means keep none, which
 			// is where this starts and where it stays unless it is changed.
-			if ($key === 'termLogOn') {
+			if ($key === 'termLogOn' || $key === 'scanDiagKeep') {
 				$value = ($value === '1' || $value === 'true') ? '1' : '0';
 			}
 			if ($key === 'termLogSteps') {

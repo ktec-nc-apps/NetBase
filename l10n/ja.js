@@ -1994,9 +1994,9 @@ OC.L10N.register(
         "Blinking": "点滅",
         "These apply to the shell and to SSH windows opened from now on, not to a window that is already open.": "シェルと SSH のウィンドウを、これから開くときに使います。開いているウィンドウには反映されません。",
         "Diagnose the scan": "調査の経過を記録",
-        "Records what the next scan does, step by step, and shows it when the scan ends, to copy into a report. Device names and MAC addresses are left out.": "次の調査で行ったことを順に記録し、終わったときに表示します。報告に貼り付けて使えます。機器の名前と MAC アドレスは含めません。",
+        "Records what the next scan does, step by step, and shows it when the scan ends, to copy into a report. Device names are replaced by labels (name-1, name-2 …) and MAC addresses lose their last three bytes.": "次の調査で行ったことを順に記録し、終わったときに表示します。報告に貼り付けて使えます。機器の名前は「name-1」「name-2」のような記号に置き換え、MAC アドレスは後半の 3 バイトを伏せています。",
         "What the scan did": "調査の経過",
-        "This is what the scan did, step by step: which addresses it asked, which answered, and what changed on each device in the range. It holds no device names and no MAC addresses. You can paste it into a report.": "調査が行ったことを順に記録したものです。どのアドレスに問い合わせ、どれが応答し、範囲内の各機器で何が変わったかが分かります。機器の名前と MAC アドレスは含みません。報告にそのまま貼り付けられます。",
+        "This is what the scan did, step by step: which addresses it asked, which answered, and what changed on each device in the range. Device names are shown as labels (name-1, name-2 …) and MAC addresses without their last three bytes. You can paste it into a report.": "調査が行ったことを順に記録したものです。どのアドレスに問い合わせ、どれが応答し、範囲内の各機器で何が変わったかが分かります。機器の名前は「name-1」「name-2」のような記号に置き換え、MAC アドレスは後半の 3 バイトを伏せています。報告にそのまま貼り付けられます。",
         "What it may read and change": "参照と変更ができるもの",
         "Change the device list: add, name, place and remove devices (only for people allowed Scanning; notes are never read or written, and nothing is sent to the devices)": "機器一覧の変更：機器の追加、名前と設置場所の設定、削除（「調査」を使える利用者だけ。メモは読み書きせず、機器には何も送りません）",
         "Look at the device list": "機器一覧を見る",
@@ -2010,7 +2010,9 @@ OC.L10N.register(
         "For a problem report: what this server runs in, which networks it sees, what it may do, and the state of the device records. Nothing is scanned or changed. Made again after restarting containers, it also shows what changed between the two reports.": "問題を報告するときに使います。このサーバーが何の中で動いているか、どのネットワークが見えるか、何ができるか、機器の記録の状態をまとめます。スキャンも変更もしません。コンテナを再起動したあとにもう一度作ると、前回の報告からの変化も示します。",
         "Hide the last half of MAC addresses and public addresses": "MAC アドレスと公開アドレスの後半を隠す",
         "Make the report": "報告を作る",
-        "Making the report…": "報告を作っています…"
+        "Making the report…": "報告を作っています…",
+        "Keep the last scan record while I visit other pages": "他のページを見ている間も、前回の調査の記録を残す",
+        "With “Diagnose the scan” ticked, a scan ends by showing its record (“What the scan did”) for you to copy into a report. That record is normally lost as soon as you leave NetBase for another page of Nextcloud: when you come back, it is gone and the scan has to be run again. With this on, the record is kept in this browser tab (its session storage) until you close the tab, and the “What the scan did” button opens it again after you come back. It is kept only in this browser, never on the server, and a new diagnosed scan replaces it. It holds the addresses of the scanned network, so leave this off on a browser that other people use.": "「調査の経過を記録」にチェックを入れて調査すると、終わったときにその記録（「調査の経過」）が表示され、報告に貼り付けられます。この記録は、NetBase から Nextcloud の別のページへ移って戻ると、ふつうは消えてしまい、調査をやり直すことになります。これをオンにすると、記録をこのブラウザーのタブ（セッションストレージ）に、タブを閉じるまで残します。戻ったあとも「調査の経過」ボタンで開き直せます。残すのはこのブラウザーの中だけで、サーバーには保存しません。新しく記録した調査があれば置き換わります。調べたネットワークのアドレスが含まれるので、ほかの人も使うブラウザーではオフのままにしてください。"
     },
     "nplurals=1; plural=0;"
 );

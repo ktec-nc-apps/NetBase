@@ -778,7 +778,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
                  scan, a device added by hand, and how the list is shown. -->
             <div class="scan-foot">
               <button class="btn" v-if="scanning" @click="cancelScan">{{ t('Stop') }}</button>
-              <label class="scan-diag" :title="t('Records what the next scan does, step by step, and shows it when the scan ends, to copy into a report. Device names and MAC addresses are left out.')"><input type="checkbox" v-model="scanDiag"> {{ t('Diagnose the scan') }}</label>
+              <label class="scan-diag" :title="t('Records what the next scan does, step by step, and shows it when the scan ends, to copy into a report. Device names are replaced by labels (name-1, name-2 …) and MAC addresses lose their last three bytes.')"><input type="checkbox" v-model="scanDiag"> {{ t('Diagnose the scan') }}</label>
               <!-- The record of the last scan, kept until the page is loaded again. -->
               <button class="btn sm" v-if="diagLast" @click="diagView = { ...diagLast, open: true }">🩺 {{ t('What the scan did') }}</button>
               <!-- For a device the scan cannot see: no port to probe, or NetBase in a
@@ -2597,7 +2597,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
           <button class="btn xs ib" :title="t('Close')" :aria-label="t('Close')" @click="diagView.open=false"><svg viewBox="0 0 24 24"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg></button>
         </div>
         <div class="drawer-body">
-          <p v-if="diagView.kind === 'scan'" class="dim">{{ t('This is what the scan did, step by step: which addresses it asked, which answered, and what changed on each device in the range. It holds no device names and no MAC addresses. You can paste it into a report.') }}</p>
+          <p v-if="diagView.kind === 'scan'" class="dim">{{ t('This is what the scan did, step by step: which addresses it asked, which answered, and what changed on each device in the range. Device names are shown as labels (name-1, name-2 …) and MAC addresses without their last three bytes. You can paste it into a report.') }}</p>
           <p v-else class="dim">{{ t('This is what the page and this server saw while you used it. It holds no passwords, nothing typed into the page and none of its text — only addresses (with the values after “?” hidden), answers and errors. You can paste it into a report.') }}</p>
           <textarea class="diag-text mono" readonly :value="diagView.text"></textarea>
           <div class="row">
@@ -2912,6 +2912,15 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
               <button class="btn sm" @click="pickFile(t('Choose a folder'), (p) => { settings.keyFolder = p; saveKeyFolder(); }, true, settings.keyFolder)">📂 {{ t('Browse…') }}</button>
               <button class="btn sm" :disabled="!settings.keyFolder" @click="settings.keyFolder = ''; saveKeyFolder()">{{ t('Clear the folder') }}</button>
             </div>
+          </section>
+
+          <section class="set-group" v-show="settingTab === 'scan'">
+            <h3><span class="ic">🩺</span>{{ t('Diagnose the scan') }}</h3>
+            <label class="opt">
+              <input type="checkbox" v-model="settings.scanDiagKeep" @change="saveScanDiagKeep()">
+              {{ t('Keep the last scan record while I visit other pages') }}
+            </label>
+            <p class="dim tiny">{{ t('With “Diagnose the scan” ticked, a scan ends by showing its record (“What the scan did”) for you to copy into a report. That record is normally lost as soon as you leave NetBase for another page of Nextcloud: when you come back, it is gone and the scan has to be run again. With this on, the record is kept in this browser tab (its session storage) until you close the tab, and the “What the scan did” button opens it again after you come back. It is kept only in this browser, never on the server, and a new diagnosed scan replaces it. It holds the addresses of the scanned network, so leave this off on a browser that other people use.') }}</p>
           </section>
 
           <section class="set-group" v-show="settingTab === 'tools'">
@@ -4207,7 +4216,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
           // images waiting to go with the next question; whether this AI connection takes images
           images: [], attNote: '', drop: false, imagesOk: false },
         status: { canScan: false, canLookup: false, isAdmin: false, binaries: {}, nmap: { available: false }, ouiEntries: 0, targets: [] },
-        settings: { language: 'auto', theme: 'auto', languages: [], tabOrder: [], keyFolder: '', rootIdleMinutes: 10, termFont: 'system', termFontSize: TERM_SIZE_DEFAULT, shellLang: '', shellEnv: '', shellLocales: [], termLogOn: false, termLogSteps: 5000, termLogDays: 30, termType: 'xterm-256color', termTypes: [], termEnv: '', termEncoding: 'utf-8', termEncodings: {}, termKeepalive: 0, termNewline: 'cr', termBackspace: 'del', termScrollback: 5000, termCursor: 'block', termCursorBlink: true },
+        settings: { language: 'auto', theme: 'auto', languages: [], tabOrder: [], keyFolder: '', rootIdleMinutes: 10, termFont: 'system', termFontSize: TERM_SIZE_DEFAULT, shellLang: '', shellEnv: '', shellLocales: [], termLogOn: false, termLogSteps: 5000, termLogDays: 30, termType: 'xterm-256color', termTypes: [], termEnv: '', termEncoding: 'utf-8', termEncodings: {}, termKeepalive: 0, termNewline: 'cr', termBackspace: 'del', termScrollback: 5000, termCursor: 'block', termCursorBlink: true, scanDiagKeep: false },
         termFonts: TERM_FONTS,
         dragTab: '', overTab: '',
         devices: [], scan: null, scanning: false, advice: null,
@@ -4399,6 +4408,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
           { id: 'look', icon: '🎨', label: 'Appearance and language' },
           { id: 'term', icon: '🖳', label: 'Terminal (shell and SSH)' },
           { id: 'conn', icon: '🔑', label: 'Connections and keys' },
+          { id: 'scan', icon: '🩺', label: 'Diagnose the scan' },
           { id: 'tools', icon: '☰', label: 'The list of tools' },
         ],
         // What was kept of past terminals: the list of them, and the one being read.
@@ -5989,6 +5999,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
           this.applyTheme();
           if (s.language && s.language !== 'auto') await this.applyLanguage(s.language);
           if (s.lastTargets) this.scanTargets = s.lastTargets;
+          this.restoreDiagLast();
         } catch (e) { this.fail(e); }
       },
 
@@ -6035,6 +6046,7 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
           const head = 'NetBase ' + (this.version || '') + ' — scan diagnosis (' + (this.scan.state || '') + ')';
           this.diagView = { open: true, kind: 'scan', title: (this.scan.targets || []).join(', '), text: head + '\n' + this.scan.diag };
           this.diagLast = { ...this.diagView, open: false };
+          this.storeDiagLast();
         }
       },
       async cancelScan() {
@@ -7386,6 +7398,43 @@ sudo dnf install nmap        # Fedora / RHEL</pre>
         api('settings', {
           method: 'POST',
           body: JSON.stringify({ settings: { shellLang: this.settings.shellLang || '', shellEnv: this.settings.shellEnv || '' } }),
+        }).catch((e) => this.fail(e));
+      },
+      /**
+       * The record of the last diagnosed scan, kept in this tab's sessionStorage
+       * when the person asked for it (Settings > Diagnose the scan). It is kept
+       * under the user's id and checked against it when read, so another person
+       * signing in in the same tab never meets it.
+       */
+      diagKeepKey() {
+        let uid = '';
+        try { uid = (window.OC && OC.getCurrentUser && OC.getCurrentUser().uid) || document.head.getAttribute('data-user') || ''; } catch (e) { uid = ''; }
+        return uid ? 'netbase.scanDiag.' + uid : '';
+      },
+      storeDiagLast() {
+        const key = this.diagKeepKey();
+        if (!key || !this.settings.scanDiagKeep || !this.diagLast) return;
+        try { sessionStorage.setItem(key, JSON.stringify({ kind: this.diagLast.kind, title: this.diagLast.title, text: this.diagLast.text })); } catch (e) { /* kept for this page only */ }
+      },
+      restoreDiagLast() {
+        const key = this.diagKeepKey();
+        if (!key || !this.settings.scanDiagKeep || this.diagLast) return;
+        try {
+          const v = JSON.parse(sessionStorage.getItem(key) || 'null');
+          if (v && v.kind === 'scan' && typeof v.text === 'string') this.diagLast = { open: false, kind: 'scan', title: String(v.title || ''), text: v.text };
+        } catch (e) { /* nothing kept */ }
+      },
+      saveScanDiagKeep() {
+        if (this.settings.scanDiagKeep) {
+          this.storeDiagLast();
+        } else {
+          // Turned off: nothing is left in the browser.
+          const key = this.diagKeepKey();
+          try { if (key) sessionStorage.removeItem(key); } catch (e) { /* nothing kept */ }
+        }
+        api('settings', {
+          method: 'POST',
+          body: JSON.stringify({ settings: { scanDiagKeep: this.settings.scanDiagKeep ? '1' : '0' } }),
         }).catch((e) => this.fail(e));
       },
       /** How much of a terminal to keep, and for how long. */

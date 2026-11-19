@@ -110,6 +110,16 @@ class ScanService {
 	 */
 	private ?array $trace = null;
 	private float $traceT0 = 0.0;
+	/**
+	 * The names the diagnosis has met, each with the label it is shown under
+	 * (lower-case name => "name-1"). A diagnosis is pasted into reports, so it
+	 * shows no device name and no whole MAC address (GitHub #4): the same name
+	 * always gets the same label, which is enough to follow "the same device"
+	 * through it. Kept in the scan's queue between steps, like the lines.
+	 *
+	 * @var array<string, string>
+	 */
+	private array $traceNames = [];
 
 	/** Templates the picker offers that only a person can tell apart. */
 	public const MANUAL_TYPES = ['repeater', 'firewall', 'vpn', 'lb', 'gateway', 'laptop', 'hypervisor', 'watch', 'mfp', 'scanner', 'projector', 'pos', 'barcode', 'cardreader', 'timeclock', 'signage', 'digicam', 'webcam', 'intercom', 'access', 'alarm', 'settop', 'ereader', 'aircon', 'airpurifier', 'solar', 'pcs', 'battery', 'chargectrl', 'evcharger', 'smartmeter', 'hems', 'generator', 'pdu', 'thermostat', 'thsensor', 'motion', 'contact', 'leak', 'lock', 'vacuum', 'robot', 'remote', 'scale', 'pet', 'pbx', 'conference', 'plc', 'industrial', 'container'];
@@ -201,6 +211,7 @@ class ScanService {
 		$scan->setUpdated(time());
 		if ($normalised['diagnose']) {
 			$this->trace = [];
+			$this->traceNames = [];
 			$this->traceT0 = microtime(true);
 			$this->traceStart($targets, $plan, $normalised);
 		}
@@ -229,6 +240,7 @@ class ScanService {
 		if ($this->trace !== null) {
 			$queue['diag'] = $this->trace;
 			$queue['diagT0'] = $this->traceT0;
+			$queue['diagNames'] = $this->traceNames;
 			$this->trace = null;
 		}
 		$scan->setQueue(json_encode($queue));
@@ -255,6 +267,7 @@ class ScanService {
 		if (!empty($options['diagnose'])) {
 			$this->trace = $queue['diag'] ?? [];
 			$this->traceT0 = (float)($queue['diagT0'] ?? microtime(true));
+			$this->traceNames = is_array($queue['diagNames'] ?? null) ? $queue['diagNames'] : [];
 		}
 
 		try {
@@ -304,6 +317,7 @@ class ScanService {
 				$this->traceEnd($queue['plan'] ?? []);
 			}
 			$queue['diag'] = $this->trace;
+			$queue['diagNames'] = $this->traceNames;
 			$this->trace = null;
 		}
 		$scan->setQueue(json_encode($queue));
@@ -1204,7 +1218,7 @@ class ScanService {
 		}
 		$this->note(sprintf('new MAC on an address on file, or a random one on a new address%s: %d, names asked (%d ms): %s', $waiting ? ' (a set-aside row waits for its name)' : '', count($ask),
 			(int)round((microtime(true) - $t) * 1000),
-			$names === [] ? 'none answered' : implode(', ', array_map(static fn ($ip, $n) => $ip . ' ' . $n, array_keys($names), $names))));
+			$names === [] ? 'none answered' : implode(', ', array_map(fn ($ip, $n) => $ip . ' ' . $this->who((string)$n), array_keys($names), $names))));
 		return $names;
 	}
 
@@ -1290,7 +1304,7 @@ class ScanService {
 		$d->setDtype($this->classify($d));
 		$this->devices->update($d);
 		$this->devices->delete($old);
-		$this->note((string)$d->getIp() . ': the row ' . $name . ' left on ' . (string)$old->getIp() . ' (MAC ' . (string)$old->getMac()
+		$this->note((string)$d->getIp() . ': the row ' . $this->who((string)$name) . ' left on ' . (string)$old->getIp() . ' (MAC ' . (string)$old->getMac()
 			. ', gone now) was folded into this one' . (self::typeChosen($d) ? ' (picked type ' . $d->getDtype() . ')' : ''));
 	}
 
@@ -1375,7 +1389,7 @@ class ScanService {
 				// Another MAC, but the same name: the same device, back with a new
 				// MAC (a restarted container). It keeps its row — the name, the
 				// type, the notes and the ports — and only the MAC is new.
-				$this->note($ip . ': new MAC ' . $mac . ' (was ' . (string)$byIp->getMac() . '), same name ' . (string)$byIp->getHostname() . ': the same device, its row is kept');
+				$this->note($ip . ': new MAC ' . $mac . ' (was ' . (string)$byIp->getMac() . '), same name ' . $this->who((string)($update['rdns'] ?? $update['hostname'] ?? $update['mdns'] ?? '') ?: (string)$byIp->getHostname()) . ': the same device, its row is kept');
 				$byIp->setDkey($key);
 				$byIp->setMac($mac);
 				$device = $byIp;
@@ -1386,7 +1400,7 @@ class ScanService {
 				// address, under a MAC no longer in the ARP table. It keeps that
 				// row — the name, the type, the notes and the ports — instead
 				// of a new, unnamed one beside it.
-				$this->note($ip . ': new MAC ' . $mac . ', same name ' . (string)$moved->getHostname() . ' as the row on '
+				$this->note($ip . ': new MAC ' . $mac . ', same name ' . $this->who((string)$moved->getHostname()) . ' as the row on '
 					. (string)$moved->getIp() . ', whose MAC ' . (string)$moved->getMac() . ' is gone: the same device, moved here, its row is kept');
 				$moved->setDkey($key);
 				$moved->setMac($mac);
@@ -1769,7 +1783,7 @@ class ScanService {
 			unset($this->goneByName[$name]);
 			if ($this->carrySameDevice($gone, $d)) {
 				$changed = true;
-				$this->note((string)$d->getIp() . ': ' . (string)$d->getHostname() . ' took back the ports of its row removed from ' . (string)$gone->getIp());
+				$this->note((string)$d->getIp() . ': ' . $this->who((string)$d->getHostname()) . ' took back the ports of its row removed from ' . (string)$gone->getIp());
 			}
 		}
 		foreach ($this->devices->findParked() as $parked) {
@@ -2296,6 +2310,7 @@ class ScanService {
 		if ($this->trace === null) {
 			return;
 		}
+		$line = $this->hideWho($line);
 		if (count($this->trace) === self::TRACE_MAX) {
 			$this->trace[] = '... (the rest is left out: the diagnosis is limited to ' . self::TRACE_MAX . ' lines)';
 		}
@@ -2303,6 +2318,54 @@ class ScanService {
 			return;
 		}
 		$this->trace[] = sprintf('%7.2fs  %s', microtime(true) - $this->traceT0, $line);
+	}
+
+	/**
+	 * A device name as the diagnosis shows it: a label ("name-1"), the same one
+	 * every time the same name comes up. Nothing is recorded outside a diagnosis.
+	 */
+	private function who(string $name): string {
+		$key = strtolower(trim($name));
+		if ($key === '') {
+			return '';
+		}
+		if ($this->trace === null) {
+			return $name;
+		}
+		if (!isset($this->traceNames[$key])) {
+			// "mariadb00.lg.net" and "mariadb00" are one name (as nameKey tells
+			// devices by): they share a label, and each is hidden as written.
+			$first = explode('.', $key)[0];
+			$label = null;
+			foreach ($this->traceNames as $known => $l) {
+				if (explode('.', (string)$known)[0] === $first) {
+					$label = $l;
+					break;
+				}
+			}
+			$this->traceNames[$key] = $label ?? 'name-' . (count(array_unique($this->traceNames)) + 1);
+		}
+		return $this->traceNames[$key];
+	}
+
+	/**
+	 * A line of the diagnosis with nothing in it that names a device: every MAC
+	 * address loses its last three bytes (the first three, the maker and the
+	 * "random address" bit, are what a diagnosis needs), and any name already
+	 * met is shown under its label wherever it turns up.
+	 */
+	private function hideWho(string $line): string {
+		$line = (string)preg_replace_callback('/\b([0-9a-f]{2}(?:[:-][0-9a-f]{2}){2})([:-])[0-9a-f]{2}\2[0-9a-f]{2}\2[0-9a-f]{2}\b/i',
+			static fn (array $m) => $m[1] . $m[2] . 'xx' . $m[2] . 'xx' . $m[2] . 'xx', $line);
+		// The longest names first: "web.lan" inside "myweb.lan" must not be cut out of it.
+		$names = $this->traceNames;
+		uksort($names, static fn ($x, $y) => strlen((string)$y) <=> strlen((string)$x));
+		foreach ($names as $name => $label) {
+			if (strlen((string)$name) >= 3) {
+				$line = str_ireplace($name, $label, $line);
+			}
+		}
+		return $line;
 	}
 
 	/** A short list of addresses for the diagnosis: all of them up to a point, then a count. */

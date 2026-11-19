@@ -1994,9 +1994,9 @@ OC.L10N.register(
         "Blinking": "깜박임",
         "These apply to the shell and to SSH windows opened from now on, not to a window that is already open.": "앞으로 여는 셸과 SSH 창에 적용되며, 이미 열린 창에는 적용되지 않습니다.",
         "Diagnose the scan": "탐색 진단",
-        "Records what the next scan does, step by step, and shows it when the scan ends, to copy into a report. Device names and MAC addresses are left out.": "다음 탐색이 하는 일을 단계별로 기록하고 끝나면 보여 줍니다. 보고서에 복사해 넣을 수 있습니다. 기기 이름과 MAC 주소는 포함하지 않습니다.",
+        "Records what the next scan does, step by step, and shows it when the scan ends, to copy into a report. Device names are replaced by labels (name-1, name-2 …) and MAC addresses lose their last three bytes.": "다음 탐색이 하는 일을 단계별로 기록하고 끝나면 보여 줍니다. 보고서에 복사해 넣을 수 있습니다. 기기 이름은 name-1, name-2 같은 표시로 바뀌고, MAC 주소는 끝의 3바이트가 가려집니다.",
         "What the scan did": "탐색이 한 일",
-        "This is what the scan did, step by step: which addresses it asked, which answered, and what changed on each device in the range. It holds no device names and no MAC addresses. You can paste it into a report.": "탐색이 단계별로 한 일입니다. 어떤 주소에 물었고, 어느 것이 응답했고, 범위 안의 각 기기에서 무엇이 바뀌었는지 보여 줍니다. 기기 이름과 MAC 주소는 포함하지 않습니다. 보고서에 붙여 넣을 수 있습니다.",
+        "This is what the scan did, step by step: which addresses it asked, which answered, and what changed on each device in the range. Device names are shown as labels (name-1, name-2 …) and MAC addresses without their last three bytes. You can paste it into a report.": "탐색이 단계별로 한 일입니다. 어떤 주소에 물었고, 어느 것이 응답했고, 범위 안의 각 기기에서 무엇이 바뀌었는지 보여 줍니다. 기기 이름은 name-1, name-2 같은 표시로 바뀌고, MAC 주소는 끝의 3바이트가 가려집니다. 보고서에 붙여 넣을 수 있습니다.",
         "What it may read and change": "읽고 변경할 수 있는 것",
         "Change the device list: add, name, place and remove devices (only for people allowed Scanning; notes are never read or written, and nothing is sent to the devices)": "기기 목록 변경: 기기 추가, 이름과 설치 장소 지정, 삭제 (“탐색”을 쓸 수 있는 사람만. 메모는 읽거나 쓰지 않으며, 기기에는 아무것도 보내지 않습니다)",
         "Look at the device list": "기기 목록 보기",
@@ -2010,7 +2010,9 @@ OC.L10N.register(
         "For a problem report: what this server runs in, which networks it sees, what it may do, and the state of the device records. Nothing is scanned or changed. Made again after restarting containers, it also shows what changed between the two reports.": "문제를 보고할 때 사용합니다. 이 서버가 무엇 안에서 실행되는지, 어떤 네트워크가 보이는지, 무엇을 할 수 있는지, 장치 기록의 상태를 정리합니다. 스캔이나 변경은 하지 않습니다. 컨테이너를 다시 시작한 뒤 한 번 더 만들면 두 보고서 사이에 바뀐 점도 보여 줍니다.",
         "Hide the last half of MAC addresses and public addresses": "MAC 주소와 공인 주소의 뒷부분 숨기기",
         "Make the report": "보고서 만들기",
-        "Making the report…": "보고서를 만드는 중…"
+        "Making the report…": "보고서를 만드는 중…",
+        "Keep the last scan record while I visit other pages": "다른 페이지를 보는 동안 마지막 탐색 기록 유지",
+        "With “Diagnose the scan” ticked, a scan ends by showing its record (“What the scan did”) for you to copy into a report. That record is normally lost as soon as you leave NetBase for another page of Nextcloud: when you come back, it is gone and the scan has to be run again. With this on, the record is kept in this browser tab (its session storage) until you close the tab, and the “What the scan did” button opens it again after you come back. It is kept only in this browser, never on the server, and a new diagnosed scan replaces it. It holds the addresses of the scanned network, so leave this off on a browser that other people use.": "“탐색 진단”을 선택하면 탐색이 끝날 때 그 기록(“탐색이 한 일”)이 표시되어 보고서에 복사해 붙일 수 있습니다. 이 기록은 보통 NetBase를 떠나 Nextcloud의 다른 페이지로 이동하는 순간 사라지며, 돌아오면 없어져 탐색을 다시 실행해야 합니다. 이 옵션을 켜면 기록이 이 브라우저 탭(세션 스토리지)에 탭을 닫을 때까지 남고, 돌아온 뒤 “탐색이 한 일” 버튼으로 다시 열 수 있습니다. 기록은 이 브라우저에만 보관되며 서버에는 저장되지 않고, 새로 진단한 탐색이 있으면 그것으로 바뀝니다. 탐색한 네트워크의 주소가 들어 있으므로, 다른 사람도 쓰는 브라우저에서는 꺼 두세요."
     },
     "nplurals=1; plural=0;"
 );

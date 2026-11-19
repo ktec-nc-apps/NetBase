@@ -1993,9 +1993,9 @@
         "Blinking": "وامض",
         "These apply to the shell and to SSH windows opened from now on, not to a window that is already open.": "ينطبق على الصدفة ونوافذ SSH التي تُفتح من الآن، لا على نافذة مفتوحة بالفعل.",
         "Diagnose the scan": "تشخيص الفحص",
-        "Records what the next scan does, step by step, and shows it when the scan ends, to copy into a report. Device names and MAC addresses are left out.": "يسجّل خطوة بخطوة ما يفعله الفحص التالي ويعرضه عند انتهائه، لنسخه في تقرير. لا تُضمَّن أسماء الأجهزة ولا عناوين MAC.",
+        "Records what the next scan does, step by step, and shows it when the scan ends, to copy into a report. Device names are replaced by labels (name-1, name-2 …) and MAC addresses lose their last three bytes.": "يسجّل خطوة بخطوة ما يفعله الفحص التالي ويعرضه عند انتهائه، لنسخه في تقرير. تُستبدل أسماء الأجهزة بتسميات (name-1, name-2…) وتُخفى البايتات الثلاثة الأخيرة من عناوين MAC.",
         "What the scan did": "ما فعله الفحص",
-        "This is what the scan did, step by step: which addresses it asked, which answered, and what changed on each device in the range. It holds no device names and no MAC addresses. You can paste it into a report.": "هذا ما فعله الفحص خطوة بخطوة: العناوين التي سألها، وأيّها أجاب، وما الذي تغيّر في كل جهاز ضمن المدى. لا يحتوي على أسماء الأجهزة ولا عناوين MAC. يمكنك لصقه في تقرير.",
+        "This is what the scan did, step by step: which addresses it asked, which answered, and what changed on each device in the range. Device names are shown as labels (name-1, name-2 …) and MAC addresses without their last three bytes. You can paste it into a report.": "هذا ما فعله الفحص خطوة بخطوة: العناوين التي سألها، وأيّها أجاب، وما الذي تغيّر في كل جهاز ضمن المدى. تُستبدل أسماء الأجهزة بتسميات (name-1, name-2…) وتُخفى البايتات الثلاثة الأخيرة من عناوين MAC. يمكنك لصقه في تقرير.",
         "What it may read and change": "ما يمكنه قراءته وتغييره",
         "Change the device list: add, name, place and remove devices (only for people allowed Scanning; notes are never read or written, and nothing is sent to the devices)": "تغيير قائمة الأجهزة: إضافة الأجهزة وتسميتها وتحديد مكانها وإزالتها (فقط لمن يُسمح لهم بـ«الفحص»؛ لا تُقرأ الملاحظات ولا تُكتب أبدًا، ولا يُرسل أي شيء إلى الأجهزة)",
         "Look at the device list": "عرض قائمة الأجهزة",
@@ -2009,7 +2009,9 @@
         "For a problem report: what this server runs in, which networks it sees, what it may do, and the state of the device records. Nothing is scanned or changed. Made again after restarting containers, it also shows what changed between the two reports.": "للإبلاغ عن مشكلة: داخل أي بيئة يعمل هذا الخادم، وأي الشبكات يراها، وما المسموح له به، وحالة سجلات الأجهزة. لا يُفحص شيء ولا يُغيَّر. وإذا أُنشئ مرة أخرى بعد إعادة تشغيل الحاويات، فإنه يبيّن أيضًا ما تغيّر بين التقريرين.",
         "Hide the last half of MAC addresses and public addresses": "إخفاء النصف الثاني من عناوين MAC والعناوين العامة",
         "Make the report": "إنشاء التقرير",
-        "Making the report…": "جارٍ إنشاء التقرير…"
+        "Making the report…": "جارٍ إنشاء التقرير…",
+        "Keep the last scan record while I visit other pages": "الاحتفاظ بسجل آخر فحص أثناء زيارتي صفحات أخرى",
+        "With “Diagnose the scan” ticked, a scan ends by showing its record (“What the scan did”) for you to copy into a report. That record is normally lost as soon as you leave NetBase for another page of Nextcloud: when you come back, it is gone and the scan has to be run again. With this on, the record is kept in this browser tab (its session storage) until you close the tab, and the “What the scan did” button opens it again after you come back. It is kept only in this browser, never on the server, and a new diagnosed scan replaces it. It holds the addresses of the scanned network, so leave this off on a browser that other people use.": "عند تحديد «تشخيص الفحص»، ينتهي الفحص بعرض سجله («ما فعله الفحص») لتنسخه إلى بلاغ. يضيع هذا السجل عادةً بمجرد مغادرتك NetBase إلى صفحة أخرى من Nextcloud: فعند عودتك يكون قد اختفى وعليك إعادة الفحص. عند تفعيل هذا الخيار يُحفظ السجل في علامة تبويب المتصفح هذه (تخزين الجلسة) إلى أن تغلقها، ويعيد زر «ما فعله الفحص» فتحه بعد عودتك. يُحفظ في هذا المتصفح فقط ولا يُحفظ على الخادم أبدًا، ويحل محله أي فحص مشخَّص جديد. يحتوي على عناوين الشبكة التي جرى فحصها، لذا أبقِ هذا الخيار معطلًا في متصفح يستخدمه آخرون."
     },
     "pluralForm": "nplurals=6; plural=(n==0 ? 0 : n==1 ? 1 : n==2 ? 2 : n%100>=3 && n%100<=10 ? 3 : n%100>=11 && n%100<=99 ? 4 : 5);"
 }

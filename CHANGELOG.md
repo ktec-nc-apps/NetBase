@@ -2,6 +2,18 @@
 
 All notable changes to NetBase are documented here.
 
+## 0.9.21 — 2026-11-20
+
+The record of a diagnosed scan keeps its promise, and can be kept across pages (GitHub issue #4).
+
+### Fixed
+
+- **The record of a diagnosed scan ("What the scan did") held device names and whole MAC addresses, though it says it holds neither.** Lines added since 0.9.14 (a container back under a new MAC address, a row taken back by its name, the names asked of new devices) wrote them out, and the record is made to be pasted into a report. Device names now show as labels (name-1, name-2 …), the same label for the same name all through one record, and a MAC address shows only its first three bytes (06:75:9b:xx:xx:xx), which is what tells a random address from a real one. The page's own texts now say so.
+
+### Added
+
+- **Settings > Diagnose the scan: "Keep the last scan record while I visit other pages".** The record is shown once, when the scan ends, and was lost as soon as you went to another page of Nextcloud and came back. Switched on, it is kept in this browser tab (session storage) until the tab is closed, and the "What the scan did" button opens it again. It stays in this browser, never on the server, under your user name, and is cleared when the option is switched off. Off unless you switch it on.
+
 ## 0.9.20 — 2026-11-20
 
 The record of a diagnosed scan can no longer be lost by a stray click (GitHub issue #4).
